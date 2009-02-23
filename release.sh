@@ -4,6 +4,7 @@ cat <<EOF
 Release Checklist:
 
  * is the configuration syntax list up-to-date? (see syntax, local/e2tool.lua)
+ * is the configuration version in global/e2.conf.in up-to-date?
 
 EOF
 read -p "type yes to proceed> " OK
