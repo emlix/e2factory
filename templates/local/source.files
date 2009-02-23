@@ -1,0 +1,32 @@
+-- e2factory files source configuration template --
+
+e2source {
+  -- the source name
+  -- (is derived from the config file path if only one source is specified
+  -- per file)
+  name = "name",
+  -- the source type
+  type = "files",
+  -- a list of licences from proj/licences
+  licences = { },
+  -- the server. Files can specify their own one or inherit this one.
+  server = "upstream",
+  -- the file list
+  file = {
+    -- each file must be configured in a table like this
+    {
+	-- server name (or inherit from top-level)
+	-- server = "upstream",
+	-- file location relative to the server
+	location = "h/hello/1.0/hello-1.0.tar.gz",
+	-- select one of unpack, patch and copy
+	-- unpacking creates this directory
+	unpack = "hello-1.0",
+	-- file is a patch. Apply with patch -p1
+	--patch  = "1",
+	-- copy to a directory relative to the source tree
+	--copy   = ".",
+    },
+    -- insert more files here
+  },
+}

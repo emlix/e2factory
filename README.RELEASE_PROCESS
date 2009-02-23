@@ -1,0 +1,39 @@
+1. Including the e2 tool version into the buildid calculation
+
+The content of the version file is available in the source in the E2_VERSION
+variable.
+This variable is calculated into the buildid, to catch tool changes and
+be sure to rebuild results whenever the e2 tool version changes.
+
+The E2_COMMIT variable is not used, as that makes development impossible,
+as buildids would change with each single commit.
+
+2. The release process
+
+Releasing e2 requires the following steps:
+step 1. change the ./version file (setting the version string)
+step 2. commit
+step 3. tag
+step 4. change the ./version file (appending the "-wip" postfix again)
+step 5. commit
+step 6. push
+
+3. Version and Release naming
+Any e2 version follows this naming scheme:
+MAJOR.MINOR(.PATCHLEVEL)(preNUMBER|rcNUMBER)?(-wip)?
+The release name is the version name including the "e2-" prefix
+
+4. Shell code to support the release process
+# set the VERSION variable first, e.g. VERSION="2.2pre1-wip"
+RELEASE_NAME="e2-$VERSION"
+echo $VERSION >./version
+vi Changelog # edit the release string
+git commit -m "release $RELEASE_NAME" version Changelog
+git tag "$RELEASE_NAME"
+git push origin "$RELEASE_NAME"
+VERSION=${VERSION}-wip
+RELEASE_NAME="e2-$VERSION"
+echo $VERSION >./version
+vi Changelog # edit the release string: wip again
+git commit -m "work in progress $RELEASE_NAME" version Changelog
+git push

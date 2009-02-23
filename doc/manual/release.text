@@ -1,0 +1,32 @@
+Building releases
+-----------------
+
+
+Prepare building a release with *e2factory*:
+
+*   for each scm source:
+    * make sure the source is tagged and the tag is configured in the 
+      source configuration
+*   change the release_id attribute in proj/config to the release string
+*   commit the file
+*   push
+
+To make sure everything is really available from the server:
+
+*   create a fresh checkout for the project
+*   fetch sources
+*   build in release mode
+*   e2factory will 
+    * build everything from scratch
+    * store the results to the releases server
+    * the location will be `releases:<project-location>/release/<release-id>/`
+
+Example:
+
+    $ e2-fetch-project project
+    $ cd project
+    $ e2-fetch-sources
+    $ e2-build --build-mode=release
+
+prev [results](results.html)
+next [migrate from e2-2.1 to e2-2.2](migration.html)

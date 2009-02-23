@@ -1,0 +1,156 @@
+--[[
+   e2factory, the emlix embedded build system
+
+   Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
+   Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
+   Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
+   
+   For more information have a look at http://www.e2factory.org
+
+   e2factory is a registered trademark by emlix GmbH.
+
+   This file is part of e2factory, the emlix embedded build system.
+   
+   e2factory is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+]]
+
+package.path  = "@LIBDIR@/?.lc;@LIBDIR@/?.lua"
+package.cpath = "@LIBDIR@/?.so"
+
+local install_prefix = "@E2_PREFIX@"
+
+require("e2global")
+e2lib.init()
+
+e2option.documentation = [[
+usage: e2-install-e2 [OPTION ...]
+
+Installs local tools in project environment.
+]]
+
+e2option.flag("binary", "install binary tools")
+
+local opts = e2option.parse(arg)
+local rc, e = e2lib.read_global_config()
+if not rc then
+  e2lib.abort(e)
+end
+e2lib.init2()
+local e = new_error("e2-install-e2 failed")
+
+local config = e2lib.get_global_config()
+local servers = config.servers
+if not servers then
+  e2lib.abort("no servers configured in global config")
+end
+
+local cachedir = e2lib.mktempdir()
+local scache, re = e2lib.setup_cache("temporary cache", cachedir,
+                                                        config.servers)
+if not scache then
+  e2lib.abort(e:cat(re))
+end
+
+e2lib.log_invocation(nil, arg)
+
+-- standard global tool setup finished
+
+--e2hook.run_hook(nil, "tool-start", nil, "e2-install-e2")
+
+if #opts.arguments > 0 then
+  e2option.usage(1)
+end
+
+local root = e2lib.locate_project_root()
+if not root then
+  e2lib.abort("can't locate project root.")
+end
+
+local rc, re
+
+-- change to the project root directory
+rc, re = e2lib.chdir(root)
+if not rc then
+  e2lib.abort(e:cat(re))
+end
+
+-- read the version from the first line
+local line, re = e2lib.read_line(".e2/version")
+if not line then
+	e2lib.abort(e:cat(re))
+end
+
+v = tonumber(line:match("[0-9]+"))
+if not v or v < 1 or v > 2 then
+	e2lib.abort(e:append("unhandled project version"))
+end
+
+-- version is 1 or 2
+
+-- remove the old e2 source, if it exists
+rc, re = e2lib.rm(".e2/e2 .e2/bin .e2/lib", "-fr")
+if not rc then
+  e2lib.abort(e:cat(re))
+end
+
+-- get e2 version
+local s = e2lib.read_line(".e2/e2version")
+local branch, tag = s:match("(%S+) (%S+)")
+if not branch or not tag then
+  e2lib.abort(e:append("cannot parse e2 version"))
+end
+local ref
+if tag == "^" then
+  e2lib.warnf("WOTHER", "using e2 version by branch")
+  ref = string.format("refs/heads/%s", branch)
+else
+  ref = string.format("refs/tags/%s", tag)
+end
+
+e2lib.logf(2, "installing tool version: %s", ref)
+
+rc, re = e2lib.chdir(".e2")
+if not rc then
+  e2lib.abort(e:cat(re))
+end
+
+-- clone e2
+local server = config.site.e2_server
+local location = config.site.e2_location
+local destdir = "e2"
+local skip_checkout = false
+rc, re = generic_git.git_clone_from_server(scache, server, location, destdir,
+								skip_checkout)
+if not rc then
+  e2lib.abort(e:cat(re))
+end
+
+e2lib.chdir(destdir)
+
+-- checkout ref
+local args = string.format("--track -b tmp '%s'", ref)
+rc, re = e2lib.git(nil, "checkout", args)
+if not rc then
+  e2lib.abort(e:cat(re))
+end
+
+-- build and install
+local cmd = string.format("make PREFIX='%s' local install-local",
+								install_prefix)
+rc, re = e2lib.callcmd_capture(cmd)
+if not rc then
+  e2lib.abort(e:cat(re))
+end
+
+e2lib.finish()

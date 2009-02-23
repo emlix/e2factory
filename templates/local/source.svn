@@ -1,0 +1,24 @@
+-- e2factory subversion source configuration template --
+
+e2source {
+	-- the source name
+	-- (is derived from the config file path if only one source is 
+	-- specified per file)
+	name = "name",
+	-- the source type
+	type = "svn",
+	-- a list of licences from proj/licences
+	licences={ },
+	-- svn specific attributes
+	-- server name
+	server = "proj-storage",
+	-- location of the svn tree relative to the server
+	location = "svn/hellosvn",
+	-- svn branch location relative to the location
+	branch = "branches/hello-1.0",
+	-- svn tag location relative to the location
+	tag = "tags/hello-1.0",
+	-- take this subdirectory from the working copy when the working-copy
+        -- is used. (Defaults to the branch setting.)
+	--workingcopy_subdir = "branches/hello-1.0",
+}

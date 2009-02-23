@@ -1,0 +1,16 @@
+-- e2factory chroot configuration file --
+local cp = "emlix/chroot-i386/tags/20080916-stable-2/"
+e2chroot {
+  default_groups = {
+    "base",
+  },
+  groups = {
+    {
+      name = "base",
+      server = "chroot",
+      files = {
+	cp.."base.tar.gz",
+      },
+    },
+  },
+}

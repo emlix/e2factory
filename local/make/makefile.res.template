@@ -1,0 +1,126 @@
+#
+#  e2factory, the emlix embedded build system
+#
+#  Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
+#  Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
+#  Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
+#  
+#  For more information have a look at http://www.e2factory.org
+#
+#  e2factory is a registered trademark by emlix GmbH.
+#
+#  This file is part of e2factory, the emlix embedded build system.
+#  
+#  e2factory is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+.PHONY:	default depend build rmchroot
+CHRPTH = $(BUILD)/$(RES)
+TMPE2 = $(CHRPTH)/tmp/e2
+SCRIPT = build-driver buildrc build-script
+INIT = $(shell ls $(PROJ)/proj/init/)
+
+default:
+	echo "please use makefile at ./proj with target $(RES)"
+
+depend:	$(TMPE2)/.e2deps
+
+$(TMPE2)/.e2deps:	$(TMPE2)/.e2dept
+	while read r l ; do for d in $$r $$l ; do \
+		echo $$d $$r ; done ; done <$< | tsort >$@
+
+$(patsubst %,$(BUILD)/%/tmp/e2/.e2dept,$(DEPEND)): \
+		$(BUILD)/%/tmp/e2/.e2dept:	$(PROJ)/res/%/makefile \
+		$(PROJ)/proj/makefile $(PROJ)/proj/makefile.res
+	make -C $(PROJ)/proj PROJ=$(PROJ) BUILD=$(BUILD) \
+		$(patsubst $(BUILD)/%/tmp/e2/.e2dept,depend-%,$@)
+
+$(TMPE2)/.e2dept:	$(PROJ)/res/$(RES)/makefile \
+		$(PROJ)/proj/makefile $(PROJ)/proj/makefile.res \
+		$(patsubst %,$(BUILD)/%/tmp/e2/.e2dept,$(DEPEND))
+	mkdir -p $(TMPE2)
+	echo "$(RES) $(DEPEND)" | \
+		cat $(patsubst %,$(BUILD)/%/tmp/e2/.e2dept,$(DEPEND)) - >$@
+
+build: $(addprefix $(OUT)/$(RES)/,$(FILES))
+
+# copy result files from chroot to outdir:
+$(addprefix $(OUT)/$(RES)/,$(FILES)):	$(OUT)/$(RES)/%:	$(TMPE2)/out/%
+	mkdir -p $(OUT)/$(RES)
+	cp -dp $< $@
+	touch $(OUT)/$(RES)
+
+# clean up chroot to avoid collisions upon rebuild, let /tmp/e2 persist:
+rmchroot:
+	T=$$(mktemp -d $(CHRPTH).XXXXXX) && \
+	mv $(CHRPTH) $$T && \
+	mkdir -p $(CHRPTH)/tmp && \
+	mv $$T/$(RES)/tmp/e2 $(CHRPTH)/tmp/ && \
+	{ rm -rf $$T & }
+
+# place chroot, exec build-script, cleanup chroot where KEEP is not set
+$(addprefix $(TMPE2)/out/,$(FILES)):	$(TMPE2)/out/%:	\
+		$(BUILD)/.bin/linux32 \
+		$(addprefix $(OUT)/,$(DEPEND)) \
+		$(addprefix $(TMPE2)/build/,$(SOURCE)) \
+		$(addprefix $(TMPE2)/script/,$(SCRIPT)) \
+		$(addprefix $(TMPE2)/init/,$(INIT))
+	make BUILD=$(BUILD) RES=$(RES) rmchroot
+	rm -rf $(TMPE2)/dep $(TMPE2)/out $(TMPE2)/root
+	mkdir -p $(TMPE2)/build $(TMPE2)/dep $(TMPE2)/out $(TMPE2)/root
+	for g in $(CHROOT) ; do \
+	  for f in $(PROJ)/chroot/$$g/* ; do \
+	    tar xzf $$f -C $(CHRPTH) 2>/dev/null || \
+	    tar xjf $$f -C $(CHRPTH) 2>/dev/null || \
+	    tar xf $$f -C $(CHRPTH); \
+	  done ; \
+	done
+	test -z "$(DEPEND)" || \
+		cp -a $(addprefix $(OUT)/,$(DEPEND)) $(TMPE2)/dep/
+	test -z "$(CHROOT)" || test -z "$(KEEP)" || touch $(CHRPTH)/tmp/.chroot
+	test -n "$(CHROOT)" || \
+	env -i USER=$$USER PATH=/usr/sbin:/sbin:$$PATH T=$(TMPE2) r="$(RES)" \
+		$(BUILD)/.bin/linux32 \
+		/bin/bash -e -x $(TMPE2)/script/build-driver
+	test -z "$(CHROOT)" || \
+	env -i USER=$$USER PATH=/usr/sbin:/sbin:$$PATH T=/tmp/e2 r="$(RES)" \
+		$(BUILD)/.bin/linux32 chroot $(CHRPTH) \
+		/bin/bash -e -x /tmp/e2/script/build-driver
+	rm -rf $(TMPE2)/dep
+	# possibly remove the chroot except /tmp/e2:
+	test -f $(CHRPTH)/tmp/.chroot || \
+		make BUILD=$(BUILD) RES=$(RES) rmchroot
+	touch -c $(addprefix $(TMPE2)/out/,$(FILES))
+
+# provide pretendency tool:
+$(BUILD)/.bin/linux32:	$(PROJ)/proj/linux32.c
+	mkdir -p $(BUILD)/.bin
+	cc -o $@ $<
+
+# provide source:
+$(addprefix $(TMPE2)/build/,$(SOURCE)):
+	mkdir -p $(TMPE2)/build
+	make -C $(PROJ)/src/$(patsubst $(TMPE2)/build/%,%,$@) \
+		PROJ=$(PROJ) BUILD=$(TMPE2)/build
+
+# retrieve build scripts:
+$(addprefix $(TMPE2)/script/,$(SCRIPT)):
+	mkdir -p $(TMPE2)/script
+	cp -dp $(PROJ)/.e2/bin/buildrc $(PROJ)/.e2/bin/build-driver \
+		$(PROJ)/res/$(RES)/build-script $(TMPE2)/script/
+
+# retrieve init scripts:
+$(addprefix $(TMPE2)/init/,$(INIT)):	$(TMPE2)/%:	$(PROJ)/proj/%
+	mkdir -p $(TMPE2)/init
+	cp -dp $< $@

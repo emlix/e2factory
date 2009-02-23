@@ -1,0 +1,4 @@
+pushd work/tp
+e2-use-source --files --vall upstream:f/foo/1.0/foo.tar.gz foo
+test -f src/foo/config
+popd

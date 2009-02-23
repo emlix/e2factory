@@ -1,0 +1,3 @@
+#!/bin/bash
+UPSTREAM=/data/e2data/upstream /root/bin/e2fix-upstream | bash
+RESULTS=/data/e2data/results   /root/bin/e2fix-results  | bash

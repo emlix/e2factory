@@ -1,0 +1,25 @@
+-- e2factory cvs source configuration template --
+
+e2source {
+	-- the source name
+	-- (is derived from the config file path if only one source is 
+	-- specified per file)
+	name = "name",
+	-- the source type
+	type = "cvs",
+	-- a list of licences from proj/licences
+	licences={ },
+	-- cvs specific attributes
+	-- server name
+	server = "proj-storage",
+	-- location of cvsroot relative to the server
+	cvsroot = "cvs",
+	-- cvs module
+	module = "hellocvs",
+	-- cvs branch (may be HEAD)
+	branch = "HEAD",
+	-- cvs tag
+	tag = "zwei",
+	-- working directory (is set to in/<sourcename> by default)
+	--working = "in/hellocvs",
+}

@@ -1,0 +1,2 @@
+#!/bin/bash
+rsync --archive --update --delete /data/e2data/ /data/tmp/e2data_backup/

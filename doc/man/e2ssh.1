@@ -1,0 +1,38 @@
+.\" Man page for e2ssh
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2 1 "Aug 12, 2008" "2.2"
+
+.SH NAME
+e2ssh \- wrapper script for ssh to support custom ssh options
+
+.SH SYNOPSIS
+e2ssh SSH_OPTIONS
+
+.SH DESCRIPTION
+\fBe2ssh\fR is a wrapper script that calls ssh passing the arguments
+given in the E2_SSH_OPTIONS environment variable and its own command line
+options to ssh.
+It is intended to be used by setting the E2_SSH environment variable
+to \fBe2ssh\fR when calling e2 tools.
+
+.SH RETURN VALUE
+the return value of ssh
+
+.SH ENVIRONMENT
+.TP
+.BR E2_SSH_OPTIONS
+options given in this variable are passed to \fBssh\fR.
+
+.SH BUGS
+No known bugs.
+
+.SH "SEE ALSO"
+.BR e2intro(7)
+
+.SH AUTHORS
+Gordon Hecker, Oskar Schirmer and Felix Winkelmann
+
+.SH COPYRIGHT
+(c)2008 emlix GmbH

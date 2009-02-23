@@ -1,0 +1,319 @@
+.\" Man page for e2config
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2config 1 "Aug 6, 2007" "0.1"
+
+.SH NAME
+e2config \- e2 configuration file format
+
+.SH DESCRIPTION
+An \fBe2\fR project tree consists of the following files and
+sub-directories:
+
+.nf
+.
+|-- .e2                       local part of e2 tool
+|-- in                        sources from shared repositories
+|-- out                       will hold build results
+|-- proj                      project configuration directory
+|   |-- env                   holds project environment (optional)
+|   |-- chroot                required chroot tarballs
+|   |-- default-results       main final results of the project
+|   |-- init                  initialization scripts run inside chroot
+|   |-- hooks                 hook scripts for customization (optional)
+|   |-- licences              list of licences used by sources (optional)
+|   |-- name                  project name
+|   |-- result-storage        where to store shared build-results
+|   o-- servers               remote servers for sources and projects
+|
+|-- log			      contains log files for e2 use and builds
+|   |-- debug.log             e2 internal log for last operation
+|   |-- build.<result>.log    build log for specific result
+|   :
+|
+|-- res                       build result descriptions
+|   |-- <result>              one directory for each result
+|   |   |-- config            result configuration file
+|   |   |-- build-script      build instructions executed in chroot
+|   |   o-- <local file>      project-local files (related to result)
+|   :
+|
+o-- src                       source descriptions for each source
+    |-- <source>              one directory for each source
+    |   |-- config            source configuration
+    |   o-- <local file>      project-local files (related to source)
+    :
+.fi
+
+.SH DEPENDENCY\ CONFIGURATION
+
+The file "proj/default-results" lists the main final results of
+the project, one per line. This is for convenience only, the list
+is used when e2-build is called with no result name.
+
+.SH ENVIRONMENT\ CONFIGURATION
+
+The optional file "proj/env" may define a table of global variables that are
+accessible during the build process. The table should be of the form
+
+.nf
+env {
+  <variable1> = "<value1>",
+  <variable2> = "<value2>",
+  :
+} 
+.fi
+
+During execution of a build script for a given result, environment variables
+of the same name will be defined, so in this example a build script could
+access the variables \fB$variable1\fR and \fB$variable2\fR. Variable values
+must be strings or symbols. The environment table is stored in the global
+Lua variable \fBenv\fR and can be referred to from source- and result configuration
+file (using \fBenv.variable1\R, \fBenv.variable2\fR, ...).
+
+Per-result environment variable entries can be defined with the syntax
+
+.nf
+env {
+  :
+  <resultname> = { <variable1 = "<value1>", ... }
+  :
+}
+.fi
+
+In this case the defined variables are only available in the build-script
+for this particular result. Note that \fB<resultname\fR must be a valid
+variable name. If the result has a name containing special characters
+(like "-"), use this syntax:
+
+.nf
+env {
+  :
+  ["<resultname>"] = { ... }
+  :
+}
+.fi
+
+Accessing a result-specific variable must be done using this syntax:
+
+.nf
+  env[ "<resultname>" ].<variable>
+.fi
+
+\fBenv\fR may also be invoked with a single string as argument. In
+this case the string should designate a path (relative to the project
+directory) with another environment definition file in the same syntax.
+This file will then be loaded and can add additional definitions to
+the project environment.
+
+.SH CHROOT\ CONFIGURATION
+
+The file "proj/chroot" lists the binaries
+that are copied into the \fBchroot(1)\fR
+environment before the build of a result commences.
+The chroot configuration file should have the following format:
+
+.nf
+e2chroot {
+  {
+    group = "<groupname>",
+    server = "<servername>",
+    files = {
+      "<path-to-file>",
+      ...
+    },
+  },
+  ...
+}
+.fi
+
+The group name is arbitrary and is used
+to select particular sets of chroot binaries in a result configuration.
+
+.SH SERVER\ CONFIGURATION
+
+The file "proj/servers" holds a list of abstract server names. Each
+line should contain two fields, separated by whitespace: the server
+name and the path where the server's resources are stored. A relative
+path is always treated as relative to the projects root directory.
+Empty lines and lines starting with the "#" symbol are ignored.
+
+.SH LICENCES\ CONFIGURATION
+
+The licences file (proj/licences) should have the following format:
+
+.nf
+e2licence {
+  <licencename> = {
+    server = "<servername>",
+    name = "<path-to-directory>"
+  }
+}
+.fi
+
+All licences explicitely referenced in source configuration
+shall be listed in this file.
+Each entry refers to a directory, which may contain one or
+more files that make up the licence information.
+
+The licence configuration file must follow \fBlua(1)\fR syntax.
+
+.SH SOURCE\ CONFIGURATION
+
+The "config" file for a source should have the following general
+form:
+
+.nf
+e2source {
+  <propertyname> = <value>,
+  ...
+}
+.fi
+
+If the source refers to a tarball or fixed set of files, the following
+properties should be set:
+
+.nf
+file = {
+  { server = "<servername>",
+    name = "<path-to-file>",
+    <destiny> = "contents"
+  }
+} 
+.fi
+
+<destiny> is one of \fBunpack\fR, \fBpatch\fR or \fBcopy\fR.
+The contents depends on the type of destiny.
+For \fBunpack\fR it is the single subdir contained in the tarball to unpack,
+for \fBpatch\fR it is the patch level to apply with, usually \fI1\fR,
+for \fBcopy\fR it is the destination path, relative to the source subdir.
+
+For example:
+
+.nf
+e2source {
+  file={
+    { server="upstream",
+      name="hello/1.0/hello-1.0.tar.gz",
+      unpack="hello-1.0"
+    }
+  }
+}
+.fi
+
+If the source refers to a version control repository 
+(\fBgit(7)\fR, \fBsvn(1)\fR, etc.), then
+these properties should be defined:
+
+.nf
+branch = "<branchname>"              (usually "master")
+remote = "<path-to-repository>"
+server = "<servername>"
+tag = "<tagname>"
+type = "<scmtype>"                   ("git", "svn" or "cvs")
+working = "<path-to-working-dir>"    (usually "in/<sourcename>")
+licence = "<licencename>"            (as listed in proj/licences)
+.fi
+
+If the source refers to a \fBcvs\fR repository, the following applies,
+in addition to the properties given above:
+
+.nf
+remote must not be configured
+cvsroot = "<path to cvsroot>"
+module = "<module path>"
+.fi
+
+To use cvs pserver mode the server must use "cvspserver://" transport.
+cvs login is not supported. Do cvs login before trying to access the 
+cvs server with e2.
+
+Source configuration files must follow \fBlua(1)\fR syntax.
+
+The tag field may provide a list of tags instead of a single tag.
+The last tag in the list is the current one used when building.
+The other tags may be kept for historical purpose, they are used
+to split up the source when preparing it for cargo.
+
+A config file referring to a version control repository may
+contain the field "file", which states the historical basic state
+of the source, which will be used to split up source upon preparation
+for cargo into the old files state and newer tagged patches.
+
+The licence entry value is used as key into the table
+in proj/licences.
+It is optional for a source of type \fIfiles\fR,
+but obligatory otherwise.
+
+Note that all references to a server accept the special server name "."
+(period) which refers to the project directory itself.
+E.g., the following declaration refers to a kernel configuration file
+stored locally in the project:
+
+.nf
+e2source {
+  file={
+    { server = ".",
+      name = "src/linux-config/my_config",
+      copy = ".config"
+    }
+  }
+}
+.fi
+
+Note that during development the \fItagname\fR may be replaced by \fB^\fR
+to denote the head revision of the given branch \fIbranchname\fR.
+
+.SH RESULT\ CONFIGURATION
+
+"config" files for results look similar to source configurations, but 
+use the "e2result" configuration command:
+
+.nf
+e2result {
+  <propertyname> = <value>, 
+  ...
+}
+.fi
+
+Value result properties are:
+
+.nf
+sources = { "<sourcename1>", ... }      (zero or more sources by name)
+files = { "<resultfilename1>", ... }    (i.e. "hello.tar.gz")
+chroot = { "<chroot-group1>", ... }     (defaults to all groups)
+depends = { "<dependency1>", ... }      (defaults to none)
+.fi
+
+The "sources" property specifies the archives, repositories, files or
+patches referenced by configuration entries in the "src" directory
+which are to be copied into the build environment.  Only the sources
+given in this property will be copied/extracted.
+
+The properties may omit the "{ ... }" braces, if only a single entry is
+used. Note that you can specify multiple sources for any single result.
+
+Result configuration files must follow \fBlua(1)\fR syntax.
+
+.SH CONFIGURATION\ FILE\ RESTRICTIONS
+
+Configuration files (specifically source-configurations,
+result-configurations and the project environment) are executed in a
+restricted environment: only the confguration-specific initializer
+functions (\fBe2source\fR, \fBe2result\fR and \fBenv\fR) and the Lua
+standard operations from the \fBstring\fR are available). Adding new
+definitions to the global environment is not allowed. Note that
+re-definitions are still currently possible. Hooks do not run in
+restricted mode and have full access to the e2 internals.
+
+.SH "SEE ALSO"
+.BR e2intro(7)
+.BR e2-ls-project(1)
+.BR e2.conf(5)
+
+.SH AUTHORS
+Gordon Hecker, Oskar Schirmer and Felix Winkelmann
+
+.SH COPYRIGHT
+(c)2007 emlix GmbH

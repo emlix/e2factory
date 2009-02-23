@@ -1,0 +1,269 @@
+--[[
+   e2factory, the emlix embedded build system
+
+   Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
+   Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
+   Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
+   
+   For more information have a look at http://www.e2factory.org
+
+   e2factory is a registered trademark by emlix GmbH.
+
+   This file is part of e2factory, the emlix embedded build system.
+   
+   e2factory is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+]]
+
+-- ls-project - show project information -*- Lua -*-
+
+require("e2local")
+e2lib.init()
+
+e2option.documentation = [[
+usage: e2-ls-project 
+
+show project information
+]]
+
+policy.register_commandline_options()
+e2option.flag("dot", "generate dot(1) graph")
+e2option.flag("dot-sources", "generate dot(1) grapth with sources included")
+e2option.flag("swap", "swap arrow directions")
+
+local opts = e2option.parse(arg)
+
+local info, re = e2tool.collect_project_info()
+if not info then
+  e2lib.abort(re)
+end
+local rc, re = e2tool.check_project_info(info)
+if not rc then
+  e2lib.abort(re)
+end
+
+--e2lib.log_invocation(info, arg)
+e2hook.run_hook(info, "tool-start", nil, "e2-ls-project")
+
+local function pempty(s1, s2, s3)
+	print(string.format("   %s  %s  %s", s1, s2, s3))
+end
+local function p0(s1, s2, v)
+	print(string.format("%s", v))
+end
+local function p1(s1, s2, v)
+	print(string.format("   o--%s", v))
+end
+local function p2(s1, s2, v)
+	print(string.format("   %s  o--%s", s1, v))
+end
+local function p3(s1, s2, k, v)
+	if v then
+		-- remove leading spaces, that allows easier string
+		-- append code below, where collecting multiple items
+		while v:sub(1,1) == " " do
+			
+			v = v:sub(2)
+		end
+		print(string.format("   %s  %s  o--%-10s = %s", s1, s2, k, v))
+	else
+		print(string.format("   %s  %s  o--%s", s1, s2, k))
+	end
+end
+
+local function p3t(s1, s2, k, t)
+	local col = tonumber(e2lib.osenv["COLUMNS"])
+	local header1 = string.format("   %s  %s  o--%-10s =", s1, s2, k)
+	local header2 = string.format("   %s  %s     %-10s  ", s1, s2, "")
+	local header = header1
+	local l = nil
+	local i = 0
+	for _,v in ipairs(t) do
+		i = i + 1
+		if l then
+			if (l:len() + v:len() + 1) > col then
+				print(l)
+				l = nil
+			end
+		end
+		if not l then
+			l = string.format("%s %s", header, v)
+		else
+			l = string.format("%s %s", l, v)
+		end
+		header = header2
+	end
+	if l then
+		print(l)
+	end
+end
+
+if opts.dot or opts["dot-sources"] then
+  local arrow = "->"
+  print("digraph \"" .. info.name .. "\" {")
+  for _,r in ipairs(info.results_sorted) do
+    local res = info.results[r]
+    local deps = e2tool.dlist(info, r)
+    if #deps > 0 then
+      for _, dep in pairs(deps) do
+        if opts.swap then
+          print(string.format("  \"%s\" %s \"%s\"", dep, arrow, r))
+        else
+          print(string.format("  \"%s\" %s \"%s\"", r, arrow, dep))
+        end
+      end
+    else
+      print(string.format("  \"%s\"", r))
+    end
+    for _, src in ipairs(res.sources) do
+      if opts["dot-sources"] then
+        if opts.swap then
+          print(string.format("  \"%s-src\" %s \"%s\"", src, arrow, r))
+        else
+          print(string.format("  \"%s\" %s \"%s-src\"", r, arrow, src))
+        end
+      end
+    end
+  end
+  for _, s in ipairs(info.sources_sorted) do
+    if opts["dot-sources"] then
+      print(string.format("  \"%s-src\" [label=\"%s\", shape=box]", s, s))
+    end
+  end
+  print("}")
+  e2lib.finish()
+  e2hook.run_hook(info, "tool-finish", nil, "e2-ls-project")
+end
+
+--------------- project name
+local s1 = "|"
+local s2 = "|"
+p0(s1, s2, info.name)
+
+--------------- servers
+local s1 = "|"
+local s2 = "|"
+p1(s1, s2, "servers")
+local len = #info.servers_sorted
+for _,s in ipairs(info.servers_sorted) do
+  local srv = info.servers[s]
+  len = len - 1
+  if len > 0 then
+    s2 = "|"
+  else
+    s2 = " "
+  end
+  p2(s1, s2, s)
+  for k,v in pairs(srv) do
+    if k ~= "name" then
+      p3(s1, s2, k, tostring(v))
+    end
+  end
+end
+print("   |")
+
+--------------------- sources
+local s1 = "|"
+local s2 = " "
+p1(s1, s2, "src")
+local len = #info.sources_sorted
+for _,s in ipairs(info.sources_sorted) do
+  local src = info.sources[s]
+  len = len - 1
+  if len == 0 then
+    s2 = " "
+  else
+    s2 = "|"
+  end
+  p2(s1, s2, src.name)
+  local t, re = scm.display(info, src.name)
+  if not t then
+    e2lib.abort(re)
+  end
+  for _,line in pairs(t) do
+    p3(s1, s2, line)
+  end
+end
+
+--------------------- results
+s1 = "|"
+s2 = " "
+s3 = " "
+pempty(s1, s2, s3)
+s2 = " "
+p1(s1, s2, "res")
+local len = #info.results_sorted
+for _,r in ipairs(info.results_sorted) do
+  local res = info.results[r]
+  p2(s1, s2, r)
+  len = len - 1
+  if len == 0 then
+    s2 = " "
+  else
+    s2 = "|"
+  end
+  p3t(s1, s2, "sources", res.sources)
+  p3t(s1, s2, "depends", res.depends)
+  if res.collect_project then
+    p3(s1, s2, "collect_project", "enabled")
+    p3(s1, s2, "collect_project_default_result",
+					res.collect_project_default_result)
+  end
+end
+
+--------------------- licences
+s1 = "|"
+s2 = " "
+s3 = " "
+pempty(s1, s2, s3)
+s2 = "|"
+p1(s1, s2, "licences")
+llen = #info.licences_sorted
+for _,l in pairs(info.licences_sorted) do
+  local lic = info.licences[l]
+  llen = llen - 1
+  if llen == 0 then
+    s2 = " "
+  end
+  p2(s1, s2, l)
+  p3(s1, s2, "server", lic.server)
+  for _,file in ipairs(lic.files) do
+    p3(s1, s2, "file", file)
+  end
+end
+
+--------------------- chroot
+local s1 = "|"
+local s2 = " "
+local s3 = " "
+pempty(s1, s2, s3)
+p1(s1, s2, "chroot groups")
+local s1 = " "
+local s2 = "|"
+local len = #info.chroot.groups_sorted
+for _,g in ipairs(info.chroot.groups_sorted) do
+	local grp = info.chroot.groups_byname[g]
+	len = len - 1
+	if len == 0 then
+		s2 = " "
+	end
+	p2(s1, s2, grp.name, grp.name)
+	p3(s1, s2, "server", grp.server)
+	p3t(s1, s2, "files", grp.files)
+	if grp.groupid then
+		p3(s1, s2, "groupid", grp.groupid)
+	end
+end
+
+e2hook.run_hook(info, "tool-finish", nil, "e2-ls-project")
+e2lib.finish()

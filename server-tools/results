@@ -1,0 +1,15 @@
+#!/bin/sh
+# print a list of commands that fix permissions on the result server.
+set -e
+if [ -z "$RESULTS" ] ; then
+  RESULTS=/mnt/e2data/results
+fi
+if [ ! -f $RESULTS/.e2-results ] ; then
+  echo >&2 "Error: $RESULTS does not point to the upstream server"
+  exit 1
+fi
+find $RESULTS -type d -not -group 203  -exec echo chgrp 203 {} \;
+find $RESULTS -type d -not -perm  2775 -exec echo chmod 2775 {} \;
+find $RESULTS -type f -not -group 203  -exec echo chgrp 203 {} \;
+find $RESULTS -type f -not -perm  0664 -exec echo chmod 0664 {} \;
+exit 0

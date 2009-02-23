@@ -1,0 +1,26 @@
+# e2factory build script template
+#
+# The build system provides the following variables for use in build scripts:
+# - E2_TMPDIR       pointing to a temporary directory with a directory 
+#                   structure
+# - E2_RESULT       the name of the result currently building
+# - E2_BUILD_NUMBER the build number, 0 by default
+#
+# Additional variables can be provided in init files.
+# Variables are not exported unless the init files do.
+#
+# The following directory structure is available, relative to TMPDIR
+#
+# ./build/<sourcename>	sources are located here
+# ./root		shall be used as the destination directory when
+# 			installing software for packaging
+# ./env			files containing environment variables are located here
+# ./init		init scripts are located here
+# ./script		this directory holds the build driver and the build 
+# 			script
+# ./in			This directory is available but unused
+# ./dep/<dependency>	These directories hold result files from dependency
+# 			results
+# ./out			Files that are left here are packaged into the result
+#			finally.
+#

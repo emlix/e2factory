@@ -1,0 +1,15 @@
+#!/bin/sh
+# print a list of commands that fix permissions on the upstream server.
+set -e
+if [ -z "$UPSTREAM" ] ; then
+  UPSTREAM=/mnt/e2data/upstream
+fi
+if [ ! -f $UPSTREAM/.e2-upstream ] ; then
+  echo >&2 "Error: $UPSTREAM does not point to the upstream server"
+  exit 1
+fi
+find $UPSTREAM -type d -not -group 203  -exec echo chgrp 203 {} \;
+find $UPSTREAM -type d -not -perm  2775 -exec echo chmod 2775 {} \;
+find $UPSTREAM -type f -not -group 203  -exec echo chgrp 203 {} \;
+find $UPSTREAM -type f -not -perm  0444 -exec echo chmod 0444 {} \;
+exit 0

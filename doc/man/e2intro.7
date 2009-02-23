@@ -1,0 +1,160 @@
+.\" General man page for e2
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2intro 7 "Aug 3, 2007" "0.1"
+
+.SH NAME
+e2 \- a system for automated and reproducible builds
+
+.SH DESCRIPTION
+\fBe2\fR is a system for building software from sources in a chroot(1)
+environment. The results of a build are fully reproducible and care is
+taken to avoid re-builds unless they would influence the outcome.
+Dependencies among build components are tracked and automatically
+handled by e2.
+
+.SH TERMINOLOGY
+
+.TP
+.BR result
+Designates something that is the product of executing a "build-script"
+with a given set of input "sources". Usually a set of binaries or a
+root file system.
+
+.TP
+.BR source
+Something that is the input to a build process. Usually this means a set
+of source files.
+.TP
+.BR project
+A "project" is a collection of sources, results and a description of their
+interdependencies. When the documentation refers to a \fBcurrent\fR
+project, then the project tree in which a particular e2 command is
+executed is meant.
+.TP
+.BR mode
+A mode in which a result is built, either "tag", "head" or "working-copy".
+.TP
+.BR backing store
+One or more locations that are used to store sources and build results,
+usually shared by several developers.
+
+.SH TOOLS
+e2 is used from the command line and provides the following tools to
+configure a project and run the build process:
+
+.SH GLOBAL TOOLS
+.TP
+.BR e2
+Call local tools.
+.TP
+.BR e2-create-project
+Create a new project in the backing store.
+.TP
+.BR e2-fetch-project
+Retrieves a project from the backing store.
+.TP
+.BR e2-install-e2
+Install the local e2 tools into a project environment.
+.TP
+.BR e2-su-*
+Provide root privileges for some actions.
+
+.SH LOCAL TOOLS
+.TP
+.BR e2-build
+Depending on options, builds a particular result or all,
+either using the state of the sources as stored in the
+current working copy, or the appropriate revision from the
+corresponding repository, when the source is located in a version controlled
+repository.
+.TP
+.BR e2-buildid
+Computes the build id for a given result, in a given build mode.
+.TP
+.BR e2-dlist
+Shows a sorted list of the dependencies for a given result.
+.TP 
+.BR e2-dsort
+Shows the sorted list of results in the order in which they must be built
+to satisfy interdependencies among each result.
+.TP
+.BR e2-fetch-sources
+Retrieves the sources for the current project from the backing store.
+.TP
+.BR e2-ls-project
+Displays a schematic view of the current project and shows the project build status.
+.TP
+.BR e2-use-source
+Add a source to the current project.
+.TP
+.BR e2-new-source
+Create a new source in the backing store.
+.TP
+.BR e2-playground
+Enter chroot environment previously created via
+\fBe2-build\ \-\-playground\fR.
+
+.TP
+All tools support the following common set of options:
+
+.TP
+.BR \-\-help
+Show usage information.
+.TP
+.BR \-\-version
+Show e2 version number and exit.
+.TP
+.BR \-\-quiet
+Disable all output to console.
+.TP
+.BR \-\-verbose
+Show information about what the tool is currently doing.
+.TP
+.BR \-\-debug
+Show complete debug information giving as much output as possible,
+as long as it concerns the current project.
+.TP
+.BR \-\-tooldebug
+Show complete debug information, including tool internal information.
+.TP
+.BR \-\-e2\-config
+Specify a e2 config file
+
+.SH ENVIRONMENT
+.TP
+.BR E2_CONFIG
+use a custom e2 config file
+.TP
+.BR E2_SSH
+specify a tool to use instead of \fBssh\fR(1).
+.TP
+.BR E2_SSH_OPTIONS
+set ssh options when using the \fBe2ssh\fR(1) \fBssh\fR wrapper.
+
+.SH "SEE ALSO"
+.BR e2workflow(7)
+.BR e2-build(1)
+.BR e2-buildid(1)
+.BR e2-cf(1)
+.BR e2-dlist(1)
+.BR e2-dsort(1)
+.BR e2-fetch-sources(1)
+.BR e2-ls-project(1)
+.BR e2-use-source(1)
+.BR e2-fetch-project(1)
+.BR e2-new-source(1)
+.BR e2-create-project(1)
+.BR e2config(5)
+.BR e2hooks(7)
+.BR e2-sync-results(1)
+.BR e2global(1)
+.BR e2-install-e2(1)
+.BR e2ssh(1)
+
+.SH AUTHORS
+Gordon Hecker, Oskar Schirmer and Felix Winkelmann
+
+.SH COPYRIGHT
+(c)2007 emlix GmbH

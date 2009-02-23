@@ -1,0 +1,103 @@
+.\" Man page for e2workflow
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2workflow 7 "Aug 2, 2007" "0.1"
+
+.SH NAME
+e2workflow \- common use cases and workflows for the e2 build system
+
+.SH "CREATING A NEW PROJECT"
+e2-create-project
+
+.SH "RETRIEVING A PROJECT THAT ALREADY EXISTS"
+e2-fetch-project
+.br
+e2-fetch-sources
+
+.SH "TAKING A LOOK"
+e2-ls-project
+.br
+e2-dlist
+.br
+e2-dsort
+
+.SH "ADDING NEW PACKAGES TO A PROJECT"
+e2-new-source
+.br
+e2-use-source
+
+.SH "BUILDING RESULTS"
+e2-build
+
+.SH "THE PLAYGROUND"
+e2-playground
+
+.SH "SOURCE REPOSITORY MAINTENANCE"
+git/svn
+
+.SH "REMOVING RESULTS OR SOURCES"
+nn
+
+.SH "WRITING HOOKS"
+nn
+
+.SH "USING EXTERNAL REPOSITORIES"
+All data used by the e2 tool is accessed via file system,
+as it is supposed to reside local.
+Where non local data is accessible via \fBnfs\fR(5), it
+can be used, though.
+
+However, an external source repository which is not accessible
+via nfs, is not available to e2 directly.
+It is up to the project coordination to set up a configuration
+where data from an external sources master repository
+is pulled explicitely to a local
+copy of the repository, which then may be used by e2.
+
+.SH "THE RELEASE"
+When software is developed and tested, a release needs to be built.
+This is done with the command \fBe2-build --release\fR.
+However, prior to building the release, all sources and the project
+information itself need to be tagged, to ensure reproducibility
+at a later time. Putting tags onto sources and the project is not
+a task of \fBe2\fR, but is in the scope of the source code management
+in use: First, put tags on all sources, that are kept in repositories.
+The tag names need not to be related to the release name, you may use
+different tag names for the different sources. Then, enter the tag names
+chosen into the appropriate source configuration files: Where the field
+\fBtag\fR is a list of tags, make sure the new tag will be the last in
+the list of tags. When done, commit and tag the project information
+itself. Here it is good practice to choose a tag name directly
+related to the release.
+
+To rebuild a release, that had been build a while ago, check out
+the project information: Fetch the version with the release tag on it.
+Now, you are ready to rebuild the tagged release.
+
+.SH "PROVIDING THE SOURCES"
+With the release done, the sources shall be provided and shipped, too.
+To do so, call \fBe2-prepare-cargo <new-path>\fR to generate a copy
+of the project with no external references left, i.e. no source code
+management and no upstream server references.
+All files needed will be placed inside that new project directory itself.
+Unneeded result and source parts will be dropped,
+unless you give the \fB--all\fR option.
+For each repository based source, where instead of a single tag
+a list of tags is given in the corresponding config file,
+the source provided thru \fBe2-prepare-cargo\fR is split up into
+a basic tar archive and a set of patches to reflect the steps of
+development set with the tags.
+Furthermore, where in a repository based source is given files
+information as with sources of type \fIfiles\fB, this is used
+as basic data set, all tagged versions are provided as patches
+to be applied upon it.
+
+.SH "SEE ALSO"
+.BR e2intro(7)
+
+.SH AUTHORS
+Gordon Hecker, Oskar Schirmer and Felix Winkelmann
+
+.SH COPYRIGHT
+(c)2007 emlix GmbH

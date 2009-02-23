@@ -1,0 +1,39 @@
+Environment
+-----------
+
+
+*e2factory* allows setting variables that are valid in the configuration as well
+as in the build processes.
+
+Variables can be published across the whole project or local to a set of
+results. In the first case the variables are available in the whole 
+configuration and in all build processes. They influence all buildids.
+
+Publishing variables to a specific set of results will make the variables
+available only in the result configuration for those results and in the
+corresponding build process.
+
+To create a environment table in the configuration call the env function
+with a table argument. The table must have the following structure:
+
+*   any key with a string value assigned is directly used as an environment
+    variable in the build process
+*   if a key is assigned a table, the key is treated as a result name.
+    The table must hold keys with string values assigned. These key-value
+    pairs are usable in that results configuration and build process.
+
+Calling the env function with a string argument takes that string as a 
+env file to load in addition to the current configuration file. The 
+filename is relative to the project root.
+
+Examples:
+
+    env {
+        FOO = "bar",
+        ["busybox"] = { BUSYBOX_VERSION = "1.0" }
+    }
+
+    env "proj/more.env"
+
+prev [buildid](buildid.html)
+next [project](project.html)

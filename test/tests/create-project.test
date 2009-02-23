@@ -1,0 +1,2 @@
+source ../tests/init.lib
+test -d work/projects/e2testsuite/tp

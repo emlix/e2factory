@@ -1,0 +1,57 @@
+.\" Man page for <tool>
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH <tool> 1 "Aug 15, 2008" "2.2"
+
+.SH NAME
+e2.conf - global configuration
+
+.SH DESCRIPTION
+\fBe2.conf\fR is the global configuration file holding tool and server
+configurations.
+
+.SH EXAMPLE
+.nf
+config {
+	tools = {
+		which = { name="which" },
+		curl = { name="curl" },
+		ssh = { name="ssh" },
+		scp = { name="scp" },
+		cvs = { name="cvs", flags="" },
+	},
+	servers = {
+		upstream = {
+			url = "ssh://e2data/data/e2data/upstream",
+			cachable = true,
+			cache = true,
+		},
+		projects = {
+			url = "ssh://e2data/mnt/e2data/projects",
+			cachable = false,
+			cache = false,
+		},
+		chroot = {
+			url = "ssh://e2data/mnt/e2data/results",
+			cachable = true,
+			cache = true,
+		},
+		results = {
+			url = "ssh://e2data/data/e2data/results",
+			cachable = true,
+			cache = true,
+		},
+	},
+}
+.nf
+
+.SH "SEE ALSO"
+.BR e2config(5)
+.BR e2intro (7)
+
+.SH AUTHORS
+Gordon Hecker, Oskar Schirmer and Felix Winkelmann
+
+.SH COPYRIGHT
+(c)2008 emlix GmbH

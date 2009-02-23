@@ -1,0 +1,40 @@
+Error handling
+ * Functions should always return:
+   * a boolean value and an error object on failure.
+   * or one or more values, or nil as the first value and an error object on
+     failure.
+ * when an error occurs, an error object must be created and returned
+ * error objects must be handled by the caller by
+   * passing them up
+   * ignoring them (that usually requires a comment)
+   * nesting them into another error object from the current layer
+ * errors shall not be handled by calling e2lib.abort().
+ * calling e2lib.bomb() is allowed when signalling a bug in the tool.
+   E.g. when checking function call parameters, which should never fail.
+   We need the call stack in those cases to fix that bug.
+ * the behaviour if e2lib.bomb() may be different when delivering e2factory
+   to customers. (As they should not see the internals.)
+ * Example:
+   -- the error object from the current layer is usually named 'e'.
+   e = new_error("error copying file for")
+   -- a boolean return value is usually called 'rc'.
+   -- an error object return value is usually called 're'.
+   rc, re = f(...)
+   if not rc then
+     -- nest the error object from the f() call into our own one and return
+     return false, e:cat(re)
+   end
+
+Avoid conditional Code - minimize Code paths
+ * iterate over an empty list instead of checking for nil
+ * apply a default (e.g. emtpy list instead of nil) as early as possible
+   where values are optional when building up data structures
+
+Committing
+ * follow the one-fix-per-commit and one-commit-per-fix policy
+ * that gives us readable commits
+ * do not merge, but rebase, i.e. do not use git-pull to merge your
+   stuff to the upstream branch, but rebase your commits onto the
+   upstream branch.
+ * No merge commits on upstream.
+

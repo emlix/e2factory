@@ -1,0 +1,7 @@
+in/*
+out/*
+log/*
+.e2/bin
+.e2/e2
+.e2/lib
+.e2/project-location

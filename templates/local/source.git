@@ -1,0 +1,21 @@
+-- -*- Lua -*-
+
+e2source {
+	-- the source name
+	-- (is derived from the config file path if only one source is 
+	-- specified per file)
+	name = "name",
+	-- the source type
+	type = "git",
+	-- a list of licences from proj/licences
+	licences = { },
+	-- git specific attributes
+	-- server name
+	server = "proj-storage",
+	-- the repository location relative to the server
+	location = "git/<template>.git",
+	-- git branch name
+	branch = "master",
+	-- git tag names, the first one is used for building
+	tag = "<template>",
+}

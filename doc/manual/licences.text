@@ -1,0 +1,28 @@
+Licences
+--------
+
+
+*e2factory* allows configuring licences that may can be referenced in source
+configurations later on.
+
+To configure licences call the e2licence function with a table argument.
+The table must specify keys with table values. The keys are used as 
+the licence identifier, that can be referenced in source configurations.
+The table assigns files to the licence:
+
+*   server string: speficy the server name
+*   files table: a list of files located on that server
+
+Example:
+
+    e2licence {
+        gpl_2 = {
+            server = "upstream",
+            files = {
+                "licence/gpl-2/COPYING",
+            }
+        }
+    }
+
+prev [chroot](chroot.html)
+next [sources](sources.html)

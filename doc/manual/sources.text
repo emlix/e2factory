@@ -1,0 +1,104 @@
+Sources
+-------
+
+
+To create a source from the configuration call the e2source function,
+with a table argument. The table must use the following keys:
+
+generic configuration:
+
+*   type: string
+*   server: string
+*   licences: (old: licence) table of strings
+
+files source (type = files, default)
+
+*   file: file configuration table
+ *   server string: server name (optional, inherited from top-level)
+ *   licences table of strings (optional, inherited from top-level)
+ *   location (old: name) string: file location
+ *   unpack string: the directory included in the source package
+ *   patch string: strip n directories when
+ *   copy string: the directory to copy the file into, relative to 
+
+Example:
+
+    e2source {
+        type = "files",
+        server = "upstream",
+        licences = { "gpl2" },
+        file = {
+          {
+            location = "z/zlib/1.2.3/zlib-1.2.3.tar.gz",
+            unpack = "zlib-1.2.3",
+          },
+        }
+    }    
+
+cvs source (type = cvs)
+
+*   server
+*   cvsroot
+*   module
+*   working
+*   branch
+*   tag
+
+Example:
+
+    e2source {
+        type = "cvs",
+        licence = "gpl2",
+        server = "cvs-server",
+        cvsroot = ".",
+        module = "hello",
+        branch = "HEAD",
+        tag = "hello-1.0",
+    }
+
+svn source (type = svn)
+
+*   server
+*   location
+*   branch
+*   tag
+*   workingcopy_subdir
+
+Example:
+
+    e2source {
+        type = "svn",
+        licence = "gpl2",
+        server = "svn-server",
+        location = "svn-repo",
+        branch = "trunk",
+        --branch = "branches/hello-1.0",
+        tag = "tags/hello-1.0",
+        --workingcopy_subdir = "trunk",  -- defaults to the branch directory
+    }
+
+git source (type = git)
+
+*   server
+*   remote (rename to: location)
+*   working
+*   branch
+*   tag table: list of tags, the last one is used for building
+
+Example:
+
+    e2source {
+        type = "git",
+        licence = "gpl2",
+        server = "git-server",
+        remote = "git/h/hello.git",
+        branch = "master",
+        tag = "hello-1.0",
+    }
+
+subversion source (type = svn)
+
+*   ...
+
+prev [licences](licences.html)
+next [results](results.html)

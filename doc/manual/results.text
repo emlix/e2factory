@@ -1,0 +1,65 @@
+Results
+-------
+
+
+To create a result in the configuration call the e2result function
+with a table argument. Usually a source configures one or more of the 
+following keys:
+
+*   sources list of sources
+*   chroot list of chroot groups
+*   depends list of dependencies
+
+To use the `collect_project` feature the following keys must be used
+in addition:
+
+*   `collect_project` boolean: enable the collect_project flag for this result
+*   `collect_project_default_result` string: name of the result that should
+    be reproducable
+
+In addition creating a `build-script` is required. The build script must
+be stored in `./res/<name>/build-script` and runs in the build environment.
+
+The `collect_project` flag provides a tree holding everything to rebuild
+the result configured in `collect_project_default_result` in $TMPDIR/project.
+The user must write a build-script to package that tree to a file in 
+$TMPDIR/out
+
+All configuration options can be combined. And even a configuration with 
+no keys is valid: The `base` chroot group is used automatically, and the 
+`build-script` runs and may create a result.
+
+Example configuration:
+
+    e2result {
+        chroot = {
+            "autotools",
+        },
+        sources = {
+            "hello",
+            "hello-config",
+        },
+        depends = {
+            "toolchain",
+        },
+    }
+
+Example (using the `collect_project` flag)
+
+    e2result {
+        collect_project = true,
+        collect_project_default_result = "bsp",
+        sources = { },
+        depends = { },
+        
+    }
+
+Example build script:
+
+    DESTDIR=$TMPDIR/root
+    make hello
+    make DESTDIR=$DESTDIR install
+    tar -C $DESTDIR -czf $TMPDIR/out/$RESULT.tar.gz .
+
+prev [sources](sources.html)
+next [release](release.html)

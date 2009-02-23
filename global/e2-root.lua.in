@@ -1,0 +1,192 @@
+--[[
+   e2factory, the emlix embedded build system
+
+   Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
+   Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
+   Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
+   
+   For more information have a look at http://www.e2factory.org
+
+   e2factory is a registered trademark by emlix GmbH.
+
+   This file is part of e2factory, the emlix embedded build system.
+   
+   e2factory is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+]]
+
+package.path  = "@LIBDIR@/?.lc;@LIBDIR@/?.lua"
+package.cpath = "@LIBDIR@/?.so"
+
+env_tool = "@ENV_TOOL@"
+chroot_tool = "@CHROOT_TOOL@"
+tar_tool = "@TAR_TOOL@"
+chown_tool = "@CHOWN_TOOL@"
+rm_tool = "@RM_TOOL@"
+
+compat_2_1 = true   -- be compatible with e2-2.1?
+
+function assert_chroot_environment(path)
+  fname = string.format("%s/emlix-chroot", path)
+  local f = io.open(fname, "r")
+  if not f then
+    print("not a chroot environment")
+    os.exit(99)
+  end
+  f:close()
+  return true
+end
+
+-- e2-root <command> ...
+if arg[1] == "chroot_2_2" then
+  -- 2_2_chroot <path> <command>
+  local path = arg[2]
+  local command = arg[3]
+  if (not path) or (not command) or #arg ~= 3 then
+    print("wrong arguments")
+    os.exit(99)
+  end
+  assert_chroot_environment(path)
+  local cmd = string.format("%s -i %s '%s' %s", env_tool, chroot_tool, path, 
+								command)
+  local rc = os.execute(cmd)
+  os.exit(rc/256)
+elseif arg[1] == "extract_tar_2_2" then
+  -- extract_tar_2_2 <path> <tartype> <file>
+  local path = arg[2]
+  local tartype = arg[3]
+  local file = arg[4]
+  if (not path) or (not tartype) or (not file) or #arg ~= 4 then
+    print("wrong arguments")
+    os.exit(99)
+  end
+  assert_chroot_environment(path)
+  if tartype == "tar.gz" then
+    tarflags = "-z"
+  elseif tartype == "tar.bz2" then
+    tarflags = "-j"
+  elseif tartype == "tar" then
+    tarflags = ""
+  end
+  local cmd =  string.format("%s -i %s %s -C '%s' -xf '%s'", 
+			env_tool, tar_tool, tarflags, path, file)
+  local rc = os.execute(cmd)
+  os.exit(rc/256)
+elseif arg[1] == "set_permissions_2_2" then
+  -- set_permissions_2_2 <path>
+  local path = arg[2]
+  if (not path) then
+    print("wrong arguments")
+    os.exit(99)
+  end
+  assert_chroot_environment(path)
+  local cmd =  string.format("%s -i %s root:root '%s'", env_tool, chown_tool, 
+									path)
+  local rc = os.execute(cmd)
+  os.exit(rc/256)
+elseif arg[1] == "remove_chroot_2_2" then
+  -- remove_chroot_2_2 <path>
+  local path = arg[2]
+  if (not path) then
+    print("wrong arguments")
+    os.exit(99)
+  end
+  assert_chroot_environment(path)
+  local cmd = string.format("%s -i %s -fr '%s'", env_tool, rm_tool, path)
+  local rc = os.execute(cmd)
+  os.exit(rc/256)
+end
+
+-- e2-root <command> <tmpdir> <project> <result> <...>
+
+if not compat_2_1 then
+  print("unknown command")
+  os.exit(3)
+end
+
+if #arg < 4 then
+  print("too few arguments")
+  os.exit(3)
+end
+
+local call = {}
+call.username = os.getenv("USER")
+if not call.username then
+	print("can't get USER environment variable")
+	os.exit(3)
+end
+call.cmd = arg[1]
+call.tmpdir = arg[2] .. "/e2build"
+call.proj = arg[3]
+call.result = arg[4]
+call.chroot_path = call.tmpdir .. "/" .. call.username .. "/" .. 
+                       call.proj .. "/" .. call.result .. "/chroot"
+
+local rc = 1
+if call.cmd == "setup-chroot" then
+  rc = os.execute("mkdir -p " .. call.chroot_path .. 
+               " && touch \"" .. call.chroot_path .. "/emlix-chroot\"")
+  os.exit(rc/256)
+
+elseif call.cmd == "extract-tar" then
+  call.file = arg[5]
+  local opts = "-xzf"
+  if string.match(call.file, ".bz2$") then
+    opts = "-xjf"
+  elseif string.match(call.file, ".tar$") then
+    opts = "-xf"
+  end
+  rc = os.execute("tar -C \"" .. call.chroot_path .. 
+    "\" " .. opts .. " \"" .. call.file .. "\"")
+  os.exit(rc/256)
+
+elseif call.cmd == "prepare" then
+  rc = os.execute("PATH=/usr/sbin:/sbin:$PATH " .. 
+             "T=\"/tmp/e2\" " ..
+             "r=\"" .. call.result .. "\" " ..
+             "chroot " .. call.chroot_path .. " " ..
+             "/bin/bash -e -x \"/tmp/e2/script/e2-runbuild-unpack-source\"")
+  os.exit(rc/256)
+
+elseif call.cmd == "runbuild" then
+  rc = os.execute("PATH=/usr/sbin:/sbin:$PATH " .. 
+             "T=\"/tmp/e2\" " ..
+             "r=\"" .. call.result .. "\" " ..
+             "chroot " .. call.chroot_path .. " " ..
+             "/bin/bash -e -x \"/tmp/e2/script/e2-runbuild-build\"")
+  os.exit(rc/256)
+
+elseif call.cmd == "enter" then
+  local cmd = arg[5]
+  if cmd then
+    command = string.format(" -c \"%s\"", cmd)
+  else
+    command = ""
+  end
+  rc = os.execute("PATH=/usr/sbin:/sbin:$PATH " .. 
+             "T=\"/tmp/e2\" " ..
+             "r=\"" .. call.result .. "\" " ..
+             "chroot " .. call.chroot_path .. " " ..
+             "/bin/bash --rcfile \"/tmp/e2/script/e2-runbuildrc\"" ..
+	     command)
+  os.exit(rc/256)
+
+elseif call.cmd == "rm-chroot" then
+  rc = os.execute("rm -fr \"" .. call.chroot_path .. "\"")
+  os.exit(rc/256)
+
+end
+
+print("unknown command")
+os.exit(3)
+

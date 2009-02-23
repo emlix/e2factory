@@ -1,0 +1,5 @@
+#!/bin/bash
+# Help finding tools used by the root code by enhancing the standard search
+# path. This will do in almost all cases.
+PATH="/sbin:/usr/sbin:/bin:/usr/bin:$PATH" which "$1" && exit 0
+echo >&2 "missing Tool: $1"

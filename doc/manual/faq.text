@@ -1,0 +1,17 @@
+FAQ
+-----------------------------
+
+-----
+Q: e2-fetch-project does not work with e2-2.2.x. Why?
+
+A: The syntax changed. Call e2-fetch-project --help
+
+-----
+Q: Tool x does no longer work with e2-2.2.x
+
+A: The tool has disappeared, its syntax changed or the use-case is
+   no longer supported. Use the --help flag.
+
+-----
+prev [migration](migration.html)
+next [manual](manual.html)

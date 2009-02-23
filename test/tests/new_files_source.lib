@@ -1,0 +1,8 @@
+pushd work/tp
+mkdir foo
+echo foo > foo/foo.txt
+tar -czf foo.tar.gz foo
+sha1sum foo.tar.gz > CHECKSUM
+e2-new-source --files --vall \
+	upstream:f/foo/1.0 file://$PWD/foo.tar.gz file://$PWD/CHECKSUM
+popd

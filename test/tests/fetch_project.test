@@ -1,0 +1,3 @@
+source ../tests/init.lib
+source ../tests/fetch.lib
+test -d work/tp

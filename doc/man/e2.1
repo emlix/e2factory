@@ -1,0 +1,48 @@
+.\" Man page for e2
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2 1 "Aug 2, 2007" "0.1"
+
+.SH NAME
+e2 \- wrapper script for e2 build tools
+
+.SH SYNOPSIS
+e2 OPTION ...
+.br
+e2 COMMAND ARGUMENT ...
+
+.SH DESCRIPTION
+\fBe2\fR is a wrapper script for invoking \fBe2\fR commands. Any
+\fBe2\fR commands called will be redirected either to the
+project-local or the global installation, depending on whether the
+invocation took place inside or outside a project tree.
+
+.SH RETURN VALUE
+Depends on invoked subtool or 0 if an unknown command was given.
+
+.SH OPTIONS
+.TP
+.BR \-\-help
+Show usage information.
+.TP
+.BR \-\-version
+Show version number of e2.
+.TP
+.BR \-\-prefix
+Print installation prefix and exit.
+
+.P
+For further global options, see \fBe2intro\fR(7).
+
+.SH BUGS
+Doubtless there are many.
+
+.SH "SEE ALSO"
+.BR e2intro(7)
+
+.SH AUTHORS
+Gordon Hecker, Oskar Schirmer and Felix Winkelmann
+
+.SH COPYRIGHT
+(c)2007 emlix GmbH

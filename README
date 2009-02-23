@@ -1,0 +1,14 @@
+README for e2factory
+====================
+
+
+e2factory is a system for building software in a chroot(1)
+environment. The results of the build are fully reproducible and care
+is taken to avoid re-builds unless dependencies have changed.
+
+See INSTALL for installation instructions.
+
+After installation you can read the manual pages for e2factory,
+possibly starting with
+
+  man e2intro

@@ -1,0 +1,62 @@
+--[[
+e2factory, the emlix embedded build system
+
+/etc/e2/e2.conf sample configuration file
+]]
+config {
+	site = {
+		e2_server = "projects",
+		e2_location = "e2factory.git",
+		e2_branch = "e2-2.3",
+		e2_tag = "e2-2.3.0pre1",
+	},
+	tools = {
+		cvs = { name="cvs", flags="-z9" },
+		ssh = { name="ssh", flags="-o BatchMode=true" },
+		scp = { name="scp", flags="-o BatchMode=true" },
+	},
+	cache = {
+		-- replacements:
+		-- %u: username
+		-- %l: project-location
+		-- to keep the projects independent use
+		--path = "/var/tmp/e2cache/%u/%l",
+		-- to maintain one cache for all projects use
+		path = "/var/tmp/e2cache-%u",
+	},
+	servers = {
+		upstream = {
+			url = "file://@LOCALSTATEDIR@/upstream",
+			cachable = true,
+			cache = true,
+			push_permissions = "ug+rwX,o-rwX",
+		},
+		projects = {
+			url = "file://@LOCALSTATEDIR@/projects",
+			cachable = false,
+			-- push_permissions works only with rsync+ssh.
+			push_permissions = "ug+rwX,o-rwX",
+		},
+		chroot = {
+			url = "file://@LOCALSTATEDIR@/chroot",
+			cachable = true,
+			cache = true,
+		},
+		results = {
+			url = "file://@LOCALSTATEDIR@/results",
+			cachable = true,
+			cache = true,
+			writeback = true,
+			-- push_permissions works only with rsync+ssh.
+			push_permissions = "u=rwX,go-rwX",
+		},
+		releases = {
+			url="file://@LOCALSTATEDIR@/releases",
+			cacheable = true,
+			cache = true,
+			writeback = true,
+			-- push_permissions works only with rsync+ssh.
+			push_permissions = "ug+rwX,o-rwX",
+		},
+	},
+}

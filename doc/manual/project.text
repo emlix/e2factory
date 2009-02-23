@@ -1,0 +1,32 @@
+Project
+-------
+
+
+*e2factory* needs some configuration information to run, that is collected in the
+project configuration.
+
+To setup the project configuration call the e2project function with a 
+table argument.
+
+The table must specify the following keys:
+
+*   release_id string: release identifier
+*   name string: project name
+*   default_results table: list of results to build by default
+
+The table may specify the following additional keys:
+
+*   chroot\_arch string: architecture to use when running the build process
+    x86\_64 or x86\_32 may be used, the latter is the builtin default.
+
+Example:
+
+    e2project {
+        name = "foo",
+        release_id = "foo-1.0beta",
+        default_results = { "foo" },
+        chroot_arch = "x86_32",
+    }
+
+prev [environment](environment.html)
+next [chroot](chroot.html)
