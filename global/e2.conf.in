@@ -7,8 +7,8 @@ config {
 	site = {
 		e2_server = "projects",
 		e2_location = "e2factory.git",
-		e2_branch = "e2-2.3",
-		e2_tag = "e2-2.3.0pre3",
+		e2_branch = "e2factory-2.3",
+		e2_tag = "e2factory-2.3.0",
 	},
 	tools = {
 		cvs = { name="cvs", flags="-z9" },
