@@ -457,7 +457,7 @@ function e2lib.log_invocation(info, args)
   e2lib.mkdir(ulogdir, "-p")
   local rc, e = append_to_file(ulogfile, logstring)
   if not rc then
-    e2lib.abort(string.format("can't log to file %s: %s", logfile, e))
+    e2lib.abort(string.format("can't log to file %s: %s", ulogfile, e))
   end
 
   -- log to the project logfile
@@ -467,7 +467,7 @@ function e2lib.log_invocation(info, args)
     e2lib.mkdir(plogdir, "-p")
     rc, e = append_to_file(plogfile, logstring)
     if not rc then
-      e2lib.abort(string.format("can't log to file %s: %s", logfile, e))
+      e2lib.abort(string.format("can't log to file %s: %s", plogfile, e))
     end
   end
 
