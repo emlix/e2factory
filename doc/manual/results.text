@@ -21,9 +21,9 @@ In addition creating a `build-script` is required. The build script must
 be stored in `./res/<name>/build-script` and runs in the build environment.
 
 The `collect_project` flag provides a tree holding everything to rebuild
-the result configured in `collect_project_default_result` in $TMPDIR/project.
+the result configured in `collect_project_default_result` in $E2_TMPDIR/project.
 The user must write a build-script to package that tree to a file in 
-$TMPDIR/out
+$E2_TMPDIR/out
 
 All configuration options can be combined. And even a configuration with 
 no keys is valid: The `base` chroot group is used automatically, and the 
@@ -56,10 +56,10 @@ Example (using the `collect_project` flag)
 
 Example build script:
 
-    DESTDIR=$TMPDIR/root
+    DESTDIR=$E2_TMPDIR/root
     make hello
     make DESTDIR=$DESTDIR install
-    tar -C $DESTDIR -czf $TMPDIR/out/$RESULT.tar.gz .
+    tar -C $DESTDIR -czf $E2_TMPDIR/out/$E2_RESULT.tar.gz .
 
 prev [sources](sources.html)
 next [release](release.html)

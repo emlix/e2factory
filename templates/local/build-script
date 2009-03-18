@@ -9,7 +9,7 @@
 # Additional variables can be provided in init files.
 # Variables are not exported unless the init files do.
 #
-# The following directory structure is available, relative to TMPDIR
+# The following directory structure is available, relative to E2_TMPDIR
 #
 # ./build/<sourcename>	sources are located here
 # ./root		shall be used as the destination directory when
