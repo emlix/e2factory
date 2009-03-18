@@ -39,8 +39,8 @@ Example:
         { name = "host-gcc",
           server = "chroot",
           files = {
-            chroot/20080916/binutils.tar.gz",
-            chroot/20080916/gcc34.tar.gz",
+            "chroot/20080916/binutils.tar.gz",
+            "chroot/20080916/gcc34.tar.gz",
           },
         },
       }
