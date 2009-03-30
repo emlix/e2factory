@@ -869,13 +869,18 @@ function write_environment_script(env, r, file)
 		e:append("%s: %s", file, msg)
 		return false, e
 	end
+	-- export global variables first 
+	for k,v in pairs(env) do
+		if type(v) == "string" then
+			f:write(string.format("%s=\"%s\"\n", k, v))
+		end
+	end
+	-- export result local variables
 	for k,v in pairs(env) do
 		if type(v) == "table" and r == k then
 			for k2, v2 in pairs(v) do
 				f:write(string.format("%s=\"%s\"\n", k2, v2))
 			end
-		elseif type(v) == "string" then
-			f:write(string.format("%s=\"%s\"\n", k, v))
 		end
 	end
 	f:close()
