@@ -5,3 +5,4 @@ log/*
 .e2/e2
 .e2/lib
 .e2/project-location
+.e2/run.log
