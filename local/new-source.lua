@@ -266,7 +266,7 @@ if opts.git then
     e2lib.abort(re)
   end
   e2lib.log(1,
-    "See e2-new-source(1) or call e2-new-source --help to see how to go on")
+    "See e2-new-source(1) to see how to go on")
 elseif opts.files then
   local location = opts.arguments[1]
   local sl, e = e2lib.parse_server_location(location, info.default_files_server)
