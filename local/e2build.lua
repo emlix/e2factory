@@ -131,7 +131,9 @@ end
 -- @field mode       table:  the build mode policy
 -- @field release id string: the release name
 -- @field info       table: the info table
+-- @field base       string: path to the build directory
 -- @field c	     string: path to the chroot
+-- @field chroot_marker string: path to chroot marker file
 -- @field T          string: absolute path to the temporary build directory
 --                           inside chroot
 -- @field Tc         string: same as c.T but relative to c
@@ -168,7 +170,9 @@ function e2build.build_config(info, r)
   tab.mode = nil -- XXX
   tab.location = nil -- XXX info.project_location
   tab.release_id = nil -- XXX release_id
-  tab.c = string.format("%s/%s/%s/chroot", tmpdir, project, r)
+  tab.base = string.format("%s/%s/%s", tmpdir, project, r)
+  tab.c = string.format("%s/chroot", tab.base)
+  tab.chroot_marker = string.format("%s/e2factory-chroot", tab.base)
   tab.T = string.format("%s/%s/%s/chroot/%s", tmpdir, project, r, builddir)
   tab.Tc = string.format("/%s", builddir)
   tab.r = string.format("%s", r)
@@ -213,13 +217,13 @@ function e2build.setup_chroot(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  local rc, re = e2lib.touch(res.build_config.c .. "/emlix-chroot")
+  local rc, re = e2lib.touch(res.build_config.chroot_marker)
   if not rc then
     return false, e:cat(re)
   end
-  -- e2-su set_permissions_2_2 <chroot_path>
-  local args = string.format("set_permissions_2_2 '%s'",
-							res.build_config.c)
+  -- e2-su set_permissions_2_3 <chroot_path>
+  local args = string.format("set_permissions_2_3 '%s'",
+							res.build_config.base)
   local rc, re = e2lib.e2_su_2_2(args)
   if not rc then
     return false, e:cat(re)
@@ -247,9 +251,9 @@ function e2build.setup_chroot(info, r, return_flags)
 		e:append("unknown archive type for chroot file: %s", path)
 		return false, e
 	end
-	-- e2-su extract_tar_2_2 <path> <tartype> <file>
-	local args = string.format("extract_tar_2_2 '%s' '%s' '%s'",
-					res.build_config.c, tartype, path)
+	-- e2-su extract_tar_2_3 <path> <tartype> <file>
+	local args = string.format("extract_tar_2_3 '%s' '%s' '%s'",
+					res.build_config.base, tartype, path)
 	local rc, re = e2lib.e2_su_2_2(args)
 	if not rc then
 	  return false, e:cat(re)
@@ -270,9 +274,9 @@ function e2build.enter_playground(info, r, chroot_command)
   e2lib.log(4, "entering playground for " .. r .. " ...")
   local term = e2lib.terminal
   local e2_su = transport.get_tool("e2-su-2.2")
-  local cmd = string.format("%s %s chroot_2_2 '%s' %s",
+  local cmd = string.format("%s %s chroot_2_3 '%s' %s",
 				res.build_config.chroot_call_prefix, e2_su, 
-				res.build_config.c, chroot_command)
+				res.build_config.base, chroot_command)
   os.execute(cmd)
   -- return code depends on user commands. Ignore.
   return true, nil
@@ -283,14 +287,14 @@ function e2build.fix_permissions(info, r, return_flags)
   local rc, re
   local e = new_error("fixing permissions failed")
   e2lib.log(3, "fix permissions")
-  local args = string.format("chroot_2_2 '%s' chown -R root:root '%s'",
-				res.build_config.c, res.build_config.Tc)
+  local args = string.format("chroot_2_3 '%s' chown -R root:root '%s'",
+				res.build_config.base, res.build_config.Tc)
   rc, re = e2lib.e2_su_2_2(args)
   if not rc then
     return false, e:cat(re)
   end
-  local args = string.format("chroot_2_2 '%s' chmod -R u=rwX,go=rX '%s'",
-				res.build_config.c, res.build_config.Tc)
+  local args = string.format("chroot_2_3 '%s' chmod -R u=rwX,go=rX '%s'",
+				res.build_config.base, res.build_config.Tc)
   rc, re = e2lib.e2_su_2_2(args)
   if not rc then
     return false, e:cat(re)
@@ -318,9 +322,9 @@ function e2build.runbuild(info, r, return_flags)
 			res.build_config.Tc, res.build_config.scriptdir,
 					res.build_config.build_driver_file)
   local e2_su = transport.get_tool("e2-su-2.2")
-  local cmd = string.format("%s %s chroot_2_2 '%s' %s", 
+  local cmd = string.format("%s %s chroot_2_3 '%s' %s", 
 				res.build_config.chroot_call_prefix, e2_su, 
-				res.build_config.c, runbuild)
+				res.build_config.base, runbuild)
   -- the build log is written to an external logfile
   local out = luafile.open(res.build_config.buildlog, "w")
   local function logto(output)
@@ -346,10 +350,14 @@ function e2build.chroot_cleanup(info, r, return_flags)
   if res.keep_chroot then
     return true, nil
   end
-  local args = string.format("remove_chroot_2_2 '%s'", res.build_config.c)
+  local args = string.format("remove_chroot_2_3 '%s'", res.build_config.base)
   local rc, re = e2lib.e2_su_2_2(args)
   if not rc then
     return e:cat(re)
+  end
+  rc, re = e2lib.rm(res.build_config.chroot_marker)
+  if not rc then
+    return false, e:cat(re)
   end
   local f = string.format("%s/playground", info.root)
   local s = e2util.stat(f)
@@ -376,8 +384,7 @@ end
 -- @return bool
 function e2build.chroot_exists(info, r)
   local res = info.results[r]
-  local f = string.format("%s/emlix-chroot", res.build_config.c)
-  return e2lib.isfile(f)
+  return e2lib.isfile(res.build_config.chroot_marker)
 end
 
 function e2build.sources(info, r, return_flags)

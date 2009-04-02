@@ -25,6 +25,25 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* chroot layout used with the _2_2 postfix commands
+ * call with e2-su-2.2 <command> <path> ...
+ *  path/emlix-chroot       - chroot marker file
+ *  path/                   - chroot environment
+ *
+ * This layout is broken: the chroot marker file can be deleted in chroot
+ * and early when removing chroot is not fully done.
+ * In that case e2factory refuses to use and even delete the chroot 
+ * environment, leaving the user with a chroot environment that only
+ * root may delete.
+ *
+ * The new chroot layout fixes this:
+ *
+ * chroot layout used with the _2_3 postfix commands
+ * call with e2-su-2.2 <command> <base> ...
+ *  base/e2factory-chroot   - chroot marker file
+ *  base/chroot/            - chroot environment
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -109,6 +128,17 @@ void assert_chroot_environment(char *path)
 	return;
 }
 
+void assert_chroot_environment_2_3(char *base)
+{
+	char name[PATH_MAX];
+	snprintf(name, sizeof(name), "%s/e2factory-chroot", base);
+	name[sizeof(name)-1]=0;
+	if(access(name, R_OK)) {
+		perr("not a chroot environment");
+	}
+	return;
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -119,8 +149,6 @@ int main(int argc, char *argv[])
 		perr("too many arguments");
 	}
 	char *cmd = argv[1];
-	char *path = argv[2];
-	assert_chroot_environment(path);
 	if(!strcmp(cmd, "chroot_2_2")) {
 		/* chroot_2_2 <path> ... */
 		int i;
@@ -128,6 +156,8 @@ int main(int argc, char *argv[])
 		if(argc < 3) {
 			perr("too few arguments");
 		}
+		char *path = argv[2];
+		assert_chroot_environment(path);
 		arg[0] = basename(chroot_tool);
 		arg[1] = path;
 		for (i=3; i < argc; i++) {
@@ -145,6 +175,8 @@ int main(int argc, char *argv[])
 		if(argc != 5) {
 			perr("wrong number of arguments");
 		}
+		char *path = argv[2];
+		assert_chroot_environment(path);
 		char *tartype = argv[3];
 		char *file = argv[4];
 		char *tararg = NULL;
@@ -174,6 +206,8 @@ int main(int argc, char *argv[])
 		if(argc != 3) {
 			perr("wrong number of arguments");
 		}
+		char *path = argv[2];
+		assert_chroot_environment(path);
 		arg[0] = basename(chown_tool);
 		arg[1] = "root:root";
 		arg[2] = path;
@@ -189,6 +223,106 @@ int main(int argc, char *argv[])
 		if(argc != 3) {
 			perr("wrong number of arguments");
 		}
+		char *path = argv[2];
+		assert_chroot_environment(path);
+		arg[0] = basename(rm_tool);
+		arg[1] = "-r";
+		arg[2] = "-f";
+		arg[3] = path;
+		arg[4] = NULL;
+		print_arg(arg);
+		setuid_root();
+		rc = execv(rm_tool, arg);
+		perror("can't exec");
+		exit(99);
+	} else if(!strcmp(cmd, "chroot_2_3")) {
+		/* chroot_2_3 <base> ... */
+		int i;
+		char *arg[256];
+		if(argc < 3) {
+			perr("too few arguments");
+		}
+		char *base = argv[2];
+		char path[PATH_MAX];
+		snprintf(path, sizeof(path), "%s/chroot", base);
+		path[sizeof(path)-1] = 0;
+		assert_chroot_environment_2_3(base);
+		arg[0] = basename(chroot_tool);
+		arg[1] = path;
+		for (i=3; i < argc; i++) {
+			arg[i-1] = argv[i];
+		}
+		arg[i-1] = 0;
+		print_arg(arg);
+		setuid_root();
+		rc = execv(chroot_tool, arg);
+		perror("can't exec");
+		exit(99);
+	} else if(!strcmp(cmd, "extract_tar_2_3")) {
+		/* extract_tar_2_3 <base> <tartype> <file> */
+		char *arg[256];
+		if(argc != 5) {
+			perr("wrong number of arguments");
+		}
+		char *base = argv[2];
+		assert_chroot_environment_2_3(base);
+		char path[PATH_MAX];
+		snprintf(path, sizeof(path), "%s/chroot", base);
+		path[sizeof(path)-1] = 0;
+		char *tartype = argv[3];
+		char *file = argv[4];
+		char *tararg = NULL;
+		if(!strcmp(tartype, "tar.gz")) {
+			tararg = "-xzf";
+		} else if(!strcmp(tartype, "tar.bz2")) {
+			tararg = "-xjf";
+		} else if(!strcmp(tartype, "tar")) {
+			tararg = "-xf";
+		} else {
+			perr("wrong tararg argument");
+		}
+		arg[0] = basename(tar_tool);
+		arg[1] = "-C";
+		arg[2] = path;
+		arg[3] = tararg;
+		arg[4] = file;
+		arg[5] = NULL;
+		print_arg(arg);
+		setuid_root();
+		rc = execv(tar_tool, arg);
+		perror("can't exec");
+		exit(99);
+	} else if(!strcmp(cmd, "set_permissions_2_3")) {
+		/* set_permissions_2_3 <base> */
+		char *arg[256];
+		if(argc != 3) {
+			perr("wrong number of arguments");
+		}
+		char *base = argv[2];
+		assert_chroot_environment_2_3(base);
+		char path[PATH_MAX];
+		snprintf(path, sizeof(path), "%s/chroot", base);
+		path[sizeof(path)-1] = 0;
+		arg[0] = basename(chown_tool);
+		arg[1] = "root:root";
+		arg[2] = path;
+		arg[3] = NULL;
+		print_arg(arg);
+		setuid_root();
+		rc = execv(chown_tool, arg);
+		perror("can't exec");
+		exit(99);
+	} else if(!strcmp(cmd, "remove_chroot_2_3")) {
+		/* remove_chroot_2_3 <base> */
+		char *arg[256];
+		if(argc != 3) {
+			perr("wrong number of arguments");
+		}
+		char *base = argv[2];
+		assert_chroot_environment_2_3(base);
+		char path[PATH_MAX];
+		snprintf(path, sizeof(path), "%s/chroot", base);
+		path[sizeof(path)-1] = 0;
 		arg[0] = basename(rm_tool);
 		arg[1] = "-r";
 		arg[2] = "-f";
