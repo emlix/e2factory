@@ -1077,10 +1077,16 @@ function e2build.collect_project(info, r, return_flags)
 			return false, e:cat(re)
 		end
 	end
-	local script = string.format("%s/buildall.sh", destdir)
-	local rc, re = e2lib.chmod("755", script)
-	if not rc then
-		return false, e:cat(re)
+	local executables = {
+		"buildall.sh",
+		"detect_tool",
+	}
+	for _,f in ipairs(executables) do
+		local x = string.format("%s/%s", destdir, f)
+		local rc, re = e2lib.chmod("755", x)
+		if not rc then
+			return false, e:cat(re)
+		end
 	end
 	return true, nil
 end
