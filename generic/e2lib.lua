@@ -1256,7 +1256,7 @@ function e2lib.mktempfile(template)
     template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.tmpdir,
 							e2util.getpid())
   end
-  local cmd = string.format("mktemp %s", template)
+  local cmd = string.format("mktemp '%s'", template)
   local mktemp = io.popen(cmd, "r")
   if not mktemp then
     e2lib.bomb("can't mktemp")
@@ -1297,7 +1297,7 @@ function e2lib.mktempdir(template)
     template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.tmpdir,
 							e2util.getpid())
   end
-  local cmd = string.format("mktemp -d %s", template)
+  local cmd = string.format("mktemp -d '%s'", template)
   local mktemp = io.popen(cmd, "r")
   if not mktemp then
     e2lib.bomb("can't mktemp")
