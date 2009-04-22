@@ -75,6 +75,9 @@ rc, re = e2build.build_config(info, r, {})
 if not rc then
   e2lib.abort(e:cat(re))
 end
+if not e2build.chroot_exists(info, r) then
+  e2lib.abort("playground does not exist")
+end
 if opts.showpath then
   print(info.results[r].build_config.c)
   e2lib.finish(0)
