@@ -224,7 +224,9 @@ function e2build.setup_chroot(info, r, return_flags)
   -- e2-su set_permissions_2_3 <chroot_path>
   local args = string.format("set_permissions_2_3 '%s'",
 							res.build_config.base)
+  e2tool.set_umask(info)
   local rc, re = e2lib.e2_su_2_2(args)
+  e2tool.reset_umask(info)
   if not rc then
     return false, e:cat(re)
   end
@@ -254,7 +256,9 @@ function e2build.setup_chroot(info, r, return_flags)
 	-- e2-su extract_tar_2_3 <path> <tartype> <file>
 	local args = string.format("extract_tar_2_3 '%s' '%s' '%s'",
 					res.build_config.base, tartype, path)
+	e2tool.set_umask(info)
 	local rc, re = e2lib.e2_su_2_2(args)
+	e2tool.reset_umask(info)
 	if not rc then
 	  return false, e:cat(re)
 	end
@@ -277,7 +281,9 @@ function e2build.enter_playground(info, r, chroot_command)
   local cmd = string.format("%s %s chroot_2_3 '%s' %s",
 				res.build_config.chroot_call_prefix, e2_su, 
 				res.build_config.base, chroot_command)
+  e2tool.set_umask(info)
   os.execute(cmd)
+  e2tool.reset_umask(info)
   -- return code depends on user commands. Ignore.
   return true, nil
 end
@@ -289,13 +295,17 @@ function e2build.fix_permissions(info, r, return_flags)
   e2lib.log(3, "fix permissions")
   local args = string.format("chroot_2_3 '%s' chown -R root:root '%s'",
 				res.build_config.base, res.build_config.Tc)
+  e2tool.set_umask(info)
   rc, re = e2lib.e2_su_2_2(args)
+  e2tool.reset_umask(info)
   if not rc then
     return false, e:cat(re)
   end
   local args = string.format("chroot_2_3 '%s' chmod -R u=rwX,go=rX '%s'",
 				res.build_config.base, res.build_config.Tc)
+  e2tool.set_umask(info)
   rc, re = e2lib.e2_su_2_2(args)
+  e2tool.reset_umask(info)
   if not rc then
     return false, e:cat(re)
   end
@@ -332,7 +342,9 @@ function e2build.runbuild(info, r, return_flags)
     out:write(output)
     out:flush()
   end
+  e2tool.set_umask(info)
   local rc = e2lib.callcmd_capture(cmd, logto)
+  e2tool.reset_umask(info)
   out:close()
   if rc ~= 0 then
     -- XXX e2hook.run_hook(c.info, "build-failure", c, "e2-build")
@@ -351,7 +363,9 @@ function e2build.chroot_cleanup(info, r, return_flags)
     return true, nil
   end
   local args = string.format("remove_chroot_2_3 '%s'", res.build_config.base)
+  e2tool.set_umask(info)
   local rc, re = e2lib.e2_su_2_2(args)
+  e2tool.reset_umask(info)
   if not rc then
     return e:cat(re)
   end
@@ -1097,3 +1111,4 @@ function e2build.collect_project(info, r, return_flags)
 	end
 	return true, nil
 end
+

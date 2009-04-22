@@ -271,6 +271,11 @@ function e2tool.collect_project_info(path)
   local e = new_error("reading project configuration")
 
   local info = {}
+
+  -- set the umask value to be used in chroot
+  info.chroot_umask = 18   -- 0022 octal
+  e2tool.init_umask(info)
+
   info.root, re = e2lib.locate_project_root(path)
   if not info.root then
     return false, e:append("you are not located in a project directory")
@@ -2374,4 +2379,27 @@ function e2tool.load_result_config(info)
     end
   end
   return true, nil
+end
+
+--- set umask to value used for build processes
+-- @param info 
+function e2tool.set_umask(info)
+  e2lib.logf(4, "setting umask to %04o", info.chroot_umask)
+  e2util.umask(info.chroot_umask)
+end
+
+-- set umask back to the value used on the host
+-- @param info
+function e2tool.reset_umask(info)
+  e2lib.logf(4, "setting umask to %04o", info.host_umask)
+  e2util.umask(info.host_umask)
+end
+
+-- initialize the umask set/reset mechanism (i.e. store the host umask)
+-- @param info
+function e2tool.init_umask(info)
+  -- save the umask value we run with
+  info.host_umask = e2util.umask(022);
+  -- restore the previous umask value again
+  e2util.umask(info.host_umask);
 end
