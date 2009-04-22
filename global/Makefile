@@ -53,12 +53,12 @@ install: all
 	install -m 4754 -o root -g $(E2_GROUP) e2-su $(DESTDIR)$(BINDIR)/
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
 	install -m 644 e2global.lc $(DESTDIR)$(LIBDIR)/
-	install -d $(SYSCONFDIR)
-	if [ ! -f "$(SYSCONFDIR)/e2.conf" ] ; then \
-		install -m 644 e2.conf $(SYSCONFDIR)/e2.conf ; \
+	install -d $(DESTDIR)$(SYSCONFDIR)
+	if [ ! -f "$(DESTDIR)$(SYSCONFDIR)/e2.conf" ] ; then \
+		install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf ; \
 	fi
-	install -m 644 e2.conf $(SYSCONFDIR)/e2.conf.sample
-	install -d -m 2775 -g $(E2_GROUP) $(LOCALSTATEDIR)
+	install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf.sample
+	install -d -m 2775 -g $(E2_GROUP) $(DESTDIR)$(LOCALSTATEDIR)
 
 uninstall:
 	for i in $(GLOBALLUATOOLS) ; do \
