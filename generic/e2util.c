@@ -625,14 +625,17 @@ is_terminal(lua_State *lua)
 /* e2util.umask(VAL)
 
    Set the umask to VAL
+   Returns the previous value of umask
 */
 
 static int
 set_umask(lua_State *lua)
 {
   int u = luaL_checkinteger(lua, 1);
-  umask(u);
-  return 0;
+  int pu = 0;
+  pu = umask(u);
+  lua_pushinteger(lua, pu);
+  return 1;
 }
 
 /* e2util.setenv(var, val, overwrite)
