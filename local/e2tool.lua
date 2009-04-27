@@ -383,7 +383,7 @@ The newest configuration syntax supported by the tools is %s.
 		  if type(tab) == "string" then
 		    local path2 = info.root .. "/" .. tab
 		    e2lib.log(3, "loading " .. path2)
-		    e2lib.dofile_protected(path2, { env=lua_should_have_localrec })
+		    e2lib.dofile_protected(path2, { env=lua_should_have_localrec, e2env = info.env })
 		  elseif type(tab) == "table" then
 		    for k, v in pairs(tab) do -- for each result...
 		      if type(k) ~= "string" then
