@@ -358,10 +358,16 @@ end
 
 function e2build.chroot_cleanup(info, r, return_flags)
   local res = info.results[r]
-  local e = new_error("cleaning up chroot failed")
+  -- do not remove chroot if the user requests to keep it
   if res.keep_chroot then
     return true, nil
   end
+  return e2build.chroot_remove(info, r, return_flags)
+end
+
+function e2build.chroot_remove(info, r, return_flags)
+  local res = info.results[r]
+  local e = new_error("removing chroot failed")
   local args = string.format("remove_chroot_2_3 '%s'", res.build_config.base)
   e2tool.set_umask(info)
   local rc, re = e2lib.e2_su_2_2(args)
@@ -386,7 +392,7 @@ end
 
 function e2build.chroot_cleanup_if_exists(info, r, return_flags)
   local res = info.results[r]
-  if e2build.chroot_exists(info, r, return_flags) then
+  if e2build.chroot_remove(info, r, return_flags) then
     return e2build.chroot_cleanup(info, r, return_flags)
   end
   return true, nil
