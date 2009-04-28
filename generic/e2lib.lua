@@ -826,7 +826,7 @@ function e2lib.use_global_config()
   assert_type(config.site.e2_branch, "config.site.e2_branch", "string")
   assert_type(config.site.e2_tag, "config.site.e2_tag", "string")
   assert_type(config.site.e2_server, "config.site.e2_server", "string")
-  assert_type(config.site.e2_location, "config.site.e2_location", "string")
+  assert_type(config.site.e2_base, "config.site.e2_base", "string")
 end
 
 --- get the global configuration

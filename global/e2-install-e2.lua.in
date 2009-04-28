@@ -125,32 +125,57 @@ if not rc then
   e2lib.abort(e:cat(re))
 end
 
--- clone e2
-local server = config.site.e2_server
-local location = config.site.e2_location
-local destdir = "e2"
-local skip_checkout = false
-rc, re = generic_git.git_clone_from_server(scache, server, location, destdir,
-								skip_checkout)
-if not rc then
-  e2lib.abort(e:cat(re))
+local _ext = {}
+local extensions = {}
+-- 'e2factory' is handled like any other extension, but enabled by default
+_ext["e2factory"] = true
+exf = io.open("extensions", "r")
+if exf then
+  for ex in exf:lines() do
+    _ext[ex] = true
+  end
+  exf:close()
+end
+for ex,_ in pairs(_ext) do
+  table.insert(extensions, ex)
 end
 
-e2lib.chdir(destdir)
+for _,ex in ipairs(extensions) do
+  -- change to the project root directory
+  rc, re = e2lib.chdir(root .. "/.e2")
+  if not rc then
+    e2lib.abort(e:cat(re))
+  end
+  print("installing extension: " .. ex)
+  local server = config.site.e2_server
+  local location = string.format("%s/%s.git", config.site.e2_base, ex)
+  local destdir = ex
+  local skip_checkout = false
+  rc, re = e2lib.rm(destdir, "-r")
+  if not rc then
+    e2lib.abort(e:cat(re))
+  end
+  rc, re = generic_git.git_clone_from_server(scache, server, location,
+						destdir, skip_checkout)
+  if not rc then
+    e2lib.abort(e:cat(re))
+  end
+  e2lib.chdir(destdir)
 
--- checkout ref
-local args = string.format("--track -b tmp '%s'", ref)
-rc, re = e2lib.git(nil, "checkout", args)
-if not rc then
-  e2lib.abort(e:cat(re))
-end
+  -- checkout ref
+  local args = string.format("--track -b tmp '%s'", ref)
+  rc, re = e2lib.git(nil, "checkout", args)
+  if not rc then
+    e2lib.abort(e:cat(re))
+  end
 
--- build and install
-local cmd = string.format("make PREFIX='%s' local install-local",
+  -- build and install
+  local cmd = string.format("make PREFIX='%s' local install-local",
 								install_prefix)
-rc, re = e2lib.callcmd_capture(cmd)
-if not rc then
-  e2lib.abort(e:cat(re))
+  rc, re = e2lib.callcmd_capture(cmd)
+  if not rc then
+    e2lib.abort(e:cat(re))
+  end
 end
 
 e2lib.finish()
