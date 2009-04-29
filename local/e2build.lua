@@ -447,7 +447,7 @@ function e2build.sources(info, r, return_flags)
     local res = info.results[r]
     local rc, re
     local e = new_error("installing build script")
-    local location = string.format("res/%s/build-script", r)
+    local location = e2lib.resultbuildscript(r)
     local destdir = string.format("%s/script", res.build_config.T)
     rc, re = transport.fetch_file(info.root_server, location, destdir, nil)
     if not rc then
@@ -1010,12 +1010,12 @@ function e2build.collect_project(info, r, return_flags)
 		if not rc then
 			return false, e:cat(re)
 		end
-		local destdir = string.format("%s/project/res/%s", 
-							res.build_config.T, n)
+		local destdir = string.format("%s/project/%s", 
+							res.build_config.T, e2lib.resultdir(n))
 		e2lib.mkdir(destdir, "-p")
 		-- copy files
 		local files = {
-			string.format("res/%s/build-script", n),
+			e2lib.resultbuildscript(n),
 		}
 		for _,file in pairs(files) do
 			local server = info.root_server_name
@@ -1065,8 +1065,8 @@ function e2build.collect_project(info, r, return_flags)
 	for _,s in ipairs(info.results[r].collect_project_sources) do
 		local src = info.sources[s]
 		e2lib.log(3, string.format("source: %s", s))
-		local destdir = string.format("%s/project/src/%s", 
-							res.build_config.T, s)
+		local destdir = string.format("%s/project/%s", 
+							res.build_config.T, e2lib.sourcedir(s))
 		e2lib.mkdir(destdir, "-p")
 		local source_set = res.build_mode.source_set()
 		local files, re = scm.toresult(info, src.name, source_set,

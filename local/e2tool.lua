@@ -1350,8 +1350,7 @@ function e2tool.pbuildid(info, resultname)
 	r.envid = e2tool.envid(info, resultname)
 	hc:hash_line(r.envid)
 	if not r.pseudo_result then
-		local location = string.format("res/%s/build-script", 
-								resultname)
+		local location = e2lib.resultbuildscript(resultname)
 		local hash, re = e2tool.hash_file(info,info.root_server_name, 
 								location)
 		if not hash then
@@ -1699,8 +1698,8 @@ function e2tool.check_result(info, resultname)
 		res.bn = {}
 		res.buildno = "0"
 	end
-	local build_script = string.format("%s/res/%s/build-script", info.root,
-								resultname)
+	local build_script = string.format("%s/%s", info.root,
+								e2lib.resultbuildscript(resultname))
 	if not e2lib.isfile(build_script) then
 		e:append("build-script does not exist")
 	end
@@ -2310,7 +2309,7 @@ function e2tool.load_source_config(info)
   info.sources = {}
   for src in e2lib.directory(info.root .. "/src") do
     local list, re
-    local path = string.format("src/%s/config", src)
+    local path = e2lib.sourceconfig(src)
     local types = { "e2source", }
     list, re = e2tool.load_user_config2(info, path, types)
     if not list then
@@ -2346,9 +2345,9 @@ end
 function e2tool.load_result_config(info)
   local e = new_error("error loading result configuration")
   info.results = {}
-  for res in e2lib.directory(info.root .. "/res") do
+  for res in e2lib.directory(info.root .. "/" .. e2lib.resultdir()) do
     local list, re
-    local path = string.format("res/%s/config", res)
+    local path = e2lib.resultconfig(res)
     local types = { "e2result", }
     list, re = e2tool.load_user_config2(info, path, types)
     if not list then

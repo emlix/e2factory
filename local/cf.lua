@@ -86,8 +86,8 @@ local function newsource(info, ...)
   if e:getcount() > 1 then
     return false, e
   end
-  local cfdir = string.format("src/%s", name)
-  local cf = string.format("src/%s/config", name)
+  local cfdir = e2lib.sourcedir(name)
+  local cf = e2lib.sourceconfig(name)
   local cftemplate = string.format("%s/source.%s", info.local_template_path,
 									scm)
   if not e2lib.isfile(cftemplate) then
@@ -120,7 +120,7 @@ local function editsource(info, ...)
   if e:getcount() > 1 then
     return false, e
   end
-  local cf = string.format("src/%s/config", name)
+  local cf = e2lib.sourceconfig(name)
   rc = os.execute(string.format("%s %s", editor, cf))
   return true, nil
 end
@@ -135,9 +135,9 @@ local function newresult(info, ...)
   if e:getcount() > 1 then
     return false, e
   end
-  local cfdir = string.format("res/%s", name)
-  local cf = string.format("res/%s/config", name)
-  local bs = string.format("res/%s/build-script", name)
+  local cfdir = e2lib.resultdir(name)
+  local cf = e2lib.resultconfig(name)
+  local bs = e2lib.resultbuildscript(name)
   local cftemplate = string.format("%s/result", info.local_template_path)
   local bstemplate = string.format("%s/build-script", info.local_template_path)
   if not e2lib.isfile(cf) and not e2lib.isfile(bs) and
@@ -176,7 +176,7 @@ local function editresult(info, ...)
   if e:getcount() > 1 then
     return false, e
   end
-  local cf = string.format("res/%s/config", name)
+  local cf = e2lib.resultconfig(name)
   os.execute(string.format("%s %s", editor, cf))
   return true, nil
 end
@@ -191,7 +191,7 @@ local function editbuildscript(info, ...)
   if e:getcount() > 1 then
     return false, e
   end
-  local cf = string.format("res/%s/build-script", name)
+  local cf = e2lib.resultbuildscript(name)
   os.execute(string.format("%s %s", editor, cf))
   return true, nil
 end

@@ -1797,6 +1797,60 @@ function e2lib.chdir(path)
   return true, nil
 end
 
+-- assemble a path from parts
+-- the returned string is created from the input parameters like
+-- "base[/str][/postfix]"
+local function generatePath(base, str, postfix)
+  if str then
+    base = base .. "/" .. str
+  end
+  if postfix then
+    base = base .. "/" .. postfix
+  end
+  return base
+end
+    
+-- get directory for a result
+-- Returns the path to the resultdir and the optional postfix is appended
+-- with a slash (e.g. res/name/build-script)
+-- @param result name optional
+-- @param optional postfix for the direcory
+-- @return path of the result
+function e2lib.resultdir(name, postfix)
+  return generatePath("res",name,postfix)
+end
+
+-- get directory for a source
+-- Returns the path to the sourcedir and the optional postfix is appended
+-- with a slash (e.g. src/name/config)
+-- @param source name optional
+-- @param optional postfix for the direcory
+-- @return path of the source
+function e2lib.sourcedir(name, postfix)
+  return generatePath("src",name,postfix)
+end
+
+-- get path to the result config
+-- @param resultname
+-- @return path to the resultconfig
+function e2lib.resultconfig(name)
+  return e2lib.resultdir(name,"config")
+end
+
+-- get path to the result build-script
+-- @param resultname
+-- @return path to the result build-script
+function e2lib.resultbuildscript(name)
+  return e2lib.resultdir(name,"build-script")
+end
+
+-- get path to the source config
+-- @param sourcename
+-- @return path to the sourceconfig
+function e2lib.sourceconfig(name)
+  return e2lib.sourcedir(name,"config")
+end
+
 --------------------------------------------------------------------------------
 
 -- "seal" modules e2util and e2lib
