@@ -134,6 +134,7 @@ local config_syntax_compat = {
 -- @field url string: server url
 -- @field cachable bool: cachable flag
 -- @field cache bool: cache enable flag
+-- @field directory string: dirname where the config and build-script reside
 
 --- table of chroot configuration
 -- @name chroot
@@ -1350,7 +1351,7 @@ function e2tool.pbuildid(info, resultname)
 	r.envid = e2tool.envid(info, resultname)
 	hc:hash_line(r.envid)
 	if not r.pseudo_result then
-		local location = e2lib.resultbuildscript(resultname)
+		local location = e2lib.resultbuildscript(info.results[resultname].directory)
 		local hash, re = e2tool.hash_file(info,info.root_server_name, 
 								location)
 		if not hash then
@@ -1699,7 +1700,7 @@ function e2tool.check_result(info, resultname)
 		res.buildno = "0"
 	end
 	local build_script = string.format("%s/%s", info.root,
-								e2lib.resultbuildscript(resultname))
+								e2lib.resultbuildscript(info.results[resultname].directory))
 	if not e2lib.isfile(build_script) then
 		e:append("build-script does not exist: %s", build_script)
 	end
@@ -2304,37 +2305,107 @@ function e2tool.check_chroot_config(info)
   return true
 end
 
+local function gather_result_paths(info, basedir, results)
+  results = results or {}
+  for dir in e2lib.directory(info.root .. "/" .. e2lib.resultdir(basedir)) do
+    local tmp
+    if basedir then
+      tmp = basedir .. "/" .. dir
+    else
+      tmp = dir
+    end
+    if e2util.exists(e2lib.resultconfig(tmp)) then
+      table.insert(results, tmp)
+    else
+      --try subfolder
+      gather_result_paths(info,tmp, results)
+    end
+  end
+  return results
+end
+
+
+local function gather_source_paths(info, basedir, sources)
+  sources = sources or {}
+  for dir in e2lib.directory(info.root .. "/" .. e2lib.sourcedir(basedir)) do
+    local tmp
+    if basedir then
+      tmp = basedir .. "/" .. dir
+    else
+      tmp = dir
+    end
+    if e2util.exists(e2lib.sourceconfig(tmp)) then
+      table.insert(sources, tmp)
+    else
+      --try subfolder
+      gather_source_paths(info,tmp, sources)
+    end
+  end
+  return sources
+end
+
+-- checks for valid characters in str
+local function checkFilenameInvalidCharacters(str)
+  if not str:match("^[-_0-9a-zA-Z/]+$") then
+    return false
+  else
+    return true
+  end
+end
+
+-- replaces all slashed in str with dots
+local function slashToDot(str)
+  return string.gsub(str,"/",".",100)
+end
+
 function e2tool.load_source_config(info)
   local e = new_error("error loading source configuration")
   info.sources = {}
-  for src in e2lib.directory(info.root .. "/src") do
+
+  for _,src in ipairs(gather_source_paths(info)) do
     local list, re
     local path = e2lib.sourceconfig(src)
     local types = { "e2source", }
+
+    if not checkFilenameInvalidCharacters(src) then
+        e:append("invalid source file name: %s")
+        e:append("only digits, alphabetic characters, and `-', `_' and `/' "..
+	 	"are allowed")
+        return false, e
+    end
+
     list, re = e2tool.load_user_config2(info, path, types)
     if not list then
       return false, e:cat(re)
     end
+
+
     for _,item in ipairs(list) do
       local name = item.data.name
+
       if not name and #list == 1 then
 	e2lib.warnf("WDEFAULT", "`name' attribute missing in source config.")
 	e2lib.warnf("WDEFAULT", " Defaulting to directory name")
-        item.data.name = src
-        name = src
+        item.data.directory = src
+        item.data.name = slashToDot(src)
+        name = slashToDot(src)
       end
+
       if not name then
 	return false, e:append("`name' attribute missing in source config")
       end
-      if not name:match("^[-._0-9a-zA-Z]+$") then
+
+      if not name:match("^[-_0-9a-zA-Z.]+$") then
         e:append("invalid source name: %s")
         e:append("only digits, alphabetic characters, and `-', `_' and `.' "..
 	 	"are allowed")
         return false, e
       end
+
       if info.sources[name] then
         return false, e:append("duplicate source: %s", name)
       end
+
       item.data.configfile = item.filename
       info.sources[name] = item.data
     end
@@ -2345,10 +2416,19 @@ end
 function e2tool.load_result_config(info)
   local e = new_error("error loading result configuration")
   info.results = {}
-  for res in e2lib.directory(info.root .. "/" .. e2lib.resultdir()) do
+
+  for _,res in ipairs(gather_result_paths(info)) do
     local list, re
     local path = e2lib.resultconfig(res)
     local types = { "e2result", }
+
+    if not checkFilenameInvalidCharacters(res) then
+        e:append("invalid result file name: %s")
+        e:append("only digits, alphabetic characters, and `-', `_' and `/' "..
+	 	"are allowed")
+        return false, e
+    end
+
     list, re = e2tool.load_user_config2(info, path, types)
     if not list then
       return false, e:cat(re)
@@ -2358,21 +2438,27 @@ function e2tool.load_result_config(info)
     end
     for _,item in ipairs(list) do
       local name = item.data.name
+      item.data.directory = res
+
       if name and name ~= res then
         e:append("`name' attribute does not match configuration path")
 	return false, e
       end
-      item.data.name = res
-      name = res
-      if not name:match("^[-._0-9a-zA-Z]+$") then
+
+      item.data.name = slashToDot(res)
+      name = slashToDot(res)
+
+      if not name:match("^[-_0-9a-zA-Z.]+$") then
         e:append("invalid result name: %s",name)
         e:append("only digits, alphabetic characters, and `-', `_' and `.' "..
 	 	"are allowed")
         return false, e
       end
+
       if info.results[name] then
         return false, e:append("duplicate result: %s", name)
       end
+
       item.data.configfile = item.filename
       info.results[name] = item.data
     end

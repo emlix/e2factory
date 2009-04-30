@@ -447,7 +447,7 @@ function e2build.sources(info, r, return_flags)
     local res = info.results[r]
     local rc, re
     local e = new_error("installing build script")
-    local location = e2lib.resultbuildscript(r)
+    local location = e2lib.resultbuildscript(info.results[r].directory)
     local destdir = string.format("%s/script", res.build_config.T)
     rc, re = transport.fetch_file(info.root_server, location, destdir, nil)
     if not rc then

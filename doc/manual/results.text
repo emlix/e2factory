@@ -20,6 +20,11 @@ in addition:
 In addition creating a `build-script` is required. The build script must
 be stored in `./res/<name>/build-script` and runs in the build environment.
 
+It is possible to group the results in subfolders. When a folder for a result does
+NOT contain a config file e2 factory tries to search its subfolders for further
+results. To name results in subfolders you have to add the foldername to the result name
+separated with a dot (e.g. xorg.libXau). This occurrs when specify dependencies oder sources.
+
 The `collect_project` flag provides a tree holding everything to rebuild
 the result configured in `collect_project_default_result` in $E2_TMPDIR/project.
 The user must write a build-script to package that tree to a file in 
