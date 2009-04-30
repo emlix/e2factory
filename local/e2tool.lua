@@ -1701,7 +1701,7 @@ function e2tool.check_result(info, resultname)
 	local build_script = string.format("%s/%s", info.root,
 								e2lib.resultbuildscript(resultname))
 	if not e2lib.isfile(build_script) then
-		e:append("build-script does not exist")
+		e:append("build-script does not exist: %s", build_script)
 	end
 	-- stop if we had an error, as the collect_project stuff depends
 	-- on a sane result structure
