@@ -1628,7 +1628,7 @@ function e2lib.parentdirs(path)
 	local stop = false
 	while true do
 		local px
-		p = path:find("/", i)
+		local p = path:find("/", i)
 		if not p then
 			p = #path
 			stop = true
