@@ -151,7 +151,7 @@ for _,ex in ipairs(extensions) do
   local location = string.format("%s/%s.git", config.site.e2_base, ex)
   local destdir = ex
   local skip_checkout = false
-  rc, re = e2lib.rm(destdir, "-r")
+  rc, re = e2lib.rm(destdir, "-fr")
   if not rc then
     e2lib.abort(e:cat(re))
   end
