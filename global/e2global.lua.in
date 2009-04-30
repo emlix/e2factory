@@ -47,7 +47,7 @@ install [ "BINDIR" ] = "@BINDIR@"
 install [ "LIBDIR" ] = "@LIBDIR@"
 install [ "LIBEXECDIR" ] = "@LIBEXECDIR@"
 install [ "TOOLDIR" ] = "@TOOLDIR@"
-
+install [ "LUA" ] = "@LIBEXECDIR@/e2-lua-@LUA_VERSION@"
 
 -- getinstallpath(var)
 --

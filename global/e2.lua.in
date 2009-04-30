@@ -81,7 +81,10 @@ end
 
 if e2util.stat(e2call.globaltool) then
   e2call.tool = e2call.globaltool
-  cmd = "@LIBEXECDIR@/e2-lua-@LUA_VERSION@ " .. e2call.tool .. " " .. e2call.arg_string
+  env = "LUA_PATH='@LIBDIR@/?.lc;@LIBDIR@/?.lua'" ..
+        "LUA_CPATH='@LIBDIR@/?.so'"
+  lua = "@LIBEXECDIR@/e2-lua-@LUA_VERSION@"
+  cmd = string.format("%s %s %s %s", env, lua, e2call.tool, e2call.arg_string)
 elseif not root then
   e2lib.abort(e2call.toolname .. 
 	" is not a global tool and we're not in a project environment")

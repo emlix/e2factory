@@ -25,12 +25,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-e2_install_e2 = "@LIBEXECDIR@/e2-lua-@LUA_VERSION@ @TOOLDIR@/e2-install-e2"
-
-package.path="@LIBDIR@/?.lc;@LIBDIR@/?.lua"
-package.cpath="@LIBDIR@/?.so"
-
 require("e2global")
+
 e2lib.init()
 local e = new_error("fetching project failed")
 local doc = [[
@@ -183,6 +179,8 @@ if not rc then
 end
 
 -- call e2-install-e2
+e2_install_e2 = string.format("'%s' '%s/e2-install-e2'", 
+			getinstallpath("LUA"), getinstallpath("TOOLDIR"))
 rc, re = e2lib.callcmd_log(e2_install_e2)
 if not rc then
 	e:append("installing local e2 failed")
