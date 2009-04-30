@@ -2365,7 +2365,7 @@ function e2tool.load_result_config(info)
       item.data.name = res
       name = res
       if not name:match("^[-._0-9a-zA-Z]+$") then
-        e:append("invalid result name: %s")
+        e:append("invalid result name: %s",name)
         e:append("only digits, alphabetic characters, and `-', `_' and `.' "..
 	 	"are allowed")
         return false, e
