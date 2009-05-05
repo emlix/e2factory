@@ -194,7 +194,6 @@ files = {
 	{ filename = "proj/licences", content=licences },
 	{ filename = "proj/env", content=env },
 	{ filename = "proj/config", content=pconfig },
-	{ filename = ".e2/e2version", content=e2version },
 	{ filename = ".e2/version", content=version },
 	{ filename = ".e2/syntax", content=syntax },
 	{ filename = ".gitignore", content=gitignore },
@@ -213,6 +212,14 @@ for _,f in ipairs(files) do
 	if not rc then
 		e2lib.abort(e:cat(re))
 	end
+end
+rc, re = e2lib.write_extension_config(extensions)
+if not rc then
+	e2lib.abort(e:cat(re))
+end
+rc, re = e2lib.git(nil, "add", e2lib.extension_config)
+if not rc then
+	e2lib.abort(e:cat(re))
 end
 rc, re = e2lib.git(nil, "commit", "-m \"project setup\"")
 if not rc then

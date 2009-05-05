@@ -90,6 +90,7 @@ e2lib = {
   git_skip_checkout = true,
   buildnumber_server_url = nil,
   template_path = "/etc/e2/templates",
+  extension_config = ".e2/extensions",
 }
 
 -- Interrupt handling
@@ -798,6 +799,59 @@ function e2lib.read_global_config(e2_config_file)
   return false, "no config file available"
 end
 
+function e2lib.write_extension_config(extensions)
+  local e = new_error("writing extensions config: %s", e2lib.extension_config)
+  local f, re = io.open(e2lib.extension_config, "w")
+  if not f then
+    return false, e:cat(re)
+  end
+  f:write(string.format("extensions {\n"))
+  for _,ex in ipairs(extensions) do
+    f:write(string.format("  {\n"))
+    for k,v in pairs(ex) do
+      f:write(string.format("    %s=\"%s\",\n", k, v))
+    end
+    f:write(string.format("  },\n"))
+  end
+  f:write(string.format("}\n"))
+  f:close()
+  return true, nil
+end
+
+--- read the local extension configuration
+-- This function must run while being located in the projects root directory
+-- @param root string: path to project
+-- @return the extension configuration table
+-- @return an error object on failure
+function e2lib.read_extension_config()
+  if e2util.exists(".e2/e2version") then
+    return false, new_error(
+      "Deprecated configuration file .e2/e2version exists.\n"..
+      "Move configuration to .e2/extensions")
+  end
+  local e = new_error("reading extension config file: %s",
+						e2lib.extension_config)
+  
+  local rc = e2util.exists(e2lib.extension_config)
+  if not rc then
+    return false, e:append("config file does not exist")
+  end
+  e2lib.logf(3, "reading extension file: %s", e2lib.extension_config)
+  local c = {}
+  c.extensions = function(x)
+    c.data = x
+  end
+  local rc, re = e2lib.dofile_protected(e2lib.extension_config, c, true)
+  if not rc then
+    return false, e:cat(re)
+  end
+  local extension = c.data
+  if not extension then
+    return false, e:append("invalid extension configuration")
+  end
+  return extension, nil
+end
+
 --- use the global parameters from the global configuration
 -- this function always succeeds or aborts
 -- @return nothing
@@ -1183,7 +1237,7 @@ function e2lib.locate_project_root(path)
     end
   end
   while true do
-    if e2util.exists(".e2/e2version") then
+    if e2util.exists(".e2") then
       e2lib.logf(3, "project is located in: %s", path)
       e2lib.chdir(save_path)
       return path

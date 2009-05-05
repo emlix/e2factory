@@ -1,6 +1,6 @@
 #!/bin/sh
 export LC_ALL=C
-while [ '!' -f .e2/e2version ] ; do
+while [ '!' -d .e2 ] ; do
 	if [ "$PWD" = "/" ] ; then
 		echo >&2 \
 		    "e2-locate-project-root: Not in a project environment."
