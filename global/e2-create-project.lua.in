@@ -213,7 +213,7 @@ for _,f in ipairs(files) do
 		e2lib.abort(e:cat(re))
 	end
 end
-rc, re = e2lib.write_extension_config(extensions)
+rc, re = e2lib.write_extension_config(config.site.default_extensions)
 if not rc then
 	e2lib.abort(e:cat(re))
 end

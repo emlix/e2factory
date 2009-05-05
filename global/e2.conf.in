@@ -10,6 +10,9 @@ config {
 		e2_base = "."
 		e2_branch = "e2factory-2.3",
 		e2_tag = "e2factory-2.3.0",
+		default_extensions = {
+			{ name = "e2factory", ref = "refs/heads/master", },
+		},
 	},
 	tools = {
 		cvs = { name="cvs", flags="-z9" },
