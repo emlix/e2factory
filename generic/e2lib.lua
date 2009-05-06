@@ -881,6 +881,7 @@ function e2lib.use_global_config()
   assert_type(config.site.e2_tag, "config.site.e2_tag", "string")
   assert_type(config.site.e2_server, "config.site.e2_server", "string")
   assert_type(config.site.e2_base, "config.site.e2_base", "string")
+  assert_type(config.site.default_extensions, "config.site.default_extensions", "table")
 end
 
 --- get the global configuration
