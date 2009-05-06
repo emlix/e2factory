@@ -250,7 +250,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
       end
       if file.patch then
 	local cache_flags = { cache = true }
-	local rc, re = cache.file_path(info.cache, file.server, file.location, 
+	local rc, re = cache.cache_file(info.cache, file.server, file.location,
 								cache_flags)
 	if not rc then
 	  return false, e:cat(re)
