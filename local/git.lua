@@ -308,7 +308,7 @@ function git.update(info, sourcename)
   end
   rc, re = e2lib.git(nil, "fetch")  -- git fetch is safe
   if not rc then
-    return false, e:append(re)
+    return false, e:cat(re)
   end
   e:append("fetch succeeded")
 
@@ -322,7 +322,7 @@ function git.update(info, sourcename)
   --  must be on configured branch
   local branch, re = git_branch_get(gitdir)
   if not branch then
-    return false, e:append(re)
+    return false, e:cat(re)
   end
   if branch ~= src.branch then
     e2lib.warnf("WOTHER", "not on configured branch. Skipping 'git pull'")
@@ -334,7 +334,7 @@ function git.update(info, sourcename)
   end
   rc, re = e2lib.git(nil, "pull")
   if not rc then
-    return false, e:append(re)
+    return false, e:cat(re)
   end
   return true, nil
 end
@@ -350,7 +350,7 @@ function git.fetch_source(info, sourcename)
   local e = new_error("fetching source failed: %s", sourcename)
   rc, re = git.validate_source(info, sourcename)
   if not rc then
-    return false, e:append(re)
+    return false, e:cat(re)
   end
   local wrk = info.root .. "/" .. src.working
   e2lib.log(2, string.format("cloning %s:%s [%s]",
