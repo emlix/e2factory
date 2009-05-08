@@ -41,6 +41,7 @@ function parse(url)
 	-- @field servername the server name from the server part
 	-- @field user the user name from the server part (optional)
 	-- @field pass the password from the server part (optional)
+	-- @field port given server port (optional)
 	if not url then
 		return nil, "missing parameter: url"
 	end
@@ -49,7 +50,7 @@ function parse(url)
 	u.transport, u.server, u.path = 
 			u.url:match("(%S+)://([^/]*)(%S*)")
 	if not u.transport then
-		return nil, "can't parse url"
+		return nil, string.format("can't parse url: %s", url)
 	end
 	-- remove leading slashes from the path
 	u.path = u.path:match("^[/]*(%S*)")
@@ -63,6 +64,11 @@ function parse(url)
 		u.user, u.servername = u.server:match("(%S+)@(%S+)")
 	else
 		u.servername = u.server
+	end
+	if u.server:match(":(%d+)$") then
+		u.port = u.server:match(":(%d+)$")
+		u.server = string.gsub(u.server, ":%d+$","") -- Remove port from server string.
+		u.servername = string.gsub(u.servername, ":%d+$","") -- Remove port from server string.
 	end
 	return u, nil
 end
