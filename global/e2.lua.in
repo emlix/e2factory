@@ -28,7 +28,8 @@
 package.path  = "@LIBDIR@/?.lc;@LIBDIR@/?.lua"
 package.cpath = "@LIBDIR@/?.so"
 
-require("e2global")
+require("buildconfig")
+require("e2generic_global")
 e2lib.init()
 
 e2option.documentation = [[
@@ -42,7 +43,7 @@ ing on whether the invocation took place inside or outside a project tree.
 
 e2option.flag("prefix", "print installation prefix",
 	      function()
-		print("@E2_PREFIX@")
+		print(buildconfig.PREFIX)
 		os.exit(0)
 	      end)
 
@@ -71,19 +72,17 @@ else
   e2call.arg_string = quoteargs(table.concat(arg, "' '", 1))
 end
 
--- provide install paths in the environment
-setinstallpaths()
-
-e2call.globaltool = getinstallpath("TOOLDIR") .. "/" .. e2call.toolname
+e2call.globaltool = buildconfig.TOOLDIR .. "/" .. e2call.toolname
 if root then 
   e2call.localtool = root .. "/.e2/bin/" .. e2call.toolname
 end
 
 if e2util.stat(e2call.globaltool) then
   e2call.tool = e2call.globaltool
-  env = "LUA_PATH='@LIBDIR@/?.lc;@LIBDIR@/?.lua'" ..
-        "LUA_CPATH='@LIBDIR@/?.so'"
-  lua = "@LIBEXECDIR@/e2-lua-@LUA_VERSION@"
+  env = string.format("LUA_PATH='%s/?.lc;%s/?.lua' " ..
+        "LUA_CPATH='%s/?.so'", buildconfig.LIBDIR, buildconfig.LIBDIR,
+	buildconfig.LIBDIR)
+  lua = buildconfig.LUA
   cmd = string.format("%s %s %s %s", env, lua, e2call.tool, e2call.arg_string)
 elseif not root then
   e2lib.abort(e2call.toolname .. 

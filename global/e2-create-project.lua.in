@@ -25,7 +25,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-require("e2global")
+require("buildconfig")
+require("e2generic_global")
+
 e2lib.init()
 
 local doc = [[

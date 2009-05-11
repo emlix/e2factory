@@ -36,7 +36,7 @@ e2tool = e2lib.module("e2tool")
 -- first, to maintain correct error messages
 
 local config_syntax_compat = {
-	E2_SYNTAX,	-- keep this one, it holds the current syntax.
+	buildconfig.E2_SYNTAX,	-- keep this one, it holds the current syntax.
 	"2_2_0",
 }
 
@@ -1066,7 +1066,7 @@ function e2tool.projid(info)
 	end
 	hc:hash_line(info.release_id)
 	hc:hash_line(info.project.chroot_arch)
-	hc:hash_line(E2_VERSION)
+	hc:hash_line(buildconfig.E2_VERSION)
 	info.projid = hc:hash_finish()
 	return info.projid
 end

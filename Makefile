@@ -31,7 +31,7 @@ TOPLEVEL    = .
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ E2_COMMIT
+CLEAN_FILES = *~ E2_COMMIT buildconfig.lua
 
 
 .PHONY: all e2commit install install-local clean local localdist uninstall \
@@ -40,7 +40,19 @@ CLEAN_FILES = *~ E2_COMMIT
 help:
 	@cat INSTALL
 
-all: e2commit
+buildconfig.lua: Makefile
+	echo 'module ("buildconfig")' > $@
+	echo 'PREFIX="$(PREFIX)"' >>$@
+	echo 'BINDIR="$(BINDIR)"' >>$@
+	echo 'LIBDIR="$(LIBDIR)"' >>$@
+	echo 'TOOLDIR="$(TOOLDIR)"' >>$@
+	echo 'E2="$(E2)"' >>$@
+	echo 'LUA="$(LUA)"' >>$@
+	echo 'E2_VERSION="$(E2_VERSION)"' >>$@
+	echo 'E2_COMMIT="$(E2_COMMIT)"' >>$@
+	echo 'E2_SYNTAX="$(E2_SYNTAX)"' >>$@
+
+all: e2commit buildconfig.lua
 	$(MAKE) -C lua
 	$(MAKE) -C generic
 	$(MAKE) -C global
@@ -65,6 +77,7 @@ install: all
 	mkdir -p $(DESTDIR)$(INCDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)
 	mkdir -p $(DESTDIR)$(TOOLDIR)
+	install -m 644 buildconfig.lua $(DESTDIR)$(LIBDIR)
 	$(MAKE) -C lua install
 	$(MAKE) -C generic install
 	$(MAKE) -C global install
@@ -80,7 +93,7 @@ uninstall:
 	$(MAKE) -C templates uninstall
 	$(MAKE) -C local uninstall
 
-local: e2commit
+local: e2commit buildconfig.lua
 	$(MAKE) -C generic local
 	$(MAKE) -C local
 	$(MAKE) -C templates local
@@ -90,6 +103,7 @@ install-local:
 	$(MAKE) -C generic install-local
 	$(MAKE) -C local install-local
 	$(MAKE) -C templates install-local
+	install -m 644 buildconfig.lua $(LOCALLIBDIR)
 
 doc:
 	for s in $(SUBDIRS) ; do \

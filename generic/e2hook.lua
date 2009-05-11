@@ -70,7 +70,7 @@ function e2hook.run_hook(info, hookname, arguments, toolname)
   if info then
     hfile = info.root .. "/proj/hooks/" .. hookname
   else
-    hfile = E2_PREFIX .. "/share/e2/hooks/" .. hookname
+    hfile = buildconfig.PREFIX .. "/share/e2/hooks/" .. hookname
   end
   if e2util.exists(hfile) then
     e2lib.log(3, "running hook `" .. hookname .. "' ...")

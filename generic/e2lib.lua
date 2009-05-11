@@ -26,7 +26,7 @@
 ]]
 
 _version = "e2factory, the emlix embedded build system, version " .. 
-								E2_VERSION
+							buildconfig.E2_VERSION
 
 _licence = [[
 e2factory is free software: you can redistribute it and/or modify
@@ -79,7 +79,7 @@ e2lib = {
   default_e2 = {
     local_branch = "master",
     local_tag = "^",
-    local_syntax = E2_SYNTAX,
+    local_syntax = buildconfig.E2_SYNTAX,
   },
   local_e2_branch = nil,
   local_e2_tag = nil,
@@ -449,8 +449,8 @@ function e2lib.log_invocation(info, args)
   end
   local logstring = string.format(
 	"%s %s %s/%s %s \"%s %s\"\n",
-	pname, os.date(), E2_VERSION, E2_COMMIT, e2lib.username, 
-	arg[0], table.concat(args, " "))
+	pname, os.date(), buildconfig.E2_VERSION, buildconfig.E2_COMMIT,
+	e2lib.username, arg[0], table.concat(args, " "))
 
   -- always log to the user logfile
   local ulogdir = string.format("%s/.e2", e2lib.homedir)

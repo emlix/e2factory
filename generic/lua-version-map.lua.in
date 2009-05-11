@@ -35,7 +35,7 @@ lua_versions = {
 }
 
 function lua_versions.get_version(e2_version)
-  local v = e2_version or E2_VERSION
+  local v = e2_version or buildconfig.E2_VERSION
   local lv = lua_versions[ v ]
   return lv or lua_versions.latest
 end

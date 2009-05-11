@@ -38,7 +38,7 @@ CLEAN_FILES = *~ $(GLOBALTOOLS) *.lc e2 $(SCRIPTS) *.lua e2-su *.sh e2.conf
 
 .PHONY: all install uninstall clean
 
-all: e2 e2-root e2global.lc $(SCRIPTS) e2-su $(GLOBALLUATOOLS:=.lc) \
+all: e2 e2-root $(SCRIPTS) e2-su $(GLOBALLUATOOLS:=.lc) \
 	$(GLOBALSHTOOLS:=.sh) e2.conf
 
 install: all
@@ -52,7 +52,6 @@ install: all
 	install -m 755 e2-root $(DESTDIR)$(TOOLDIR)/
 	install -m 4754 -o root -g $(E2_GROUP) e2-su $(DESTDIR)$(BINDIR)/
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
-	install -m 644 e2global.lc $(DESTDIR)$(LIBDIR)/
 	install -d $(DESTDIR)$(SYSCONFDIR)
 	if [ ! -f "$(DESTDIR)$(SYSCONFDIR)/e2.conf" ] ; then \
 		install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf ; \
@@ -71,7 +70,6 @@ uninstall:
 	rm -f $(DESTDIR)$(TOOLDIR)/e2-root
 	rm -f $(DESTDIR)$(BINDIR)/e2-su
 	rm -f $(DESTDIR)$(BINDIR)/e2
-	rm -f $(DESTDIR)$(LIBDIR)/e2global.lc
 
 doc:
 	for s in $(SUBDIRS) ; do \
@@ -85,9 +83,6 @@ install-doc:
 
 clean:
 	rm -f $(CLEAN_FILES)
-
-e2global.lc: config.lua e2global.lua
-	$(BUILD_LUAC) -o $@ $^
 
 %.lua: %.lua.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@

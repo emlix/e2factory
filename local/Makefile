@@ -32,7 +32,7 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ *.so linux32 config.lua *.lc *.o
+CLEAN_FILES = *~ *.so linux32 *.lc *.o
 CFLAGS += -I. -I$(DESTDIR)$(INCDIR) -I$(DESTDIR)$(INCDIR)/lua-$(LUA_VERSION) \
 	-I../lua/lua-$(LUA_VERSION)/src -fPIC
 LDFLAGS += -L. -L../lua/lua-$(LUA_VERSION)/src -Wl,-R$(LIBDIR) 
@@ -107,7 +107,7 @@ clean:
 %.lc: %.lua
 	$(LUAC) -o $@ $<
 
-e2local.lc: config.lua $(TOPLEVEL)/generic/strict.lua \
+e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 		result.lua \
 		loader.lua \
 		$(TOPLEVEL)/generic/scm.git.lua \
