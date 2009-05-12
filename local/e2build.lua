@@ -1015,7 +1015,7 @@ function e2build.collect_project(info, r, return_flags)
 		e2lib.mkdir(destdir, "-p")
 		-- copy files
 		local files = {
-			e2lib.resultbuildscript(n),
+    			e2lib.resultbuildscript(info.results[n].directory)
 		}
 		for _,file in pairs(files) do
 			local server = info.root_server_name
