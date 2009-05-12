@@ -1351,7 +1351,7 @@ function e2tool.pbuildid(info, resultname)
 	r.envid = e2tool.envid(info, resultname)
 	hc:hash_line(r.envid)
 	if not r.pseudo_result then
-		local location = e2lib.resultbuildscript(info.results[resultname].directory)
+		local location = e2tool.resultbuildscript(info.results[resultname].directory)
 		local hash, re = e2tool.hash_file(info,info.root_server_name, 
 								location)
 		if not hash then
@@ -1700,7 +1700,7 @@ function e2tool.check_result(info, resultname)
 		res.buildno = "0"
 	end
 	local build_script = string.format("%s/%s", info.root,
-								e2lib.resultbuildscript(info.results[resultname].directory))
+		e2tool.resultbuildscript(info.results[resultname].directory))
 	if not e2lib.isfile(build_script) then
 		e:append("build-script does not exist: %s", build_script)
 	end
@@ -2307,14 +2307,14 @@ end
 
 local function gather_result_paths(info, basedir, results)
   results = results or {}
-  for dir in e2lib.directory(info.root .. "/" .. e2lib.resultdir(basedir)) do
+  for dir in e2lib.directory(info.root .. "/" .. e2tool.resultdir(basedir)) do
     local tmp
     if basedir then
       tmp = basedir .. "/" .. dir
     else
       tmp = dir
     end
-    if e2util.exists(e2lib.resultconfig(tmp)) then
+    if e2util.exists(e2tool.resultconfig(tmp)) then
       table.insert(results, tmp)
     else
       --try subfolder
@@ -2327,14 +2327,14 @@ end
 
 local function gather_source_paths(info, basedir, sources)
   sources = sources or {}
-  for dir in e2lib.directory(info.root .. "/" .. e2lib.sourcedir(basedir)) do
+  for dir in e2lib.directory(info.root .. "/" .. e2tool.sourcedir(basedir)) do
     local tmp
     if basedir then
       tmp = basedir .. "/" .. dir
     else
       tmp = dir
     end
-    if e2util.exists(e2lib.sourceconfig(tmp)) then
+    if e2util.exists(e2tool.sourceconfig(tmp)) then
       table.insert(sources, tmp)
     else
       --try subfolder
@@ -2364,7 +2364,7 @@ function e2tool.load_source_config(info)
 
   for _,src in ipairs(gather_source_paths(info)) do
     local list, re
-    local path = e2lib.sourceconfig(src)
+    local path = e2tool.sourceconfig(src)
     local types = { "e2source", }
 
     if not checkFilenameInvalidCharacters(src) then
@@ -2419,7 +2419,7 @@ function e2tool.load_result_config(info)
 
   for _,res in ipairs(gather_result_paths(info)) do
     local list, re
-    local path = e2lib.resultconfig(res)
+    local path = e2tool.resultconfig(res)
     local types = { "e2result", }
 
     if not checkFilenameInvalidCharacters(res) then
@@ -2487,4 +2487,58 @@ function e2tool.init_umask(info)
   info.host_umask = e2util.umask(022);
   -- restore the previous umask value again
   e2util.umask(info.host_umask);
+end
+
+-- assemble a path from parts
+-- the returned string is created from the input parameters like
+-- "base[/str][/postfix]"
+local function generatePath(base, str, postfix)
+  if str then
+    base = base .. "/" .. str
+  end
+  if postfix then
+    base = base .. "/" .. postfix
+  end
+  return base
+end
+    
+-- get directory for a result
+-- Returns the path to the resultdir and the optional postfix is appended
+-- with a slash (e.g. res/name/build-script)
+-- @param result name optional
+-- @param optional postfix for the direcory
+-- @return path of the result
+function e2tool.resultdir(name, postfix)
+  return generatePath("res",name,postfix)
+end
+
+-- get directory for a source
+-- Returns the path to the sourcedir and the optional postfix is appended
+-- with a slash (e.g. src/name/config)
+-- @param source name optional
+-- @param optional postfix for the direcory
+-- @return path of the source
+function e2tool.sourcedir(name, postfix)
+  return generatePath("src",name,postfix)
+end
+
+-- get path to the result config
+-- @param resultname
+-- @return path to the resultconfig
+function e2tool.resultconfig(name)
+  return e2tool.resultdir(name,"config")
+end
+
+-- get path to the result build-script
+-- @param resultname
+-- @return path to the result build-script
+function e2tool.resultbuildscript(name)
+  return e2tool.resultdir(name,"build-script")
+end
+
+--- get path to the source config
+-- @param sourcename
+-- @return path to the sourceconfig
+function e2tool.sourceconfig(name)
+  return e2tool.sourcedir(name,"config")
 end
