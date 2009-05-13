@@ -25,7 +25,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-SUBDIRS    = lua generic global doc templates
+SUBDIRS    = lua generic global doc templates extensions
 LOCALSUBDIRS    = lua generic global local doc
 TOPLEVEL    = .
 
@@ -58,6 +58,7 @@ all: e2commit buildconfig.lua
 	$(MAKE) -C global
 	$(MAKE) -C doc/man
 	$(MAKE) -C templates all
+	$(MAKE) -C extensions all
 
 # this target creates a file E2_COMMIT, holding the current E2_COMMIT 
 # string, and cleans the tree in case E2_COMMIT changed since the last 
@@ -84,6 +85,7 @@ install: all
 	$(MAKE) -C local install
 	$(MAKE) -C doc/man install
 	$(MAKE) -C templates install
+	$(MAKE) -C extensions install
 
 uninstall:
 	$(MAKE) -C lua uninstall
@@ -97,12 +99,14 @@ local: e2commit buildconfig.lua
 	$(MAKE) -C generic local
 	$(MAKE) -C local
 	$(MAKE) -C templates local
+	$(MAKE) -C extensions local
 
 install-local:
 	scripts/e2-locate-project-root
 	$(MAKE) -C generic install-local
 	$(MAKE) -C local install-local
 	$(MAKE) -C templates install-local
+	$(MAKE) -C extensions install-local
 	install -m 644 buildconfig.lua $(LOCALLIBDIR)
 
 doc:

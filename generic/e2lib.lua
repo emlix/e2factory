@@ -824,14 +824,8 @@ end
 -- @return the extension configuration table
 -- @return an error object on failure
 function e2lib.read_extension_config()
-  if e2util.exists(".e2/e2version") then
-    return false, new_error(
-      "Deprecated configuration file .e2/e2version exists.\n"..
-      "Move configuration to .e2/extensions")
-  end
   local e = new_error("reading extension config file: %s",
 						e2lib.extension_config)
-  
   local rc = e2util.exists(e2lib.extension_config)
   if not rc then
     return false, e:append("config file does not exist")
