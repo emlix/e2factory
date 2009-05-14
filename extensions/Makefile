@@ -29,6 +29,7 @@ SUBDIRS    = $(shell ls | grep -v Makefile)
 TOPLEVEL   = ..
 
 include $(TOPLEVEL)/make.vars
+export SRC = $(shell pwd)/$(TOPLEVEL)
 
 CLEAN_FILES = *~
 
