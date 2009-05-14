@@ -25,6 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+require("buildconfig")
 _version = "e2factory, the emlix embedded build system, version " .. 
 							buildconfig.E2_VERSION
 
