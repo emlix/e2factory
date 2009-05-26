@@ -27,7 +27,7 @@
 
 require("buildconfig")
 _version = "e2factory, the emlix embedded build system, version " .. 
-							buildconfig.E2_VERSION
+							buildconfig.VERSION
 
 _licence = [[
 e2factory is free software: you can redistribute it and/or modify
@@ -449,8 +449,8 @@ function e2lib.log_invocation(info, args)
     pname = info.name
   end
   local logstring = string.format(
-	"%s %s %s/%s %s \"%s %s\"\n",
-	pname, os.date(), buildconfig.E2_VERSION, buildconfig.E2_COMMIT,
+	"%s %s %s %s \"%s %s\"\n",
+	pname, os.date(), buildconfig.VERSIONSTRING,
 	e2lib.username, arg[0], table.concat(args, " "))
 
   -- always log to the user logfile

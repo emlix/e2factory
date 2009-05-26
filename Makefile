@@ -31,26 +31,31 @@ TOPLEVEL    = .
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ E2_COMMIT buildconfig.lua
+CLEAN_FILES = *~ buildconfig.lua
 
 
 .PHONY: all e2commit install install-local clean local localdist uninstall \
-	doc
+	doc buildconfig.lua
 
 help:
 	@cat INSTALL
 
-buildconfig.lua: Makefile
-	echo 'module ("buildconfig")' > $@
-	echo 'PREFIX="$(PREFIX)"' >>$@
-	echo 'BINDIR="$(BINDIR)"' >>$@
-	echo 'LIBDIR="$(LIBDIR)"' >>$@
-	echo 'TOOLDIR="$(TOOLDIR)"' >>$@
-	echo 'E2="$(E2)"' >>$@
-	echo 'LUA="$(LUA)"' >>$@
-	echo 'E2_VERSION="$(E2_VERSION)"' >>$@
-	echo 'E2_COMMIT="$(E2_COMMIT)"' >>$@
-	echo 'E2_SYNTAX="$(E2_SYNTAX)"' >>$@
+buildconfig.lua: Makefile make.vars
+	@echo 'writing buildconfig.lua'
+	@echo 'module ("buildconfig")' > $@
+	@echo 'PREFIX="$(PREFIX)"' >>$@
+	@echo 'BINDIR="$(BINDIR)"' >>$@
+	@echo 'LIBDIR="$(LIBDIR)"' >>$@
+	@echo 'TOOLDIR="$(TOOLDIR)"' >>$@
+	@echo 'E2="$(E2)"' >>$@
+	@echo 'LUA="$(LUA)"' >>$@
+	@echo 'E2_SYNTAX="$(E2_SYNTAX)"' >>$@
+	@echo 'MAJOR="$(MAJOR)"' >>$@
+	@echo 'MINOR="$(MINOR)"' >>$@
+	@echo 'PATCHLEVEL="$(PATCHLEVEL)"' >>$@
+	@echo 'EXTRAVERSION="$(EXTRAVERSION)"' >>$@
+	@echo 'VERSION="$(VERSION)"' >>$@
+	@echo 'VERSIONSTRING="$(VERSIONSTRING)"' >>$@
 
 all: e2commit buildconfig.lua
 	$(MAKE) -C lua
@@ -59,17 +64,6 @@ all: e2commit buildconfig.lua
 	$(MAKE) -C doc/man
 	$(MAKE) -C templates all
 	$(MAKE) -C extensions all
-
-# this target creates a file E2_COMMIT, holding the current E2_COMMIT 
-# string, and cleans the tree in case E2_COMMIT changed since the last 
-# time. That makes sure that the builtin version string is always correct.
-
-e2commit:
-	@if [ "$(E2_COMMIT)" != "$(shell cat E2_COMMIT)" ] ; then \
-		echo "E2_COMMIT changed. making clean first." ; \
-		$(MAKE) clean ; \
-		echo "$(E2_COMMIT)" > E2_COMMIT ; \
-	fi
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
@@ -157,3 +151,6 @@ dist:
 	git archive --format=tar --prefix=$(PACKAGE)/ $(PACKAGE) \
 							>$(PACKAGE).tar
 	gzip <$(PACKAGE).tar >$(PACKAGE).tar.gz
+
+tag:
+	git tag $(TAG)

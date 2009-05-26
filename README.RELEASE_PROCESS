@@ -1,11 +1,14 @@
 1. Including the e2 tool version into the buildid calculation
 
-The content of the version file is available in the source in the E2_VERSION
-variable.
-This variable is calculated into the buildid, to catch tool changes and
-be sure to rebuild results whenever the e2 tool version changes.
+The version of e2factory is set in make.vars
 
-The E2_COMMIT variable is not used, as that makes development impossible,
+The buildconfig lua module provides each single part of the version string
+and the full version string.
+
+The full version string is calculated into the buildid, to catch tool
+changes and be sure to rebuild results whenever the e2 tool version changes.
+
+The VERSIONSTRING variable is not used, as that makes development impossible,
 as buildids would change with each single commit.
 
 2. The release process

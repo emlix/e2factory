@@ -227,7 +227,7 @@ function e2option.parse(args)
 		  category)
     e2option.flag("version", "show version number",
 	          function()
-		    print(_version)
+		    print(buildconfig.VERSIONSTRING)
 		    e2lib.finish(0)
 		  end,
 		  category)

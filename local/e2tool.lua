@@ -1066,7 +1066,7 @@ function e2tool.projid(info)
 	end
 	hc:hash_line(info.release_id)
 	hc:hash_line(info.project.chroot_arch)
-	hc:hash_line(buildconfig.E2_VERSION)
+	hc:hash_line(buildconfig.VERSION)
 	info.projid = hc:hash_finish()
 	return info.projid
 end
