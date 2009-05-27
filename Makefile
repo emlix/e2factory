@@ -50,13 +50,15 @@ buildconfig.lua: Makefile make.vars
 	@echo 'SYSCONFDIR="$(SYSCONFDIR)"' >>$@
 	@echo 'E2="$(E2)"' >>$@
 	@echo 'LUA="$(LUA)"' >>$@
-	@echo 'E2_SYNTAX="$(E2_SYNTAX)"' >>$@
 	@echo 'MAJOR="$(MAJOR)"' >>$@
 	@echo 'MINOR="$(MINOR)"' >>$@
 	@echo 'PATCHLEVEL="$(PATCHLEVEL)"' >>$@
 	@echo 'EXTRAVERSION="$(EXTRAVERSION)"' >>$@
 	@echo 'VERSION="$(VERSION)"' >>$@
 	@echo 'VERSIONSTRING="$(VERSIONSTRING)"' >>$@
+	@echo 'SYNTAX={' >>$@
+	@for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
+	@echo '}' >>$@
 
 all: e2commit buildconfig.lua
 	$(MAKE) -C lua

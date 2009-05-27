@@ -32,14 +32,6 @@
 
 e2tool = e2lib.module("e2tool")
 
--- store supported config_syntax versions here, the newest one must be listed
--- first, to maintain correct error messages
-
-local config_syntax_compat = {
-	buildconfig.E2_SYNTAX,	-- keep this one, it holds the current syntax.
-	"2_2_0",
-}
-
 -- Information gathering and inquiry
 --
 --   e2tool.collect_project_info([PATH]) -> INFO
@@ -287,7 +279,7 @@ function e2tool.collect_project_info(path)
   end
 
   -- check for configuration compatibility
-  info.config_syntax_compat = config_syntax_compat
+  info.config_syntax_compat = buildconfig.SYNTAX
   info.config_syntax_file = ".e2/syntax"
   rc, re = e2tool.check_config_syntax_compat(info)
   if not rc then

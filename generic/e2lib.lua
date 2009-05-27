@@ -80,7 +80,7 @@ e2lib = {
   default_e2 = {
     local_branch = "master",
     local_tag = "^",
-    local_syntax = buildconfig.E2_SYNTAX,
+    local_syntax = buildconfig.SYNTAX[1],
   },
   local_e2_branch = nil,
   local_e2_tag = nil,

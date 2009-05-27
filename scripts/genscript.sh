@@ -6,7 +6,6 @@ function die() {
 }
 
 set -e
-test -n "$E2_SYNTAX" || die "E2_SYNTAX not set"
 test -n "$PREFIX" || die "PREFIX not set"
 test -n "$BINDIR" || die "BINDIR not set"
 test -n "$LIBDIR" || die "LIBDIR not set"
@@ -24,8 +23,7 @@ test -n "$CHROOT_TOOL" || die "CHROOT_TOOL not set"
 test -n "$TAR_TOOL" || die "TAR_TOOL not set"
 test -n "$CHOWN_TOOL" || die "CHOWN_TOOL not set"
 test -n "$RM_TOOL" || die "RM_TOOL not set"
-sed -e s/"@E2_SYNTAX@"/"$E2_SYNTAX"/g \
-    -e s,"@E2_E2DATA@","$E2DATA",g \
+sed -e s,"@E2_E2DATA@","$E2DATA",g \
     -e s,"@LIBDIR@","$LIBDIR",g \
     -e s,"@LIBEXECDIR@","$LIBEXECDIR",g \
     -e s,"@BINDIR@","$BINDIR",g \
