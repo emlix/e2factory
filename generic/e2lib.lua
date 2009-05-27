@@ -90,7 +90,7 @@ e2lib = {
   cmdline = {},
   git_skip_checkout = true,
   buildnumber_server_url = nil,
-  template_path = "/etc/e2/templates",
+  template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
   extension_config = ".e2/extensions",
 }
 
@@ -771,11 +771,11 @@ function e2lib.read_global_config(e2_config_file)
 	string.format("%s/.e2/e2.conf-%s.%s", e2lib.homedir, buildconfig.MAJOR,
 							buildconfig.MINOR),
 	string.format("%s/.e2/e2.conf", e2lib.homedir),
-	string.format("/etc/e2/e2.conf-%s.%s.%s", 
+	string.format("%s/e2.conf-%s.%s.%s", buildconfig.SYSCONFDIR,
 		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
-	string.format("/etc/e2/e2.conf-%s.%s", buildconfig.MAJOR,
-                                                        buildconfig.MINOR),
-	string.format("/etc/e2/e2.conf"),
+	string.format("%s/e2.conf-%s.%s", buildconfig.SYSCONFDIR,
+				buildconfig.MAJOR, buildconfig.MINOR),
+	string.format("%s/e2.conf", buildconfig.SYSCONFDIR),
     }
   end
   -- use ipairs to keep the list entries ordered

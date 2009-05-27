@@ -38,12 +38,12 @@ all:
 clean:
 
 install: all
-	install -m 755 -d $(DESTDIR)/etc/e2/templates/proj
-	install -m 644 proj/config $(DESTDIR)/etc/e2/templates/proj/config
-	install -m 644 proj/chroot $(DESTDIR)/etc/e2/templates/proj/chroot
-	install -m 644 proj/licences $(DESTDIR)/etc/e2/templates/proj/licences
-	install -m 644 proj/env    $(DESTDIR)/etc/e2/templates/proj/env
-	install -m 644 gitignore   $(DESTDIR)/etc/e2/templates/gitignore
+	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)/templates/proj
+	install -m 644 proj/config $(DESTDIR)$(SYSCONFDIR)/templates/proj/config
+	install -m 644 proj/chroot $(DESTDIR)$(SYSCONFDIR)/templates/proj/chroot
+	install -m 644 proj/licences $(DESTDIR)$(SYSCONFDIR)/templates/proj/licences
+	install -m 644 proj/env    $(DESTDIR)$(SYSCONFDIR)/templates/proj/env
+	install -m 644 gitignore   $(DESTDIR)$(SYSCONFDIR)/templates/gitignore
 
 install-local: all
 	install -m 755 -d $(LOCALLIBDIR)/templates

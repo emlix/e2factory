@@ -47,6 +47,7 @@ buildconfig.lua: Makefile make.vars
 	@echo 'BINDIR="$(BINDIR)"' >>$@
 	@echo 'LIBDIR="$(LIBDIR)"' >>$@
 	@echo 'TOOLDIR="$(TOOLDIR)"' >>$@
+	@echo 'SYSCONFDIR="$(SYSCONFDIR)"' >>$@
 	@echo 'E2="$(E2)"' >>$@
 	@echo 'LUA="$(LUA)"' >>$@
 	@echo 'E2_SYNTAX="$(E2_SYNTAX)"' >>$@
