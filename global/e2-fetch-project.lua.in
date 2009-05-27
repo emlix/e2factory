@@ -174,18 +174,17 @@ end
 -- write project location file
 local file = ".e2/project-location"
 local data = string.format("%s\n", p.location)
-local rc, e = e2lib.write_file(file, data)
+local rc, re = e2lib.write_file(file, data)
 if not rc then
-  e2lib.abort(e)
+  e2lib.abort(e:cat(re))
 end
 
 -- call e2-install-e2
 e2_install_e2 = string.format("'%s' '%s/e2-install-e2'", 
 			buildconfig.LUA, buildconfig.TOOLDIR)
 rc, re = e2lib.callcmd_log(e2_install_e2)
-if not rc then
-	e:append("installing local e2 failed")
-	e2lib.abort(e:cat(re))
+if rc ~= 0 then
+	e2lib.abort(new_error("installing local e2 failed"))
 end
 e2lib.finish()
 
