@@ -8,8 +8,8 @@ config {
 		e2_server = "projects",
 		e2_location = "e2factory.git",
 		e2_base = ".",
-		e2_branch = "e2factory-2.3",
-		e2_tag = "e2factory-2.3.0",
+		e2_branch = "@DEFAULT_LOCAL_BRANCH@",
+		e2_tag = "@DEFAULT_LOCAL_TAG@",
 		default_extensions = {
 		},
 	},

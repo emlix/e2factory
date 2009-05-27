@@ -183,7 +183,7 @@ local name = string.format("%s\n", p.name)
 local release_id = string.format("%s\n", p.name) -- use the name for now
 local version = string.format("%s\n", p.version)
 local e2version = string.format("%s\n", p.e2version)
-local syntax = string.format("%s\n", e2lib.default_e2.local_syntax)
+local syntax = string.format("%s\n", buildconfig.SYNTAX[1])
 local empty = ""
 files = {
 	{ filename = ".e2/.keep", content=empty },

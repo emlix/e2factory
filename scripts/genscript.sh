@@ -23,6 +23,8 @@ test -n "$CHROOT_TOOL" || die "CHROOT_TOOL not set"
 test -n "$TAR_TOOL" || die "TAR_TOOL not set"
 test -n "$CHOWN_TOOL" || die "CHOWN_TOOL not set"
 test -n "$RM_TOOL" || die "RM_TOOL not set"
+test -n "$DEFAULT_LOCAL_BRANCH" || die "DEFAULT_LOCAL_BRANCH not set"
+test -n "$DEFAULT_LOCAL_TAG" || die "DEFAULT_LOCAL_TAG not set"
 sed -e s,"@E2_E2DATA@","$E2DATA",g \
     -e s,"@LIBDIR@","$LIBDIR",g \
     -e s,"@LIBEXECDIR@","$LIBEXECDIR",g \
@@ -41,4 +43,6 @@ sed -e s,"@E2_E2DATA@","$E2DATA",g \
     -e s,"@TAR_TOOL@","$TAR_TOOL",g \
     -e s,"@CHOWN_TOOL@","$CHOWN_TOOL",g \
     -e s,"@RM_TOOL@","$RM_TOOL",g \
+    -e s,"@DEFAULT_LOCAL_BRANCH@","$DEFAULT_LOCAL_BRANCH",g \
+    -e s,"@DEFAULT_LOCAL_TAG@","$DEFAULT_LOCAL_TAG",g \
     -e s,"@E2_PREFIX@","$PREFIX",g $1 >$2 \

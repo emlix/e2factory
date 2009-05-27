@@ -76,12 +76,6 @@ e2lib = {
   enable_invocation_log = false,
   default_projects_server = "projects",
   default_project_version = "2",
-  -- where to fetch e2 in e2-install-e2
-  default_e2 = {
-    local_branch = "master",
-    local_tag = "^",
-    local_syntax = buildconfig.SYNTAX[1],
-  },
   local_e2_branch = nil,
   local_e2_tag = nil,
   --- command line arguments that influence global settings are stored here
