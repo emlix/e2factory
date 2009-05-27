@@ -766,9 +766,13 @@ function e2lib.read_global_config(e2_config_file)
   else
     cf_path = {
 	-- this is ordered by priority
+	string.format("%s/.e2/e2.conf-%s.%s.%s", e2lib.homedir,
+		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
 	string.format("%s/.e2/e2.conf-%s.%s", e2lib.homedir, buildconfig.MAJOR,
 							buildconfig.MINOR),
 	string.format("%s/.e2/e2.conf", e2lib.homedir),
+	string.format("/etc/e2/e2.conf-%s.%s.%s", 
+		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
 	string.format("/etc/e2/e2.conf-%s.%s", buildconfig.MAJOR,
                                                         buildconfig.MINOR),
 	string.format("/etc/e2/e2.conf"),
