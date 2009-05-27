@@ -198,6 +198,7 @@ files = {
 	{ filename = "proj/config", content=pconfig },
 	{ filename = ".e2/version", content=version },
 	{ filename = ".e2/syntax", content=syntax },
+	{ filename = ".e2/e2version", content=e2version },
 	{ filename = ".gitignore", content=gitignore },
 }
 for _,f in ipairs(files) do
