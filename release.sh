@@ -1,48 +1,33 @@
+#!/bin/bash
+
 #E=echo
 E=""
 cat <<EOF
 Release Checklist:
 
- * is the configuration syntax list up-to-date? (see syntax, local/e2tool.lua)
- * is the configuration version in global/e2.conf.in up-to-date?
+ * is the release string set correctly? (make.vars)
+ * is the Changelog entry up-to-date (NEXT:) ?
+ * is the configuration syntax list up-to-date? (make vars: SYNTAX)
 
 EOF
-read -p "type yes to proceed> " OK
+
+vi make.vars
+TAG=$(make showtag)
+sed -i -r -e s,"^NEXT:.*","$TAG", Changelog
+vi Changelog
+echo "Release name will be: $TAG"
+echo "Changes in the final commit:"
+$E git diff HEAD Changelog make.vars
+echo ""
+read -p "Release? Type yes to proceed> " OK
 if [ "$OK" != "yes" ] ; then
 	exit 1
 fi
-echo "Example: 2.2pre7"
-read -p "VERSION:" VERSION
-RELEASE_NAME="e2factory-$VERSION"
-echo $VERSION >./version
-vi Changelog # edit the release string
-echo ==================
-echo Changelog:
-head Changelog
-echo Version: $VERSION
-echo Release Name: $RELEASE_NAME
-echo ==================
-read -p "commit, tag, push?"
-$E git commit -m "release $RELEASE_NAME" version Changelog
-$E git tag "$RELEASE_NAME"
-$E git push origin "$RELEASE_NAME"
-
-VERSION=${VERSION}-wip
-RELEASE_NAME="e2factory-$VERSION"
-echo $VERSION >./version
-mv Changelog Changelog.tmp
-cat - Changelog.tmp > Changelog <<EOF
-$RELEASE_NAME
+$E git commit -s -m "release $TAG" Changelog make.vars
+$E git tag "$TAG"
+cat - Changelog >Changelog.new <<EOF
+NEXT:
 
 EOF
-vi Changelog # edit the release string: wip again
-echo ==================
-echo Changelog:
-head Changelog
-echo Version: $VERSION
-echo Release Name: $RELEASE_NAME
-echo ==================
-read -p "commit, push?"
-$E git commit -m "work in progress $RELEASE_NAME" version Changelog
-$E git push
-
+mv Changelog.new Changelog
+$E git commit -s -m "create next changelog entry" Changelog

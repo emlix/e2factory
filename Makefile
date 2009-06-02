@@ -157,3 +157,6 @@ dist:
 
 tag:
 	git tag $(TAG)
+
+showtag:
+	@echo $(TAG)
