@@ -1,4 +1,11 @@
 NEXT:
+ * bugfixes
+ * support grouping source and result configuration by allowing
+   subdirectories in the res/ and src/ directories
+ * support extension packages (see README.extensions)
+ * move all build time configuration to a single lua module
+ * split up the version string into parts, move all occurrences of version
+   information into one place
 
 e2factory-2.3.0
  * INSTALL documentation changes
