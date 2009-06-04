@@ -2338,8 +2338,21 @@ end
 
 -- checks for valid characters in str
 local function checkFilenameInvalidCharacters(str)
-  if not str:match("^[-_0-9a-zA-Z/]+$") then
-    return false
+  local msg = "only digits, alphabetic characters, and '-_./' " ..
+                "are allowed"
+  if not str:match("^[-_0-9a-zA-Z/.]+$") then
+    return false, new_error(msg)
+  else
+    return true
+  end
+end
+
+-- check for invalid characters in source/result names
+local function checkNameInvalidCharacters(str)
+  local msg = "only digits, alphabetic characters, and '-_.' " ..
+                "are allowed"
+  if not str:match("^[-_0-9a-zA-Z.]+$") then
+    return false, new_error(msg)
   else
     return true
   end
@@ -2358,11 +2371,10 @@ function e2tool.load_source_config(info)
     local list, re
     local path = e2tool.sourceconfig(src)
     local types = { "e2source", }
-
-    if not checkFilenameInvalidCharacters(src) then
-        e:append("invalid source file name: %s")
-        e:append("only digits, alphabetic characters, and `-', `_' and `/' "..
-	 	"are allowed")
+    local rc, re = checkFilenameInvalidCharacters(src)
+    if not rc then
+        e:append("invalid source file name: %s", src)
+        e:cat(re)
         return false, e
     end
 
@@ -2387,10 +2399,10 @@ function e2tool.load_source_config(info)
 	return false, e:append("`name' attribute missing in source config")
       end
 
-      if not name:match("^[-_0-9a-zA-Z.]+$") then
-        e:append("invalid source name: %s")
-        e:append("only digits, alphabetic characters, and `-', `_' and `.' "..
-	 	"are allowed")
+      local rc, re = checkNameInvalidCharacters(name)
+      if not rc then
+        e:append("invalid source name: %s", name)
+        e:cat(re)
         return false, e
       end
 
@@ -2414,10 +2426,10 @@ function e2tool.load_result_config(info)
     local path = e2tool.resultconfig(res)
     local types = { "e2result", }
 
-    if not checkFilenameInvalidCharacters(res) then
-        e:append("invalid result file name: %s")
-        e:append("only digits, alphabetic characters, and `-', `_' and `/' "..
-	 	"are allowed")
+    local rc, re = checkFilenameInvalidCharacters(res)
+    if not rc then
+        e:append("invalid result file name: %s", res)
+        e:cat(re)
         return false, e
     end
 
@@ -2440,10 +2452,10 @@ function e2tool.load_result_config(info)
       item.data.name = slashToDot(res)
       name = slashToDot(res)
 
-      if not name:match("^[-_0-9a-zA-Z.]+$") then
+      local rc, re = checkNameInvalidCharacters(name)
+      if not rc then
         e:append("invalid result name: %s",name)
-        e:append("only digits, alphabetic characters, and `-', `_' and `.' "..
-	 	"are allowed")
+        e:cat(re)
         return false, e
       end
 
