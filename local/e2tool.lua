@@ -158,8 +158,18 @@ e2tool = e2lib.module("e2tool")
 --     storing details are described with e2tool.save_user_config below.
 
 function e2tool.opendebuglogfile(info)
-  e2lib.mkdir(info.root .. "/log", "-p")
-  e2lib.debuglogfile = luafile.open(info.root .. "/log/debug.log", "w")
+  local rc, re = e2lib.mkdir(info.root .. "/log", "-p")
+  if not rc then
+    local e = new_error("error making log directory")
+    return false, e:cat(re)
+  end
+  local debuglogfile, re = luafile.open(info.root .. "/log/debug.log", "w")
+  if not debuglogfile then
+    local e = new_error("error opening debug logfile")
+    return false, e:cat(re)
+  end
+  e2lib.debuglogfile = debuglogfile
+  return true, nil
 end
 
 --- load user configuration file
@@ -309,7 +319,10 @@ The newest configuration syntax supported by the tools is %s.
 
   e2lib.init2() -- configuration must be available
 
-  e2tool.opendebuglogfile(info)
+  local rc, re = e2tool.opendebuglogfile(info)
+  if not rc then
+    return false, e:cat(re)
+  end
 
   --XXX create some policy module where the following policy settings
   --XXX and functions reside (server names, paths, etc.)
