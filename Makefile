@@ -91,6 +91,8 @@ uninstall:
 	$(MAKE) -C doc/man uninstall
 	$(MAKE) -C templates uninstall
 	$(MAKE) -C local uninstall
+	$(MAKE) -C extensions uninstall
+	rm -f $(DESTDIR)$(LIBDIR)/buildconfig.lua
 
 local: e2commit buildconfig.lua
 	$(MAKE) -C generic local

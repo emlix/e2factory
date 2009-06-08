@@ -39,6 +39,9 @@ all:
 install:
 	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
+uninstall:
+	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+
 local:
 	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
