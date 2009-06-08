@@ -14,6 +14,5 @@ extensions can provide a local and a global part. The requirements are
  * Either part may be empty (i.e. build and install nothing). In other words:
    Extensions may provide code for local install or code for global install
    or both.
- * extensions are configured in .e2/extensions, this config file replaces
-   .e2/e2version in versions of e2factory with extension support.
+ * extensions are configured in .e2/extensions
  * It is planned to provide a plugin interface

@@ -1,0 +1,40 @@
+Basic configuration
+-------------------
+
+
+*e2factory* requires some basic settings in configuration files in the
+project:
+
+*   .e2/e2version configures the version of e2factory to be used with
+    the project (the local tools)
+*   .e2/syntax holds the syntax version the project requires
+*   .e2/extensions lists zero or more extensions to be installed with
+    e2factory (local tools)
+
+.e2/e2version holds a single line specifying a branch and a tag.
+e2factory (the e2-install-e2 tool) installs the version according to the
+tag unless the special tag '^' is used.
+
+Example:
+
+    master e2factory-2.3.1
+
+.e2/syntax holds a single line specifying the required syntax version
+
+Example:
+
+    2_3_0
+
+.e2/extensions holds a table specifying a list of extensions.
+
+Example:
+
+    extensions {
+      {
+        name="e2factory-extension",
+        ref="refs/tags/e2factory-extension-2.3.1",
+      },
+    }
+
+prev [buildid](buildid.html)
+next [environment](environment.html)

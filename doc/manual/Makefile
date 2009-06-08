@@ -32,7 +32,7 @@ include $(TOPLEVEL)/make.vars
 
 HTML = manual.html \
 	basic-concepts.html buildid.html \
-	environment.html project.html chroot.html licences.html \
+	basic.html environment.html project.html chroot.html licences.html \
 	sources.html results.html release.html migration.html \
 	faq.html
 

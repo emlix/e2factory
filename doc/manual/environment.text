@@ -35,5 +35,5 @@ Examples:
 
     env "proj/more.env"
 
-prev [buildid](buildid.html)
+prev [basic](basic.html)
 next [project](project.html)
