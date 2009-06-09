@@ -1373,13 +1373,20 @@ function e2tool.pbuildid(info, resultname)
 	hc:hash_line(projid)		-- project id
 	hash.hash_line(hc, r.resultid)	-- result id
 	for _,d in ipairs(r.depends) do
-		local id = e2tool.pbuildid(info, d)
+		local id, re = e2tool.pbuildid(info, d)
+		if not id then
+			e2lib.abort(re)
+		end
 		hash.hash_line(hc, id)		-- buildid of dependency
 	end
 	for _,c in ipairs(r.collect_project_results) do
 		local res = info.results[c]
 					-- pbuildids of collected results
-		hash.hash_line(hc, e2tool.pbuildid(info, c))
+		local pbid, re = e2tool.pbuildid(info, c)
+		if not pbid then
+			e2lib.abort(re)
+		end
+		hash.hash_line(hc, pbid)
 	end
 	e2lib.log(4, string.format("hash data for resultid %s\n%s", 
 							resultname, hc.data))
