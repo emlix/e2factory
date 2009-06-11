@@ -2406,11 +2406,10 @@ function e2tool.load_source_config(info)
 
     for _,item in ipairs(list) do
       local name = item.data.name
-
+      item.data.directory = src
       if not name and #list == 1 then
 	e2lib.warnf("WDEFAULT", "`name' attribute missing in source config.")
 	e2lib.warnf("WDEFAULT", " Defaulting to directory name")
-        item.data.directory = src
         item.data.name = slashToDot(src)
         name = slashToDot(src)
       end
