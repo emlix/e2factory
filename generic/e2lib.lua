@@ -866,9 +866,11 @@ function e2lib.use_global_config()
 				tostring(config.site.buildnumber_server_url)))
   end
   -- check if type(x) == t, and abort if not.
-  local function assert_type(x, d, t)
-    if type(x) ~= t then
-      e2lib.abort(string.format("configuration error: %s", d))
+  local function assert_type(x, d, t1)
+    local t2 = type(x)
+    if t1 ~= t2 then
+      e2lib.abort(
+        string.format("configuration error: %s (expected %s got %s)", d, t1, t2))
     end
   end
   assert_type(config.site, "config.site", "table")
