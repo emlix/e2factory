@@ -33,3 +33,4 @@ mv Changelog.new Changelog
 $E git commit -s -m "create next changelog entry" Changelog
 
 $E git archive --format=tar --prefix=$TAG/ refs/tags/$TAG |gzip >$TAG.tar.gz
+sha1sum $TAG.tar.gz >$TAG.tar.gz.sha1
