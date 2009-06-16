@@ -229,24 +229,6 @@ function handle_commandline_options(opts, use_default)
 	return mode
 end
 
-local default_build_process = {
-	"build_config",
-	"result_available",
-	"chroot_lock",
-	"chroot_cleanup_if_exists",
-	"setup_chroot",
-	"sources",
-	"collect_project",
-        -- XXX to be done: e2build.playground: stop if playgrund requested
-	"fix_permissions",
-        "playground",
-	"runbuild",
-	"store_result",
-	"linklast",
-	"chroot_cleanup",
-	"chroot_unlock",
-}
-
 policy = {}
 policy.init = init
 policy.register_commandline_options = register_commandline_options
@@ -272,7 +254,6 @@ policy.default_build_mode["lazytag"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_default,
-	build_process = default_build_process
 }
 
 policy.default_build_mode["tag"] = {
@@ -280,7 +261,6 @@ policy.default_build_mode["tag"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_default,
-	build_process = default_build_process
 }
 
 policy.default_build_mode["release"] = {
@@ -288,7 +268,6 @@ policy.default_build_mode["release"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_release,
-	build_process = default_build_process
 }
 
 policy.default_build_mode["branch"] = {
@@ -296,7 +275,6 @@ policy.default_build_mode["branch"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_default,
-	build_process = default_build_process
 }
 
 policy.default_build_mode["working-copy"] = {
@@ -304,6 +282,5 @@ policy.default_build_mode["working-copy"] = {
 	dep_set = policy.dep_set_last,
 	buildid = policy.buildid_scratch,
 	storage = policy.storage_local,
-	build_process = default_build_process
 }
 

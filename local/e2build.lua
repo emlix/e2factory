@@ -809,15 +809,14 @@ end
 function e2build.build_result(info, result, return_flags)
   e2lib.logf(3, "building result: %s", result)
   local res = info.results[result]
-  for _,fname in ipairs(res.build_mode.build_process) do
-    local f = e2build[fname]
-    --e2lib.logf(3, "running function: e2build.%s", fname)
+  for _,f in ipairs(e2build.build_process) do
+    --e2lib.logf(3, "running function: e2build.%s", f.name)
     local t1 = os.time()
     local flags = {}
-    local rc, re = f(info, result, flags)
+    local rc, re = f.func(info, result, flags)
     local t2 = os.time()
     local deltat = os.difftime(t2, t1)
-    e2lib.logf(3, "timing: step: %s [%s] %d", fname, result, deltat)
+    e2lib.logf(3, "timing: step: %s [%s] %d", f.name, result, deltat)
     if not rc then
       -- do not insert an error message from this layer.
       return false, re
@@ -1195,3 +1194,48 @@ function e2build.collect_project(info, r, return_flags)
 	return true, nil
 end
 
+--- register a function to extend the build process
+-- @param info
+-- @param name string: build function name (used for logging)
+-- @param func function: build function
+-- @param pos string: build function name. The new function will run before
+--                     the named function
+-- @return bool
+-- @return an error object on failure
+function e2build.register_build_function(info, name, func, pos)
+  local e = new_error("register build function")
+  local ipos = nil
+  for i=1, #e2build.build_process, 1 do
+    if e2build.build_process[i].name == pos then
+      ipos = i
+      break
+    end
+  end
+  if not ipos then
+    return false, e:append("Invalid position.")
+  end
+  local tab = {
+    name = name,
+    func = func,
+  }
+  table.insert(e2build.build_process, ipos, tab)
+  return true, nil
+end
+
+e2build.build_process = {
+	{ prio=0100, name="build_config", func=e2build.build_config },
+	{ prio=0200, name="result_available", func=e2build.result_available },
+	{ prio=0300, name="chroot_lock", func=e2build.chroot_lock },
+	{ prio=0400, name="chroot_cleanup_if_exists",
+			func=e2build.chroot_cleanup_if_exists },
+	{ prio=0500, name="setup_chroot", func=e2build.setup_chroot },
+	{ prio=0600, name="sources", func=e2build.sources },
+	{ prio=0700, name="collect_project", func=e2build.collect_project },
+	{ prio=0800, name="fix_permissions", func=e2build.fix_permissions},
+        { prio=0900, name="playground", func=e2build.playground },
+	{ prio=1000, name="runbuild", func=e2build.runbuild },
+	{ prio=1100, name="store_result", func=e2build.store_result },
+	{ prio=1200, name="linklast", func=e2build.linklast },
+	{ prio=1300, name="chroot_cleanup", func=e2build.chroot_cleanup },
+	{ prio=1400, name="chroot_unlock", func=e2build.chroot_unlock },
+}
