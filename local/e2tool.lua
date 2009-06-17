@@ -66,6 +66,8 @@ e2tool = e2lib.module("e2tool")
 -- @field build_numbers table: build numbers keyed by result names
 -- @field project_location string: project location relative to the servers
 -- @field release_id string: release identifiert XXX where do we initialize it?
+-- @field env table: env table
+-- @field env_files table: list of env files
 
 --- table of sources records, keyed by source names
 -- @name sources
@@ -375,6 +377,7 @@ The newest configuration syntax supported by the tools is %s.
 		" may not be extended once it is loaded.")
   end
   info.env = {}
+  info.env_files = { "proj/env", }
   if e2util.exists(p2) then
     e2lib.log(3, "loading " .. p2)
     local function check(k, v)
@@ -390,6 +393,7 @@ The newest configuration syntax supported by the tools is %s.
 		    local path2 = info.root .. "/" .. tab
 		    e2lib.log(3, "loading " .. path2)
 		    e2lib.dofile_protected(path2, { env=lua_should_have_localrec, e2env = info.env })
+		    table.insert(info.env_files, tab)
 		  elseif type(tab) == "table" then
 		    for k, v in pairs(tab) do -- for each result...
 		      if type(k) ~= "string" then
