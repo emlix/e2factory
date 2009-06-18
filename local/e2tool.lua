@@ -375,6 +375,18 @@ function e2tool.collect_project_info(path)
     return false, e:cat(re)
   end
 
+  -- table of functions, extensible by plugins
+  info.ftab = {
+    collect_project_info = {},		-- f(info)
+    check_result = {},			-- f(info, resultname)
+    resultid = {},			-- f(info, resultname)
+    pbuildid = {},			-- f(info, resultname)
+  }
+  rc, re = e2tool.register_check_result(info, e2tool.check_result)
+  if not rc then
+    return nil, e:cat(re)
+  end
+
   -- load local plugins
   local ctx = {  -- plugin context
     info = info,
@@ -802,6 +814,10 @@ The newest configuration syntax supported by the tools is %s.
       e:append("verifying remote tag failed")
       e2lib.abort(e:cat(re))
     end
+  end
+
+  for _,f in ipairs(info.ftab.collect_project_info) do
+    f(info)
   end
   return info, nil
 end
@@ -1705,6 +1721,17 @@ function e2tool.pbuildid(info, resultname)
 		end
 		hc:hash_line(fileid)			-- build script hash
 	end
+        -- call the list of functions in info.ftab.resultid
+        for _,f in ipairs(info.ftab.resultid) do
+		local hash, re = f(info, resultname)
+		-- nil -> error
+		-- false -> don't modify the hash
+		if hash == nil then
+			e2lib.abort(e:cat(re))
+		elseif hash ~= false then
+			hc:hash_line(hash)
+		end
+	end
 	e2lib.log(4, string.format("hash data for resultid %s\n%s",
 							resultname, hc.data))
 	r.resultid = hash.hash_finish(hc)	-- result id (without deps)
@@ -1729,7 +1756,18 @@ function e2tool.pbuildid(info, resultname)
 		end
 		hash.hash_line(hc, pbid)
 	end
-	e2lib.log(4, string.format("hash data for resultid %s\n%s", 
+        -- call the list of functions in info.ftab.pbuildid
+        for _,f in ipairs(info.ftab.pbuildid) do
+		local hash, re = f(info, resultname)
+		-- nil -> error
+		-- false -> don't modify the hash
+		if hash == nil then
+			e2lib.abort(e:cat(re))
+		elseif hash ~= false then
+			hc:hash_line(hash)
+		end
+	end
+	e2lib.log(4, string.format("hash data for resultid %s\n%s",
 							resultname, hc.data))
 	r.pbuildid = hash.hash_finish(hc)	-- buildid (with deps)
 	return r.build_mode.buildid(r.pbuildid)
@@ -1966,10 +2004,12 @@ end
 function e2tool.check_results(info)
 	local e = new_error("Error while checking results")
 	local rc, re
-	for r,_ in pairs(info.results) do
-		rc, re = e2tool.check_result(info, r)
-		if not rc then
-			e:cat(re)
+	for _,f in ipairs(info.ftab.check_result) do
+		for r,_ in pairs(info.results) do
+			rc, re = f(info, r)
+			if not rc then
+				return false, e:cat(re)
+			end
 		end
 	end
 	if e:getcount() > 1 then
@@ -2962,4 +3002,28 @@ end
 -- @return path to the sourceconfig
 function e2tool.sourceconfig(name)
   return e2tool.sourcedir(name,"config")
+end
+
+function e2tool.register_check_result(info, func)
+  if type(info) ~= "table" or type(func) ~= "function" then
+    return false, new_error("register_check_result: invalid argument")
+  end
+  table.insert(info.ftab.check_result, func)
+  return true, nil
+end
+
+function e2tool.register_resultid(info, func)
+  if type(info) ~= "table" or type(func) ~= "function" then
+    return false, new_error("register_resultid: invalid argument")
+  end
+  table.insert(info.ftab.resultid, func)
+  return true, nil
+end
+
+function e2tool.register_pbuildid(info, func)
+  if type(info) ~= "table" or type(func) ~= "function" then
+    return false, new_error("register_pbuildid: invalid argument")
+  end
+  table.insert(info.ftab.pbuildid, func)
+  return true, nil
 end
