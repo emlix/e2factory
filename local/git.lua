@@ -678,23 +678,6 @@ function git.sourceid(info, sourcename, sourceset)
 	return src.sourceid[sourceset]
 end
 
-local function sourceset2ref(info, sourcename, sourceset)
-	local src = info.sources[sourcename]
-	local rc, e
-	rc, e = git.validate_source(info, sourcename)
-	if not rc then
-		return false, e
-	end
-	if sourceset == "branch" or
-	   (sourceset == "lazytag" and src.tag == "^") then
-		return string.format("refs/heads/%s", src.branch)
-	elseif sourceset == "tag" or
-         (sourceset == "lazytag" and src.tag ~= "^") then
-		return string.format("refs/tags/%s", src.tag)
-	end
-	return nil, "invalid sourceset"
-end
-
 function git.toresult(info, sourcename, sourceset, directory)
 	local rc, re
 	local e = new_error("converting result")
@@ -708,7 +691,7 @@ function git.toresult(info, sourcename, sourceset, directory)
 	local sourcedir = string.format("%s/%s", directory, source)
 	e2lib.mkdir(sourcedir, "-p")
 	local archive = string.format("%s.tar.gz", src.name)
-	local ref = sourceset2ref(info, sourcename, sourceset)
+	local ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
 	-- git archive --format=tar <ref> | gzip > <tarball>
 	local cmd = string.format(
 		"cd %s/%s && git archive --format=tar --prefix=\"%s/\" %s | "..

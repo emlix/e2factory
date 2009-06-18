@@ -373,3 +373,14 @@ function generic_git.git_commit(gitdir, args)
   return e2lib.git("commit", gitdir, args)
 end
 
+function generic_git.sourceset2ref(sourceset, branch, tag)
+	if sourceset == "branch" or
+	   (sourceset == "lazytag" and tag == "^") then
+		return string.format("refs/heads/%s", branch)
+	elseif sourceset == "tag" or
+         (sourceset == "lazytag" and tag ~= "^") then
+		return string.format("refs/tags/%s", tag)
+	end
+	return nil, "invalid sourceset"
+end
+
