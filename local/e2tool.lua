@@ -375,6 +375,20 @@ function e2tool.collect_project_info(path)
     return false, e:cat(re)
   end
 
+  -- load local plugins
+  local ctx = {  -- plugin context
+    info = info,
+  }
+  local plugindir = string.format("%s/.e2/plugins", info.root)
+  rc, re = plugin.load_plugins(plugindir, ctx)
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = plugin.init_plugins()
+  if not rc then
+    return false, e:cat(re)
+  end
+
   -- check for configuration compatibility
   info.config_syntax_compat = buildconfig.SYNTAX
   info.config_syntax_file = ".e2/syntax"

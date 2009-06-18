@@ -56,6 +56,7 @@ local: e2generic_local.lc luafile_ll_local.so e2util_local.so sha1.so
 
 install-local: local
 	mkdir -p $(LOCALLIBDIR) $(LOCALMAKDIR)
+	install -m 755 -d $(LOCALPLUGINDIR)
 	install -m 644 e2generic_local.lc $(LOCALLIBDIR)
 	install -m 755 sha1.so $(LOCALLIBDIR)
 	install -m 755 luafile_ll_local.so $(LOCALLIBDIR)
@@ -76,6 +77,7 @@ clean:
 	rm -f $(CLEAN_FILES)
 
 e2generic_global.lc: strict.lua collection.lua e2lib_global_prefix.lua \
+		plugin.lua \
 		e2lib.lua e2option.lua hash.lua \
 		transport.lua cache.lua url.lua scm.git.lua \
 		luafile.lua lua-version-map.lua \

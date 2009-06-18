@@ -551,6 +551,10 @@ function e2lib.finish(returncode)
   if not returncode then
     returncode = 0
   end
+  local rc, re = plugin.exit_plugins()
+  if not rc then
+    e2lib.logf(1, "deinitializing plugins failed (ignoring)")
+  end
   e2lib.rmtempdirs()
   e2lib.rmtempfiles()
   e2lib.lock:cleanup()
