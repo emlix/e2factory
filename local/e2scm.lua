@@ -65,7 +65,6 @@ function e2scm.register(scm, t)
   t = t or {}
   t.name = scm
   scms[ scm ] = t
-  setmetatable(t, scmmt)
   return t
 end
 
@@ -382,4 +381,40 @@ function scm.has_working_copy(info, sourcename)
 		return false, re
 	end
 	return true, nil
+end
+
+--- register a new scm interface
+-- @param name string: interface name
+-- @param func function: interface function
+-- @return bool
+-- @return an error object on failure
+function scm.register_interface(name, func)
+  local e = new_error("registering scm interface failed")
+  if scm[name] then
+    return false, e:append(
+		"interface with that name exists: %s", name)
+  end
+  scm[name] = func
+  return true, nil
+end
+
+--- register a new scm function (accessible through a scm interface)
+-- @param type string: scm type
+-- @param name string: interface name
+-- @param func function: interface function
+-- @return bool
+-- @return an error object on failure
+function scm.register_function(type, name, func)
+  local e = new_error("registering scm function failed")
+  if not e2scm[type] then
+    return false, e:append("no scm type by that name: %s", type)
+  end
+  if not scm[name] then
+    return false, e:append("no scm interface by that name: %s", name)
+  end
+  if e2scm[type][name] then
+    return false, e:append("scm function exists: %s.%s", type, name)
+  end
+  scms[type][name] = func
+  return true, nil
 end
