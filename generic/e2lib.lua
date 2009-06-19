@@ -70,7 +70,6 @@ e2lib = {
   env = {},
   last_output = false,
   abort_hook = false,
-  finish_hook = false,
   tmpdirs = {},
   tmpfiles = {},
   enable_invocation_log = false,
@@ -491,16 +490,12 @@ function e2lib.log_invocation(info, args)
   end
 end
 
---- exit from the tool, cleaning up temporary files and directories and
--- running the finish_hook before.
+--- exit from the tool, cleaning up temporary files and directories
 -- @param rc number: return code (optional, defaults to 0)
 -- @return This function does not return.
 function e2lib.finish(rc)
   if not rc then
     rc = 0
-  end
-  if e2lib.finish_hook then
-    e2lib.finish_hook(rc)
   end
   e2lib.rmtempdirs()
   e2lib.rmtempfiles()
