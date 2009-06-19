@@ -50,7 +50,6 @@ if not info then
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-dlist")
 
 if not info.results[ result ] then
   e2lib.abort("no such result: ", result)
@@ -64,6 +63,5 @@ if dep then
   for i = 1, #dep do print(dep[i]) end
 end
 
-e2hook.run_hook(info, "tool-finish", nil, "e2-dlist")
 e2lib.finish()
 

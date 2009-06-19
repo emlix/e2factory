@@ -69,7 +69,6 @@ e2lib = {
   termwidth = 72,
   env = {},
   last_output = false,
-  abort_hook = false,
   tmpdirs = {},
   tmpfiles = {},
   enable_invocation_log = false,
@@ -262,17 +261,11 @@ function e2lib.abort(...)
   local t = { ... }
   local e = t[1]
   if e and e.print then
-    if e2lib.abort_hook then
-      e2lib.abort_hook("no message")
-    end
     e:print()
   else
     local msg = table.concat(t)
     if msg:len() == 0 then
       e2lib.bomb("calling e2lib.abort() with zero length message")
-    end
-    if e2lib.abort_hook then
-      e2lib.abort_hook(msg)
     end
     e2lib.log(1, "Error: " .. msg)
   end

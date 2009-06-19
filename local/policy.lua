@@ -224,20 +224,15 @@ local default_build_process = {
 	"remove_logfile",
 	"chroot_cleanup_if_exists",
 	"setup_chroot",
-	-- XXX run build-setup-chroot hook here
 	"sources",
 	"collect_project",
-        -- XXX run build-pre-runbuild hook here
         -- XXX to be done: e2build.playground: stop if playgrund requested
 	"fix_permissions",
         "playground",
 	"runbuild",
-	-- XXX how to handle the build failure hook?
-	-- XXX run build-post-runbuild hook here
 	"store_result",
 	"linklast",
 	"chroot_cleanup",
-	-- XXX run build-remove-chroot hook here?
 }
 
 policy = {}

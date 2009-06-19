@@ -117,7 +117,6 @@ e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 		$(TOPLEVEL)/generic/url.lua \
 		$(TOPLEVEL)/generic/collection.lua \
 		$(TOPLEVEL)/generic/e2lib.lua \
-		$(TOPLEVEL)/generic/e2hook.lua \
 		e2tool.lua e2scm.lua git.lua svn.lua cvs.lua files.lua \
 		$(TOPLEVEL)/generic/e2option.lua \
 		$(TOPLEVEL)/generic/convenience.lua \

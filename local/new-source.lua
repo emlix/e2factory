@@ -243,7 +243,6 @@ if not info then
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-new-source")
 
 if opts.git then
   if #opts.arguments ~= 1 then
@@ -291,5 +290,4 @@ else
 	"sources in your project")
 end
 
-e2hook.run_hook(info, "tool-finish", nil, "e2-new-source")
 e2lib.finish(0)

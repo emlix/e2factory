@@ -75,7 +75,6 @@ if not rc then
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-fetch-sources")
 
 if not (opts.fetch or opts.update) then
   opts.fetch = true
@@ -244,9 +243,6 @@ if opts.scm or opts.files or opts.git or opts.cvs or opts.svn or
     e:cat(re)
   end
 end
-
---e2hook.run_hook(info, "fetch-sources", srcs)
---e2hook.run_hook(info, "tool-finish", nil, "e2-fetch-sources")
 
 if e:getcount() > 0 then
   e2lib.abort(e)

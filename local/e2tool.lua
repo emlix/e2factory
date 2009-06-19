@@ -435,9 +435,6 @@ The newest configuration syntax supported by the tools is %s.
     if not rc then
       return false, e:cat(re)
     end
-    -- do not set this metatable here, as we want to allow changing 
-    -- the environment in a hook...
-    --setmetatable(info.env, { __newindex = invalid_access })
   end
 
   -- read project configuration
@@ -1057,19 +1054,6 @@ function e2tool.projid(info)
 				e2lib.abort(e)
 			end
 			hc:hash_line(location)		-- the filename
-			hc:hash_line(hash)	-- the file content
-		end
-	end
-	for f in e2lib.directory(info.root .. "/proj/hooks", false, true) do
-		if not e2lib.is_backup_file(f) then
-			local location = string.format("proj/hooks/%s", 
-							e2lib.basename(f))
-			local hash, e = e2tool.hash_file(info,
-					info.root_server_name, location)
-			if not hash then
-				e2lib.abort(e)
-			end
-			hc:hash_line(location)	-- the file location
 			hc:hash_line(hash)	-- the file content
 		end
 	end

@@ -53,7 +53,6 @@ if not rc then
 end
 
 --e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-ls-project")
 
 local function pempty(s1, s2, s3)
 	print(string.format("   %s  %s  %s", s1, s2, s3))
@@ -142,7 +141,6 @@ if opts.dot or opts["dot-sources"] then
   end
   print("}")
   e2lib.finish()
-  e2hook.run_hook(info, "tool-finish", nil, "e2-ls-project")
 end
 
 --------------- project name
@@ -265,5 +263,4 @@ for _,g in ipairs(info.chroot.groups_sorted) do
 	end
 end
 
-e2hook.run_hook(info, "tool-finish", nil, "e2-ls-project")
 e2lib.finish()

@@ -48,7 +48,7 @@ e2.conf.5 \
 e2-build-numbers.1
 
 MANPAGES5 = e2rc.5 e2config.5
-MANPAGES7 = e2global.7 e2hooks.7 e2intro.7 e2workflow.7
+MANPAGES7 = e2global.7 e2intro.7 e2workflow.7
 MANPAGES = $(MANPAGES1) $(MANPAGES5) $(MANPAGES7)
 
 MANPAGES_HTML = $(MANPAGES:=.html)

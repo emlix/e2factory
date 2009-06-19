@@ -296,9 +296,6 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
 						file.location, file.server))
       end
     end
-    e2hook.run_hook(info, "files-prepare-source",
-	{source=sourcename, file=file.base, path=buildpath},
-      "e2-build")
   end
   return true, nil
 end

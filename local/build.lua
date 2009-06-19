@@ -57,7 +57,6 @@ if not rc then
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-build")
 
 -- get build mode from the command line
 local build_mode = policy.handle_commandline_options(opts, true)
@@ -133,7 +132,6 @@ end
 if opts.release and not e2tool.e2_has_fixed_tag(info) then
   e2lib.abort("Failure: e2 is on pseudo tag while building in release mode.")
 end
--- XXX e2hook.run_hook(info, "pre-build", a, "e2-build")
 
 if opts["buildnumber"] then
 	e2lib.logf(1, "setting up build numbers")
@@ -163,7 +161,5 @@ local rc, re = e2build.build_results(info, sel_res)
 if not rc then
   e2lib.abort(re)
 end
--- XXX e2hook.run_hook(info, "post-build", a, "e2-build")
-e2hook.run_hook(info, "tool-finish", nil, "e2-build")
 e2lib.finish()
 

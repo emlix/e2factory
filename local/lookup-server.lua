@@ -44,11 +44,9 @@ if not info then
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-lookup-server")
 
 local server, islocal = e2tool.lookup_server(info, opts.arguments[1])
 if not server then e2options.usage(1) end
 print(server)
 
-e2hook.run_hook(info, "tool-finish", nil, "e2-lookup-server")
 e2lib.finish()

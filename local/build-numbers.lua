@@ -59,7 +59,6 @@ for _,res in pairs(info.results) do
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-buildnumbers")
 
 -- read build numbers,
 -- merge to results,

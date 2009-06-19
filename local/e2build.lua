@@ -347,12 +347,10 @@ function e2build.runbuild(info, r, return_flags)
   e2tool.reset_umask(info)
   out:close()
   if rc ~= 0 then
-    -- XXX e2hook.run_hook(c.info, "build-failure", c, "e2-build")
     e = new_error("build script for %s failed with exit status %d", r, rc)
     e:append("see %s for more information", res.build_config.buildlog)
     return false, e
   end
-  -- XXX e2hook.run_hook(c.info, "build-post-runbuild", c, "e2-build")
   return true, nil
 end
 
@@ -601,7 +599,6 @@ function e2build.sources(info, r, return_flags)
   end
 
   local steps = {
-	--XXX e2hook.run_hook(c.info, "build-pre-sources", c, "e2-build")
 	install_directory_structure,
 	install_build_script,
 	install_env,
@@ -609,7 +606,6 @@ function e2build.sources(info, r, return_flags)
 	install_build_driver,
 	install_build_time_dependencies,
 	install_sources,
-	--XXX e2hook.run_hook(c.info, "build-post-sources", c, "e2-build")
   }
   for _,f in ipairs(steps) do
     local rflags = {}

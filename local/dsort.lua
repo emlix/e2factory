@@ -44,13 +44,11 @@ if not info then
 end
 
 e2lib.log_invocation(info, arg)
-e2hook.run_hook(info, "tool-start", nil, "e2-dsort")
 
 local d = e2tool.dsort(info)
 if d then
   for i = 1, #d do print(d[i]) end
 end
 
-e2hook.run_hook(info, "tool-finish", nil, "e2-dsort")
 e2lib.finish()
 

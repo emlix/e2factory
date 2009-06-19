@@ -61,8 +61,6 @@ e2lib.log_invocation(nil, arg)
 
 -- standard global tool setup finished
 
---e2hook.run_hook(nil, "tool-start", nil, "e2-create-project")
-
 if e2lib.osenv["E2_LOCAL_TAG"] and e2lib.osenv["E2_LOCAL_BRANCH"] then
   e2lib.local_e2_branch = e2lib.osenv["E2_LOCAL_BRANCH"]
   e2lib.local_e2_tag = e2lib.osenv["E2_LOCAL_TAG"]
