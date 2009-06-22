@@ -163,8 +163,8 @@ function e2build.build_config(info, r)
   end
   res.build_config = {} -- build up a new build config
   local tab = res.build_config
-  local tmpdir = string.format("%s/e2-2.2-build/%s", e2lib.tmpdir, 
-							e2lib.username)
+  local tmpdir = string.format("%s/e2factory-%s.%s.%s-build", e2lib.tmpdir,
+		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL)
   local project = info.name
   local builddir = "tmp/e2"
   tab.mode = nil -- XXX
