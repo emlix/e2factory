@@ -1,6 +1,11 @@
 FAQ
 -----------------------------
 
+Q: What about 'mktemp' saying 'Permission denied' when running e2-build?
+
+A: You've got old chroot environments left from buggy versions of e2factory
+in your build directory. Remove them, as root.
+
 -----
 Q: e2-fetch-project does not work with e2-2.2.x. Why?
 
