@@ -122,7 +122,11 @@ end
 local ref
 if tag == "^" then
   e2lib.warnf("WOTHER", "using e2 version by branch")
-  ref = string.format("refs/heads/%s", branch)
+  if branch:match("/") then
+    ref = branch
+  else
+    ref = string.format("remotes/origin/%s", branch)
+  end
 else
   ref = string.format("refs/tags/%s", tag)
 end
@@ -146,8 +150,7 @@ end
 e2lib.chdir(destdir)
 
 -- checkout ref
-local args = string.format("--track -b tmp '%s'", ref)
-rc, re = e2lib.git(nil, "checkout", args)
+rc, re = e2lib.git(nil, "checkout", ref)
 if not rc then
   e2lib.abort(e:cat(re))
 end
@@ -158,7 +161,13 @@ for _,ex in ipairs(extensions) do
   if not rc then
     e2lib.abort(e:cat(re))
   end
-  e2lib.logf(2, "fetching extension: %s (tag %s)", ex.name, ex.ref)
+  local ref
+  if ex.ref:match("/") then
+    ref = ex.ref
+  else
+    ref = string.format("refs/tags/%s", ex.ref)
+  end
+  e2lib.logf(2, "fetching extension: %s (%s)", ex.name, ref)
   local server = config.site.e2_server
   local location = string.format("%s/%s.git", config.site.e2_base, ex.name)
   local destdir = ex.name
@@ -175,8 +184,7 @@ for _,ex in ipairs(extensions) do
   e2lib.chdir(destdir)
 
   -- checkout ref
-  local args = string.format("--track -b tmp '%s'", ex.ref)
-  rc, re = e2lib.git(nil, "checkout", args)
+  rc, re = e2lib.git(nil, "checkout", ref)
   if not rc then
     e2lib.abort(e:cat(re))
   end

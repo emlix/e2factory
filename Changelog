@@ -1,5 +1,6 @@
 NEXT:
  * temporary build directories are located in a version specific directory now
+ * e2-install-e2 installs branches properly now. Git refs can be specified.
 
 e2factory-2.3.1
  * bugfixes

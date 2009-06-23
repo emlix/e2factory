@@ -25,7 +25,9 @@ Example:
 
     2_3_0
 
-.e2/extensions holds a table specifying a list of extensions.
+.e2/extensions holds a table specifying a list of extensions. The ref
+must be a valid git ref. If the string has a '/' the ref is passed to
+git as-is, otherwise it is translated into a tag by prepending 'refs/tags/'
 
 Example:
 
