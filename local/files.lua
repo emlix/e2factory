@@ -430,7 +430,7 @@ function files.toresult(info, sourcename, sourceset, directory)
 		if c then
 			f:write(string.format("\t%s\n", c))
 		end
-		if file.unpack then
+		if file.unpack and file.unpack ~= sourcename then
 			f:write(string.format(
 			"\tln -s %s $(BUILD)/%s\n", file.unpack, sourcename))
 		end
