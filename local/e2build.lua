@@ -69,7 +69,8 @@ function e2build.result_available(info, r, return_flags)
     return_flags.stop = false
     return true, nil
   end
-  if res.build_mode.source_set() == "working-copy" then
+  if res.build_mode.source_set() == "working-copy" or
+     res.force_rebuild == true then
     return_flags.message = string.format("building %-20s [%s]", r, sbid)
     return_flags.stop = false
     return true, nil
