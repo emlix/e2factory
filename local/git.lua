@@ -692,12 +692,24 @@ function git.toresult(info, sourcename, sourceset, directory)
 	local sourcedir = string.format("%s/%s", directory, source)
 	e2lib.mkdir(sourcedir, "-p")
 	local archive = string.format("%s.tar.gz", src.name)
-	local ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
-	-- git archive --format=tar <ref> | gzip > <tarball>
-	local cmd = string.format(
-		"cd %s/%s && git archive --format=tar --prefix=\"%s/\" %s | "..
-		"gzip > %s/%s",
-		info.root, src.working, sourcename, ref, sourcedir, archive)
+	local cmd = nil
+	if sourceset == "tag" or sourceset == "branch" then
+		local ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
+		-- git archive --format=tar <ref> | gzip > <tarball>
+		cmd = string.format(
+			"cd %s/%s && git archive --format=tar --prefix=\"%s/\" %s | "..
+			"gzip > %s/%s",
+			info.root, src.working, sourcename, ref, sourcedir, archive)
+	elseif sourceset == "working-copy" or sourceset == "mmm" then
+		cmd = string.format("tar -C '%s/%s' "..
+			"--transform='s,^./,./%s/,' "..
+			"--exclude=.git "..
+			"-czf '%s/%s' .",
+			info.root, src.working, sourcename, sourcedir, archive)
+	else
+		return false, e:append("sourceset not supported: %s",
+								sourceset)
+	end
 	local rc, re = e2lib.callcmd_log(cmd)
 	if rc ~= 0 then
 		return false, e:cat(re)
