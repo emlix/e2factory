@@ -18,5 +18,18 @@ A: The tool has disappeared, its syntax changed or the use-case is
    no longer supported. Use the --help flag.
 
 -----
+Q: I cannot fetch / install local tools in a project that has some
+   e2factory version prior to e2factory-2.3.0 configured.
+
+A: Use a configuration file pointing to an e2factory repository that
+   has those old versons. They are unfortunately not available in the
+   free software repository.
+   A compatibility wrapper (e2compat) may be installed with your version
+   of e2factory. Use
+
+    e2compat fetch-project
+    e2compat install-e2
+
+-----
 prev [migration](migration.html)
 next [manual](manual.html)
