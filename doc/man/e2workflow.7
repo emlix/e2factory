@@ -76,22 +76,11 @@ the project information: Fetch the version with the release tag on it.
 Now, you are ready to rebuild the tagged release.
 
 .SH "PROVIDING THE SOURCES"
-With the release done, the sources shall be provided and shipped, too.
-To do so, call \fBe2-prepare-cargo <new-path>\fR to generate a copy
-of the project with no external references left, i.e. no source code
-management and no upstream server references.
-All files needed will be placed inside that new project directory itself.
-Unneeded result and source parts will be dropped,
-unless you give the \fB--all\fR option.
-For each repository based source, where instead of a single tag
-a list of tags is given in the corresponding config file,
-the source provided thru \fBe2-prepare-cargo\fR is split up into
-a basic tar archive and a set of patches to reflect the steps of
-development set with the tags.
-Furthermore, where in a repository based source is given files
-information as with sources of type \fIfiles\fB, this is used
-as basic data set, all tagged versions are provided as patches
-to be applied upon it.
+Sources, including a set of scripts to rebuild the project up to a certain
+result can be provided withing a result by enabling the collect_project
+flag in the result configuration.
+All files will be placed inside chroot for the build. The user will usually
+simply package the tree into a result file.
 
 .SH "SEE ALSO"
 .BR e2intro(7)

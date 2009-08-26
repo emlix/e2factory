@@ -38,7 +38,6 @@ all:
 
 install-local:
 	install -m 755 -d $(LOCALMAKDIR)
-	install -m644 README $(LOCALMAKDIR)/README
 	install -m644 makefile.template $(LOCALMAKDIR)/makefile
 	install -m644 makefile.res.template $(LOCALMAKDIR)/makefile.res
 	install -m644 makefile.collect_project $(LOCALMAKDIR)/Makefile
