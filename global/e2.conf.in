@@ -4,6 +4,9 @@ e2factory, the emlix embedded build system
 /etc/e2/e2.conf sample configuration file
 ]]
 config {
+	log = {
+		logrotate = 5,
+	},
 	site = {
 		e2_server = "projects",
 		e2_location = "e2factory.git",

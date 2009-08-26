@@ -165,7 +165,9 @@ function e2tool.opendebuglogfile(info)
     local e = new_error("error making log directory")
     return false, e:cat(re)
   end
-  local debuglogfile, re = luafile.open(info.root .. "/log/debug.log", "w")
+  local logfile = info.root .. "/log/debug.log"
+  local rc, re = e2lib.rotate_log(logfile)
+  local debuglogfile, re = luafile.open(logfile, "w")
   if not debuglogfile then
     local e = new_error("error opening debug logfile")
     return false, e:cat(re)

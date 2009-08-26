@@ -87,6 +87,7 @@ e2lib = {
   template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
   extension_config = ".e2/extensions",
   lock = nil,
+  logrotate = 5,   -- configurable via config.log.logrotate
 }
 
 -- Interrupt handling
@@ -396,6 +397,60 @@ function e2lib.log(level, msg)
     io.stderr:write("\n")
   end
   return nil
+end
+
+function e2lib.rotate_log(file)
+  local e = new_error("rotating logfile: %s", file)
+  local rc, re
+  local logdir = e2lib.dirname(file)
+  local logfile = e2lib.basename(file)
+  local dir = e2util.directory(logdir, false)
+  if not dir then
+    return false, e:cat(string.format("%s: can't read directory", dir))
+  end
+  local files = {}
+  for _,f in ipairs(dir) do
+    local match = f:match(string.format("%s.[0-9]+", logfile))
+    if match then
+      table.insert(files, 1, match)
+    end
+  end
+  -- sort in reverse order
+  local function comp(a, b)
+    local na = a:match(string.format("%s.([0-9]+)", logfile))
+    local nb = b:match(string.format("%s.([0-9]+)", logfile))
+    return tonumber(na) > tonumber(nb)
+  end
+  table.sort(files, comp)
+  for _,f in ipairs(files) do
+    local n = f:match(string.format("%s.([0-9]+)", logfile))
+    if n then
+      n = tonumber(n)
+      if n >= e2lib.logrotate - 1 then
+	local del = string.format("%s/%s.%d", logdir, logfile, n)
+	rc, re = e2lib.rm(del)
+	if not rc then
+	  return false, e:cat(re)
+	end
+      else
+	local src = string.format("%s/%s.%d", logdir, logfile, n)
+	local dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
+	rc, re = e2lib.mv(src, dst)
+	if not rc then
+	  return false, e:cat(re)
+	end
+      end
+    end
+  end
+  local src = file
+  local dst = string.format("%s/%s.0", logdir, logfile)
+  if e2lib.isfile(src) then
+    rc, re = e2lib.mv(src, dst)
+    if not rc then
+      return false, e:cat(re)
+    end
+  end
+  return true, nil
 end
 
 local buildidlogfile = false
@@ -846,6 +901,16 @@ end
 -- this function always succeeds or aborts
 -- @return nothing
 function e2lib.use_global_config()
+
+  -- check if type(x) == t, and abort if not.
+  local function assert_type(x, d, t1)
+    local t2 = type(x)
+    if t1 ~= t2 then
+      e2lib.abort(
+        string.format("configuration error: %s (expected %s got %s)", d, t1, t2))
+    end
+  end
+
   local config = e2lib.global_config
   if not config then
     e2lib.abort("global config not available")
@@ -855,18 +920,17 @@ function e2lib.use_global_config()
     e2lib.log(3, string.format(
 		"e2lib.enable_invocation_log=%s", tostring(config.log.enable)))
   end
+  if config.log then
+    assert_type(config.log, "config.log", "table")
+    if config.log.logrotate then
+      assert_type(config.log.logrotate, "config.log.logrotate", "number")
+      e2lib.logrotate = config.log.logrotate
+    end
+  end
   if config.site and config.site.buildnumber_server_url ~= nil then
     e2lib.buildnumber_server_url = config.site.buildnumber_server_url
     e2lib.log(3, string.format("e2lib.buildnumber_server_url=%s", 
 				tostring(config.site.buildnumber_server_url)))
-  end
-  -- check if type(x) == t, and abort if not.
-  local function assert_type(x, d, t1)
-    local t2 = type(x)
-    if t1 ~= t2 then
-      e2lib.abort(
-        string.format("configuration error: %s (expected %s got %s)", d, t1, t2))
-    end
   end
   assert_type(config.site, "config.site", "table")
   assert_type(config.site.e2_branch, "config.site.e2_branch", "string")
