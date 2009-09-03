@@ -196,8 +196,10 @@ if #opts.arguments > 0 then
       for _, s in ipairs(res.sources) do
 	sel[s] = s
       end
+    elseif opts.result then
+      e2lib.abort("is not a result: " .. x)
     else
-      e2lib.abort("is neither known source nor result: " .. x)
+      e2lib.abort("is not a source: " .. x)
     end
   end
 elseif opts["all"] then
