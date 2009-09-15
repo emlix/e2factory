@@ -199,7 +199,7 @@ function e2lib.init2()
   -- initialize the transport library after resetting tools
   local rc, re = transport.init()
   if not rc then
-    e:cat(re)
+    e2lib.abort(e:cat(re))
   end
 
   -- get host system architecture
