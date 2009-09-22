@@ -642,6 +642,7 @@ end
 -- @return an error string
 function git.sourceid(info, sourcename, sourceset)
 	local src = info.sources[sourcename]
+	local e
 	if not src.sourceid then
 		src.sourceid = {}
 		src.sourceid["working-copy"] = "working-copy"
