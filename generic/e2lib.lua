@@ -26,6 +26,8 @@
 ]]
 
 require("buildconfig")
+require("lock")
+
 _version = "e2factory, the emlix embedded build system, version " .. 
 							buildconfig.VERSION
 
@@ -84,6 +86,7 @@ e2lib = {
   buildnumber_server_url = nil,
   template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
   extension_config = ".e2/extensions",
+  lock = nil,
 }
 
 -- Interrupt handling
@@ -171,6 +174,8 @@ function e2lib.init()
   if not e2lib.hostname then
     e2lib.abort("hostname ist not set")
   end
+
+  e2lib.lock = lock.new()
 end
 
 function e2lib.init2()
@@ -271,6 +276,7 @@ function e2lib.abort(...)
   end
   e2lib.rmtempdirs()
   e2lib.rmtempfiles()
+  e2lib.lock:cleanup()
   os.exit(1)
 end
 
@@ -492,6 +498,7 @@ function e2lib.finish(rc)
   end
   e2lib.rmtempdirs()
   e2lib.rmtempfiles()
+  e2lib.lock:cleanup()
   os.exit(rc)
 end
 
