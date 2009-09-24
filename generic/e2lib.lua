@@ -1411,6 +1411,19 @@ function e2lib.touch(file, flags)
   return e2lib.call_tool("touch", args)
 end
 
+--- call the rmdir command
+-- @param dir string: the directory name
+-- @param flags string: flags to pass to rmdir
+-- @return bool
+-- @return the last line ouf captured output
+function e2lib.rmdir(dir, flags)
+	if not flags then
+		flags = ""
+	end
+	local args = string.format("%s %s", flags, dir)
+	return e2lib.call_tool("rmdir", args)
+end
+
 --- call the mkdir command
 -- @param dir string: the directory name
 -- @param flags string: flags to pass to mkdir
