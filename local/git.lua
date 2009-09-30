@@ -762,9 +762,8 @@ function git.check_workingcopy(info, sourcename)
 	expect = string.format("origin")
 	res, re = generic_git.git_config(gitdir, query)
 	if not res then
-		return false, e:cat(re)
-	end
-	if res ~= expect then
+		e:append("remote is not configured for branch %s", src.branch)
+	elseif res ~= expect then
 		e:append("%s is not \"origin\"", query)
 	end
 	-- git config remote.origin.url == server:location
