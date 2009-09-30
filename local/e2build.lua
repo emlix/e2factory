@@ -173,6 +173,7 @@ function e2build.build_config(info, r)
   tab.base = string.format("%s/%s/%s", tmpdir, project, r)
   tab.c = string.format("%s/chroot", tab.base)
   tab.chroot_marker = string.format("%s/e2factory-chroot", tab.base)
+  tab.chroot_lock = string.format("%s/e2factory-chroot-lock", tab.base)
   tab.T = string.format("%s/%s/%s/chroot/%s", tmpdir, project, r, builddir)
   tab.Tc = string.format("/%s", builddir)
   tab.r = string.format("%s", r)
@@ -205,6 +206,32 @@ function e2build.build_config(info, r)
     tab.groups[g] = true
   end
   return tab
+end
+
+function e2build.chroot_lock(info, r, return_flags)
+  local res = info.results[r]
+  local rc, re
+  local e = new_error("error locking chroot")
+  rc, re = e2lib.mkdir(res.build_config.c, "-p")
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.lock:lock(res.build_config.chroot_lock)
+  if not rc then
+    return false, e:cat(re)
+  end
+  return true, nil
+end
+
+function e2build.chroot_unlock(info, r, return_flags)
+  local res = info.results[r]
+  local rc, re
+  local e = new_error("error unlocking chroot")
+  rc, re = e2lib.lock:unlock(res.build_config.chroot_lock)
+  if not rc then
+    return false, e:cat(re)
+  end
+  return true, nil
 end
 
 function e2build.setup_chroot(info, r, return_flags)
