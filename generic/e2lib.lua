@@ -1555,6 +1555,20 @@ function e2lib.cp(src, dst, flags)
 	return e2lib.call_tool("cp", args)
 end
 
+--- call the ln command
+-- @param src string: source name
+-- @param dst string: destination name
+-- @param flags string: additional flags
+-- @return bool
+-- @return the last line ouf captured output
+function e2lib.ln(src, dst, flags)
+	if not flags then
+		flags = ""
+	end
+	local args = string.format("%s '%s' '%s'", flags, src, dst)
+	return e2lib.call_tool("ln", args)
+end
+
 --- call the curl command
 -- @param args
 -- @return bool
