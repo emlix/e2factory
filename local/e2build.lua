@@ -711,9 +711,15 @@ function e2build.store_result(info, r, return_flags)
     e2lib.logf(3, "result file: %s", f)
     local s = string.format("%s/%s", rfilesdir, f)
     local d = "result/files"
-    rc, re = e2lib.cp(s, d)
+    rc, re = e2lib.ln(s, d)
     if not rc then
-      return false, e:cat(re)
+      e:cat(re)
+      e2lib.warnf("WOTHER",
+			"Creating hardlink failed. Falling back to copying.")
+      rc, re = e2lib.cp(s, d)
+      if not rc then
+	return false, e:cat(re)
+      end
     end
   end
   rc, re = e2lib.chdir("result")
