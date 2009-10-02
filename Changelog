@@ -1,6 +1,15 @@
 NEXT:
- * temporary build directories are located in a version specific directory now
+ * temporary build directories are located in a version specific directory
+   now
  * e2-install-e2 installs branches properly now. Git refs can be specified.
+ * a bug in e2-build --force-rebuild was fixed that prevented forced rebuilds
+ * the chroot environment is locked now when in use
+ * hardlinks are used when preparing the result tarball, if possible, to
+   improve performance
+ * logfiles are rotated instead of deleting them
+ * unused code was removed
+ * the faq section in the documentation was extended
+ * outdated documentation was removed
 
 e2factory-2.3.1
  * bugfixes
