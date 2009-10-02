@@ -50,6 +50,11 @@ function files.validate_source(info, sourcename)
   end
   if src.file then
     for _,f in pairs(src.file) do
+      if type(f) ~= "table" then
+	e:append("%s: source has invalid file entry in `file' attribute",
+								sourcename)
+	break
+      end
       -- catch deprecated configuration
       if f.name then
 	e:append("source has file entry with `name' attribute")

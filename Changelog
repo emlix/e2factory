@@ -7,6 +7,7 @@ NEXT:
  * hardlinks are used when preparing the result tarball, if possible, to
    improve performance
  * logfiles are rotated instead of deleting them
+ * a bug in configuration validation for files sources was fixed
  * unused code was removed
  * the faq section in the documentation was extended
  * outdated documentation was removed
