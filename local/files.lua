@@ -269,6 +269,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
 								symlink, path)
 	rc, re = e2lib.patch(args)
 	if not rc then
+	  e:append("applying patch: \"%s:%s\"", file.server, file.location)
 	  return false, e:cat(re)
 	end
       elseif file.copy then
