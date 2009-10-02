@@ -150,6 +150,12 @@ function source_apply_default_licences(info, sourcename)
 		" licences attribute is not in table format. Converting.")
     src.licences = { src.licences }
   end
+  for i, s in pairs(src.licences) do
+    if type(i) ~= "number" or type(s) ~= "string" then
+      e:append("licences attribute is not a list of strings")
+      return false, e
+    end
+  end
   for _,l in ipairs(src.licences) do
     if not info.licences[l] then
       e:append("unknown licence: %s", l)

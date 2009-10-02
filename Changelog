@@ -8,6 +8,8 @@ NEXT:
    improve performance
  * logfiles are rotated instead of deleting them
  * a bug in configuration validation for files sources was fixed
+ * a bug in validating the licences attribute in source configurations was
+   fixed
  * unused code was removed
  * the faq section in the documentation was extended
  * outdated documentation was removed
