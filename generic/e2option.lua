@@ -69,6 +69,9 @@ e2option.aliases = {}
 -- @param category string: category name
 -- @return nil
 function e2option.flag(name, doc, func, category)
+  if options[ name ] then
+    return false, new_error("option exists: %s", name)
+  end
   options[ name ] = {type = "flag", documentation = doc or "", name = name,
     proc=func, default = true,
     category = category}
@@ -83,6 +86,9 @@ end
 -- @param argname string: argument name used in documentation (optional)
 -- @return nil
 function e2option.option(name, doc, default, func, argname)
+  if options[ name ] then
+    return false, new_error("option exists: %s", name)
+  end
   options[ name ] = {type = "option", documentation = doc or "", name = name,
     proc=func, default=default or true, 
     argumentname=argname or "ARGUMENT"}
