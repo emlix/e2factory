@@ -159,6 +159,24 @@ e2tool = e2lib.module("e2tool")
 --     in the ".fix" array will be stored to the configuration file.
 --     storing details are described with e2tool.save_user_config below.
 
+--- check if a table is a list of strings
+-- @param l table
+-- @return bool
+local function listofstrings(l)
+  if type(l) ~= "table" then
+    return false, new_error("not a table")
+  end
+  for i,s in pairs(l) do
+    if type(i) ~= "number" then
+      return false, new_error("found non-numeric index")
+    end
+    if type(s) ~= "string" then
+      return false, new_error("found non-string value")
+    end
+  end
+  return true, nil
+end
+
 function e2tool.opendebuglogfile(info)
   local rc, re = e2lib.mkdir(info.root .. "/log", "-p")
   if not rc then
@@ -453,10 +471,16 @@ The newest configuration syntax supported by the tools is %s.
   if not info.project.name then
     e:append("key is not set: name")
   end
-  if type(info.project.default_results) ~= "table" then
+  if not info.project.default_results then
     e2lib.warnf("WDEFAULT", "in project configuration:")
-    e2lib.warnf("WDEFAULT", 
-		" default_results ist not a table. Defaulting to empty list.")
+    e2lib.warnf("WDEFAULT",
+		"default_results ist not set. Defaulting to empty list.")
+    info.project.default_results = {}
+  end
+  rc, re = listofstrings(info.project.default_results)
+  if not rc then
+    e:append("default_results ist not a valid list of strings")
+    e:cat(re)
   end
   if not info.project.chroot_arch then
     e2lib.warnf("WDEFAULT", "in project configuration:")
