@@ -166,7 +166,7 @@ function fetch_file(surl, location, destdir, destname)
 		else
 			user = ""
 		end
-    if u.port then
+		if u.port then
 			if u.transport == "scp" then
 				port = "-P " .. u.port
 			else
@@ -174,12 +174,11 @@ function fetch_file(surl, location, destdir, destname)
 			end
 		else
 			port = ""
-	end
+		end
 
-		local args = string.format(
-					" %s '%s%s:/%s/%s' '%s/%s'",
-					port,user, u.servername, u.path, location,
-					destdir, tmpfile)
+		local args = string.format(" %s '%s%s:/%s/%s' '%s/%s'",
+					port,user, u.servername, u.path,
+					location, destdir, tmpfile)
 		rc, re = e2lib.scp(args)
 		if not rc then
 			return false, e:cat(re)
