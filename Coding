@@ -38,3 +38,8 @@ Committing
    upstream branch.
  * No merge commits on upstream.
 
+Submitting patches
+ * send patches to e2factory-devel@lists.e2factory.org
+ * use appropriate git tools if possible
+   Example:
+   $ git send-email --to e2factory-devel@lists.e2factory.org COMMITA..COMMITB
