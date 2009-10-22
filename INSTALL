@@ -6,6 +6,7 @@ First make sure that the following packages are installed in your system
   make
   gcc
   git-core
+  rsync
   cvs (optional)
   subversion (optional)
 
