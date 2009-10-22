@@ -225,8 +225,11 @@ function push_file(sourcefile, durl, location, push_permissions)
 		-- created parent directories, too.
 		local dirs = e2lib.parentdirs(destdir)
 		local mkdir_perm = ""
+		local rsync_perm = ""
 		if push_permissions then
 			mkdir_perm = string.format("--mode \"%s\"",
+							push_permissions)
+			rsync_perm = string.format("--perms --chmod \"%s\"",
 							push_permissions)
 		end
 		for _,d in ipairs(dirs) do
@@ -236,16 +239,11 @@ function push_file(sourcefile, durl, location, push_permissions)
 				return false, e:cat(re)
 			end
 		end
-		local dst = string.format("%s/%s", destdir, destname)
-		rc, re = e2lib.cp(sourcefile, dst)
+		local args = string.format("%s '%s' '%s/%s'", rsync_perm,
+						sourcefile, destdir, destname)
+		rc, re = e2lib.rsync(args)
 		if not rc then
 			return false, re
-		end
-		if push_permissions then
-			rc, re = e2lib.chmod(push_permissions, dst)
-			if not rc then
-				return false, re
-			end
 		end
 	elseif u.transport == "rsync+ssh" then
 		local destdir = string.format("/%s", e2lib.dirname(u.path))
@@ -297,6 +295,8 @@ function push_file(sourcefile, durl, location, push_permissions)
 		end
 	elseif u.transport == "scp" or
 	       u.transport == "ssh" then
+		-- scp does not remove partial destination files when
+		-- interrupted. Don't use.
 		if push_permissions then
 			e:append("ssh/scp transport does not support "..
 							"permission settings")
