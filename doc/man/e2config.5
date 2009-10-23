@@ -187,7 +187,7 @@ properties should be set:
 .nf
 file = {
   { server = "<servername>",
-    name = "<path-to-file>",
+    location = "<path-to-file>",
     <destiny> = "contents"
   }
 } 
@@ -205,7 +205,7 @@ For example:
 e2source {
   file={
     { server="upstream",
-      name="hello/1.0/hello-1.0.tar.gz",
+      location="hello/1.0/hello-1.0.tar.gz",
       unpack="hello-1.0"
     }
   }
@@ -265,7 +265,7 @@ stored locally in the project:
 e2source {
   file={
     { server = ".",
-      name = "src/linux-config/my_config",
+      location = "src/linux-config/my_config",
       copy = ".config"
     }
   }
