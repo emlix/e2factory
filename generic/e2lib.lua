@@ -137,6 +137,7 @@ function e2lib.init()
   local getenv = {
 	{ name = "HOME", required = true },
 	{ name = "USER", required = true },
+	{ name = "EDITOR", required = false, default = "vi" },
 	{ name = "TERM", required = false, default = "linux" },
 	{ name = "E2_CONFIG", required = false },
 	{ name = "TMPDIR", required = false, default = "/tmp" },

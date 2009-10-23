@@ -65,10 +65,7 @@ if not rc then
   e2lib.abort(re)
 end
 
-local editor = os.getenv("EDITOR")
-if not editor then
-  editor = "vi"
-end
+local editor = e2lib.osenv["EDITOR"]
 
 local commands = {}
 
