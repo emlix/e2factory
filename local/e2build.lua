@@ -746,7 +746,9 @@ function e2build.store_result(info, r, return_flags)
   local buildid = res.build_mode.buildid(e2tool.buildid(info, r))
   local sourcefile = string.format("%s/result.tar", tmpdir)
   local location1 = string.format("%s/%s/%s/result.tar", location, r, buildid)
-  local cache_flags = {}
+  local cache_flags = {
+    try_hardlink = true,
+  }
   local rc, re = cache.push_file(info.cache, sourcefile, server, location1,
 								cache_flags)
   if not rc then

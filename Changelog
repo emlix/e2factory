@@ -17,6 +17,11 @@ NEXT:
  * outdated documentation was removed
  * a bug was fixed that lead to partial results being left on local servers
    or in the cache when copying was interrupted
+ * storing results to cache and to servers is optimized by trying to
+   create hardlinks if possible. This may fail due to filesystem boundaries.
+   In that case the code falls back to copying.
+   Hardlinking is not possible if push_permissions is set for the particular
+   server.
 
 e2factory-2.3.1
  * bugfixes
