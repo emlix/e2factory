@@ -161,17 +161,36 @@ e2tool = e2lib.module("e2tool")
 
 --- check if a table is a list of strings
 -- @param l table
+-- @param unique bool: require strings to be unique
+-- @param unify bool: remove duplicate strings
 -- @return bool
-local function listofstrings(l)
+local function listofstrings(l, unique, unify)
   if type(l) ~= "table" then
     return false, new_error("not a table")
   end
+  local values = {}
+  local unified = {}
   for i,s in pairs(l) do
     if type(i) ~= "number" then
       return false, new_error("found non-numeric index")
     end
     if type(s) ~= "string" then
       return false, new_error("found non-string value")
+    end
+    if unique and values[s] then
+      return false, new_error("found non-unique value: '%s'", s)
+    end
+    if unify and not values[s] then
+      table.insert(unified, s)
+    end
+    values[s] = true
+  end
+  if unify then
+    while #l > 0 do
+      table.remove(l, 1)
+    end
+    for i,s in ipairs(unified) do
+      table.insert(l, s)
     end
   end
   return true, nil
@@ -477,7 +496,7 @@ The newest configuration syntax supported by the tools is %s.
 		"default_results ist not set. Defaulting to empty list.")
     info.project.default_results = {}
   end
-  rc, re = listofstrings(info.project.default_results)
+  rc, re = listofstrings(info.project.default_results, true, false)
   if not rc then
     e:append("default_results ist not a valid list of strings")
     e:cat(re)
@@ -1656,17 +1675,15 @@ function e2tool.check_result(info, resultname)
 				"Converting to list")
 		res.sources = { res.sources }
 	end
-	if type(res.sources) ~= "table" then
-		e:append("sources attribute has wrong type")
-	end
-	for i,s in ipairs(res.sources) do
-		if type(i) ~= "number" then
-			e:append("invalid key in sources list")
-		end
-		if type(s) ~= "string" then
-			e:append("non-string element in sources list")
-		elseif not info.sources[s] then
-			e:append("source does not exist: %s", s)
+	local rc, re = listofstrings(res.sources, true, false)
+	if not rc then
+		e:append("source attribute:")
+		e:cat(re)
+	else
+		for i,s in ipairs(res.sources) do
+			if not info.sources[s] then
+				e:append("source does not exist: %s", s)
+			end
 		end
 	end
 	if type(res.depends) == "nil" then
@@ -1680,17 +1697,15 @@ function e2tool.check_result(info, resultname)
 				"Converting to list")
 		res.depends = { res.depends }
 	end
-	if type(res.depends) ~= "table" then
-		e:append("depends attribute has wrong type")
-	end
-	for i,d in pairs(res.depends) do
-		if type(i) ~= "number" then
-			e:append("non-number key in depends list")
-		end
-		if type(d) ~= "string" then
-			e:append("non-string element in depends list")
-		elseif not info.results[d] then
-			e:append("dependency does not exist: %s", d)
+	local rc, re = listofstrings(res.depends, true, false)
+	if not rc then
+		e:append("dependency attribute:")
+		e:cat(re)
+	else
+		for i,d in pairs(res.depends) do
+			if not info.results[d] then
+				e:append("dependency does not exist: %s", d)
+			end
 		end
 	end
 	if type(res.chroot) == "nil" then
@@ -1704,21 +1719,25 @@ function e2tool.check_result(info, resultname)
 				"Converting to list")
 		res.chroot = { res.chroot }
 	end
-	if type(res.chroot) ~= "table" then
-		e:append("chroot attribute has wrong type")
-	end
-	-- apply default chroot groups
-	for _,g in ipairs(info.chroot.default_groups) do
-		table.insert(res.chroot, g)
-	end
-	for i,g in pairs(res.chroot) do
-		if type(i) ~= "number" then
-			e:append("non-number key in chroot list")
+	local rc, re = listofstrings(res.chroot, true, false)
+	if not rc then
+		e:append("chroot attribute:")
+		e:cat(re)
+	else
+		-- apply default chroot groups
+		for _,g in ipairs(info.chroot.default_groups) do
+			table.insert(res.chroot, g)
 		end
-		if type(g) ~= "string" then
-			e:append("non-string element in chroot list")
-		elseif not info.chroot.groups_byname[g] then
-			e:append("chroot group does not exist: %s", g)
+		-- The list may have duplicates now. Unify.
+		local rc, re = listofstrings(res.chroot, false, true)
+		if not rc then
+			e:append("chroot attribute:")
+			e:cat(re)
+		end
+		for i,g in pairs(res.chroot) do
+			if not info.chroot.groups_byname[g] then
+				e:append("chroot group does not exist: %s", g)
+			end
 		end
 	end
 	if not res.buildno then
