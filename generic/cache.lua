@@ -309,8 +309,8 @@ function push_file(cache, sourcefile, server, location, flags)
 		-- cache is enabled:
 		-- push the file from source to cache and from cache to
 		-- destination
-		rc, re = transport.push_file(sourcefile, ce.cache_url, location,
-									nil)
+		rc, re = transport.push_file(sourcefile, ce.cache_url,
+					location, nil, flags.try_hardlink)
 		if not rc then
 			return false, e:cat(re)
 		end
@@ -322,7 +322,8 @@ function push_file(cache, sourcefile, server, location, flags)
 		-- cache is disabled
 		-- push the file from source to destination immediately
 		rc, re = transport.push_file(sourcefile, ce.remote_url,
-					location, ce.flags.push_permissions)
+					location, ce.flags.push_permissions,
+					flags.try_hardlink)
 		if not rc then
 			return false, e:cat(re)
 		end
@@ -355,7 +356,8 @@ function writeback(cache, server, location, flags)
 	end
 	local sourcefile = string.format("/%s/%s", ceurl.path, location)
 	rc, re = transport.push_file(sourcefile, ce.remote_url, location,
-						ce.flags.push_permissions)
+						ce.flags.push_permissions,
+						flags.try_hardlink)
 	if not rc then
 		return false, e:cat(re)
 	end

@@ -205,9 +205,10 @@ end
 -- @param location location relative to the server url
 -- @param push_permissions string: permissions to use on the destination
 --        side. Works with rsync+ssh only.
+-- @param try_hardlink bool: optimize by trying to hardlink instead of copying
 -- @return true on success, false on error
 -- @return nil, an error string on error
-function push_file(sourcefile, durl, location, push_permissions)
+function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 	e2lib.log(4, string.format("%s: %s %s %s %s", "transport.push_file()",
 		sourcefile, durl, location, tostring(push_permissions)))
 	local rc, e
@@ -240,9 +241,22 @@ function push_file(sourcefile, durl, location, push_permissions)
 		end
 		local args = string.format("%s '%s' '%s/%s'", rsync_perm,
 						sourcefile, destdir, destname)
-		rc, re = e2lib.rsync(args)
-		if not rc then
-			return false, re
+		local done = false
+		if (not push_permissions) and try_hardlink then
+			local dst = string.format("%s/%s", destdir, destname)
+			rc, re = e2lib.ln(sourcefile, dst, "--force")
+			if rc then
+				done = true
+			else
+				e2lib.logf(4, "Creating hardlink failed. "..
+						"Falling back to copying.")
+			end
+		end
+		if not done then
+			rc, re = e2lib.rsync(args)
+			if not rc then
+				return false, re
+			end
 		end
 	elseif u.transport == "rsync+ssh" then
 		local destdir = string.format("/%s", e2lib.dirname(u.path))
