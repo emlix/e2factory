@@ -708,6 +708,7 @@ function e2build.store_result(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
+  local nfiles = 0
   for f in e2lib.directory(rfilesdir, false, true) do
     e2lib.logf(3, "result file: %s", f)
     local s = string.format("%s/%s", rfilesdir, f)
@@ -722,6 +723,13 @@ function e2build.store_result(info, r, return_flags)
 	return false, e:cat(re)
       end
     end
+    nfiles = nfiles + 1
+  end
+  if nfiles < 1 then
+    e:append("No output files available.")
+    e:append("Please make sure your build script leaves at least one file in")
+    e:append("the output directory.")
+    return false, e
   end
   rc, re = e2lib.chdir("result")
   if not rc then
