@@ -94,7 +94,7 @@ e2generic_local.lc: strict.lua collection.lua e2lib_local_prefix.lua \
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
 
 %.lc: %.lua
-	$(LUAC) -o $@ $<
+	$(BUILD_LUAC) -o $@ $<
 
 e2-su-2.2: e2-su-2.2.c
 	$(CC) $(CFLAGS) $(E2_SU_CFLAGS) $(LDFLAGS) $< -o $@
