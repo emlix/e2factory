@@ -38,8 +38,8 @@ show project information
 
 policy.register_commandline_options()
 e2option.flag("dot", "generate dot(1) graph")
-e2option.flag("dot-sources", "generate dot(1) grapth with sources included")
-e2option.flag("swap", "swap arrow directions")
+e2option.flag("dot-sources", "generate dot(1) graph with sources included")
+e2option.flag("swap", "swap arrow directions in dot graph")
 
 local opts = e2option.parse(arg)
 
