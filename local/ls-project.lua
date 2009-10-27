@@ -124,8 +124,8 @@ if opts.dot or opts["dot-sources"] then
     else
       print(string.format("  \"%s\"", r))
     end
-    for _, src in ipairs(res.sources) do
-      if opts["dot-sources"] then
+    if opts["dot-sources"] then
+      for _, src in ipairs(res.sources) do
         if opts.swap then
           print(string.format("  \"%s-src\" %s \"%s\"", src, arrow, r))
         else
@@ -134,8 +134,8 @@ if opts.dot or opts["dot-sources"] then
       end
     end
   end
-  for _, s in ipairs(info.sources_sorted) do
-    if opts["dot-sources"] then
+  if opts["dot-sources"] then
+    for _, s in ipairs(info.sources_sorted) do
       print(string.format("  \"%s-src\" [label=\"%s\", shape=box]", s, s))
     end
   end
