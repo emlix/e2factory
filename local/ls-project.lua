@@ -31,7 +31,7 @@ require("e2local")
 e2lib.init()
 
 e2option.documentation = [[
-usage: e2-ls-project 
+usage: e2-ls-project [<result> ...]
 
 show project information
 ]]
@@ -40,6 +40,7 @@ policy.register_commandline_options()
 e2option.flag("dot", "generate dot(1) graph")
 e2option.flag("dot-sources", "generate dot(1) graph with sources included")
 e2option.flag("swap", "swap arrow directions in dot graph")
+e2option.flag("all", "show unused results and sources, too")
 
 local opts = e2option.parse(arg)
 
@@ -53,6 +54,41 @@ if not rc then
 end
 
 --e2lib.log_invocation(info, arg)
+
+local results = {}
+if opts.all then
+  for r, _ in pairs(info.results) do
+    table.insert(results, r)
+  end
+elseif #opts.arguments > 0 then
+  for _, r in ipairs(opts.arguments) do
+    table.insert(results, r)
+  end
+end
+if #results > 0 then
+  results = e2tool.dlist_recursive(info, results)
+else
+  results = e2tool.dsort(info)
+end
+table.sort(results)
+
+local sources = {}
+if opts.all then
+  for s, _ in pairs(info.sources) do
+    table.insert(sources, s)
+  end
+else
+  local yet = {}
+  for _, r in pairs(results) do
+    for _, s in ipairs(info.results[r].sources) do
+      if not yet[s] then
+        table.insert(sources, s)
+        yet[s] = true
+      end
+    end
+  end
+end
+table.sort(sources)
 
 local function pempty(s1, s2, s3)
 	print(string.format("   %s  %s  %s", s1, s2, s3))
@@ -110,7 +146,7 @@ end
 if opts.dot or opts["dot-sources"] then
   local arrow = "->"
   print("digraph \"" .. info.name .. "\" {")
-  for _,r in ipairs(info.results_sorted) do
+  for _, r in pairs(results) do
     local res = info.results[r]
     local deps = e2tool.dlist(info, r)
     if #deps > 0 then
@@ -135,7 +171,7 @@ if opts.dot or opts["dot-sources"] then
     end
   end
   if opts["dot-sources"] then
-    for _, s in ipairs(info.sources_sorted) do
+    for _, s in pairs(sources) do
       print(string.format("  \"%s-src\" [label=\"%s\", shape=box]", s, s))
     end
   end
@@ -174,8 +210,8 @@ print("   |")
 local s1 = "|"
 local s2 = " "
 p1(s1, s2, "src")
-local len = #info.sources_sorted
-for _,s in ipairs(info.sources_sorted) do
+local len = #sources
+for _, s in pairs(sources) do
   local src = info.sources[s]
   len = len - 1
   if len == 0 then
@@ -200,8 +236,8 @@ s3 = " "
 pempty(s1, s2, s3)
 s2 = " "
 p1(s1, s2, "res")
-local len = #info.results_sorted
-for _,r in ipairs(info.results_sorted) do
+local len = #results
+for _, r in pairs(results) do
   local res = info.results[r]
   p2(s1, s2, r)
   len = len - 1
