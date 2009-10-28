@@ -272,6 +272,12 @@ function e2build.setup_chroot(info, r, return_flags)
 	if not path then
 	  return false, e:cat(re)
 	end
+	if f.sha1 then
+		rc, re = e2tool.verify_hash(info, f.server, f.location, f.sha1)
+		if not rc then
+			return false, e:cat(re)
+		end
+	end
 	local tartype
 	if path:match("tgz$") or path:match("tar.gz$") then
 		tartype = "tar.gz"
