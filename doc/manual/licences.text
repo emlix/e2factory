@@ -17,9 +17,15 @@ Example:
 
     e2licence {
         gpl_2 = {
-            server = "upstream",
+            server = ".",
             files = {
-                "licence/gpl-2/COPYING",
+                {
+                    -- server is inherited if not given here
+                    server = ".",
+                    location = "licence/gpl-2/COPYING",
+                    -- sha1 is required when the server is not "."
+                    -- sha1 = "bd3c28b6df9c950cc68d5141c65acfc661779f5e",
+                },
             }
         }
     }

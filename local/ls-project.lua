@@ -270,9 +270,8 @@ for _,l in pairs(info.licences_sorted) do
     s2 = " "
   end
   p2(s1, s2, l)
-  p3(s1, s2, "server", lic.server)
-  for _,file in ipairs(lic.files) do
-    p3(s1, s2, "file", file)
+  for _,f in ipairs(lic.files) do
+    p3(s1, s2, "file", string.format("%s:%s", f.server, f.location))
   end
 end
 

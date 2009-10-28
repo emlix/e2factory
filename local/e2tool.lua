@@ -1341,14 +1341,19 @@ function e2tool.licenceid(info, licence)
 	end
 	local hc = hash.hash_start()
 	hc:hash_line(licence)			-- licence name
-	hc:hash_line(lic.server)		-- server name
-	for _,file in ipairs(lic.files) do
-		local h, re = e2tool.hash_file(info, lic.server, file)
-                if not h then
-			return nil, e:cat(re)
-                end
-		hc:hash_line(file)		-- licence file name
-		hc:hash_line(h)			-- licence file content
+	for _,f in ipairs(lic.files) do
+		hc:hash_line(f.server)
+		hc:hash_line(f.location)
+		if f.sha1 then
+			hc:hash_line(f.sha1)
+		else
+			local h, re = e2tool.hash_file(info, f.server,
+								f.location)
+			if not h then
+				return false, e:cat(re)
+			end
+			hc:hash_line(h)
+		end
 	end
 	lic.licenceid, re = hc:hash_finish()
 	if not lic.licenceid then
@@ -1667,9 +1672,34 @@ function e2tool.check_licence(info, l)
 	elseif not type(lic.files) == "table" then
 		e:append("files attribute is not a table")
 	else
-		for _,file in ipairs(lic.files) do
-			if not type(file) == "string" then
-				e:append("file list holds non-string element")
+		for _,f in ipairs(lic.files) do
+			local inherit = {
+			  server = lic.server,
+			}
+			local keys = {
+			  server = {
+			    mandatory = true,
+			    type = "string",
+			    inherit = true,
+			  },
+			  location = {
+			    mandatory = true,
+			    type = "string",
+			    inherit = false,
+			  },
+		 	  sha1 = {
+			    mandatory = false,
+			    type = "string",
+			    inherit = false,
+			  },
+			}
+			local rc, re = check_tab(f, keys, inherit)
+			if not rc then
+				e:cat(re)
+			elseif f.server ~= info.root_server_name and
+			       not f.sha1 then
+				e:append("file entry for remote file without"..
+							" `sha1` attribute")
 			end
 		end
 	end

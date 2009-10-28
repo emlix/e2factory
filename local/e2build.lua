@@ -1067,9 +1067,16 @@ function e2build.collect_project(info, r, return_flags)
 		e2lib.mkdir(destdir, "-p")
 		for _,file in ipairs(lic.files) do
 			local cache_flags = {}
-			local server = lic.server
-			rc, re = cache.fetch_file(info.cache, server, file,
-						destdir, nil, cache_flags)
+			if file.sha1 then
+				rc, re = e2tool.verify_hash(info, file.server,
+						file.location, file.sha1)
+				if not rc then
+					return false, e:cat(re)
+				end
+			end
+			rc, re = cache.fetch_file(info.cache, file.server,
+						file.location, destdir, nil,
+						cache_flags)
 			if not rc then
 				return false, e:cat(re)
 			end
