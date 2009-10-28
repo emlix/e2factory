@@ -150,7 +150,8 @@ end
 e2lib.chdir(destdir)
 
 -- checkout ref
-rc, re = e2lib.git(nil, "checkout", ref)
+local args = string.format("%s --", ref)
+rc, re = e2lib.git(nil, "checkout", args)
 if not rc then
   e2lib.abort(e:cat(re))
 end
