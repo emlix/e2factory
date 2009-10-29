@@ -224,6 +224,12 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
   e2lib.log(4, string.format("prepare source: %s", sourcename))
   local s = info.sources[sourcename]
   for _,file in ipairs(info.sources[sourcename].file) do
+    if file.sha1 then
+      rc, re = e2tool.verify_hash(info, file.server, file.location, file.sha1)
+      if not rc then
+	return false, e:cat(re)
+      end
+    end
     if file.unpack then
       local cache_flags = { cache = true }
       local rc, re = cache.cache_file(info.cache, file.server, file.location, 
