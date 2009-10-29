@@ -375,16 +375,11 @@ function files.sourceid(info, sourcename, sourceset)
 		hash.hash_line(hc, licenceid)
 	end
 	for _,f in ipairs(src.file) do
-		if f.sha1 then
-			hash.hash_line(hc, f.sha1)
-		else
-			local h, re = e2tool.hash_file(info, f.server,
-								f.location)
-			if not h then
-				return false, e:cat(re)
-			end
-			hash.hash_line(hc, h)
+		local fileid = e2tool.fileid(info, f)
+		if not fileid then
+			return false, e:cat(re)
 		end
+		hash.hash_line(hc, fileid)
 		hash.hash_line(hc, f.checksum_file)
 		hash.hash_line(hc, f.location)
 		hash.hash_line(hc, f.server)

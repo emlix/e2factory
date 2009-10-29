@@ -1326,6 +1326,27 @@ function e2tool.calc_sourceids(info, sourceset)
 	return true, nil
 end
 
+--- calculate a representation for file content. The name and location
+-- attributes are not included.
+-- @param file table: file table from configuration
+-- @return fileid string: hash value, or nil
+-- @return an error object on failure
+function e2tool.fileid(info, file)
+	local fileid
+	local re
+	local e = new_error("error calculating file id for file %s:%s",
+						file.server, file.location)
+	if file.sha1 then
+		fileid = file.sha1
+	else
+		fileid, re = e2tool.hash_file(info, file.server, file.location)
+		if not fileid then
+			return nil, e:cat(re)
+		end
+	end
+	return fileid
+end
+
 --- calculate licence id
 -- @param info
 -- @param licence
@@ -1344,16 +1365,11 @@ function e2tool.licenceid(info, licence)
 	for _,f in ipairs(lic.files) do
 		hc:hash_line(f.server)
 		hc:hash_line(f.location)
-		if f.sha1 then
-			hc:hash_line(f.sha1)
-		else
-			local h, re = e2tool.hash_file(info, f.server,
-								f.location)
-			if not h then
-				return false, e:cat(re)
-			end
-			hc:hash_line(h)
+		local fileid = e2tool.fileid(info, f)
+		if not fileid then
+			return false, e:cat(re)
 		end
+		hc:hash_line(fileid)
 	end
 	lic.licenceid, re = hc:hash_finish()
 	if not lic.licenceid then
@@ -1539,16 +1555,11 @@ function e2tool.chrootgroupid(info, groupname)
 	for _,f in ipairs(g.files) do
 		hc:hash_line(f.server)
 		hc:hash_line(f.location)
-		if f.sha1 then
-			hc:hash_line(f.sha1)
-		else
-			local h, re = e2tool.hash_file(info, f.server,
-								f.location)
-			if not h then
-				return false, e:cat(re)
-			end
-			hc:hash_line(h)
+		local fileid = e2tool.fileid(info, f)
+		if not fileid then
+			return false, e:cat(re)
 		end
+		hc:hash_line(fileid)
 	end
 	e2lib.log(4, string.format("hash data for chroot group %s\n%s", 
 							groupname, hc.data))
