@@ -82,6 +82,10 @@ function files.validate_source(info, sourcename)
       if not f.location then
 	e:append("source has file entry without `location' attribute")
       end
+      if f.server ~= info.root_server_name and not f.sha1 then
+	e:append("source has file entry for remote file without `sha1` "..
+								"attribute")
+      end
       if not (f.unpack or f.copy or f.patch) then
         e:append("source has file entry without `unpack, copy or patch' " ..
 			"attribute")
