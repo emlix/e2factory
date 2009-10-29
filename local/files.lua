@@ -369,28 +369,18 @@ function files.sourceid(info, sourcename, sourceset)
 		hash.hash_line(hc, licenceid)
 	end
 	for _,f in ipairs(src.file) do
-		f.hash, e = e2tool.read_hash_file(info, f.server,
-							f.checksum_file)
-		if not f.hash then
-			if f.server ~= info.root_server_name then
-				e2lib.warn("WOTHER", string.format(
-					"in source %s: " ..
-					"checksum file not available",
-								src.name))
-				e2lib.warn("WOTHER", string.format(
-					" file: %s:%s", f.server, f.location))
-				e2lib.warn("WOTHER", string.format(
-					" checksum_file: %s", f.checksum_file))
-			end
-			f.hash, e = e2tool.hash_file(info, f.server,
+		if f.sha1 then
+			hash.hash_line(hc, f.sha1)
+		else
+			local h, re = e2tool.hash_file(info, f.server,
 								f.location)
-		end
-		if not f.hash then
-			return nil, e
+			if not h then
+				return false, e:cat(re)
+			end
+			hash.hash_line(hc, h)
 		end
 		hash.hash_line(hc, f.checksum_file)
 		hash.hash_line(hc, f.location)
-		hash.hash_line(hc, f.hash)
 		hash.hash_line(hc, f.server)
 		hash.hash_line(hc, tostring(f.unpack))
 		hash.hash_line(hc, tostring(f.patch))
