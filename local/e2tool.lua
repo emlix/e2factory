@@ -196,6 +196,52 @@ local function listofstrings(l, unique, unify)
   return true, nil
 end
 
+--- check a table according to a description table
+-- @param tab table: the table to check
+-- @param keys table: the description table
+-- @param inherit table: table with keys to inherit
+-- @return bool
+-- @return an error object on failure
+local function check_tab(tab, keys, inherit)
+	local e = new_error("checking file configuration")
+
+	if type(tab) ~= "table" then
+		return false, e:append("not a table")
+	end
+
+	-- keys = {
+	--   location = {
+	--     mandatory = true,
+	--     type = "string",
+	--     inherit = false,
+	--   },
+	-- }
+	-- inherit = {
+	--   location = "foo",
+	-- }
+
+	-- inherit keys
+	for k,v in pairs(inherit) do
+		if not tab[k] and keys[k].inherit ~= false then
+			tab[k] = v
+		end
+	end
+
+	-- check types and mandatory
+	for k,v in pairs(keys) do
+		if keys[k].mandatory and not tab[k] then
+			e:append("missing mandatory key: %s", k)
+		elseif tab[k] and keys[k].type ~= type(tab[k]) then
+			e:append("wrong type: %s", k)
+		end
+	end
+
+	if e:getcount() > 1 then
+		return false, e
+	end
+	return true, nil
+end
+
 function e2tool.opendebuglogfile(info)
   local rc, re = e2lib.mkdir(info.root .. "/log", "-p")
   if not rc then
