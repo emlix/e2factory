@@ -262,11 +262,13 @@ function e2build.setup_chroot(info, r, return_flags)
     if res.build_config.groups[grp.name] then
       for _, f in ipairs(grp.files) do
         local flags = { cache = true }
-        local rc, re = cache.cache_file(info.cache, grp.server, f, flags)
+        local rc, re = cache.cache_file(info.cache, f.server, f.location,
+								flags)
 	if not rc then
 	  return false, e:cat(re)
 	end
-        local path, re = cache.file_path(info.cache, grp.server, f, flags)
+        local path, re = cache.file_path(info.cache, f.server, f.location,
+								flags)
 	if not path then
 	  return false, e:cat(re)
 	end
@@ -1017,12 +1019,13 @@ function e2build.collect_project(info, r, return_flags)
 		e2lib.mkdir(destdir, "-p")
 		for _,file in pairs(grp.files) do
 			local cache_flags = {}
-			local server = grp.server
-			rc, re = cache.fetch_file(info.cache, server, file,
-						destdir, nil, cache_flags)
+			rc, re = cache.fetch_file(info.cache, file.server,
+				file.location, destdir, nil, cache_flags)
 			if not rc then
 				return false, e:cat(re)
 			end
+			-- XXX organize for checksum checking when building
+			-- XXX the project out of the collect_project result
 		end
 	end
 	-- project/licences/<licence>/<files>

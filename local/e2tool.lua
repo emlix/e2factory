@@ -1448,7 +1448,10 @@ function e2tool.pbuildid(info, resultname)
 		end
 		hash.hash_line(hc, lid)		-- licence id
 	end
-	local groupid = e2tool.chrootgroupid(info, "base")
+	local groupid, re = e2tool.chrootgroupid(info, "base")
+	if not groupid then
+		return nil, e:cat(re)
+	end
 	hc:hash_line(groupid)
 	if r.chroot then
 		for _,g in ipairs(r.chroot) do
@@ -1520,16 +1523,27 @@ function e2tool.flush_buildids(info)
 end
 
 function e2tool.chrootgroupid(info, groupname)
+	local e = new_error("calculating chroot group id failed for group %s",
+								groupname)
 	local g = info.chroot.groups_byname[groupname]
 	if g.groupid then
 		return g.groupid
 	end
 	local hc = hash.hash_start()
 	hc:hash_line(g.name)
-	hc:hash_line(g.server)
 	for _,f in ipairs(g.files) do
-		hc:hash_line(f)
-		-- XXX  hash each file?
+		hc:hash_line(f.server)
+		hc:hash_line(f.location)
+		if f.sha1 then
+			hc:hash_line(f.sha1)
+		else
+			local h, re = e2tool.hash_file(info, f.server,
+								f.location)
+			if not h then
+				return false, e:cat(re)
+			end
+			hc:hash_line(h)
+		end
 	end
 	e2lib.log(4, string.format("hash data for chroot group %s\n%s", 
 							groupname, hc.data))
@@ -2398,11 +2412,36 @@ function e2tool.check_chroot_config(info)
       e:append("in group: %s", grp.name)
       e:append(" list of files is empty")
     else
-      for _,l in ipairs(grp.files) do
-        if type(l) ~= "string" then
-          e:append("in group: %s", grp.name)
-          e:append(" file list contains non-string element")
-        end
+      for _,f in ipairs(grp.files) do
+	local inherit = {
+	  server = grp.server,
+	}
+	local keys = {
+	  server = {
+	    mandatory = true,
+	    type = "string",
+	    inherit = true,
+	  },
+	  location = {
+	    mandatory = true,
+	    type = "string",
+	    inherit = false,
+	  },
+	  sha1 = {
+	    mandatory = false,
+	    type = "string",
+	    inherit = false,
+	  },
+	}
+	local rc, re = check_tab(f, keys, inherit)
+	if not rc then
+	  e:append("in group: %s", grp.name)
+	  e:cat(re)
+	end
+	if f.server ~= info.root_server_name and not f.sha1 then
+	  e:append("in group: %s", grp.name)
+	  e:append("file entry for remote file without `sha1` attribute")
+	end
       end
     end
   end

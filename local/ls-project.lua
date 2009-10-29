@@ -292,8 +292,9 @@ for _,g in ipairs(info.chroot.groups_sorted) do
 		s2 = " "
 	end
 	p2(s1, s2, grp.name, grp.name)
-	p3(s1, s2, "server", grp.server)
-	p3t(s1, s2, "files", grp.files)
+	for _,f in ipairs(grp.files) do
+		p3(s1, s2, "file", string.format("%s:%s", f.server, f.location))
+	end
 	if grp.groupid then
 		p3(s1, s2, "groupid", grp.groupid)
 	end

@@ -33,14 +33,25 @@ Example:
         { name = "base",
           server = "chroot",
           files = {
-              "chroot/20080916/base.tar.gz",
+            {
+              location = "chroot/20080916/base.tar.gz",
+              sha1 = "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+            },
           },
         },
         { name = "host-gcc",
           server = "chroot",
           files = {
-            "chroot/20080916/binutils.tar.gz",
-            "chroot/20080916/gcc34.tar.gz",
+            {
+              -- server is inherited from the group if not configured here
+              server = "chroot",
+              location = "chroot/20080916/binutils.tar.gz",
+              sha1 = "55b6aaa6f91b7cd6bf7e47dbb7af548ef8bb85e8",
+            },
+            {
+              location = "chroot/20080916/gcc34.tar.gz",
+              sha1 = "7f69da1b33b39f124cc37331711de8e12bbbc758",
+            },
           },
         },
       }
