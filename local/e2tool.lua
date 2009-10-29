@@ -1048,6 +1048,31 @@ function e2tool.hash_file(info, server, location)
   return e2tool.hash_path(path)
 end
 
+--- verify that a file addressed by server name and location matches the
+-- checksum given in the sha1 parameter
+-- @param info info structure
+-- @param server the server name
+-- @param location file location relative to the server
+-- @param sha1 string: the hash to verify against
+-- @return bool true if verify succeeds, false otherwise
+-- @return nil, an error string on error
+function e2tool.verify_hash(info, server, location, sha1)
+  e2lib.logf(4, "verify_hash %s %s %s %s", tostring(info), tostring(server),
+					tostring(location), tostring(sha1))
+  local rc, re
+  local e = new_error("error verifying checksum")
+  local is_sha1, re = e2tool.hash_file(info, server, location)
+  if not is_sha1 then
+    return false, e:cat(re)
+  end
+  if is_sha1 ~= sha1 then
+    e = new_error("checksum mismatch in file:")
+    return false, e:append("%s:%s", server, location)
+  end
+  e2lib.logf(4, "checksum matches: %s:%s", server, location)
+  return true, nil
+end
+
 function e2tool.expanded_files_list(info, source)
   e2lib.log(4, "expanded_files_list: " .. source)
 
