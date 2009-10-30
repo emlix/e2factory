@@ -1017,6 +1017,12 @@ function e2build.collect_project(info, r, return_flags)
 		local destdir = string.format("%s/project/chroot/%s", 
 							res.build_config.T, g)
 		e2lib.mkdir(destdir, "-p")
+		local makefile, msg = io.open(
+			string.format("%s/makefile", destdir), "w")
+		if not makefile then
+			return false, e:cat(msg)
+		end
+		makefile:write(string.format("place:\n"))
 		for _,file in pairs(grp.files) do
 			local cache_flags = {}
 			rc, re = cache.fetch_file(info.cache, file.server,
@@ -1024,9 +1030,27 @@ function e2build.collect_project(info, r, return_flags)
 			if not rc then
 				return false, e:cat(re)
 			end
-			-- XXX organize for checksum checking when building
-			-- XXX the project out of the collect_project result
+			if file.sha1 then
+				local checksum_file = string.format(
+						"%s/%s.sha1", destdir,
+						e2lib.basename(file.location))
+				local filename = e2lib.basename(file.location)
+				rc, re = e2lib.write_file(checksum_file,
+						string.format("%s  %s",
+						file.sha1, filename))
+				if not rc then
+					return false, e:cat(re)
+				end
+				makefile:write(string.format(
+					"\tsha1sum -c '%s'\n",
+					e2lib.basename(checksum_file)))
+			end
+			makefile:write(string.format(
+				"\te2-su-2.2 extract_tar_2_2 $(chroot_path) "..
+				"\"tar.gz\" '%s'\n",
+				e2lib.basename(file.location)))
 		end
+		makefile:close()
 	end
 	-- project/licences/<licence>/<files>
 	for _,l in ipairs(res.collect_project_licences) do

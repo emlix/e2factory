@@ -42,10 +42,7 @@ touch $chroot_path/emlix-chroot
 e2-su-2.2 set_permissions_2_2 $chroot_path
 # install chroot groups
 for g in $CHROOT ; do
-	for f in $(ls chroot/$g) ; do
-		e2-su-2.2 extract_tar_2_2 $chroot_path "tar.gz" chroot/$g/$f
-		true
-	done
+	make chroot_path=$chroot_path -C chroot/$g place
 done
 # install sources
 for s in $SOURCE ; do
