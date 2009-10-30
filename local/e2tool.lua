@@ -1917,7 +1917,8 @@ function e2tool.check_collect_project(info, resultname)
 	table.insert(res.collect_project_results,
 			res.collect_project_default_result)
 	table.sort(res.collect_project_results)
-	e2lib.warnf("WDEFAULT", "collect_project takes these results: %s",
+	e2lib.warnf("WDEFAULT", "in result %s:", resultname)
+	e2lib.warnf("WDEFAULT", " collect_project takes these results: %s",
 		table.concat(res.collect_project_results, ","))
 	-- store a sorted list of required sources, chroot groups and licences
 	local tmp_grp = {}
