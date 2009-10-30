@@ -22,6 +22,9 @@ NEXT:
    In that case the code falls back to copying.
    Hardlinking is not possible if push_permissions is set for the particular
    server.
+ * the configuration file format for chroot and licence configuration files
+   has changed to prepare for configuring per-file checksums where files
+   are referenced
 
 e2factory-2.3.1
  * bugfixes
