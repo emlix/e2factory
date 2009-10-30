@@ -25,6 +25,9 @@ NEXT:
  * the configuration file format for chroot and licence configuration files
    has changed to prepare for configuring per-file checksums where files
    are referenced
+ * sha1 checksums must be configured in the source-, licence- and chroot
+   configuration now where files are referenced. Exceptions are allowed
+   for files stored in the project configuration tree (on the "." server)
 
 e2factory-2.3.1
  * bugfixes
