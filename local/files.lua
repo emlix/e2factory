@@ -90,13 +90,11 @@ function files.validate_source(info, sourcename)
         e:append("source has file entry without `unpack, copy or patch' " ..
 			"attribute")
       end
-      if f.location and (not f.checksum_file) then
-        f.checksum_file = string.format("%s%s", f.location, 
-					info.default_checksum_file_suffix)
-	e2lib.warnf("WDEFAULT", "in source %s:", sourcename)
-	e2lib.warnf("WDEFAULT", " file: %s:%s", f.server, f.location)
-	e2lib.warnf("WDEFAULT", " checksum_file defaulting to %s",
-							f.checksum_file)
+      if f.checksum_file then
+	e2lib.warnf("WDEPRECATED", "in source %s:", sourcename)
+	e2lib.warnf("WDEPRECATED",
+		" checksum_file attribute is deprecated and no longer used")
+	f.checksum_file = nil
       end
     end
   end
@@ -127,13 +125,6 @@ function files.cache_source(info, sourcename)
       local rc, e = cache.cache_file(info.cache, f.server, f.location, flags)
       if not rc then
         return false, e
-      end
-      local rc, e = cache.cache_file(info.cache, f.server, f.checksum_file, 
-									flags)
-      if not rc then
-	e2lib.log(3,
-		estring(e, string.format("%s:%s", f.server, f.checksum_file)))
-        -- this is not fatal
       end
     else
       e2lib.log(4, string.format("not caching %s:%s (stored locally)", 
@@ -345,7 +336,6 @@ function files.sourceid(info, sourcename, sourceset)
 			return false, e:cat(re)
 		end
 		hash.hash_line(hc, fileid)
-		hash.hash_line(hc, f.checksum_file)
 		hash.hash_line(hc, f.location)
 		hash.hash_line(hc, f.server)
 		hash.hash_line(hc, tostring(f.unpack))

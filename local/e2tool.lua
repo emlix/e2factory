@@ -449,9 +449,6 @@ The newest configuration syntax supported by the tools is %s.
   -- build number table
   info.build_numbers  = {}
 
-  -- checksum file suffixes, ordered by priority
-  info.default_checksum_file_suffix = ".sha1"
-
   info.sources = {}
 
   -- read project environment file
