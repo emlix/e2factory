@@ -1,8 +1,26 @@
-Migrate from e2-2.1 to e2-2.2.x
+Migrating to newer versions of e2factory
 -----------------------------
 
+### Migrating from e2factory-2.3.1 to e2factory-2.3.2 ###
 
-Migrating from e2-2.1 to e2-2.2.x requires the following steps:
+*   change the chroot configuration format according to the documentation
+    [chroot](chroot.html)
+*   change the licence configuration format according to the documentation
+    [licences](licences.html)
+*   in the chroot-, licence-, files source configuration the sha1 checksum
+    must be configured using the `sha1` attribute for files not located
+    on the `'.'` server.
+*   change the syntax version to `2_3_2` to acknowledge that you changed
+    the configuration.
+
+Change the syntax compatibility version and the version of your local tools
+
+    $ echo '2_3_2' >.e2/syntax
+    $ echo 'master e2factory-2.3.2' >.e2/e2version
+
+*   Do not forget to commit your changes.
+
+### Migrating from e2-2.1 to e2-2.2.x or up to e2factory-2.3.1 ###
 
 #### Prerequisites: Cleanup the project state: ####
 
