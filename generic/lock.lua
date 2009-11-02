@@ -1,10 +1,19 @@
+--- This module maintains lock directories within a lock context.
+-- Remaining lock directories can be removed by calling the cleanup
+-- method.
 module("lock",package.seeall)
 
+--- create a new lock context
+-- @return table: the lock context
 function new()
   local lock = {
 
     locks = {},
 
+    --- create a lock directory
+    -- @param l table: lock object
+    -- @param dir string: lock directory
+    -- @return bool
     lock = function(l, dir)
       local e = new_error("locking failed")
       rc, re = e2lib.mkdir(dir)
@@ -15,6 +24,10 @@ function new()
       return true
     end,
 
+    --- remove a lock directory
+    -- @param l table: lock object
+    -- @param dir string: lock directory
+    -- @return bool
     unlock = function(l, dir)
       local e = new_error("unlocking failed")
       for i,x in ipairs(l.locks) do
@@ -29,6 +42,8 @@ function new()
       return true, nil
     end,
 
+    -- remove all remaining lock directories
+    -- @param l table: lock object
     cleanup = function(l)
       while #l.locks > 0 do
         l:unlock(l.locks[1])
