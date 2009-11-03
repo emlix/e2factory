@@ -37,12 +37,10 @@ CLEAN_FILES = *~ *.lc *.so lua-version-map.lua e2-su-2.2
 
 .PHONY: all install uninstall local install-local clean
 
-all: e2generic_global.lc luafile_ll_global.so e2util_global.so e2-su-2.2 \
-	lock.lc
+all: e2generic_global.lc luafile_ll_global.so e2util_global.so e2-su-2.2
 
 install: all
 	install -m 644 e2generic_global.lc $(DESTDIR)$(LIBDIR)
-	install -m 644 lock.lc $(DESTDIR)$(LIBDIR)
 	install -m 755 luafile_ll_global.so $(DESTDIR)$(LIBDIR)
 	install -m 755 e2util_global.so $(DESTDIR)$(LIBDIR)
 	install -m 4754 -o root -g $(E2_GROUP) e2-su-2.2 $(DESTDIR)$(BINDIR)/
@@ -50,16 +48,14 @@ install: all
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
 	rm -f $(DESTDIR)$(LIBDIR)/e2generic_global.lc
-	rm -f $(DESTDIR)$(LIBDIR)/lock.lc
 	rm -f $(DESTDIR)$(LIBDIR)/luafile_ll_global.so
 	rm -f $(DESTDIR)$(LIBDIR)/e2util_global.so
 
-local: e2generic_local.lc luafile_ll_local.so e2util_local.so lock.lc
+local: e2generic_local.lc luafile_ll_local.so e2util_local.so
 
 install-local: local
 	mkdir -p $(LOCALLIBDIR) $(LOCALMAKDIR)
 	install -m 644 e2generic_local.lc $(LOCALLIBDIR)
-	install -m 644 lock.lc $(LOCALLIBDIR)
 	install -m 755 luafile_ll_local.so $(LOCALLIBDIR)
 	install -m 755 e2util_local.so $(LOCALLIBDIR)
 	install -m 644 e2-su-2.2.c $(LOCALMAKDIR)
@@ -81,7 +77,7 @@ e2generic_global.lc: strict.lua collection.lua e2lib_global_prefix.lua \
 		e2lib.lua e2option.lua sha1.lua \
 		transport.lua cache.lua url.lua scm.git.lua \
 		luafile.lua lua-version-map.lua \
-		error.lua
+		error.lua lock.lua
 	$(BUILD_LUAC) -o $@ $^
 
 e2generic_local.lc: strict.lua collection.lua e2lib_local_prefix.lua \
@@ -92,9 +88,6 @@ e2generic_local.lc: strict.lua collection.lua e2lib_local_prefix.lua \
 
 %: %.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
-
-%.lc: %.lua
-	$(BUILD_LUAC) -o $@ $<
 
 e2-su-2.2: e2-su-2.2.c
 	$(CC) $(CFLAGS) $(E2_SU_CFLAGS) $(LDFLAGS) $< -o $@

@@ -26,7 +26,6 @@
 ]]
 
 require("buildconfig")
-require("lock")
 
 _version = "e2factory, the emlix embedded build system, version " .. 
 							buildconfig.VERSION
