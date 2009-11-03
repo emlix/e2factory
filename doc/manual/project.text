@@ -19,6 +19,12 @@ The table may specify the following additional keys:
 *   chroot\_arch string: architecture to use when running the build process
     x86\_64 or x86\_32 may be used, the latter is the builtin default.
 
+The `release_id` and `name` settings appear as `E2_RELEASE_ID` and
+`E2_PROJECT_NAME` respectively in the environment when the build script runs.
+The `release_id` is used to compute the path where the results are stored
+when building in release mode. The `name` is used to compute the path to
+the chroot build environment.
+
 Example:
 
     e2project {
