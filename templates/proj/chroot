@@ -9,7 +9,10 @@ e2chroot {
       name = "base",
       server = "chroot",
       files = {
-	cp.."base.tar.gz",
+	{
+	  location = cp.."base.tar.gz",
+	  sha1 = "130584621d77fadff34127be31653c675f7cb582",
+	}
       },
     },
   },
