@@ -69,6 +69,9 @@ uninstall:
 	for x in $(MANPAGES1) ; do rm -f $(DESTDIR)$(MANDIR)/man1/$$x ; done
 	for x in $(MANPAGES5) ; do rm -f $(DESTDIR)$(MANDIR)/man5/$$x ; done
 	for x in $(MANPAGES7) ; do rm -f $(DESTDIR)$(MANDIR)/man7/$$x ; done
+	rmdir $(DESTDIR)$(MANDIR)/man1 || :
+	rmdir $(DESTDIR)$(MANDIR)/man5 || :
+	rmdir $(DESTDIR)$(MANDIR)/man7 || :
 
 doc: man.tar.gz
 	for s in $(SUBDIRS) ; do \

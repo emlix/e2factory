@@ -93,6 +93,12 @@ uninstall:
 	$(MAKE) -C local uninstall
 	$(MAKE) -C extensions uninstall
 	rm -f $(DESTDIR)$(LIBDIR)/buildconfig.lua
+	rmdir -p $(DESTDIR)$(TOOLDIR) >/dev/null 2>&1 || :
+	rmdir -p $(DESTDIR)$(MANDIR) >/dev/null 2>&1 || :
+	rmdir -p $(DESTDIR)$(INCDIR) >/dev/null 2>&1 || :
+	rmdir -p $(DESTDIR)$(LIBEXECDIR) >/dev/null 2>&1 || :
+	rmdir -p $(DESTDIR)$(LIBDIR) >/dev/null 2>&1 || :
+	rmdir -p $(DESTDIR)$(BINDIR) >/dev/null 2>&1 || :
 
 local: e2commit buildconfig.lua
 	$(MAKE) -C generic local

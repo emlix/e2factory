@@ -60,6 +60,7 @@ uninstall:
 	for x in $(LUA_HEADER) ; do \
 		rm -f $(DESTDIR)$(INCDIR)/lua-5.1.3/$$x ; \
 	done
+	rmdir -p $(DESTDIR)$(INCDIR)/lua-5.1.3 || :
 
 doc:
 	for s in $(SUBDIRS) ; do \
