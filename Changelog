@@ -28,6 +28,8 @@ NEXT:
  * sha1 checksums must be configured in the source-, licence- and chroot
    configuration now where files are referenced. Exceptions are allowed
    for files stored in the project configuration tree (on the "." server)
+ * fix the bug that the project name configuratino from `proj/config` did
+   not influence the BuildId
 
 e2factory-2.3.1
  * bugfixes
