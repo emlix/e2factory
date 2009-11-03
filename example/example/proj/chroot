@@ -1,0 +1,19 @@
+-- e2 factory chroot configuration file --
+local cp = "sample/"
+e2chroot {
+  default_groups = {
+    "base",
+  },
+  groups = {
+    {
+      name = "base",
+      server = "chroot",
+      files = {
+        {
+	  location = cp.."base.tar.gz",
+	  sha1 = "284e7e9b03cf4e0343d509f564a1b2124933533d",
+        },
+      },
+    },
+  },
+}

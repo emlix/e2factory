@@ -1,0 +1,8 @@
+-- e2 factory project configuration file --
+
+e2project {
+	name = "e2factory-example",
+	release_id = "e2factory-example",
+	default_results = { "final", },
+	chroot_arch = "x86_32",
+}

@@ -1,0 +1,25 @@
+The example/ subdirectory includes an example project configuration.
+
+You can easily set up the example project by running
+
+ $ make fetch
+
+to fetch files required to setup the example and
+
+ $ make install_example
+
+to install files required for the the example project to your server
+environment and setup the example project.
+If you change the LOCALSTATEDIR setting in your e2factory build make sure
+you use the same setting here.
+
+Finally you can checkout the project
+
+ $ e2-fetch-project e2factory-example
+ $ cd e2factory-example
+
+and use it...
+
+ $ e2-ls-project
+ $ e2-fetch-sources
+ $ e2-build

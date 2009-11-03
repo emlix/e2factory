@@ -30,6 +30,8 @@ NEXT:
    for files stored in the project configuration tree (on the "." server)
  * fix the bug that the project name configuratino from `proj/config` did
    not influence the BuildId
+ * the example project is now included in the main source tree. Additional
+   files and the e2factory.git repository can be fetched on-the-fly
 
 e2factory-2.3.1
  * bugfixes
