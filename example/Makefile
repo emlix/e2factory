@@ -43,6 +43,16 @@ RELEASESDIR = $(LOCALSTATEDIR)/releases
 PROJECTSDIR = $(LOCALSTATEDIR)/projects
 UPSTREAMDIR = $(LOCALSTATEDIR)/upstream
 
+ifneq ($(E2_LOCAL_BRANCH),)
+  E2_LOCAL_BRANCH_ENV = E2_LOCAL_BRANCH=$(E2_LOCAL_BRANCH)
+endif
+ifneq ($(E2_LOCAL_TAG),)
+  E2_LOCAL_TAG_ENV = E2_LOCAL_TAG=$(E2_LOCAL_TAG)
+endif
+ifneq ($(E2_CONFIG),)
+  E2_CONFIG_ENV = E2_CONFIG=$(E2_CONFIG)
+endif
+
 default: example
 
 clean:
@@ -70,11 +80,11 @@ install_example: fetch
 	# process to the local build inside e2-fetch-project.
 	env -i \
 		PATH=$(PATH) \
-		E2_CONFIG=$(E2_CONFIG) \
+		$(E2_CONFIG_ENV) \
 		HOME=$(HOME) \
 		USER=$(USER) \
-		E2_LOCAL_BRANCH=$(E2_LOCAL_BRANCH) \
-		E2_LOCAL_TAG=$(E2_LOCAL_TAG) \
+		$(E2_LOCAL_BRANCH_ENV) \
+		$(E2_LOCAL_TAG_ENV) \
 		./setup_example.sh
 
 uninstall_example:
