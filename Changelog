@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.2rc1
  * temporary build directories are located in a version specific directory
    now
