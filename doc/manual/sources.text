@@ -31,6 +31,8 @@ Example:
           {
             location = "z/zlib/1.2.3/zlib-1.2.3.tar.gz",
             unpack = "zlib-1.2.3",
+            -- sha1 is required if server is not "."
+            sha1 = "60faeaaf250642db5c0ea36cd6dcc9f99c8f3902",
           },
         }
     }    
