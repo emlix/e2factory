@@ -32,15 +32,16 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ *.lc *.so lua-version-map.lua e2-su-2.2
+CLEAN_FILES = *~ *.lc *.o *.so lua-version-map.lua e2-su-2.2
 
 
 .PHONY: all install uninstall local install-local clean
 
-all: e2generic_global.lc luafile_ll_global.so e2util_global.so e2-su-2.2
+all: e2generic_global.lc luafile_ll_global.so e2util_global.so e2-su-2.2 sha1.so
 
 install: all
 	install -m 644 e2generic_global.lc $(DESTDIR)$(LIBDIR)
+	install -m 755 sha1.so $(DESTDIR)$(LIBDIR)
 	install -m 755 luafile_ll_global.so $(DESTDIR)$(LIBDIR)
 	install -m 755 e2util_global.so $(DESTDIR)$(LIBDIR)
 	install -m 4754 -o root -g $(E2_GROUP) e2-su-2.2 $(DESTDIR)$(BINDIR)/
@@ -51,11 +52,12 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/luafile_ll_global.so
 	rm -f $(DESTDIR)$(LIBDIR)/e2util_global.so
 
-local: e2generic_local.lc luafile_ll_local.so e2util_local.so
+local: e2generic_local.lc luafile_ll_local.so e2util_local.so sha1.so
 
 install-local: local
 	mkdir -p $(LOCALLIBDIR) $(LOCALMAKDIR)
 	install -m 644 e2generic_local.lc $(LOCALLIBDIR)
+	install -m 755 sha1.so $(LOCALLIBDIR)
 	install -m 755 luafile_ll_local.so $(LOCALLIBDIR)
 	install -m 755 e2util_local.so $(LOCALLIBDIR)
 	install -m 644 e2-su-2.2.c $(LOCALMAKDIR)
@@ -103,3 +105,9 @@ luafile_ll_local.so: luafile_ll.c
 
 e2util_local.so: e2util.c
 	$(CC) -DLOCAL $(CFLAGS) $(LUA_CPPFLAGS) $(LDFLAGS) -shared -fPIC $< -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(LUA_CPPFLAGS) $(LDFLAGS) -fPIC -o $@ -c $<
+
+sha1.so: sha1.o lsha1.o
+	$(CC) -o $@ -shared sha1.o lsha1.o

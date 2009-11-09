@@ -1,4 +1,5 @@
 NEXT:
+ * use sha1 module instead of calling the sha1sum tool
 
 e2factory-2.3.2
  * temporary build directories are located in a version specific directory

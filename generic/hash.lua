@@ -25,6 +25,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+require("sha1")
+
 --- create a hash context
 -- @return a hash context object, or nil on error
 -- @return nil, an error string on error
@@ -54,28 +56,9 @@ end
 -- @return the hash value, or nil on error
 -- @return an error string on error
 local function hash_finish(hc)
-	-- write hash data to a temporary file
-	hc.tmpdir = e2lib.mktempdir()
-	hc.tmpfile = string.format("%s/hashdata", hc.tmpdir)
-	hc.f = io.open(hc.tmpfile, "w")
-	hc.f:write(hc.data)
-	hc.f:close()
-
-	-- hash data and read the hash value
-	local cmd = string.format("sha1sum %s", hc.tmpfile)
-	hc.p = io.popen(cmd, "r")
-	local s = hc.p:read()
-	if not s then
-		return nil, "calculating hash value failed"
-	end
-	hc.p:close()
-
-	-- parse the output from sha1sum
-	hc.sha1 = s:match("(%S+)")
-	if not hc.sha1 then
-		return nil, "calculating hash value failed"
-	end
-	e2lib.rmtempdir(hc.tmpdir)
+	local ctx = sha1.sha1_init()
+	ctx:update(hc.data)
+	hc.sha1 = string.lower(ctx:final())
 	return hc.sha1
 end
 
