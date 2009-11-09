@@ -1685,8 +1685,11 @@ end
 -- @param dir string: path
 -- @return bool
 function e2lib.isfile(path)
-  local args = string.format("-f '%s'", path)
-  return e2lib.call_tool("test", args)
+  local t = e2util.stat(path, true)
+  if not t or t.type ~= "regular" then
+    return false
+  end
+  return true
 end
 
 --- check if path is a file

@@ -1,5 +1,6 @@
 NEXT:
  * use sha1 module instead of calling the sha1sum tool
+ * optimization: use stat() instead of calling 'test -f'
 
 e2factory-2.3.2
  * temporary build directories are located in a version specific directory
