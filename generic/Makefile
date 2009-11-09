@@ -74,14 +74,14 @@ clean:
 	rm -f $(CLEAN_FILES)
 
 e2generic_global.lc: strict.lua collection.lua e2lib_global_prefix.lua \
-		e2lib.lua e2option.lua sha1.lua \
+		e2lib.lua e2option.lua hash.lua \
 		transport.lua cache.lua url.lua scm.git.lua \
 		luafile.lua lua-version-map.lua \
 		error.lua lock.lua
 	$(BUILD_LUAC) -o $@ $^
 
 e2generic_local.lc: strict.lua collection.lua e2lib_local_prefix.lua \
-		e2lib.lua e2option.lua sha1.lua \
+		e2lib.lua e2option.lua hash.lua \
 		transport.lua cache.lua url.lua scm.git.lua \
 		luafile.lua lua-version-map.lua
 	$(LUAC) -o $@ $^

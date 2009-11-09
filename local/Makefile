@@ -119,7 +119,7 @@ e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 		$(TOPLEVEL)/generic/e2lib.lua \
 		e2tool.lua e2scm.lua git.lua svn.lua cvs.lua files.lua \
 		$(TOPLEVEL)/generic/e2option.lua \
-		$(TOPLEVEL)/generic/sha1.lua \
+		$(TOPLEVEL)/generic/hash.lua \
 		$(TOPLEVEL)/generic/lock.lua \
 		e2build.lua $(TOPLEVEL)/generic/luafile.lua \
 		policy.lua
