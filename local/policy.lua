@@ -221,7 +221,6 @@ end
 local default_build_process = {
 	"build_config",
 	"result_available",
-	"remove_logfile",
 	"chroot_lock",
 	"chroot_cleanup_if_exists",
 	"setup_chroot",

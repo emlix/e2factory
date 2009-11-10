@@ -30,13 +30,6 @@
 
 e2build = e2lib.module("e2build")
 
-function e2build.remove_logfile(info, r, return_flags)
-  local res = info.results[r]
-  local rc = os.remove(res.build_config.buildlog)
-  -- always return true
-  return true, nil
-end
-
 --- cache a result
 -- @param info
 -- @param server
@@ -372,6 +365,10 @@ function e2build.runbuild(info, r, return_flags)
 				res.build_config.chroot_call_prefix, e2_su, 
 				res.build_config.base, runbuild)
   -- the build log is written to an external logfile
+  rc, re = e2lib.rotate_log(res.build_config.buildlog)
+  if not rc then
+    return false, e:cat(re)
+  end
   local out = luafile.open(res.build_config.buildlog, "w")
   local function logto(output)
     e2lib.log(3, output)
