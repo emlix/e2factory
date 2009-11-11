@@ -1161,13 +1161,16 @@ function e2tool.projid(info)
 		if not e2lib.is_backup_file(f) then
 			local location = string.format("proj/init/%s", 
 							e2lib.basename(f))
-			local hash, e = e2tool.hash_file(info,
-					info.root_server_name, location)
-			if not hash then
+			local f = {
+				server = info.root_server_name,
+				location = location,
+			}
+			local fileid, e = e2tool.fileid(info, f)
+			if not fileid then
 				e2lib.abort(e)
 			end
-			hc:hash_line(location)		-- the filename
-			hc:hash_line(hash)	-- the file content
+			hc:hash_line(location)	-- the filename
+			hc:hash_line(fileid)	-- the file content
 		end
 	end
 	hc:hash_line(info.release_id)
@@ -1483,12 +1486,15 @@ function e2tool.pbuildid(info, resultname)
 	hc:hash_line(r.envid)
 	if not r.pseudo_result then
 		local location = e2tool.resultbuildscript(info.results[resultname].directory)
-		local hash, re = e2tool.hash_file(info,info.root_server_name, 
-								location)
-		if not hash then
+		local f = {
+			server = info.root_server_name,
+			location = location,
+		}
+		local fileid, re = e2tool.fileid(info, f)
+		if not fileid then
 			return nil, e:cat(re)
-		end	
-		hc:hash_line(hash)			-- build script hash
+		end
+		hc:hash_line(fileid)			-- build script hash
 	end
 	e2lib.log(4, string.format("hash data for resultid %s\n%s",
 							resultname, hc.data))
