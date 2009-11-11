@@ -449,6 +449,12 @@ The newest configuration syntax supported by the tools is %s.
   -- build number table
   info.build_numbers  = {}
 
+  info.hashcache_file = string.format("%s/.e2/hashcache", info.root)
+  rc, re = e2tool.hashcache_setup(info)
+  if not rc then
+    return false, e:cat(re)
+  end
+
   info.sources = {}
 
   -- read project environment file
@@ -1327,6 +1333,86 @@ function e2tool.calc_sourceids(info, sourceset)
 	return true, nil
 end
 
+function e2tool.hashcache_setup(info)
+	local e = new_error("reading hash cache")
+	local rc, re
+	local s = e2util.stat(info.hashcache_file)
+	if not s then
+		e2lib.logf(4, "loading hashcache from file: %s",
+							info.hashcache_file)
+		info.hashcache = {}
+		info.hashcache_mtime = 0
+		return true, nil
+	end
+	info.hashcache_mtime = s.mtime
+	local e1 = new_error("broken hash cache file: %s", info.hashcache_file)
+	local c = loadfile(info.hashcache_file)
+	if not c then
+		return false, e:cat(e1)
+	end
+	-- set empty environment for this chunk
+	setfenv(c, {})
+	info.hashcache = c()
+	if type(info.hashcache) ~= "table" then
+		return false, e:cat(e1)
+	end
+	for k,v in pairs(info.hashcache) do
+		if not k:match("([^:]+):(%S+)") or
+		   not v:match("^([a-f0-9]+)$") or
+		   #v ~= 40 then
+			return false, e:cat(e1)
+		end
+	end
+	return true
+end
+
+function hashcache_write(info)
+	local e = new_error("writing hash cache file")
+	local f, msg = io.open(info.hashcache_file, "w")
+	if not f then
+		return false, e:append(msg)
+	end
+	f:write("return {\n")
+	for k,v in pairs(info.hashcache) do
+		f:write(string.format("[\"%s\"] = \"%s\",\n", k, v))
+	end
+	f:write("}\n")
+	f:close()
+	return true
+end
+
+function e2tool.hashcache(info, file)
+	local e = new_error("getting fileid from hash cache")
+	local rc, re, fileid
+	local p, re = cache.file_path(info.cache, file.server,
+							file.location, {})
+	if not p then
+		return e:cat(re)
+	end
+	local s = e2util.stat(p)
+	if not s then
+		return e:cat(new_error("stat() failed"))
+	end
+	local id = string.format("%s:%s", file.server, file.location)
+	local fileid
+	if s.mtime >= info.hashcache_mtime or not info.hashcache[id] then
+		fileid, re = e2tool.hash_file(info, file.server, file.location)
+                if not fileid then
+                        return nil, e:cat(re)
+                end
+		-- update hashcache and the hashcachefile
+		-- TBD: mark hashcache dirty and write hashcachefile once.
+		info.hashcache[id] = fileid
+		rc, re = hashcache_write(info)
+		if not rc then
+			return nil, e:cat(re)
+		end
+	else
+		fileid = info.hashcache[id]
+	end
+	return fileid
+end
+
 --- calculate a representation for file content. The name and location
 -- attributes are not included.
 -- @param file table: file table from configuration
@@ -1340,7 +1426,7 @@ function e2tool.fileid(info, file)
 	if file.sha1 then
 		fileid = file.sha1
 	else
-		fileid, re = e2tool.hash_file(info, file.server, file.location)
+		fileid, re = e2tool.hashcache(info, file)
 		if not fileid then
 			return nil, e:cat(re)
 		end
