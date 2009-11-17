@@ -1708,6 +1708,7 @@ function e2lib.sha1sum(path)
     return nil, new_error(msg)
   end
   local out, msg = p:read("*l")
+  p:close()
   local sha1, file = out:match("(%S+)  (%S+)")
   if type(sha1) ~= "string" then
     return nil, new_error(msg)
