@@ -55,12 +55,8 @@ To build and install the documentation use the doc and install-doc targets:
 This will build and install the tutorial, the html manual pages and the
 luadoc source code documentation.
 
-The e2factory-examples package provides an easy way to get started. It 
-holds everything to setup a simple e2factory environment, with a small 
-example project.
-We recommend to download and install the e2factory-example package to 
-get a working setup. See INSTALL in the e2factory-example package for 
-more information.
+The example/ subdirectory holds an example project. Read example/README
+for more information.
 
 In case you have any problems with the installation, please
 contact the e2factory team via the mailinglist:
