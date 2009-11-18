@@ -1370,11 +1370,11 @@ function e2lib.mktempfile(template)
   local cmd = string.format("mktemp '%s'", template)
   local mktemp = io.popen(cmd, "r")
   if not mktemp then
-    e2lib.bomb("can't mktemp")
+    e2lib.abort("can't mktemp")
   end
   local tmp = mktemp:read()
   if not tmp then
-    e2lib.bomb("can't mktemp")
+    e2lib.abort("can't mktemp")
   end
   mktemp:close()
   -- register tmp for removing with rmtempfiles() later on
@@ -1411,11 +1411,11 @@ function e2lib.mktempdir(template)
   local cmd = string.format("mktemp -d '%s'", template)
   local mktemp = io.popen(cmd, "r")
   if not mktemp then
-    e2lib.bomb("can't mktemp")
+    e2lib.abort("can't mktemp")
   end
   local tmpdir = mktemp:read()
   if not tmpdir then
-    e2lib.bomb("can't mktemp")
+    e2lib.abort("can't mktemp")
   end
   mktemp:close()
   -- register tmpdir for removing with rmtempdirs() later on
