@@ -1366,7 +1366,7 @@ function e2tool.licenceid(info, licence)
 	for _,f in ipairs(lic.files) do
 		hc:hash_line(f.server)
 		hc:hash_line(f.location)
-		local fileid = e2tool.fileid(info, f)
+		local fileid, re = e2tool.fileid(info, f)
 		if not fileid then
 			return false, e:cat(re)
 		end
@@ -1559,7 +1559,7 @@ function e2tool.chrootgroupid(info, groupname)
 	for _,f in ipairs(g.files) do
 		hc:hash_line(f.server)
 		hc:hash_line(f.location)
-		local fileid = e2tool.fileid(info, f)
+		local fileid, re = e2tool.fileid(info, f)
 		if not fileid then
 			return false, e:cat(re)
 		end
