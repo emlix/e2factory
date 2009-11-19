@@ -64,10 +64,10 @@ end
 -- @param info the info table
 -- @param source string: the source name
 -- @param sourceset string: the sourceset
+-- @param check_remote bool: in tag mode: make sure the tag is available remote
 -- @return string: the commit id, nil on error
 -- @return nil on success, an error string on error
-function git.get_revision_id(info, source, sourceset)
-  -- XXX reading remote tag via cache is silly. Use git tools.
+function git.get_revision_id(info, source, sourceset, check_remote)
   local sourcename = source
   local rc, re
   local e = new_error("getting revision id failed for source: %s", source)
@@ -86,25 +86,26 @@ function git.get_revision_id(info, source, sourceset)
   end
   local p = info.root .. "/" .. s.working .. "/.git/refs/"
   local id, fr, gitdir, ref
+  gitdir = string.format("%s/%s/.git", info.root, s.working)
   if sourceset == "branch" or
      (sourceset == "lazytag" and s.tag == "^") then
-    gitdir = string.format("%s/%s/.git", info.root, s.working)
     ref = string.format("refs/heads/%s", s.branch)
-    id, e = generic_git.git_rev_list1(gitdir, ref)
+    id, re = generic_git.git_rev_list1(gitdir, ref)
     -- error checking delayed to end of function
-    if not id then
-      fr = "can't get commit id for branch: " .. s.branch
-    end
   elseif sourceset == "tag" or
          (sourceset == "lazytag" and s.tag ~= "^") then
     gitdir = string.format("%s/%s/.git", info.root, s.working)
     ref = string.format("refs/tags/%s", s.tag)
-    id, e = generic_git.git_rev_list1(gitdir, ref)
+    id, re = generic_git.git_rev_list1(gitdir, ref)
     -- error checking delayed to end of function
-    -- XXX remote access remains missing for now. Probably doesn't make
-    --   sense here anyway, but in some other function like
-    --   check-if-remote-has-our-tag-too(), or force-push-our-tag-prior-
-    --   to-release-tagging()
+    if id and check_remote then
+      e2lib.logf(4, "%s: check for remote tag", s.name)
+      rc, re = generic_git.verify_remote_tag(gitdir, s.tag)
+      if not rc then
+        return false, e:cat(re)
+      end
+      e2lib.logf(4, "%s: check for remote tag: match", s.name)
+    end
   else
     e2lib.abort("not an scm sourceset: " .. sourceset)
   end
@@ -657,7 +658,8 @@ function git.sourceid(info, sourcename, sourceset)
 	if src.sourceid[sourceset] then
 		return src.sourceid[sourceset]
 	end
-	src.commitid[sourceset], e = git.get_revision_id(info, sourcename, sourceset)
+	src.commitid[sourceset], e = git.get_revision_id(info, sourcename,
+				sourceset, e2option.opts["check-remote"])
 	if not src.commitid[sourceset] then
 		return nil, e
 	end
