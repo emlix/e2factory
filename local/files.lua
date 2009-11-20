@@ -309,10 +309,11 @@ end
 -- @return string: the source id, nil on error
 -- @return an error string on error
 function files.sourceid(info, sourcename, sourceset)
-	local rc, e
-	rc, e = files.validate_source(info, sourcename)
+	local rc, re
+	local e = new_error("%s: error calculating sourceid", sourcename)
+	rc, re = files.validate_source(info, sourcename)
 	if not rc then
-		return false, e
+		return false, re
 	end
 	local src = info.sources[sourcename]
 	if src.sourceid then
@@ -331,7 +332,7 @@ function files.sourceid(info, sourcename, sourceset)
 		hash.hash_line(hc, licenceid)
 	end
 	for _,f in ipairs(src.file) do
-		local fileid = e2tool.fileid(info, f)
+		local fileid, re = e2tool.fileid(info, f)
 		if not fileid then
 			return false, e:cat(re)
 		end
