@@ -652,7 +652,7 @@ The newest configuration syntax supported by the tools is %s.
   if not line then
     return false, e:cat(re)
   end
-  local s, e, l = string.find(line, "^%s*(%S+)%s*$")
+  local _, _, l = string.find(line, "^%s*(%S+)%s*$")
   if not l then
     return false, e:append("%s: can't parse project location",
 					info.project_location_config)
