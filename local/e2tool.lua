@@ -759,6 +759,28 @@ The newest configuration syntax supported by the tools is %s.
   if not rc then
     return false, e:cat(re)
   end
+
+  if e2option.opts["check"] then
+    e2tool.lcd(info, ".")
+    rc, re = generic_git.verify_head_match_tag(nil, info.release_id)
+    if rc == nil then
+      e2lib.abort(e:cat(re))
+    end
+    if not rc then
+      local msg = "project repository tag does not match the ReleaseId"..
+						" given in proj/config"
+      e:append(msg)
+      e2lib.abort(e:cat(re))
+    end
+    rc, re = generic_git.verify_clean_repository(nil)
+    if rc == nil then
+      e2lib.abort(e:cat(re))
+    end
+    if not rc then
+      e = new_error("project repository is not clean")
+      e2lib.abort(e:cat(re))
+    end
+  end
   return info, nil
 end
 
