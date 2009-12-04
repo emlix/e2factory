@@ -373,6 +373,163 @@ function generic_git.git_commit(gitdir, args)
   return e2lib.git("commit", gitdir, args)
 end
 
+--- compare a local tag and the remote tag with the same name
+-- @param gitdir string: gitdir (optional, default: .git)
+-- @param tag string: tag name
+-- @return bool, or nil on error
+-- @return an error object on failure
+function generic_git.verify_remote_tag(gitdir, tag)
+  e2lib.logf(4, "generic_git.verify_remote_tag(%s, %s)", tostring(gitdir),
+							tostring(tag))
+  local e = new_error("verifying remote tag")
+  local rc, re
+
+  -- fetch the remote tag
+  local rtag = string.format("%s.remote", tag)
+  local args = string.format("origin refs/tags/%s:refs/tags/%s",
+								tag, rtag)
+  rc, re = e2lib.git(gitdir, "fetch", args)
+  if not rc then
+    return false, new_error("remote tag is not available: %s", tag)
+  end
+
+  -- store commit ids for use in the error message, if any
+  local lrev = generic_git.git_rev_list1(gitdir, tag)
+  if not lrev then
+    return nil, e:cat(re)
+  end
+  local rrev = generic_git.git_rev_list1(gitdir, rtag)
+  if not rrev then
+    return nil, e:cat(re)
+  end
+
+  -- check that local and remote tags point to the same revision
+  local args = string.format("--quiet '%s' '%s'", rtag, tag)
+  local equal, re = e2lib.git(gitdir, "diff", args)
+
+  -- delete the remote tag again, before evaluating the return code
+  -- of 'git diff'
+  local args = string.format("-d '%s'", rtag)
+  rc, re = e2lib.git(gitdir, "tag", args)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  if not equal then
+    return false, e:append(
+      "local tag differs from remote tag\n"..
+      "tag name: %s\n"..
+      "local:  %s\n"..
+      "remote: %s\n", tag, lrev, rrev)
+  end
+  return true, nil
+end
+
+--- verify that the working copy is clean and matches HEAD
+-- @param gitwc string: path to a git working tree (default: .)
+-- @return bool, or nil on error
+-- @return an error object on failure
+function generic_git.verify_clean_repository(gitwc)
+  e2lib.logf(4, "generic_git.verify_clean_repository(%s)", tostring(gitwc))
+  gitwc = gitwc or "."
+  local e = new_error("verifying that repository is clean")
+  local rc, re
+  local tmp = e2lib.mktempfile()
+  rc, re = e2lib.chdir(gitwc)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  -- check for unknown files in the filesystem
+  local args = string.format(
+			"--exclude-standard --directory --others >%s", tmp)
+  rc, re = e2lib.git(nil, "ls-files", args)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  local x, msg = io.open(tmp, "r")
+  if not x then
+    return nil, e:cat(msg)
+  end
+  local files = x:read("*a")
+  x:close()
+  if #files > 0 then
+    local msg = "the following files are not checked into the repository:\n"
+    msg = msg .. files
+    return false, new_error("%s", msg)
+  end
+  -- verify that the working copy matches HEAD
+  local args = string.format("--name-only HEAD >%s", tmp)
+  rc, re = e2lib.git(nil, "diff-index", args)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  local x, msg = io.open(tmp, "r")
+  if not x then
+    return nil, e:cat(msg)
+  end
+  local files = x:read("*a")
+  x:close()
+  if #files > 0 then
+    msg = "the following files are modified:\n"
+    msg = msg..files
+    return false, new_error("%s", msg)
+  end
+  -- verify that the index matches HEAD
+  local args = string.format("--name-only --cached HEAD >%s", tmp)
+  rc, re = e2lib.git(nil, "diff-index", args)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  local x, msg = io.open(tmp, "r")
+  if not x then
+    return nil, e:cat(msg)
+  end
+  local files = x:read("*a")
+  x:close()
+  if #files > 0 then
+    msg = "the following files in index are modified:\n"
+    msg = msg..files
+    return false, new_error("%s", msg)
+  end
+  return true
+end
+
+--- verify that HEAD matches the given tag
+-- @param gitdir string: gitdir (optional, default: .git)
+-- @param tag string: tag name
+-- @return bool, or nil on error
+-- @return an error object on failure
+function generic_git.verify_head_match_tag(gitwc, verify_tag)
+  e2lib.logf(4, "generic_git.verify_head_match_tag(%s, %s)", tostring(gitwc),
+							tostring(verify_tag))
+  assert(verify_tag)
+  gitwc = gitwc or "."
+  local e = new_error("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
+  local rc, re
+  local tmp = e2lib.mktempfile()
+  local args = string.format("--tags --match '%s' >%s", verify_tag, tmp)
+  rc, re = e2lib.chdir(gitwc)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  rc, re = e2lib.git(nil, "describe", args)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  local x, msg = io.open(tmp, "r")
+  if not x then
+    return nil, e:cat(msg)
+  end
+  local tag, msg = x:read()
+  x:close()
+  if tag == nil then
+    return nil, e:cat(msg)
+  end
+  if tag ~= verify_tag then
+    return false
+  end
+  return true
+end
+
 function generic_git.sourceset2ref(sourceset, branch, tag)
 	if sourceset == "branch" or
 	   (sourceset == "lazytag" and tag == "^") then
