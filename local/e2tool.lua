@@ -781,6 +781,14 @@ The newest configuration syntax supported by the tools is %s.
       e2lib.abort(e:cat(re))
     end
   end
+
+  if e2option.opts["check-remote"] then
+    rc, re = generic_git.verify_remote_tag(nil, info.release_id)
+    if not rc then
+      e:append("verifying remote tag failed")
+      e2lib.abort(e:cat(re))
+    end
+  end
   return info, nil
 end
 
