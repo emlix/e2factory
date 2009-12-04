@@ -347,6 +347,7 @@ function e2option.parse(args)
   if opts["Whint"] or opts["Wall"] then
     e2lib.warn_category.WHINT = true
   end
+  e2option.opts = opts
   return opts, vals
 end
 
