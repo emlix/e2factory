@@ -633,8 +633,8 @@ function e2lib.tartype(path)
   local c = nil
   f:close()
   if l > 261 and string.sub(d, 258, 262) == "ustar" then c = ""
-  elseif l > 1 and string.sub(d, 1, 2) == "\031\139" then c = "z"
-  elseif l > 2 and string.sub(d, 1, 3) == "BZh" then c = "j"
+  elseif l > 1 and string.sub(d, 1, 2) == "\031\139" then c = "--gzip"
+  elseif l > 2 and string.sub(d, 1, 3) == "BZh" then c = "--bzip2"
   elseif l > 3 and string.sub(d, 1, 4) == "PK\003\004" then c = "zip"
   end
   return c
@@ -650,7 +650,7 @@ function e2lib.howtounpack(physpath, virtpath, destdir)
   if c == "zip" then
     c = "unzip \"" .. virtpath .. "\" -d \"" .. destdir .. "\""
   elseif c then
-    c = "tar x" .. c .. "f \"" .. virtpath .. "\" -C \"" .. destdir .. "\""
+    c = string.format("tar -C '%s' %s -xf '%s'", destdir, c, virtpath)
   end
   return c
 end

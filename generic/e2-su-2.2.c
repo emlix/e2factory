@@ -180,21 +180,22 @@ int main(int argc, char *argv[])
 		char *tartype = argv[3];
 		char *file = argv[4];
 		char *tararg = NULL;
+		int n = 0;
+		arg[n++] = basename(tar_tool);
+		arg[n++] = "-C";
+		arg[n++] = path;
 		if(!strcmp(tartype, "tar.gz")) {
-			tararg = "-xzf";
+			arg[n++] = "--gzip";
 		} else if(!strcmp(tartype, "tar.bz2")) {
-			tararg = "-xjf";
+			arg[n++] = "--bzip2";
 		} else if(!strcmp(tartype, "tar")) {
-			tararg = "-xf";
+			/* nothing */
 		} else {
 			perr("wrong tararg argument");
 		}
-		arg[0] = basename(tar_tool);
-		arg[1] = "-C";
-		arg[2] = path;
-		arg[3] = tararg;
-		arg[4] = file;
-		arg[5] = NULL;
+		arg[n++] = "-xf";
+		arg[n++] = file;
+		arg[n++] = NULL;
 		print_arg(arg);
 		setuid_root();
 		rc = execv(tar_tool, arg);
@@ -272,21 +273,22 @@ int main(int argc, char *argv[])
 		char *tartype = argv[3];
 		char *file = argv[4];
 		char *tararg = NULL;
+		int n = 0;
+		arg[n++] = basename(tar_tool);
+		arg[n++] = "-C";
+		arg[n++] = path;
 		if(!strcmp(tartype, "tar.gz")) {
-			tararg = "-xzf";
+			arg[n++] = "--gzip";
 		} else if(!strcmp(tartype, "tar.bz2")) {
-			tararg = "-xjf";
+			arg[n++] = "--bzip2";
 		} else if(!strcmp(tartype, "tar")) {
-			tararg = "-xf";
+			/* nothing */
 		} else {
 			perr("wrong tararg argument");
 		}
-		arg[0] = basename(tar_tool);
-		arg[1] = "-C";
-		arg[2] = path;
-		arg[3] = tararg;
-		arg[4] = file;
-		arg[5] = NULL;
+		arg[n++] = "-xf";
+		arg[n++] = file;
+		arg[n++] = NULL;
 		print_arg(arg);
 		setuid_root();
 		rc = execv(tar_tool, arg);
