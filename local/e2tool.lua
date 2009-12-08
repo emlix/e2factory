@@ -501,72 +501,14 @@ The newest configuration syntax supported by the tools is %s.
 
   info.sources = {}
 
-  -- read project environment file
-  local p2 = info.root .. "/proj/env"
-  local function invalid_access(table, k, v)
-    e2lib.abort("attempt to add an entry `", k, "' with value '",
-		v, "' to the project environment table, the environment",
-		" may not be extended once it is loaded.")
-  end
-  info.env = {}
-  info.env_files = { "proj/env", }
-  if e2util.exists(p2) then
-    e2lib.log(3, "loading " .. p2)
-    local function check(k, v)
-      local t = type(v)
-      if t ~= "string" and t ~= "number" then
-	e2lib.abort("invalid environment value for `", k,
-		    "' in proj/env, value must be a string or number")
-      end
-    end
-    local lua_should_have_localrec
-    local env = function(tab) 
-		  if type(tab) == "string" then
-		    local path2 = info.root .. "/" .. tab
-		    e2lib.log(3, "loading " .. path2)
-		    e2lib.dofile_protected(path2, { env=lua_should_have_localrec, e2env = info.env })
-		    table.insert(info.env_files, tab)
-		  elseif type(tab) == "table" then
-		    for k, v in pairs(tab) do -- for each result...
-		      if type(k) ~= "string" then
-			e2lib.abort("invalid environment key `", k, 
-				    "' in proj/env, key must be a string")
-		      end
-		      local t = type(v)
-		      if t == "table" then
-			table.foreach(v, check)
-		      else 
-			check(k, v)
-		      end
-		    end
-		    -- *** we go again through the table - can this be fused?
-		    for k, v in pairs(tab) do
-		      local t = info.env[ k ]
-		      if not t then t = {} end
-		      if type(v) == "table" then
-			for k2, v2 in pairs(v) do
-			  t[ k2 ] = v2
-			end
-		      else
-			t = v
-		      end
-		      info.env[ k ] = t
--- 		      print("info.env[", k, "]:", t)
--- 		      if type(t) == "table" then
--- 			table.foreach(t, print)
--- 		      end
--- 		      print("info.env:")
--- 		      table.foreach(info.env, print)
-		    end
-		  else
-		    e2lib.abort("invalid argument to `env' - should be string or table")
-		  end
-		end
-    lua_should_have_localrec = env
-    local rc, re = e2lib.dofile_protected(p2, { env = env, e2env = info.env })
-    if not rc then
-      return false, e:cat(re)
-    end
+  -- read environment configuration
+  info.env = {}		-- global and result specfic env (deprecated)
+  info.env_files = {}   -- a list of environment files
+  info.global_env = {}	-- global env only
+  info.result_env = {}  -- result specific env only
+  local rc, re = e2tool.load_env_config(info, "proj/env")
+  if not rc then
+    return false, e:cat(re)
   end
 
   -- read project configuration
@@ -3025,5 +2967,76 @@ function e2tool.register_pbuildid(info, func)
     return false, new_error("register_pbuildid: invalid argument")
   end
   table.insert(info.ftab.pbuildid, func)
+  return true, nil
+end
+
+function e2tool.load_env_config(info, file)
+  e2lib.logf(4, "loading environment: %s", file)
+  local e = new_error("loading environment: %s", file)
+  local rc, re
+
+  local info = info
+  local load_env_config = e2tool.load_env_config
+  local merge_error = false
+  local function mergeenv(data)
+    -- upvalues: info, load_env_config(), merge_error
+    local rc, re
+    if type(data) == "string" then
+      -- include file
+      rc, re = load_env_config(info, data)
+      if not rc then
+	-- no error checking in place, so set upvalue and return
+        merge_error = re
+	return
+      end
+    else
+      -- environment table
+      for var, val in pairs(data) do
+        if type(var) ~= "string" or
+	  (type(val) ~= "string" and type(val) ~= "table") then
+	  merge_error = new_error("invalid environment entry in %s: %s=%s",
+					file, tostring(var), tostring(val))
+	  return nil
+	end
+	if type(val) == "string" then
+	  e2lib.logf(4, "global env: %-15s = %-15s", var, val)
+	  info.env[var] = val
+	  info.global_env[var] = val
+	elseif type(val) == "table" then
+	  for var1, val1 in pairs(val) do
+            if type(var1) ~= "string" or
+	       (type(val1) ~= "string" and type(val1) ~= "table") then
+	      merge_error = new_error(
+				"invalid environment entry in %s [%s]: %s=%s",
+				file, var, tostring(var1), tostring(val1))
+	      return nil
+	    end
+	    e2lib.logf(4, "result env: %-15s = %-15s [%s]",
+							var1, val1, var)
+	    info.env[var] = info.env[var] or {}
+	    info.env[var][var1] = val1
+	    info.result_env[var] = info.result_env[var] or {}
+	    info.result_env[var][var1] = val1
+	  end
+	end
+      end
+    end
+    return true, nil
+  end
+
+  table.insert(info.env_files, file)
+  local path = string.format("%s/%s", info.root, file)
+  local g = {}                  -- compose the environment for the config file
+  g.e2env = info.env                    -- env as built up so far
+  g.string = string                     -- string
+  g.env = mergeenv
+  rc, re = e2lib.dofile2(path, g)
+  if not rc then
+    return false, e:cat(re)
+  end
+  if merge_error then
+    return false, merge_error
+  end
+  e2lib.logf(4, "loading environment done: %s", file)
   return true, nil
 end
