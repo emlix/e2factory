@@ -626,6 +626,23 @@ The newest configuration syntax supported by the tools is %s.
     return false, e:cat(re)
   end
 
+  -- distribute result specific environment to the results
+  for r, t in pairs(info.result_env) do
+    if not info.results[r] then
+      return false, e:append(
+		"configured environment for non existent result: %s", r)
+    end
+    info.results[r].env = info.results[r].env or {}
+    for key,val in pairs(t) do
+      if info.results[r].env[key] then
+        e2lib.warn("WHINT", "ignoring duplicate environment from global "..
+			"configuration for result: %s %s=%s", r, key, val)
+      else
+        info.results[r].env[key] = val
+      end
+    end
+  end
+
   -- servers
   info.server_default_config = {     -- default values
     cachable = true,
