@@ -175,6 +175,13 @@ function register_commandline_options()
 	e2option.flag("branch", "set build mode to 'branch'")
 	e2option.flag("working-copy", "set build mode to 'working-copy'")
 	e2option.flag("release", "set build mode to 'release'")
+	e2option.flag("check-remote",[[
+Verify that remote resources are available
+                Enabled by default in 'release' mode]])
+	e2option.flag("check",[[
+Perform all checks to make sure that a build is
+                reproducible except checking for remote resources
+                Enabled by default in 'release' mode.]])
 end
 
 function handle_commandline_options(opts, use_default)
@@ -213,6 +220,10 @@ function handle_commandline_options(opts, use_default)
 			mode = policy.default_build_mode[opts["build-mode"]]
 		else
 			e2lib.abort("invalid build mode")
+		end
+		if opts["build-mode"] == "release" then
+			opts["check-remote"] = true
+			opts["check"] = true
 		end
 	end
 	return mode
