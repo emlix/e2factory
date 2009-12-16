@@ -1413,6 +1413,63 @@ function e2tool.hashcache(info, file)
 	return fileid
 end
 
+--- verify that remote files match the checksum. The check is skipped when
+-- check-remote is not enabled or cache is not enabled.
+-- @param info
+-- @param file table: file table from configuration
+-- @param fileid string: hash to verify against
+-- @return bool
+-- @return an error object on failure
+function e2tool.verify_remote_fileid(info, file, fileid)
+	local rc, re
+	local e = new_error("error calculating remote file id for file %s:%s",
+						file.server, file.location)
+	if not cache.cache_enabled(info.cache, file.server) or
+	   not e2option.opts["check-remote"] then
+		e2lib.logf(4, "checksum for remote file %s:%s skip verifying",
+						file.server, file.location)
+		return true, nil
+	end
+	local surl, re = cache.remote_url(info.cache, file.server,
+								file.location)
+	if not surl then
+		return false, e:cat(re)
+	end
+	local u, re = url.parse(surl)
+	if not u then
+		return false, e:cat(re)
+	end
+	local cmd = "sha1sum"
+	local retcmd
+	if u.transport == "ssh" or u.transport == "scp" or
+		u.transport == "rsync+ssh" then
+		local ssh = transport.get_tool("ssh")
+		retcmd = string.format("%s '%s' %s /%s", ssh, u.server,
+								cmd, u.path)
+	elseif u.transport == "file" then
+		retcmd = string.format("%s /%s", cmd, u.path)
+	else
+		return nil, new_error("transport not supported: %s",
+								u.transport)
+	end
+	local p = io.popen(retcmd, "r")
+	if not p then
+		return nil, e:cat(re)
+	end
+	local remote_fileid = p:read()
+	if not remote_fileid then
+		return nil, e:cat(re)
+	end
+	if fileid ~= remote_fileid:sub(1,40) then
+		return false, new_error(
+			"checksum for remote file %s:%s does not match",
+			file.server, file.location)
+	end
+	e2lib.logf(4, "checksum for remote file %s:%s matches",
+						file.server, file.location)
+	return true
+end
+
 --- calculate a representation for file content. The name and location
 -- attributes are not included.
 -- @param file table: file table from configuration
@@ -1430,6 +1487,10 @@ function e2tool.fileid(info, file)
 		if not fileid then
 			return nil, e:cat(re)
 		end
+	end
+	local rc, re = e2tool.verify_remote_fileid(info, file, fileid)
+	if not rc then
+		return nil, re
 	end
 	return fileid
 end

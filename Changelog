@@ -4,6 +4,7 @@ NEXT:
  * rotate build logfiles
  * introduce a hash cache depending on timestamps to further speed up
    BuildId calculation
+ * release mode verifies hashes for server side files
 
 e2factory-2.3.2
  * temporary build directories are located in a version specific directory
