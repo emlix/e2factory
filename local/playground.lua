@@ -43,6 +43,11 @@ e2option.flag("runinit","run init files automatically")
 e2option.flag("showpath", "prints the path of the build directory inside the chroot to stdout" )
 
 local opts = e2option.parse(arg)
+-- get build mode from the command line
+local build_mode = policy.handle_commandline_options(opts, true)
+if not build_mode then
+	e2lib.abort("no build mode given")
+end
 local info, re = e2tool.collect_project_info()
 if not info then
   e2lib.abort(re)
@@ -60,11 +65,6 @@ end
 
 r = opts.arguments[1]
 
--- get build mode from the command line
-local build_mode = policy.handle_commandline_options(opts, true)
-if not build_mode then
-	e2lib.abort("no build mode given")
-end
 -- apply the standard build mode to all results
 for _,res in pairs(info.results) do
 	res.build_mode = build_mode
