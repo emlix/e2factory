@@ -547,14 +547,14 @@ end
 --- exit from the tool, cleaning up temporary files and directories
 -- @param rc number: return code (optional, defaults to 0)
 -- @return This function does not return.
-function e2lib.finish(rc)
-  if not rc then
-    rc = 0
+function e2lib.finish(returncode)
+  if not returncode then
+    returncode = 0
   end
   e2lib.rmtempdirs()
   e2lib.rmtempfiles()
   e2lib.lock:cleanup()
-  os.exit(rc)
+  os.exit(returncode)
 end
 
 
