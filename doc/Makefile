@@ -73,6 +73,7 @@ documentation.tar.gz: luadoc/luadoc.tar.gz \
 	tar -C documentation -xzf luadoc/luadoc.tar.gz
 	tar -C documentation -xzf man/man.tar.gz
 	tar -C documentation -xzf manual/manual.tar.gz
+	cp $(TOPLEVEL)/Changelog documentation
 	tar -czf documentation.tar.gz documentation
 
 install-doc:
