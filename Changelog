@@ -5,6 +5,8 @@ NEXT:
  * introduce a hash cache depending on timestamps to further speed up
    BuildId calculation
  * release mode verifies hashes for server side files
+ * release mode checks that the correct version of e2factory is used with
+   a project
 
 e2factory-2.3.2
  * temporary build directories are located in a version specific directory

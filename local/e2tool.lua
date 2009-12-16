@@ -455,6 +455,24 @@ The newest configuration syntax supported by the tools is %s.
     return false, e:cat(re)
   end
 
+  if e2option.opts["check"] then
+    local f = ".e2/e2version"
+    local v = e2lib.parse_e2versionfile(f)
+    if v.tag == "^" then
+      e2lib.abort(string.format(
+        "local tool version is not configured to a fixed tag\n"..
+	"fix you configuration in %s before running e2factory in release mode",
+	f))
+    elseif v.tag ~= buildconfig.VERSIONSTRING then
+      e2lib.abort(string.format(
+	"local tool version does not match the version configured\n"..
+	"in `%s`\n"..
+	"local tool version is %s\n"..
+	"required version is %s",
+	f, buildconfig.VERSIONSTRING, v.tag))
+    end
+  end
+
   info.sources = {}
 
   -- read project environment file
