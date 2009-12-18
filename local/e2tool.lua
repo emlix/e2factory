@@ -609,9 +609,9 @@ The newest configuration syntax supported by the tools is %s.
     end
     info.servers[info.root_server_name].writeback = true
     if not info.servers[info.default_repo_server] then
-      e2lib.warnf(WPOLICY, "server %s is unconfigured.", 
+      e2lib.warnf("WPOLICY", "server %s is unconfigured.",
 						info.default_repo_server)
-      e2lib.warnf(WPOLICY, "Cannot setup server %s",
+      e2lib.warnf("WPOLICY", "Cannot setup server %s",
 						info.proj_storage_server_name)
       -- do not treat that as an error, unless the server is used.
       return true, nil
