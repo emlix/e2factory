@@ -1692,8 +1692,8 @@ function e2lib.isfile(path)
   return true
 end
 
---- check if path is a file
--- @param dir string: path
+--- calculate sha1sum for a file
+-- @param path string: path
 -- @return bool
 function e2lib.sha1sum(path)
   local args = string.format("'%s'", path)
