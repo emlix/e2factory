@@ -72,7 +72,7 @@ fetch: base.tar.gz e2factory.git
 install_example: fetch
 	for d in $(CHROOTDIR) $(RESULTSDIR) $(RELEASESDIR) $(PROJECTSDIR) \
 		$(UPSTREAMDIR) ; do \
-		install -d -m 775 -o root -g ebs $$d ;\
+		install -d -m 2775 -g ebs $$d ;\
 	done
 	install -m 644 base.tar.gz $(CHROOTDIR)/
 	cp -r e2factory.git $(PROJECTSDIR)/
