@@ -110,6 +110,7 @@ clean:
 e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 		result.lua \
 		loader.lua \
+		environment.lua \
 		$(TOPLEVEL)/generic/plugin.lua \
 		$(TOPLEVEL)/generic/scm.git.lua \
 		$(TOPLEVEL)/generic/transport.lua \
