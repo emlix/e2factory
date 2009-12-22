@@ -504,8 +504,8 @@ The newest configuration syntax supported by the tools is %s.
   -- read environment configuration
   info.env = {}		-- global and result specfic env (deprecated)
   info.env_files = {}   -- a list of environment files
-  info.global_env = {}	-- global env only
-  info.result_env = {}  -- result specific env only
+  info.global_env = environment.new()
+  info.result_env = {} -- result specific env only
   local rc, re = e2tool.load_env_config(info, "proj/env")
   if not rc then
     return false, e:cat(re)
@@ -627,19 +627,15 @@ The newest configuration syntax supported by the tools is %s.
   end
 
   -- distribute result specific environment to the results
+  for r, res in pairs(info.results) do
+    res.env = info.result_env[r] or environment.new()
+  end
+
+  -- check for environment for non-existent results
   for r, t in pairs(info.result_env) do
     if not info.results[r] then
       return false, e:append(
 		"configured environment for non existent result: %s", r)
-    end
-    info.results[r].env = info.results[r].env or {}
-    for key,val in pairs(t) do
-      if info.results[r].env[key] then
-        e2lib.warn("WHINT", "ignoring duplicate environment from global "..
-			"configuration for result: %s %s=%s", r, key, val)
-      else
-        info.results[r].env[key] = val
-      end
     end
   end
 
@@ -1788,24 +1784,11 @@ end
 -- @param resultname string: name of a result
 -- @return table: environment variables valid for the result
 function e2tool.env_by_result(info, resultname)
-	local e = {}
-	-- take global variables first
-	for k,v in pairs(info.env) do
-		if type(v) == "string" or
-		   type(v) == "number" then
-			e[k] = v
-		end
-	end
-	-- result specific variables override global ones
-	for k,v in pairs(info.env) do
-		if type(v) == "table" and
-		   k == resultname then
-			for k1,v1 in pairs(v) do
-				e[k1] = v1
-			end
-		end
-	end
-	return e
+	local res = info.results[resultname]
+	local env = environment.new()
+	env:merge(info.global_env, false)
+	env:merge(res.env, true)
+	return env
 end
 
 --- envid: calculate a value represennting the environment for a result
@@ -1813,13 +1796,7 @@ end
 -- @param resultname string: name of a result
 -- @return string: envid value
 function e2tool.envid(info, resultname)
-	local e = e2tool.env_by_result(info, resultname)
-	local hc = hash.hash_start()
-	for k,v in pairs(e) do
-		hc:hash_line(string.format("%s=%s", k, v))
-	end
-	local envid = hc:hash_finish()
-	return envid
+	return e2tool.env_by_result(info, resultname):id()
 end
 
 function e2tool.add_source_result(info, sourcename, source_set)
@@ -3018,7 +2995,7 @@ function e2tool.load_env_config(info, file)
 	if type(val) == "string" then
 	  e2lib.logf(4, "global env: %-15s = %-15s", var, val)
 	  info.env[var] = val
-	  info.global_env[var] = val
+	  info.global_env:set(var, val)
 	elseif type(val) == "table" then
 	  for var1, val1 in pairs(val) do
             if type(var1) ~= "string" or
@@ -3032,8 +3009,8 @@ function e2tool.load_env_config(info, file)
 							var1, val1, var)
 	    info.env[var] = info.env[var] or {}
 	    info.env[var][var1] = val1
-	    info.result_env[var] = info.result_env[var] or {}
-	    info.result_env[var][var1] = val1
+	    info.result_env[var] = info.result_env[var] or environment.new()
+	    info.result_env[var]:set(var1, val1)
 	  end
 	end
       end

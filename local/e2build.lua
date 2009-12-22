@@ -179,17 +179,19 @@ function e2build.build_config(info, r)
   tab.buildrc_file = string.format("buildrc")
   tab.buildrc_noinit_file = string.format("buildrc-noinit")
   tab.profile = string.format("/tmp/bashrc")
-  tab.builtin_env = {
-	E2_BUILD_NUMBER = res.buildno,
-	E2_TMPDIR = res.build_config.Tc,
-	E2_RESULT = r,
-	E2_RELEASE_ID = info.project.release_id,
-	E2_PROJECT_NAME = info.project.name,
-	E2_BUILDID = buildid,
-	T = res.build_config.Tc,
-	r = r,
-	R = r,
-  }
+  tab.builtin_env = environment.new()
+  tab.builtin_env:set("E2_BUILD_NUMBER", res.buildno)
+  tab.builtin_env:set("E2_TMPDIR", res.build_config.Tc)
+  tab.builtin_env:set("E2_RESULT", r)
+  tab.builtin_env:set("E2_RELEASE_ID", info.project.release_id)
+  tab.builtin_env:set("E2_PROJECT_NAME", info.project.name)
+  tab.builtin_env:set("E2_BUILDID", buildid)
+  tab.builtin_env:set("T", res.build_config.Tc)
+  tab.builtin_env:set("r", r)
+  tab.builtin_env:set("R", r)
+  tab.env = environment.new()
+  tab.env:merge(info.global_env)
+  tab.env:merge(res.env, true)
   e2lib.logf(4, "build config for result %s: ", r)
   for k,v in pairs(tab) do
      v = tostring(v)
@@ -493,7 +495,7 @@ function e2build.sources(info, r, return_flags)
     local e = new_error("installing environment files failed")
     -- install builtin environment variables
     local file = string.format("%s/env/builtin", res.build_config.T)
-    rc, re = write_environment_script(res.build_config.builtin_env, r, file)
+    rc, re = write_environment_script(res.build_config.builtin_env, file)
     if not rc then
       return false, e:cat(re)
     end
@@ -501,7 +503,7 @@ function e2build.sources(info, r, return_flags)
 							res.build_config.Tc))
     -- install project specific environment variables
     local file = string.format("%s/env/env", res.build_config.T)
-    rc, re = write_environment_script(info.env, r, file)
+    rc, re = write_environment_script(res.build_config.env, file)
     if not rc then
       return false, e:cat(re)
     end
@@ -928,31 +930,19 @@ function write_build_driver(info, r, destdir)
 end
 
 --- write the environment script for a result into a file
--- @param env table: the env table
--- @param r string: the result name
+-- @param env env object
 -- @param file string: the target filename
 -- @return bool
 -- @return an error object on failure
-function write_environment_script(env, r, file)
+function write_environment_script(env, file)
 	local e = new_error("writing environment script")
 	local f, msg = io.open(file, "w")
 	if not f then
 		e:append("%s: %s", file, msg)
 		return false, e
 	end
-	-- export global variables first 
-	for k,v in pairs(env) do
-		if type(v) == "string" then
-			f:write(string.format("%s=\"%s\"\n", k, v))
-		end
-	end
-	-- export result local variables
-	for k,v in pairs(env) do
-		if type(v) == "table" and r == k then
-			for k2, v2 in pairs(v) do
-				f:write(string.format("%s=\"%s\"\n", k2, v2))
-			end
-		end
+	for var, val in env:iter() do
+		f:write(string.format("%s=\"%s\"\n", var, val))
 	end
 	f:close()
 	return true, nil
@@ -1105,14 +1095,14 @@ function e2build.collect_project(info, r, return_flags)
 		local file, line
 		-- generate environment script
 		file = string.format("%s/env", destdir)
-		rc, re = write_environment_script(info.env, n, file)
+		rc, re = write_environment_script(rn.build_config.env, file)
 		if not rc then
 			return false, e:cat(re)
 		end
 		-- generate builtin environment script
 		local file = string.format("%s/builtin", destdir)
 		rc, re = write_environment_script(
-					rn.build_config.builtin_env, n, file)
+					rn.build_config.builtin_env, file)
 		if not rc then
 			return false, e:cat(re)
 		end
