@@ -51,6 +51,15 @@ function iter(env)
   return _iter, env.sorted
 end
 
+--- return a (copy of the) dictionary
+function get_dict(env)
+  local dict = {}
+  for k,v in env:iter() do
+    dict[k] = v
+  end
+  return dict
+end
+
 function unittest(env)
   local function p(...)
     --print(...)
@@ -103,4 +112,7 @@ function unittest(env)
     p(var, val)
   end
   assert(e5:id() == "404AA226CF94A483FD61878682F8E2759998B197")
+
+  local dict = e5:get_dict()
+  assert(dict['var'] == "val4")
 end
