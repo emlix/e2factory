@@ -626,9 +626,13 @@ The newest configuration syntax supported by the tools is %s.
     return false, e:cat(re)
   end
 
-  -- distribute result specific environment to the results
+  -- distribute result specific environment to the results,
+  -- provide environment for all results, even if it is empty
   for r, res in pairs(info.results) do
-    res.env = info.result_env[r] or environment.new()
+    if not info.result_env[r] then
+      info.result_env[r] = environment.new()
+    end
+    res.env = info.result_env[r]
   end
 
   -- check for environment for non-existent results
