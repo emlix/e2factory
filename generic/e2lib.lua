@@ -85,6 +85,7 @@ e2lib = {
   buildnumber_server_url = nil,
   template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
   extension_config = ".e2/extensions",
+  global_interface_version_file = ".e2/global-version",
   lock = nil,
   logrotate = 5,   -- configurable via config.log.logrotate
 }

@@ -618,6 +618,27 @@ The newest configuration syntax supported by the tools is %s.
   info.project_location = l
   e2lib.log(4, string.format("project location is %s", info.project_location))
 
+  -- read global interface version and check if this version of the local
+  -- tools supports the version used for the project
+  local line, re = e2lib.read_line(e2lib.global_interface_version_file)
+  if not line then
+    return false, e:cat(re)
+  end
+  info.global_interface_version = line:match("^%s*(%d+)%s*$")
+  local supported = false
+  for _,v in ipairs(buildconfig.GLOBAL_INTERFACE_VERSION) do
+    if v == info.global_interface_version then
+      supported = true
+    end
+  end
+  if not supported then
+    e:append("%s: Invalid global interface version",
+					e2lib.global_interface_version_file)
+    e:append("supported global interface versions are: %s",
+		table.concat(buildconfig.GLOBAL_INTERFACE_VERSION), " ")
+    return false, e
+  end
+
   -- warn if deprecated config files still exist
   local deprecated_files = {
 	"proj/servers",
@@ -625,6 +646,7 @@ The newest configuration syntax supported by the tools is %s.
 	"proj/default-results",
 	"proj/name",
 	"proj/release-id",
+	".e2/version",
   }
   for _,f in ipairs(deprecated_files) do
     local path = string.format("%s/%s", info.root, f)

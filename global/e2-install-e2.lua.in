@@ -81,7 +81,7 @@ if not rc then
 end
 
 -- read the version from the first line
-local line, re = e2lib.read_line(".e2/version")
+local line, re = e2lib.read_line(e2lib.global_interface_version_file)
 if not line then
 	e2lib.abort(e:cat(re))
 end

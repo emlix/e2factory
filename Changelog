@@ -11,6 +11,12 @@ NEXT:
    to this problem in the default configuration and is enabled now.
  * support for per-project caches (using the %l format) in e2.conf is
    no longer available. Cache is designed to be per user.
+ * the global interface version is no longer maintained in the file
+   .e2/version inside the project. Instead ./version on the server side
+   remains the only permanent copy and it is fetched to .e2/global-version
+   in the project environment
+ * the local tools check for their own support for the global interface
+   version in use.
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool

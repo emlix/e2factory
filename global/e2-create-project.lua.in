@@ -84,7 +84,7 @@ if not sl then
 end
 
 local p = {}
-p.version = 2					-- the project version
+p.version = buildconfig.GLOBAL_INTERFACE_VERSION[1] -- the project version
 p.e2version = string.format("%s %s", e2lib.local_e2_branch,
 							e2lib.local_e2_tag)
 p.server = sl.server				-- the server
@@ -192,7 +192,6 @@ files = {
 	{ filename = "proj/licences", content=licences },
 	{ filename = "proj/env", content=env },
 	{ filename = "proj/config", content=pconfig },
-	{ filename = ".e2/version", content=version },
 	{ filename = ".e2/syntax", content=syntax },
 	{ filename = ".e2/e2version", content=e2version },
 	{ filename = ".gitignore", content=gitignore },

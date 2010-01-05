@@ -56,6 +56,9 @@ buildconfig.lua: Makefile make.vars
 	@echo 'EXTRAVERSION="$(EXTRAVERSION)"' >>$@
 	@echo 'VERSION="$(VERSION)"' >>$@
 	@echo 'VERSIONSTRING="$(VERSIONSTRING)"' >>$@
+	@echo 'GLOBAL_INTERFACE_VERSION={' >>$@
+	@for x in $(GLOBAL_INTERFACE_VERSION) ; do echo " \"$$x\"," ; done >>$@
+	@echo '}' >>$@
 	@echo 'SYNTAX={' >>$@
 	@for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
 	@echo '}' >>$@
