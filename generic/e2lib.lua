@@ -1791,13 +1791,14 @@ end
 -- @return bool
 -- @return nil, or an error string
 function e2lib.write_file(file, data)
-  local f = io.open(file, "w")
+  local f, msg = io.open(file, "w")
   if not f then
-    return false, "open failed"
+    return false, string.format("open failed: %s", msg)
   end
-  local rc = f:write(data)
+  local rc, msg = f:write(data)
   if not rc then
-    return false, "write failed"
+    f:close()
+    return false, string.format("write failed: %s", msg)
   end
   f:close()
   return true, nil
