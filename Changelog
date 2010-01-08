@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool
  * optimization: use stat() instead of calling 'test -f'
