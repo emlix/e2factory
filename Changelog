@@ -20,6 +20,7 @@ NEXT:
  * a few minor bugs were fixed
  * code related to external tools was moved into the new tools module
  * transport, url and hash were turned into proper Lua modules
+ * fix alignment of status messages for better readability
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool

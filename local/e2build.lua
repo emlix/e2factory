@@ -56,15 +56,19 @@ function e2build.result_available(info, r, return_flags)
   local sbid = e2tool.bid_display(buildid)
   local rc, re
   local e = new_error("error while checking if result is available: %s", r)
+  local columns = tonumber(e2lib.osenv["COLUMNS"])
   if res.playground then
-    return_flags.message = string.format("building %-20s [%s] [playground]",
-								r, sbid)
+    return_flags.message = e2lib.align(columns,
+		0, string.format("building %-20s", r),
+		columns, string.format("[%s] [playground]", sbid))
     return_flags.stop = false
     return true, nil
   end
   if res.build_mode.source_set() == "working-copy" or
      res.force_rebuild == true then
-    return_flags.message = string.format("building %-20s [%s]", r, sbid)
+    return_flags.message = e2lib.align(columns,
+				0, string.format("building %-20s", r),
+				columns, string.format("[%s]", sbid))
     return_flags.stop = false
     return true, nil
   end
@@ -84,7 +88,9 @@ function e2build.result_available(info, r, return_flags)
   rc = e2lib.isfile(path)
   if not rc then
     -- result is not available. Build.
-    return_flags.message = string.format("building %-20s [%s]", r, sbid)
+    return_flags.message = e2lib.align(columns,
+				0, string.format("building %-20s", r),
+				columns, string.format("[%s]", sbid))
     return_flags.stop = false
     return true, nil
   end
@@ -102,7 +108,9 @@ function e2build.result_available(info, r, return_flags)
     return false, e:cat(re)
   end
   -- return true
-  return_flags.message = string.format("skipping %-20s [%s]", r, sbid)
+  return_flags.message = e2lib.align(columns,
+				0, string.format("skipping %-20s", r),
+				columns, string.format("[%s]", sbid))
   return_flags.stop = true
   return true, nil
 end

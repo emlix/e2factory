@@ -1889,6 +1889,33 @@ function e2lib.chdir(path)
   return true, nil
 end
 
+--- align strings
+-- @param columns screen width
+-- @param align1 column to align string1to
+-- @param string1 first string
+-- @param align2 column to align string2 to
+-- @param string2 second string
+function e2lib.align(columns, align1, string1, align2, string2)
+	local lines = 1
+	if align2 + #string2 > columns then
+		-- try to move string2 to the left first
+		align2 = columns - #string2
+	end
+	if align1 + #string1 + #string2 > columns then
+		-- split into two lines
+		lines = 2
+	end
+	local s
+	if lines == 1 then
+		s = string.rep(" ", align1) .. string1 ..
+			string.rep(" ", align2 - #string1 - align1) .. string2
+	else
+		s = string.rep(" ", align1) .. string1 .. "\n" ..
+			string.rep(" ", align2) .. string2
+	end
+	return s
+end
+
 --------------------------------------------------------------------------------
 
 -- "seal" modules e2util and e2lib
