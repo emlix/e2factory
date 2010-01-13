@@ -35,14 +35,15 @@ if [ "$chroot_arch" == "x86_64" ] &&
 	echo >&2 "need x86_64 host to build this project"
 	exit 1
 fi
-chroot_path=/tmp/e2build.$RESULT.cp
-e2-su-2.2 remove_chroot_2_2 $chroot_path >/dev/null 2>&1 || true
-mkdir -p $chroot_path
-touch $chroot_path/emlix-chroot
-e2-su-2.2 set_permissions_2_2 $chroot_path
+chroot_base=/tmp/e2build.$RESULT.cp
+chroot_path=$chroot_base/chroot
+e2-su-2.2 remove_chroot_2_3 $chroot_base >/dev/null 2>&1 || true
+mkdir -p $chroot_base/chroot
+touch $chroot_base/e2factory-chroot
+e2-su-2.2 set_permissions_2_3 $chroot_base
 # install chroot groups
 for g in $CHROOT ; do
-	make chroot_path=$chroot_path -C chroot/$g place
+	make chroot_base=$chroot_base -C chroot/$g place
 done
 # install sources
 for s in $SOURCE ; do
@@ -64,15 +65,15 @@ cp -v res/$RESULT/{build-driver,buildrc,build-script} \
 cp -v res/$RESULT/{builtin,env} $chroot_path/tmp/e2/env/
 if [ "$chroot_arch" == "x86_32" ] ; then
 	./linux32 \
-	e2-su-2.2 chroot_2_2 $chroot_path \
+	e2-su-2.2 chroot_2_3 $chroot_base \
 	/bin/bash -e -x /tmp/e2/script/build-driver </dev/null
 elif [ "$chroot_arch" == "x86_64" ] ; then
-	e2-su-2.2 chroot_2_2 $chroot_path \
+	e2-su-2.2 chroot_2_3 $chroot_base \
 	/bin/bash -e -x /tmp/e2/script/build-driver </dev/null
 fi
 # fetch result
 rm -fr out/$RESULT
 mkdir -p out/$RESULT
 cp -v $chroot_path/tmp/e2/out/* out/$RESULT/
-e2-su-2.2 remove_chroot_2_2 $chroot_path
+e2-su-2.2 remove_chroot_2_3 $chroot_base
 exit 0

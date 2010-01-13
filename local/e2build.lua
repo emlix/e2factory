@@ -1038,7 +1038,7 @@ function e2build.collect_project(info, r, return_flags)
 					e2lib.basename(checksum_file)))
 			end
 			makefile:write(string.format(
-				"\te2-su-2.2 extract_tar_2_2 $(chroot_path) "..
+				"\te2-su-2.2 extract_tar_2_3 $(chroot_base) "..
 				"\"tar.gz\" '%s'\n",
 				e2lib.basename(file.location)))
 		end
