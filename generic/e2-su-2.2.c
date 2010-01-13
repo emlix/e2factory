@@ -179,7 +179,6 @@ int main(int argc, char *argv[])
 		assert_chroot_environment(path);
 		char *tartype = argv[3];
 		char *file = argv[4];
-		char *tararg = NULL;
 		int n = 0;
 		arg[n++] = basename(tar_tool);
 		arg[n++] = "-C";
@@ -272,7 +271,6 @@ int main(int argc, char *argv[])
 		path[sizeof(path)-1] = 0;
 		char *tartype = argv[3];
 		char *file = argv[4];
-		char *tararg = NULL;
 		int n = 0;
 		arg[n++] = basename(tar_tool);
 		arg[n++] = "-C";
