@@ -644,6 +644,25 @@ function e2lib.tartype(path)
   return c
 end
 
+--- translate filename suffixes to valid tartypes for e2-su-2.2
+-- @filename string: filename
+-- @return string: tartype, or nil on failure
+-- @return an error object on failure
+function e2lib.tartype_by_suffix(filename)
+	local tartype
+	if filename:match("tgz$") or filename:match("tar.gz$") then
+		tartype = "tar.gz"
+	elseif filename:match("tar.bz2$") then
+		tartype = "tar.bz2"
+	elseif filename:match("tar$") then
+		tartype = "tar"
+	else
+		e = new_error("unknown suffix for filename: %s", filename)
+		return false, e
+	end
+	return tartype
+end
+
 -- generates a command to unpack an archive file
 -- physpath is the current location and filename to be unpacked later
 -- virtpath is the location and name of the file at the time of unpacking

@@ -274,15 +274,9 @@ function e2build.setup_chroot(info, r, return_flags)
 		end
 	end
 	local tartype
-	if path:match("tgz$") or path:match("tar.gz$") then
-		tartype = "tar.gz"
-	elseif path:match("tar.bz2$") then
-		tartype = "tar.bz2"
-	elseif path:match("tar$") then
-		tartype = "tar"
-	else
-		e:append("unknown archive type for chroot file: %s", path)
-		return false, e
+	tartype, re = e2lib.tartype_by_suffix(path)
+	if not tartype then
+		return false, e:cat(re)
 	end
 	-- e2-su extract_tar_2_3 <path> <tartype> <file>
 	local args = string.format("extract_tar_2_3 '%s' '%s' '%s'",
@@ -1037,10 +1031,15 @@ function e2build.collect_project(info, r, return_flags)
 					"\tsha1sum -c '%s'\n",
 					e2lib.basename(checksum_file)))
 			end
+			local tartype
+			tartype, re = e2lib.tartype_by_suffix(file.location)
+			if not tartype then
+				return false, e:cat(re)
+			end
 			makefile:write(string.format(
 				"\te2-su-2.2 extract_tar_2_3 $(chroot_base) "..
-				"\"tar.gz\" '%s'\n",
-				e2lib.basename(file.location)))
+				"\"%s\" '%s'\n",
+				tartype, e2lib.basename(file.location)))
 		end
 		makefile:close()
 	end
