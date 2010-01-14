@@ -269,7 +269,7 @@ function git.validate_source(info, sourcename)
   if not src.server then
     e:append("source has no `server' attribute")
   end
-  if src.server and (not info.servers[src.server]) then
+  if src.server and (not info.cache:valid_server(src.server)) then
     e:append("invalid server: %s", src.server)
   end
   if not src.licences then

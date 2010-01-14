@@ -76,7 +76,7 @@ function files.validate_source(info, sourcename)
       if not f.server then
 	e:append("source has file entry without `server' attribute")
       end
-      if f.server and (not info.servers[f.server]) then
+      if f.server and (not info.cache:valid_server(f.server)) then
 	e:append("invalid server: %s", f.server)
       end
       if not f.location then

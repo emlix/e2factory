@@ -1885,31 +1885,36 @@ function e2lib.parse_server_location(arg, default_server)
 	return nil, "can't parse location"
 end
 
---- setup a cache
--- @param name string: cache name
--- @param cache_url string: where to place the cache?
--- @param servers table: server configuration table
+--- setup cache from the global server configuration
 -- @return a cache object
 -- @return an error object on failure
-function e2lib.setup_cache(name, cache_url, servers)
+function e2lib.setup_cache()
   local e = new_error("setting up cache failed")
-  local cache, re = cache.new_cache(name, cache_url)
-  if not cache then
+  local config = e2lib.get_global_config()
+  if type(config.cache) ~= "table" or type(config.cache.path) ~= "string" then
+    return false, e:append("invalid cache configuration: config.cache.path")
+  end
+  -- replace %u by the username, %l by the project location
+  local replace = { u=e2lib.username }
+  local cache_path = e2lib.format_replace(config.cache.path, replace)
+  local cache_url = string.format("file://%s", cache_path)
+  local c, re = cache.new_cache("local cache", cache_url)
+  if not c then
     return nil, e:cat(re)
   end
-  for name,server in pairs(servers) do
+  for name,server in pairs(config.servers) do
     local flags = {}
     flags.cachable = server.cachable
     flags.cache = server.cache
     flags.islocal = server.islocal
     flags.writeback = server.writeback
     flags.push_permissions = server.push_permissions
-    local rc, re = new_cache_entry(cache, name, server.url, flags)
+    local rc, re = cache.new_cache_entry(c, name, server.url, flags)
     if not rc then
       return nil, e:cat(re)
     end
   end
-  return cache, nil
+  return c, nil
 end
 
 --- replace format elements, according to the table

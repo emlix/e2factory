@@ -555,46 +555,6 @@ The newest configuration syntax supported by the tools is %s.
   info.name = info.project.name
   info.default_results = info.project.default_results
 
-  local function add_builtin_servers(info)
-    local function add_server(info, name, url, cachable)
-      e2lib.warnf("WDEFAULT", "setting up builtin server:")
-      e2lib.warnf("WDEFAULT", " %s [%s]", name, url)
-      local s = {}
-      s.name = name
-      s.url = url
-      s.cachable = cachable
-      if info.servers[name] then
-        return false, new_error(
-			"cannot setup builtin server %s: server exists", name)
-      end
-      info.servers[name] = s
-      return true, nil
-    end
-    local rc, re
-    rc, re = add_server(info, info.root_server_name, info.root_server, false)
-    if not rc then
-      return false, re
-    end
-    info.servers[info.root_server_name].writeback = true
-    if not info.servers[info.default_repo_server] then
-      e2lib.warnf("WPOLICY", "server %s is unconfigured.",
-						info.default_repo_server)
-      e2lib.warnf("WPOLICY", "Cannot setup server %s",
-						info.proj_storage_server_name)
-      -- do not treat that as an error, unless the server is used.
-      return true, nil
-    end
-    -- create the new url
-    local proj_storage_server = string.format("%s/%s",
-	     info.servers[info.default_repo_server].url, info.project_location)
-    rc, re = add_server(info, info.proj_storage_server_name,
-						proj_storage_server, true)
-    if not rc then
-      return false, re
-    end
-    return true, nil
-  end
-
   -- chroot config
   info.chroot_config_file = "proj/chroot"
   rc, re = e2tool.read_chroot_config(info)
@@ -643,11 +603,6 @@ The newest configuration syntax supported by the tools is %s.
     end
   end
 
-  -- servers
-  info.server_default_config = {     -- default values
-    cachable = true,
-  }
-
   -- read .e2/proj-location
   info.project_location_config = string.format("%s/.e2/project-location", 
 								info.root)
@@ -662,30 +617,6 @@ The newest configuration syntax supported by the tools is %s.
   end
   info.project_location = l
   e2lib.log(4, string.format("project location is %s", info.project_location))
-  local config = e2lib.get_global_config()
-  info.servers = config.servers
-  if not info.servers then
-    return false, e:append("no servers configured in global configuration")
-  end
-  local rc, re = add_builtin_servers(info)
-  if not rc then
-    return false, e:cat(re)
-  end
-  info.servers[".fix"] = nil
-  for name, server in pairs(info.servers) do
-    server.name = name
-    -- apply default values
-    for k, v in pairs(info.server_default_config) do
-      if server[k] == nil then
-        server[k] = info.server_default_config[k]
-      end
-    end
-    -- print for debugging purposes
-    for k, v in pairs(server) do
-      v = tostring(v)
-      e2lib.log(4, string.format("%-20s: %-10s %s", name, k, v))
-    end
-  end
 
   -- warn if deprecated config files still exist
   local deprecated_files = {
@@ -702,20 +633,14 @@ The newest configuration syntax supported by the tools is %s.
     end
   end
 
-  local cache_url
-  if config.cache and config.cache.path then
-    -- replace %u by the username, %l by the project location
-    local replace = { u=e2lib.username, l=info.project_location }
-    local cache_path = e2lib.format_replace(config.cache.path, replace)
-    cache_url = string.format("file://%s", cache_path)
-  else
-    cache_url = string.format("%s/cache", info.root_server)
-    e2lib.warnf("WPOLICY", "cache defaulting to %s", cache_url)
-  end
-  info.cache, re = e2lib.setup_cache("local cache", cache_url, info.servers)
+  info.cache, re = e2lib.setup_cache()
   if not info.cache then
     return false, e:cat(re)
   end
+  rc = info.cache:new_cache_entry(info.root_server_name,
+		info.root_server, { writeback=true },  nil, nil )
+  rc = info.cache:new_cache_entry(info.proj_storage_server_name,
+		nil, nil, info.default_repo_server, info.project_location)
 
   --e2tool.add_source_results(info)
 
@@ -732,13 +657,6 @@ The newest configuration syntax supported by the tools is %s.
     table.insert(info.sources_sorted, s)
   end
   table.sort(info.sources_sorted)
-
-  -- provide sorted list of servers
-  info.servers_sorted = {}
-  for s, srv in pairs(info.servers) do
-    table.insert(info.servers_sorted, s)
-  end
-  table.sort(info.servers_sorted)
 
   rc, re = policy.init(info)
   if not rc then
@@ -2522,7 +2440,7 @@ function e2tool.check_chroot_config(info)
     if not grp.server then
       e:append("in group: %s", grp.name)
       e:append(" `server' attribute missing")
-    elseif not info.servers[grp.server] then
+    elseif not info.cache:valid_server(grp.server) then
       e:append("in group: %s", grp.name)
       e:append(" no such server: %s", grp.server)
     end

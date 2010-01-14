@@ -188,9 +188,10 @@ p0(s1, s2, info.name)
 local s1 = "|"
 local s2 = "|"
 p1(s1, s2, "servers")
-local len = #info.servers_sorted
-for _,s in ipairs(info.servers_sorted) do
-  local srv = info.servers[s]
+local servers_sorted = info.cache:servers()
+local len = #servers_sorted
+for _,s in ipairs(servers_sorted) do
+  local ce = info.cache:ce_by_server(s)
   len = len - 1
   if len > 0 then
     s2 = "|"
@@ -198,10 +199,14 @@ for _,s in ipairs(info.servers_sorted) do
     s2 = " "
   end
   p2(s1, s2, s)
-  for k,v in pairs(srv) do
-    if k ~= "name" then
-      p3(s1, s2, k, tostring(v))
-    end
+  p3(s1, s2, "url", ce.remote_url)
+  local flags = {}
+  for k,v in pairs(ce.flags) do
+    table.insert(flags, k)
+  end
+  table.sort(flags)
+  for _,k in ipairs(flags) do
+    p3(s1, s2, k, tostring(ce.flags[k]))
   end
 end
 print("   |")
