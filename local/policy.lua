@@ -142,7 +142,7 @@ function init(info)
 		local server, location = s(location, release_id)
 		local se = new_error("checking server configuration for '%s'",
 									server)
-		local ce, re = ce_by_server(info.cache, server)
+		local ce, re = cache.ce_by_server(info.cache, server)
 		if not ce then
 			se:cat(re)
 		elseif not ce.flags.writeback then
