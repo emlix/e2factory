@@ -307,7 +307,7 @@ function fetch_file(cache, server, location, destdir, destname, flags)
 		destname = e2lib.basename(location)
 	end
 	-- fetch the file
-	if ce.flags.cache then
+	if ce.flags.cache and flags.cache ~= false then
 		-- cache is enabled:
 		-- fetch from source to cache and from cache to destination
 		rc, re = cache_file(cache, server, location, flags)
@@ -355,7 +355,7 @@ function push_file(cache, sourcefile, server, location, flags)
 	if not ce then
 		return false, e:cat(re)
 	end
-	if ce.flags.cache then
+	if ce.flags.cache and flags.cache ~= false then
 		-- cache is enabled:
 		-- push the file from source to cache and from cache to
 		-- destination
