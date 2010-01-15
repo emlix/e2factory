@@ -170,6 +170,14 @@ function ce_by_server(cache, server)
 	return nil, new_error("no cache entry for server: %s", server)
 end
 
+function valid_server(cache, server)
+	if ce_by_server(cache, server) then
+		return true
+	else
+		return false, new_error("not a valid server: %s", server)
+	end
+end
+
 --- get remote url
 -- for use in scm implementations where urls need to be handled manually
 -- @param cache the cache table
