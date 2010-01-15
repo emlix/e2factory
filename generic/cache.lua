@@ -25,6 +25,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+module("cache", package.seeall)
+
 --- cache
 -- @class table
 -- @name cache
@@ -64,6 +66,8 @@ function new_cache(name, url)
 			print(k,v)
 		end
 	end
+	local meta = { __index = cache }
+	setmetatable(c, meta)
 	return c
 end
 
@@ -440,15 +444,3 @@ function file_path(cache, server, location, flags)
 	end
 	return path, nil
 end
-
-cache = {}
-cache.new_cache = new_cache
-cache.new_cache_entry = new_cache_entry
-cache.cache_file = cache_file
-cache.file_path = file_path
-cache.fetch_file = fetch_file
-cache.push_file = push_file
-cache.remote_url = remote_url
-cache.cache_enabled = cache_enabled
-cache.file_in_cache = file_in_cache
-cache.file_local = file_local
