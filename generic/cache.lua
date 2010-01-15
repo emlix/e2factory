@@ -71,6 +71,18 @@ function new_cache(name, url)
 	return c
 end
 
+--- get a sorted list of servers
+-- @param cache a cache table
+-- @return table: a list of servers
+function servers(cache)
+	l = {}
+	for server, ce in pairs(cache.ce) do
+		table.insert(l, server)
+	end
+	table.sort(l)
+	return l
+end
+
 --- create a new cache entry
 -- @param cache a cache table
 -- @param server the remote server name
