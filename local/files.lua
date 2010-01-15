@@ -122,7 +122,7 @@ function files.cache_source(info, sourcename)
   						f.server, f.location))
     local flags = { cache = true }
     if f.server ~= info.root_server_name then
-      local rc, e = cache.cache_file(info.cache, f.server, f.location, flags)
+      local rc, e = info.cache:cache_file(f.server, f.location, flags)
       if not rc then
         return false, e
       end
@@ -188,12 +188,12 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
     end
     if file.unpack then
       local cache_flags = { cache = true }
-      local rc, re = cache.cache_file(info.cache, file.server, file.location, 
+      local rc, re = info.cache:cache_file(file.server, file.location,
 							cache_flags)
       if not rc then
 	return false, e:cat(re)
       end
-      local path, re = cache.file_path(info.cache, file.server, file.location, 
+      local path, re = info.cache:file_path(file.server, file.location,
 							cache_flags)
       if not path then
 	return false, e:cat(re)
@@ -221,12 +221,12 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
       end
       if file.patch then
 	local cache_flags = { cache = true }
-	local rc, re = cache.cache_file(info.cache, file.server, file.location,
+	local rc, re = info.cache:cache_file(file.server, file.location,
 								cache_flags)
 	if not rc then
 	  return false, e:cat(re)
 	end
-	local path, re = cache.file_path(info.cache, file.server,
+	local path, re = info.cache:file_path(file.server,
 						file.location, cache_flags)
 	if not path then
 	  return false, e:append(re)
@@ -258,7 +258,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
 			"can't create destination directory: %s", destdir))
 	  end
 	end
-	local rc, re = cache.fetch_file(info.cache, file.server, file.location, 
+	local rc, re = info.cache:fetch_file(file.server, file.location,
 							destdir, destname, {})
 	if not rc then
 	  return false, e:cat(re)
@@ -373,7 +373,7 @@ function files.toresult(info, sourcename, sourceset, directory)
 		local destdir = string.format("%s/%s", directory, source)
 		local destname = nil
 		e2lib.mkdir(destdir, "-p")
-		local rc, re = cache.fetch_file(info.cache, file.server,
+		local rc, re = info.cache:fetch_file(file.server,
 					file.location, destdir, destname, {})
 		if not rc then
 			return false, e:cat(re)

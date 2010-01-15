@@ -963,11 +963,11 @@ function e2tool.read_hash_file(info, server, location)
   local e = new_error("error reading hash file")
   local cs = nil
   local cache_flags = { cache = true }
-  local rc, re = cache.cache_file(info.cache, server, location, cache_flags)
+  local rc, re = info.cache:cache_file(server, location, cache_flags)
   if not rc then
     return nil, e:cat(re)
   end
-  local path = cache.file_path(info.cache, server, location, cache_flags)
+  local path = info.cache:file_path(server, location, cache_flags)
   if path then
     cs = e2lib.read_line(path)
     if cs then
@@ -1008,11 +1008,11 @@ end
 function e2tool.hash_file(info, server, location)
   local e = new_error("error hashing file")
   local cache_flags = { cache = true }
-  local rc, re = cache.cache_file(info.cache, server, location, cache_flags)
+  local rc, re = info.cache:cache_file(server, location, cache_flags)
   if not rc then
     return nil, e:cat(re)
   end
-  local path, re = cache.file_path(info.cache, server, location, cache_flags)
+  local path, re = info.cache:file_path(server, location, cache_flags)
   if not path then
     return nil, e:cat(re)
   end
@@ -1306,8 +1306,7 @@ end
 function e2tool.hashcache(info, file)
 	local e = new_error("getting fileid from hash cache")
 	local rc, re, fileid
-	local p, re = cache.file_path(info.cache, file.server,
-							file.location, {})
+	local p, re = info.cache:file_path(file.server,	file.location, {})
 	if not p then
 		return e:cat(re)
 	end
@@ -1346,14 +1345,13 @@ function e2tool.verify_remote_fileid(info, file, fileid)
 	local rc, re
 	local e = new_error("error calculating remote file id for file %s:%s",
 						file.server, file.location)
-	if not cache.cache_enabled(info.cache, file.server) or
+	if not info.cache:cache_enabled(file.server) or
 	   not e2option.opts["check-remote"] then
 		e2lib.logf(4, "checksum for remote file %s:%s skip verifying",
 						file.server, file.location)
 		return true, nil
 	end
-	local surl, re = cache.remote_url(info.cache, file.server,
-								file.location)
+	local surl, re = info.cache:remote_url(file.server, file.location)
 	if not surl then
 		return false, e:cat(re)
 	end

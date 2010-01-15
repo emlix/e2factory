@@ -117,7 +117,7 @@ end
 function cache_chroot(info)
   for _,c in ipairs(info.chroot) do
     for _,file in ipairs(c.files) do
-      local rc, e = cache.cache_file(info.cache, c.server, file, {})
+      local rc, e = info.cache:cache_file(c.server, file, {})
       if not rc then
         return false, "caching file failed"
       end

@@ -153,7 +153,7 @@ function cvs.fetch_source(info, sourcename)
   local src = info.sources[ sourcename ]
   local location = src.cvsroot
   local server = src.server
-  local surl, re = cache.remote_url(info.cache, server, location)
+  local surl, re = info.cache:remote_url(server, location)
   if not surl then
     return false, e:cat(re)
   end
@@ -205,7 +205,7 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
   local src = info.sources[ sourcename ]
   local location = src.cvsroot
   local server = src.server
-  local surl, re = cache.remote_url(info.cache, server, location)
+  local surl, re = info.cache:remote_url(server, location)
   if not surl then
     return false, e:cat(re)
   end

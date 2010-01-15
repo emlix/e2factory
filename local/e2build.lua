@@ -74,14 +74,13 @@ function e2build.result_available(info, r, return_flags)
   local result_location = string.format("%s/%s/%s/result.tar", location, r,
 								dep_set)
   local cache_flags = {}
-  rc, re = cache.cache_file(info.cache, server, result_location, cache_flags)
+  rc, re = info.cache:cache_file(server, result_location, cache_flags)
   if not rc then
     e2lib.log(3, "caching result failed")
     -- ignore
   end
   local cache_flags = {}
-  local path, re = cache.file_path(info.cache, server, result_location,
-								cache_flags)
+  local path, re = info.cache:file_path(server, result_location, cache_flags)
   rc = e2lib.isfile(path)
   if not rc then
     -- result is not available. Build.
@@ -257,13 +256,11 @@ function e2build.setup_chroot(info, r, return_flags)
     if res.build_config.groups[grp.name] then
       for _, f in ipairs(grp.files) do
         local flags = { cache = true }
-        local rc, re = cache.cache_file(info.cache, f.server, f.location,
-								flags)
+        local rc, re = info.cache:cache_file(f.server, f.location, flags)
 	if not rc then
 	  return false, e:cat(re)
 	end
-        local path, re = cache.file_path(info.cache, f.server, f.location,
-								flags)
+        local path, re = info.cache:file_path(f.server, f.location, flags)
 	if not path then
 	  return false, e:cat(re)
 	end
@@ -559,7 +556,7 @@ function e2build.sources(info, r, return_flags)
       local location1 = string.format("%s/%s/%s/result.tar", location, dep,
 								dep_set)
       local cache_flags = {}
-      local rc, re = cache.fetch_file(info.cache, server, location1, tmpdir,
+      local rc, re = info.cache:fetch_file(server, location1, tmpdir,
 							nil, cache_flags)
       if not rc then
         return false, e:cat(re)
@@ -658,14 +655,13 @@ function e2build.linklast(info, r, return_flags)
   local cache_flags = {
     check_only = true
   }
-  local dst, re = cache.file_path(info.cache, server, location1, cache_flags)
+  local dst, re = info.cache:file_path(server, location1, cache_flags)
   if not dst then
     return false, e:cat(re)
   end
   -- create the last link
   local lnk_location = string.format("out/%s/last", r)
-  local lnk, re = cache.file_path(info.cache, info.root_server_name,
-								lnk_location)
+  local lnk, re = info.cache:file_path(info.root_server_name, lnk_location)
   if not lnk then
     return false, e:cat(re)
   end
@@ -758,7 +754,7 @@ function e2build.store_result(info, r, return_flags)
   local cache_flags = {
     try_hardlink = true,
   }
-  local rc, re = cache.push_file(info.cache, sourcefile, server, location1,
+  local rc, re = info.cache:push_file(sourcefile, server, location1,
 								cache_flags)
   if not rc then
     return false, e:cat(re)
@@ -970,7 +966,7 @@ function e2build.collect_project(info, r, return_flags)
 		local server = "."
 		local location = string.format("proj/init/%s", f)
 		local cache_flags = {}
-		rc, re = cache.fetch_file(info.cache, server, location,
+		rc, re = info.cache:fetch_file(server, location,
 						destdir, nil, cache_flags)
 		if not rc then
 			return false, e:cat(re)
@@ -1011,7 +1007,7 @@ function e2build.collect_project(info, r, return_flags)
 		makefile:write(string.format("place:\n"))
 		for _,file in pairs(grp.files) do
 			local cache_flags = {}
-			rc, re = cache.fetch_file(info.cache, file.server,
+			rc, re = info.cache:fetch_file(file.server,
 				file.location, destdir, nil, cache_flags)
 			if not rc then
 				return false, e:cat(re)
@@ -1059,7 +1055,7 @@ function e2build.collect_project(info, r, return_flags)
 					return false, e:cat(re)
 				end
 			end
-			rc, re = cache.fetch_file(info.cache, file.server,
+			rc, re = info.cache:fetch_file(file.server,
 						file.location, destdir, nil,
 						cache_flags)
 			if not rc then
@@ -1085,7 +1081,7 @@ function e2build.collect_project(info, r, return_flags)
 		for _,file in pairs(files) do
 			local server = info.root_server_name
 			local cache_flags = {}
-			rc, re = cache.fetch_file(info.cache, server, file, 
+			rc, re = info.cache:fetch_file(server, file,
 						destdir, nil, cache_flags)
 			if not rc then
 				return false, e:cat(re)
@@ -1163,7 +1159,7 @@ function e2build.collect_project(info, r, return_flags)
 		".e2/lib/make/detect_tool",
 	}
 	for _,location in ipairs(locations) do
-		rc, re = cache.fetch_file(info.cache, server, location,
+		rc, re = info.cache:fetch_file(server, location,
 						destdir, nil, cache_flags)
 		if not rc then
 			return false, e:cat(re)
