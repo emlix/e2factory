@@ -54,9 +54,7 @@ e2lib.init2()
 local config = e2lib.get_global_config()
 
 -- setup cache
-local cachedir = e2lib.mktempdir()
-local scache, re = e2lib.setup_cache("temporary cache", cachedir,
-                                                        config.servers)
+local scache, re = e2lib.setup_cache()
 if not scache then
   e2lib.abort(e:cat(re))
 end
@@ -101,9 +99,8 @@ end
 -- fetch project descriptor file
 local tmpdir = e2lib.mktempdir()
 local location = string.format("%s/version", p.location)
-local cache_flags = {}
 local rc, re = cache.fetch_file(scache, p.server, location, tmpdir, nil,
-								cache_flags)
+							{ cache = false })
 if not rc then
 	e2lib.abort(e:cat(re))
 end

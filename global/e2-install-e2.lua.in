@@ -54,9 +54,7 @@ if not servers then
   e2lib.abort("no servers configured in global config")
 end
 
-local cachedir = e2lib.mktempdir()
-local scache, re = e2lib.setup_cache("temporary cache", cachedir,
-                                                        config.servers)
+local scache, re = e2lib.setup_cache()
 if not scache then
   e2lib.abort(e:cat(re))
 end
