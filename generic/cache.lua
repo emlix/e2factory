@@ -74,21 +74,44 @@ end
 --- create a new cache entry
 -- @param cache a cache table
 -- @param server the remote server name
--- @param remote_url the remote server to cache
+-- @param remote_url the remote server to cache (server setup)
+-- @param flags (server setup)
+-- @param alias_server alias server (alias setup)
+-- @param alias_location location relative to alias server (alias setup)
 -- @return true on success, false on error
 -- @return an error object on failure
-function new_cache_entry(cache, server, remote_url, flags)
+function new_cache_entry(cache, server, remote_url, flags, alias_server,
+								alias_location)
+	assert(((remote_url and flags) or (alias_server and alias_location))
+		and not
+		((remote_url and flags) and (alias_server and alias_location)))
 	local ru, cu
 	local rc, re
 	local e = new_error("error setting up cache entry")
 	local ce = {}
+	local cache_url = nil
+	if not remote_url then
+		-- setting up an alias
+		local alias_ce, re = ce_by_server(cache, alias_server)
+		if not alias_ce then
+			return false, e:cat(re)
+		end
+		remote_url = string.format("%s/%s", alias_ce.remote_url,
+							alias_location)
+		if alias_ce.cache_url then
+			cache_url = string.format("%s/%s", alias_ce.cache_url,
+							alias_location)
+		end
+		flags = alias_ce.flags
+	else
+		cache_url = string.format("%s/%s", cache.url, server)
+	end
 	ru, re = url.parse(remote_url)
 	if not ru then
 		return false, e:cat(re)
 	end
 	ce.server = server
 	ce.remote_url = ru.url
-	ce.cache_url = string.format("%s/%s", cache.url, server)
 	ce.flags = {}
 	ce.flags.cachable = flags.cachable
 	ce.flags.cache = flags.cache and flags.cachable
@@ -103,15 +126,18 @@ function new_cache_entry(cache, server, remote_url, flags)
 	if flags.writeback ~= nil then
 		ce.flags.writeback = flags.writeback
 	end
-	ce.cache_url = string.format("%s/%s", cache.url, server)
+	if ce.flags.cache then
+		ce.cache_url = cache_url
+	end
 	if cache.ce[server] then
 		return false, e:append("cache entry for server exists")
 	end
 	cache.ce[server] = ce
-	e2lib.log(4, "cache entry: " .. ce.server .. " (" .. cache.name .. ")")
-	e2lib.log(4, " remote url: " .. ce.remote_url)
-	if ce.cache_url then
-		e2lib.log(4, " cache url: " .. ce.cache_url)
+	e2lib.logf(4, "cache entry: %s (%s)", ce.server, cache.name)
+	e2lib.logf(4, " remote url: %s", ce.remote_url)
+	e2lib.logf(4, " cache url:  %s", tostring(ce.cache_url))
+	for k,v in pairs(ce.flags) do
+		e2lib.logf(4, " flags:      %-20s = %s", k, tostring(v))
 	end
 	return true, nil
 end
