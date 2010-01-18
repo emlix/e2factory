@@ -845,23 +845,31 @@ function e2tool.dlist_recursive(info, result)
   local t = {}
   local function visit(res)
     if had[res] then
-      e2lib.warn("WOTHER", "cyclic dependency: " .. table.concat(path, " "))
-      t = nil
+      return false, new_error("cyclic dependency: %s", table.concat(path, " "))
     elseif t and not col[res] then
       table.insert(path, res)
       had[res] = true
       col[res] = true
-      for _, d in ipairs(e2tool.dlist(info, res)) do visit(d) end
+      for _, d in ipairs(e2tool.dlist(info, res)) do
+	local rc, re = visit(d)
+	if not rc then
+	  return false, re
+	end
+      end
       if t then table.insert(t, res) end
       had[res] = nil
       path[#path] = nil
     end
+    return true
   end
   for _, r in ipairs(
 	type(result) == "table" and result or e2tool.dlist(info, result)) do
-    visit(r)
+    local rc, re = visit(r)
+    if not rc then
+      return nil, re
+    end
   end
-  return t
+  return t, nil
 end
 
 function e2tool.dsort(info)
@@ -1885,6 +1893,7 @@ end
 function e2tool.check_collect_project(info, resultname)
 	local res = info.results[resultname]
 	local e = new_error("in result %s:", resultname)
+	local rc, re
 	if not res.collect_project then
 		-- insert empty tables, to avoid some conditionals in the code
 		res.collect_project_results = {}
@@ -1908,8 +1917,11 @@ function e2tool.check_collect_project(info, resultname)
 	if e:getcount() > 1 then
 		return false, e
 	end
-	res.collect_project_results = e2tool.dlist_recursive(info,
+	res.collect_project_results, re = e2tool.dlist_recursive(info,
 				res.collect_project_default_result)
+	if not res.collect_project_results then
+		return false, e:cat(re)
+	end
 	-- store a sorted list of required results
 	table.insert(res.collect_project_results,
 			res.collect_project_default_result)

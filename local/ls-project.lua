@@ -66,9 +66,15 @@ elseif #opts.arguments > 0 then
   end
 end
 if #results > 0 then
-  results = e2tool.dlist_recursive(info, results)
+  results, re = e2tool.dlist_recursive(info, results)
+  if not results then
+    e2lib.abort(re)
+  end
 else
-  results = e2tool.dsort(info)
+  results, re = e2tool.dsort(info)
+  if not results then
+    e2lib.abort(re)
+  end
 end
 table.sort(results)
 

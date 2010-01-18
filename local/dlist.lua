@@ -55,13 +55,17 @@ if not info.results[ result ] then
   e2lib.abort("no such result: ", result)
 end
 
-local dep = opts.recursive
-  and e2tool.dlist_recursive(info, result)
-  or e2tool.dlist(info, result)
-
-if dep then
-  for i = 1, #dep do print(dep[i]) end
+local dep, re
+if opts.recursive then
+  dep, re = e2tool.dlist_recursive(info, result)
+else
+  dep, re = e2tool.dlist(info, result)
 end
+if not dep then
+  e2lib.abort(re)
+end
+
+for i = 1, #dep do print(dep[i]) end
 
 e2lib.finish()
 

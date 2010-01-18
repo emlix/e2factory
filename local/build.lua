@@ -121,9 +121,17 @@ end
 -- a list of results to build, topologically sorted
 local sel_res = {}		
 if #results > 0 then
-	sel_res = e2tool.dlist_recursive(info, results)
+	local re
+	sel_res, re = e2tool.dlist_recursive(info, results)
+	if not sel_res then
+		e2lib.abort(re)
+	end
 else
-	sel_res = e2tool.dsort(info)
+	local re
+	sel_res, re = e2tool.dsort(info)
+	if not sel_res then
+		e2lib.abort(re)
+	end
 end
 
 rc, re = e2tool.print_selection(info, sel_res)

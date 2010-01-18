@@ -1138,8 +1138,11 @@ function e2build.collect_project(info, r, return_flags)
 	end
 	-- write topologically sorted list of result
 	local destdir = string.format("%s/project", res.build_config.T)
-	local tsorted_results = e2tool.dlist_recursive(info,
+	local tsorted_results, re = e2tool.dlist_recursive(info,
 					res.collect_project_results)
+	if not tsorted_results then
+		return false, e:cat(re)
+	end
 	local tsorted_results_string = table.concat(tsorted_results, "\n")
 	local resultlist = string.format("%s/resultlist", destdir)
 	rc, re = e2lib.write_file(resultlist, tsorted_results_string .. "\n")
