@@ -1894,7 +1894,6 @@ function e2lib.setup_cache()
   if type(config.cache) ~= "table" or type(config.cache.path) ~= "string" then
     return false, e:append("invalid cache configuration: config.cache.path")
   end
-  -- replace %u by the username, %l by the project location
   local replace = { u=e2lib.username }
   local cache_path = e2lib.format_replace(config.cache.path, replace)
   local cache_url = string.format("file://%s", cache_path)

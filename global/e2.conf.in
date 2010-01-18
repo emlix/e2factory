@@ -22,12 +22,7 @@ config {
 		scp = { name="scp", flags="-o BatchMode=true" },
 	},
 	cache = {
-		-- replacements:
-		-- %u: username
-		-- %l: project-location
-		-- to keep the projects independent use
-		--path = "/var/tmp/e2cache/%u/%l",
-		-- to maintain one cache for all projects use
+		-- replacements: %u: username
 		path = "/var/tmp/e2cache-%u",
 	},
 	servers = {
