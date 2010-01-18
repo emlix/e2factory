@@ -40,7 +40,8 @@ config {
 		},
 		projects = {
 			url = "file://@LOCALSTATEDIR@/projects",
-			cachable = false,
+			cachable = true,
+			cache = true,
 			-- push_permissions does not work with ssh/scp.
 			push_permissions = "ug+rwX,o-rwX",
 		},
