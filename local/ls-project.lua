@@ -195,16 +195,14 @@ local s1 = "|"
 local s2 = "|"
 p1(s1, s2, "servers")
 local servers_sorted = info.cache:servers()
-local len = #servers_sorted
-for _,s in ipairs(servers_sorted) do
-  local ce = info.cache:ce_by_server(s)
-  len = len - 1
-  if len > 0 then
+for i = 1, #servers_sorted, 1 do
+  local ce = info.cache:ce_by_server(servers_sorted[i])
+  if i < #servers_sorted then
     s2 = "|"
   else
     s2 = " "
   end
-  p2(s1, s2, s)
+  p2(s1, s2, ce.server)
   p3(s1, s2, "url", ce.remote_url)
   local flags = {}
   for k,v in pairs(ce.flags) do
