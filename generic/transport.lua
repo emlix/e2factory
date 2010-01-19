@@ -25,6 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+module("transport", package.seeall)
 require("buildconfig")
 
 local tools = {
@@ -62,7 +63,7 @@ local tools = {
 --- get a tool command
 -- @param name string: the tool name
 -- @return string: the tool command, nil on error
-local function get_tool(name)
+function get_tool(name)
 	if not tools[name] then
 		e2lib.bomb("looking up invalid tool: " .. tostring(name))
 	end
@@ -72,7 +73,7 @@ end
 --- get tool flags
 -- @param name string: the tool name
 -- @return string: the tool flags
-local function get_tool_flags(name)
+function get_tool_flags(name)
 	if not tools[name] then
 		e2lib.bomb("looking up flags for invalid tool: " .. 
 							tostring(name))
@@ -86,7 +87,7 @@ end
 -- @param flags string: the new tool flags. Optional.
 -- @return bool
 -- @return nil, an error string on error
-local function set_tool(name, value, flags)
+function set_tool(name, value, flags)
 	if not tools[name] then
 		return false, "invalid tool setting"
 	end
@@ -408,13 +409,3 @@ function init()
 	end
 	return true, nil
 end
-
-transport = {}
-transport.check_tool = check_tool
-transport.get_tool = get_tool
-transport.get_tool_flags = get_tool_flags
-transport.set_tool = set_tool
-transport.init = init
-transport.fetch_file = fetch_file
-transport.push_file = push_file
-transport.file_path = file_path
