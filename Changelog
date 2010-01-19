@@ -1,6 +1,10 @@
 NEXT:
  * a plugin interface was introduced. Local code is capable of loading
    plugins and some initial interfaces are available with this release.
+ * the environment related code was rewritten in a far more robust way.
+   This fixes a few bugs: Missing environment files were silently ignored,
+   and adding result specific environment could change the id of the
+   global environment (not the environment itself) due to lua table behaviour.
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool
