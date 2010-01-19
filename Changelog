@@ -5,6 +5,12 @@ NEXT:
    This fixes a few bugs: Missing environment files were silently ignored,
    and adding result specific environment could change the id of the
    global environment (not the environment itself) due to lua table behaviour.
+ * the cache module was turned into a true lua module.
+ * a design flaw in the cache module was fixed that lead to incorrect
+   caching for the builtin proj-storage server. Caching was disabled due
+   to this problem in the default configuration and is enabled now.
+ * support for per-project caches (using the %l format) in e2.conf is
+   no longer available. Cache is designed to be per user.
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool
