@@ -95,7 +95,7 @@ function cvs.validate_source(info, sourcename)
   if not src.working then
     e:append("source has no `working' attribute")
   end
-  local rc, re = transport.check_tool("cvs")
+  local rc, re = tools.check_tool("cvs")
   if not rc then
     e:cat(re)
   end
@@ -168,9 +168,9 @@ function cvs.fetch_source(info, sourcename)
   end
   -- always fetch the configured branch, as we don't know the build mode here.
   local rev = src.branch
-  local rsh = transport.get_tool("ssh")
-  local cvstool = transport.get_tool("cvs")
-  local cvsflags = transport.get_tool_flags("cvs")
+  local rsh = tools.get_tool("ssh")
+  local cvstool = tools.get_tool("cvs")
+  local cvsflags = tools.get_tool_flags("cvs")
   -- split the working directory into dirname and basename as some cvs clients
   -- don't like slashes (e.g. in/foo) in their checkout -d<path> argument
   local dir = e2lib.dirname(src.working)
@@ -220,9 +220,9 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
   local cmd = nil
   if source_set == "tag" or source_set == "branch" then
     local rev = mkrev(src, source_set)
-    local rsh = transport.get_tool("ssh")
-    local cvstool = transport.get_tool("cvs")
-    local cvsflags = transport.get_tool_flags("cvs")
+    local rsh = tools.get_tool("ssh")
+    local cvstool = tools.get_tool("cvs")
+    local cvsflags = tools.get_tool_flags("cvs")
     -- cd buildpath && cvs -d cvsroot export -R -r rev module
     cmd = string.format(
 	"cd \"%s\" && " ..
@@ -253,9 +253,9 @@ function cvs.update(info, sourcename)
   local e = new_error("updating cvs source failed")
   local src = info.sources[ sourcename ]
   local working = string.format("%s/%s", info.root, src.working)
-  local rsh = transport.get_tool("ssh")
-  local cvstool = transport.get_tool("cvs")
-  local cvsflags = transport.get_tool_flags("cvs")
+  local rsh = tools.get_tool("ssh")
+  local cvstool = tools.get_tool("cvs")
+  local cvsflags = tools.get_tool_flags("cvs")
   local cmd = string.format(
 	"cd \"%s\" && " ..
 	"CVS_RSH=\"%s\" " ..

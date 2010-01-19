@@ -161,7 +161,7 @@ function generic_git.git_init_db1(rurl)
 		"mkdir -p \"%s\" && GIT_DIR=\"%s\" git init-db --shared", 								gitdir, gitdir)
   if u.transport == "ssh" or u.transport == "scp" or
      u.transport == "rsync+ssh" then
-    local ssh = transport.get_tool("ssh")
+    local ssh = tools.get_tool("ssh")
     cmd = string.format("%s '%s' '%s'", ssh, u.server, gitcmd)
   elseif u.transport == "file" then
     cmd = gitcmd

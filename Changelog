@@ -18,6 +18,7 @@ NEXT:
  * the local tools check for their own support for the global interface
    version in use.
  * a few minor bugs were fixed
+ * code related to external tools was moved into the new tools module
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool

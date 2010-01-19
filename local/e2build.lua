@@ -299,7 +299,7 @@ function e2build.enter_playground(info, r, chroot_command)
   local e = new_error("entering playground")
   e2lib.log(4, "entering playground for " .. r .. " ...")
   local term = e2lib.terminal
-  local e2_su = transport.get_tool("e2-su-2.2")
+  local e2_su = tools.get_tool("e2-su-2.2")
   local cmd = string.format("%s %s chroot_2_3 '%s' %s",
 				res.build_config.chroot_call_prefix, e2_su, 
 				res.build_config.base, chroot_command)
@@ -353,7 +353,7 @@ function e2build.runbuild(info, r, return_flags)
   local runbuild = string.format("/bin/bash -e -x '%s/%s/%s'",
 			res.build_config.Tc, res.build_config.scriptdir,
 					res.build_config.build_driver_file)
-  local e2_su = transport.get_tool("e2-su-2.2")
+  local e2_su = tools.get_tool("e2-su-2.2")
   local cmd = string.format("%s %s chroot_2_3 '%s' %s", 
 				res.build_config.chroot_call_prefix, e2_su, 
 				res.build_config.base, runbuild)

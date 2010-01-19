@@ -445,8 +445,8 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     if not rc then
       return false, re
     end
-    local tar = transport.get_tool("tar")
-    local tarflags = transport.get_tool_flags("tar")
+    local tar = tools.get_tool("tar")
+    local tarflags = tools.get_tool_flags("tar")
     local cmd1 = string.format("%s %s -c -C '%s/%s' --exclude '.git' .", tar,
 					tarflags, info.root, src.working)
     local cmd2 = string.format("%s %s -x -C '%s/%s'", tar, tarflags, buildpath,

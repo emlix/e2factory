@@ -113,6 +113,7 @@ e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 		environment.lua \
 		$(TOPLEVEL)/generic/plugin.lua \
 		$(TOPLEVEL)/generic/scm.git.lua \
+		$(TOPLEVEL)/generic/tools.lua \
 		$(TOPLEVEL)/generic/transport.lua \
 		$(TOPLEVEL)/generic/cache.lua \
 		$(TOPLEVEL)/generic/error.lua \

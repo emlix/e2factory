@@ -367,7 +367,7 @@ function svn.validate_source(info, sourcename) --OK
   if not src.working then
     e:append("source has no `working' attribute")
   end
-  local rc, re = transport.check_tool("svn")
+  local rc, re = tools.check_tool("svn")
   if not rc then
     e:cat(re)
   end

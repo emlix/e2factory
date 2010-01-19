@@ -1311,7 +1311,7 @@ function e2tool.verify_remote_fileid(info, file, fileid)
 	local retcmd
 	if u.transport == "ssh" or u.transport == "scp" or
 		u.transport == "rsync+ssh" then
-		local ssh = transport.get_tool("ssh")
+		local ssh = tools.get_tool("ssh")
 		retcmd = string.format("%s '%s' %s /%s", ssh, u.server,
 								cmd, u.path)
 	elseif u.transport == "file" then

@@ -190,7 +190,7 @@ function e2lib.init2()
   -- honour tool customizations from the config file
   if config.tools then
     for k,v in pairs(config.tools) do
-      transport.set_tool(k, v.name, v.flags)
+      tools.set_tool(k, v.name, v.flags)
     end
   end
 
@@ -200,11 +200,11 @@ function e2lib.init2()
   if ssh then
     e2lib.log(3, string.format(
 	"using ssh command from the E2_SSH environment variable: %s", ssh))
-    transport.set_tool("ssh", ssh)
+    tools.set_tool("ssh", ssh)
   end
 
-  -- initialize the transport library after resetting tools
-  local rc, re = transport.init()
+  -- initialize the tools library after resetting tools
+  local rc, re = tools.init()
   if not rc then
     e2lib.abort(e:cat(re))
   end
@@ -1547,11 +1547,11 @@ end
 -- @return bool
 -- @return string: the last line ouf captured output
 function e2lib.call_tool(tool, args)
-	local cmd = transport.get_tool(tool)
+	local cmd = tools.get_tool(tool)
 	if not tool then
 		e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
 	end
-	local flags = transport.get_tool_flags(tool)
+	local flags = tools.get_tool_flags(tool)
 	if not flags then
 		e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
 	end
@@ -1578,7 +1578,7 @@ function e2lib.git(gitdir, subtool, args)
 	if not args then
 		args = ""
 	end
-	local git, re = transport.get_tool("git")
+	local git, re = tools.get_tool("git")
 	if not git then
 		return false, e:cat(re)
 	end
@@ -1721,11 +1721,11 @@ end
 -- @return bool
 function e2lib.sha1sum(path)
   local args = string.format("'%s'", path)
-  local sha1sum, re = transport.get_tool("sha1sum")
+  local sha1sum, re = tools.get_tool("sha1sum")
   if not sha1sum then
     return nil, re
   end
-  local sha1sum_flags, re = transport.get_tool_flags("sha1sum")
+  local sha1sum_flags, re = tools.get_tool_flags("sha1sum")
   if not sha1sum_flags then
     return nil, re
   end
@@ -1768,7 +1768,7 @@ end
 function e2lib.get_sys_arch()
   local rc, re
   local e = new_error("getting host system architecture failed")
-  local uname = transport.get_tool("uname")
+  local uname = tools.get_tool("uname")
   local cmd = string.format("%s -m", uname)
   local p, msg = io.popen(cmd, "r")
   if not p then
