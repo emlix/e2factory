@@ -25,6 +25,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+module("url", package.seeall)
+
 --- parse
 -- @param url the url to parse
 -- @return a table holding all parsed parts of the url, or nil on error
@@ -72,6 +74,3 @@ function parse(url)
 	end
 	return u, nil
 end
-
-url = {}
-url.parse = parse
