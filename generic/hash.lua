@@ -25,12 +25,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+module("hash", package.seeall)
 require("sha1")
 
 --- create a hash context
 -- @return a hash context object, or nil on error
 -- @return nil, an error string on error
-local function hash_start()
+function hash_start()
 	local hc = {}
 	for k,v in pairs(hash) do
 		hc[k] = v
@@ -42,12 +43,12 @@ end
 --- add hash data
 -- @param hc the hash context
 -- @param data string: data
-local function hash_append(hc, data)
+function hash_append(hc, data)
 	-- append the data
 	hc.data = hc.data .. data
 end
 
-local function hash_line(hc, data)
+function hash_line(hc, data)
 	hash_append(hc, data .. "\n")
 end
 
@@ -55,15 +56,9 @@ end
 -- @param hc the hash context
 -- @return the hash value, or nil on error
 -- @return an error string on error
-local function hash_finish(hc)
+function hash_finish(hc)
 	local ctx = sha1.sha1_init()
 	ctx:update(hc.data)
 	hc.sha1 = string.lower(ctx:final())
 	return hc.sha1
 end
-
-hash = {}
-hash.hash_start = hash_start
-hash.hash = hash_append
-hash.hash_line = hash_line
-hash.hash_finish = hash_finish
