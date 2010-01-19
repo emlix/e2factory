@@ -17,6 +17,7 @@ NEXT:
    in the project environment
  * the local tools check for their own support for the global interface
    version in use.
+ * a few minor bugs were fixed
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool
