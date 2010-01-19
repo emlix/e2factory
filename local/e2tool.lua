@@ -1256,11 +1256,11 @@ function e2tool.hashcache(info, file)
 	local rc, re, fileid
 	local p, re = info.cache:file_path(file.server,	file.location, {})
 	if not p then
-		return e:cat(re)
+		return nil, e:cat(re)
 	end
 	local s = e2util.stat(p)
 	if not s then
-		return e:cat(new_error("stat() failed"))
+		return nil, e:cat(new_error("stat() failed"))
 	end
 	local id = string.format("%s:%s", file.server, file.location)
 	local fileid
