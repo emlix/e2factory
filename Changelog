@@ -1,4 +1,6 @@
 NEXT:
+ * a plugin interface was introduced. Local code is capable of loading
+   plugins and some initial interfaces are available with this release.
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool
