@@ -898,15 +898,6 @@ function e2tool.dsort(info)
   return e2tool.dlist_recursive(info, info.default_results)
 end
 
--- Retrieval of files information
---
---   e2tool.expanded_files_list(INFO, SOURCE)
---
---     For the given source of type file, calculate the absolute pathname of
---     the file, expand directories to the files it contains. The resulting
---     list is cached to INFO.sources.*.flist and returned, with the
---     absolute filename as key and the value telling whether it is local.
-
 function e2tool.read_hash_file(info, server, location)
   local e = new_error("error reading hash file")
   local cs = nil
@@ -990,41 +981,6 @@ function e2tool.verify_hash(info, server, location, sha1)
   end
   e2lib.logf(4, "checksum matches: %s:%s", server, location)
   return true, nil
-end
-
-function e2tool.expanded_files_list(info, source)
-  e2lib.log(4, "expanded_files_list: " .. source)
-
-  local function add_to_files_list(info, flist, file)
-    e2lib.log(4, "add_to_files_list: " .. file.name)
-    local rserv, islocal = e2tool.lookup_server(info, file.server)
-    if not rserv then e2lib.abort("cannot resolve server: " .. file.server) end
-    local absol = rserv .. "/" .. file.name
-    local dir, base, ftyp = e2lib.splitpath(absol)
-    if not dir then
-      e2lib.abort(base .. ": " .. file.name)
-    end
-    if ftyp ~= "regular" then
-      e2lib.abort("is not a regular file: " .. file.name)
-    end
-    local t = {}
-    for k, v in pairs(file) do t[k] = v end
-    t.absol = absol
-    t.islocal = islocal
-    t.base = base
-    table.insert(flist, t)
-  end
-  local s = info.sources[source]
-  if s.flist then return s.flist end
-  if not s.file then return nil end
-  s.flist = {}
-  for _, t in ipairs(s.file) do
-    add_to_files_list(info, s.flist, t)
-  end
-  for _,f in pairs(s.flist) do
-    e2lib.log(4, "expanded_files_list: s.flist[x].absol: " .. f.absol)
-  end
-  return s.flist
 end
 
 function e2tool.projid(info)
