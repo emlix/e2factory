@@ -111,24 +111,24 @@ clean:
 %.lc: %.lua
 	$(LUAC) -o $@ $<
 
-e2local.lc: $(TOPLEVEL)/generic/strict.lua \
+e2local.lc: strict.lua \
 		result.lua \
 		loader.lua \
 		environment.lua \
-		$(TOPLEVEL)/generic/plugin.lua \
-		$(TOPLEVEL)/generic/scm.git.lua \
-		$(TOPLEVEL)/generic/tools.lua \
-		$(TOPLEVEL)/generic/transport.lua \
-		$(TOPLEVEL)/generic/cache.lua \
-		$(TOPLEVEL)/generic/error.lua \
-		$(TOPLEVEL)/generic/url.lua \
-		$(TOPLEVEL)/generic/collection.lua \
-		$(TOPLEVEL)/generic/e2lib.lua \
+		plugin.lua \
+		scm.git.lua \
+		tools.lua \
+		transport.lua \
+		cache.lua \
+		error.lua \
+		url.lua \
+		collection.lua \
+		e2lib.lua \
 		e2tool.lua e2scm.lua git.lua svn.lua cvs.lua files.lua \
-		$(TOPLEVEL)/generic/e2option.lua \
-		$(TOPLEVEL)/generic/hash.lua \
-		$(TOPLEVEL)/generic/lock.lua \
-		e2build.lua $(TOPLEVEL)/generic/luafile.lua \
+		e2option.lua \
+		hash.lua \
+		lock.lua \
+		e2build.lua luafile.lua \
 		policy.lua
 	$(LUAC) -o $@ $^
 
