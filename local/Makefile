@@ -48,9 +48,9 @@ SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
 .PHONY: all install uninstall install install-local doc install-doc
 
 
-all: linux32 e2local.lc $(LOCALLUATOOLS:=.lc) libe2api.so
+all: linux32 e2local.lc $(LOCALLUATOOLS:=.lc)
 
-install: libe2api.so
+install:
 	# install symlinks for e2-2.1 compatibility
 	for i in $(SYMLINKS_2_1); do \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
@@ -58,9 +58,6 @@ install: libe2api.so
 	for i in $(LOCALTOOLS); do \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
-	install -m755 libe2api.so $(DESTDIR)$(LIBDIR)/
-	install -m644 e2api.h $(DESTDIR)$(INCDIR)/
-	install -m644 e2api.lua $(DESTDIR)$(LIBDIR)/
 
 install-local: all
 	test -n "$(PROJECTDIR)"
@@ -94,9 +91,6 @@ uninstall:
 	for i in $(LOCALTOOLS); do \
 		rm -f $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
-	rm -f $(DESTDIR)$(LIBDIR)/libe2api.so
-	rm -f $(DESTDIR)$(INCDIR)/e2api.h
-	rm -f $(DESTDIR)$(LIBDIR)/e2api.lua
 
 clean:
 	rm -f $(CLEAN_FILES)
@@ -129,11 +123,3 @@ e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 	$(LUAC) -o $@ $^
 
 linux32: linux32.c
-
-libe2api.so: e2api.o
-	$(CC) -shared -o $@ $^ -I../lua/lua-$(LUA_VERSION)/src -I. $(CFLAGS)
-
-e2api.o: e2api.h
-
-testapi: testapi.o libe2api.so
-	$(CC) -o $@ $< -le2api $(LDFLAGS) -llua -lm -ldl -export-dynamic
