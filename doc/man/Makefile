@@ -32,7 +32,6 @@ include $(TOPLEVEL)/make.vars
 MANPAGES1    = \
 e2.1 \
 e2-build.1 \
-e2-buildid.1 \
 e2-cf.1 \
 e2-create-project.1 \
 e2-dlist.1 \
