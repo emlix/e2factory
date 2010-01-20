@@ -48,13 +48,6 @@
 #include <lauxlib.h>
 
 
-#ifndef LOCAL
-# define ENTRY_POINT    luaopen_e2util_global
-#else
-# define ENTRY_POINT    luaopen_e2util_local
-#endif
-
-
 static char buffer[ PATH_MAX + 1 ];
 
 
@@ -761,7 +754,7 @@ static luaL_Reg lib[] = {
 };
 
 
-int ENTRY_POINT(lua_State *lua)
+int luaopen_e2util(lua_State *lua)
 {
   luaL_register(lua, "e2util", lib);
   globalL = lua;

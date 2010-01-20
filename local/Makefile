@@ -32,6 +32,8 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
+VPATH = .:$(TOPLEVEL)/generic
+
 CLEAN_FILES = *~ *.so linux32 *.lc *.o
 CFLAGS += -I. -I$(DESTDIR)$(INCDIR) -I$(DESTDIR)$(INCDIR)/lua-$(LUA_VERSION) \
 	-I../lua/lua-$(LUA_VERSION)/src -fPIC
@@ -48,7 +50,7 @@ SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
 .PHONY: all install uninstall install install-local doc install-doc
 
 
-all: linux32 e2local.lc $(LOCALLUATOOLS:=.lc)
+all: linux32 e2local.lc $(LOCALLUATOOLS:=.lc) sha1.so luafile_ll.so e2util.so
 
 install:
 	# install symlinks for e2-2.1 compatibility
@@ -59,9 +61,10 @@ install:
 		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
 
-install-local: all
+install-local: all install_sourcefiles
 	test -n "$(PROJECTDIR)"
 	mkdir -p $(LOCALBINDIR) $(LOCALMAKDIR) $(LOCALLIBDIR)
+	install -m 755 -d $(LOCALPLUGINDIR)
 	install -m644 e2local.lc $(LOCALLIBDIR)/
 	for i in $(LOCALLUATOOLS); do \
 		install -m 755 $$i.lc $(LOCALBINDIR)/e2-$$i; \
@@ -73,6 +76,13 @@ install-local: all
 	install -m644 linux32.c $(LOCALMAKDIR)/
 	ln -sf $(LIBEXECDIR)/e2-lua-$(LUA_VERSION) $(LOCALBINDIR)/e2-lua
 	$(MAKE) -C make install-local
+	install -m 755 sha1.so $(LOCALLIBDIR)
+	install -m 755 luafile_ll.so $(LOCALLIBDIR)
+	install -m 755 e2util.so $(LOCALLIBDIR)
+
+.PHONY: install_sourcefiles
+install_sourcefiles: e2-su-2.2.c
+	install -m 644 $^ $(LOCALMAKDIR)
 
 doc:
 	for s in $(SUBDIRS) ; do \
@@ -123,3 +133,12 @@ e2local.lc: $(TOPLEVEL)/generic/strict.lua \
 	$(LUAC) -o $@ $^
 
 linux32: linux32.c
+
+sha1.so: sha1.o lsha1.o
+
+luafile_ll.so: luafile_ll.o
+
+e2util.so: e2util.o
+
+%.so:
+	$(CC) -shared -o $@ $^ $(LDFLAGS)

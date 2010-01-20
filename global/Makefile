@@ -29,6 +29,8 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
+VPATH = .:$(TOPLEVEL)/generic
+
 SCRIPTS =
 GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2 e2-root
 GLOBALSHTOOLS = e2-locate-project-root e2ssh
@@ -39,7 +41,8 @@ CLEAN_FILES = *~ $(GLOBALTOOLS) *.lc e2 $(SCRIPTS) *.lua e2-su *.sh e2.conf
 .PHONY: all install uninstall clean
 
 all: e2 e2-root $(SCRIPTS) e2-su $(GLOBALLUATOOLS:=.lc) \
-	$(GLOBALSHTOOLS:=.sh) e2.conf
+	$(GLOBALSHTOOLS:=.sh) e2.conf e2generic.lc sha1.so e2-su-2.2 \
+	luafile_ll.so e2util.so
 
 install: all
 	for i in $(GLOBALLUATOOLS) ; do \
@@ -58,6 +61,11 @@ install: all
 	fi
 	install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf.sample
 	install -d -m 2775 -g $(E2_GROUP) $(DESTDIR)$(LOCALSTATEDIR)
+	install -m 644 e2generic.lc $(DESTDIR)$(LIBDIR)
+	install -m 755 sha1.so $(DESTDIR)$(LIBDIR)
+	install -m 755 luafile_ll.so $(DESTDIR)$(LIBDIR)
+	install -m 755 e2util.so $(DESTDIR)$(LIBDIR)
+	install -m 4754 -o root -g $(E2_GROUP) e2-su-2.2 $(DESTDIR)$(BINDIR)/
 
 uninstall:
 	for i in $(GLOBALLUATOOLS) ; do \
@@ -67,6 +75,10 @@ uninstall:
 	for i in $(GLOBALSHTOOLS) ; do \
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
+	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
+	rm -f $(DESTDIR)$(LIBDIR)/e2generic.lc
+	rm -f $(DESTDIR)$(LIBDIR)/luafile_ll.so
+	rm -f $(DESTDIR)$(LIBDIR)/e2util.so
 	rm -f $(DESTDIR)$(TOOLDIR)/e2-root
 	rm -f $(DESTDIR)$(BINDIR)/e2-su
 	rm -f $(DESTDIR)$(BINDIR)/e2
@@ -106,4 +118,29 @@ e2-root: e2-root.lc
 
 e2.conf: e2.conf.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
+
+e2generic.lc: strict.lua collection.lua loader.lua \
+		plugin.lua \
+		e2lib.lua e2option.lua hash.lua tools.lua \
+		transport.lua cache.lua url.lua scm.git.lua \
+		luafile.lua lua-version-map.lua \
+		error.lua lock.lua
+	$(BUILD_LUAC) -o $@ $^
+
+sha1.so: sha1.o lsha1.o
+
+luafile_ll.so: luafile_ll.o
+
+e2util.so: e2util.o
+
+%.so:
+	$(CC) -shared -o $@ $^ $(LDFLAGS)
+
+CLEAN_FILES += *.o
+%.o: %.c
+	$(CC) $(CFLAGS) $(BUILD_LUA_CPPFLAGS) -fPIC -c -o $@ $<
+
+CLEAN_FILES += e2-su-2.2
+e2-su-2.2: e2-su-2.2.c
+	$(CC) $(CFLAGS) $(E2_SU_CFLAGS) $(LDFLAGS) $< -o $@
 

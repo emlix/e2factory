@@ -38,12 +38,6 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#ifndef LOCAL
-# define ENTRY_POINT luaopen_luafile_ll_global
-#else
-# define ENTRY_POINT luaopen_luafile_ll_local
-#endif
-
 static int 
 lua_fopen(lua_State *lua)
 {
@@ -263,7 +257,7 @@ static luaL_Reg lib[] = {
   { NULL, NULL }
 };
 
-int ENTRY_POINT(lua_State *lua)
+int luaopen_luafile_ll(lua_State *lua)
 {
   luaL_register(lua, "luafile_ll", lib);
   return 1;
