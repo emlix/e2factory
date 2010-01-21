@@ -42,6 +42,7 @@ LOCALLUATOOLS = \
 	build dlist dsort fetch-sources new-source ls-project \
 	playground build-numbers cf
 LOCALSHTOOLS =
+LUA_LIBS = e2option.lua
 LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
 
 SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
@@ -61,7 +62,10 @@ install:
 		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
 
-install-local: all install_sourcefiles
+install-local-lua: $(LUA_LIBS)
+	install -m 644 $^ $(LOCALLIBDIR)
+
+install-local: all install_sourcefiles install-local-lua
 	test -n "$(PROJECTDIR)"
 	mkdir -p $(LOCALBINDIR) $(LOCALMAKDIR) $(LOCALLIBDIR)
 	install -m 755 -d $(LOCALPLUGINDIR)
@@ -125,7 +129,6 @@ e2local.lc: strict.lua \
 		collection.lua \
 		e2lib.lua \
 		e2tool.lua e2scm.lua git.lua svn.lua cvs.lua files.lua \
-		e2option.lua \
 		hash.lua \
 		lock.lua \
 		e2build.lua luafile.lua \

@@ -25,10 +25,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+module("e2option", package.seeall)
+
 -- Parsing of command-line options
-
-
-e2option = e2lib.module("e2option")
 
 local options = {}
 local optionlist = {}
@@ -38,29 +37,29 @@ local program_name = arg[ 0 ]
 
 -- Option declaration
 --
---   e2option.documentation -> STRING
+--   documentation -> STRING
 --
 --     Holds a general description string of the currently executing
 --     tool.
 --
---   e2option.flag(NAME, [DOC, [FUNCTION]])
+--   flag(NAME, [DOC, [FUNCTION]])
 --
 --     Declares a "flag" option (an option without argument) with the given
 --     name (a string), documentation string (defaults to "") and a function
 --     that will be called when the option is given on the command line.
 --
---   e2option.option(NAME, [DOC, [DEFAULT, [FUNCTION, [ARGUMENTNAME]]]])
+--   option(NAME, [DOC, [DEFAULT, [FUNCTION, [ARGUMENTNAME]]]])
 --
 --     Declares an option with argument. DEFAULT defaults to "true".
 --     ARGUMENTNAME will be used in the generated usage information 
---     (see "e2option.usage()").
+--     (see "usage()").
 --
---   e2option.alias(NAME, OPTION)
+--   alias(NAME, OPTION)
 --
 --     Declares an alias for another option.
 
-e2option.documentation = "<no documentation available>"
-e2option.aliases = {}
+documentation = "<no documentation available>"
+aliases = {}
 
 --- register a flag option
 -- @param name string: option name
@@ -68,7 +67,7 @@ e2option.aliases = {}
 -- @param func a function to call when this option is specified
 -- @param category string: category name
 -- @return nil
-function e2option.flag(name, doc, func, category)
+function flag(name, doc, func, category)
   if options[ name ] then
     return false, new_error("option exists: %s", name)
   end
@@ -85,7 +84,7 @@ end
 -- @param func a function to call when this option is specified
 -- @param argname string: argument name used in documentation (optional)
 -- @return nil
-function e2option.option(name, doc, default, func, argname)
+function option(name, doc, default, func, argname)
   if options[ name ] then
     return false, new_error("option exists: %s", name)
   end
@@ -95,8 +94,8 @@ function e2option.option(name, doc, default, func, argname)
   table.insert(optionlist, name)
 end
 
---- XXX e2option.command(): undocumented, never called. Remove?
-function e2option.command(name, doc, func)
+--- XXX command(): undocumented, never called. Remove?
+function command(name, doc, func)
   commands[ name ] = {documentation=doc, command=func, name=name}
 end
 
@@ -104,26 +103,26 @@ end
 -- @param alias string: alias name
 -- @param option string: name of the option to register the alias for
 -- @return nil
-function e2option.alias(alias, option)
-  if e2option.aliases[ alias ] then
+function alias(alias, option)
+  if aliases[ alias ] then
     e2lib.warn("alias `", alias, "' for option `", option, "' already exists")
   end
-  e2option.aliases[ alias ] = option
+  aliases[ alias ] = option
 end
 
 
 -- Option parsing
 --
---   e2option.parse(ARGUMENTS) -> TABLE
+--   parse(ARGUMENTS) -> TABLE
 --
 --     Parses the arguments given in ARGUMENTS (usually obtained via "arg")
 --     and returns a table with an entry for each option. The entry is stored
 --     under the optionname with the value given by the FUNCTION or DEFAULT
---     arguments from the associated option declaration call ("e2option.flag()"
---     or "e2option.option()"). The result table with additionally contain
+--     arguments from the associated option declaration call ("flag()"
+--     or "option()"). The result table with additionally contain
 --     and entry named "arguments" holding an array of all non-option arguments.
 --
---   e2option.usage([CODE])
+--   usage([CODE])
 --
 --     Prints usage information on io.stdout and either signals an error
 --     (if interactive) or exits with status code CODE (defaults to 0).
@@ -138,15 +137,15 @@ end
 --- parse options
 -- @param args table: command line arguments (usually the arg global variable)
 -- @return table: option_table
-function e2option.parse(args)
+function parse(args)
   local function defaultoptions()
     local category = "Verbosity Control Options"
-    e2option.option("e2-config", "specify configuration file", nil, 
+    option("e2-config", "specify configuration file", nil,
 		function(arg)
 			e2lib.sete2config(arg)
 		end,
 		"FILE")
-    e2option.flag("quiet", "disable all log levels",
+    flag("quiet", "disable all log levels",
 		  function()
 		    e2lib.setlog(1, false)
 		    e2lib.setlog(2, false)
@@ -155,31 +154,22 @@ function e2option.parse(args)
 		    return true
 		  end,
 		  category)
-    e2option.flag("verbose", "enable log levels 1-2",
+    flag("verbose", "enable log levels 1-2",
 		  function()
 		    e2lib.setlog(1, true)
 		    e2lib.setlog(2, true)
 		    return true
 		  end,
 		  category)
-    e2option.flag("debug", "enable log levels 1-3",
-		  function()
-		    e2lib.setlog(1, true)
-		    e2lib.setlog(2, true)
-		    e2lib.setlog(3, true)
-		    return true
-		  end,
-		  category)
-    e2option.flag("tooldebug", "enable log levels 1-4",
+    flag("debug", "enable log levels 1-3",
 		  function()
 		    e2lib.setlog(1, true)
 		    e2lib.setlog(2, true)
 		    e2lib.setlog(3, true)
-		    e2lib.setlog(4, true)
 		    return true
 		  end,
 		  category)
-    e2option.flag("vall", "enable all log levels",
+    flag("tooldebug", "enable log levels 1-4",
 		  function()
 		    e2lib.setlog(1, true)
 		    e2lib.setlog(2, true)
@@ -188,56 +178,65 @@ function e2option.parse(args)
 		    return true
 		  end,
 		  category)
-    e2option.flag("v1", "enable log level 1 (minimal)",
+    flag("vall", "enable all log levels",
+		  function()
+		    e2lib.setlog(1, true)
+		    e2lib.setlog(2, true)
+		    e2lib.setlog(3, true)
+		    e2lib.setlog(4, true)
+		    return true
+		  end,
+		  category)
+    flag("v1", "enable log level 1 (minimal)",
 		  function()
 		    e2lib.setlog(1, true)
 		    return true
 		  end,
 		  category)
-    e2option.flag("v2", "enable log level 2 (verbose)",
+    flag("v2", "enable log level 2 (verbose)",
 		  function()
 		    e2lib.setlog(2, true)
 		    return true
 		  end,
 		  category)
-    e2option.flag("v3", "enable log level 3 (show user debug information)",
+    flag("v3", "enable log level 3 (show user debug information)",
 		  function()
 		    e2lib.setlog(3, true)
 		    return true
 		  end,
 		  category)
-    e2option.flag("v4", "enable log level 4 (show tool debug information)",
+    flag("v4", "enable log level 4 (show tool debug information)",
 		  function()
 		    e2lib.setlog(4, true)
 		    return true
 		  end,
 		  category)
-    e2option.flag("log-debug", "enable logging of debugging output",
+    flag("log-debug", "enable logging of debugging output",
 		  function()
 		    e2lib.log_debug = true
 		    return true
 		  end,
 		  category)
-    e2option.flag("Wall", "enable all warnings")
-    e2option.flag("Wdefault", "warn when default values are applied")
-    e2option.flag("Wdeprecated", "warn if deprecated options are used")
-    e2option.flag("Wnoother", 
+    flag("Wall", "enable all warnings")
+    flag("Wdefault", "warn when default values are applied")
+    flag("Wdeprecated", "warn if deprecated options are used")
+    flag("Wnoother",
 	"disable all warnings not mentioned above (enabled by default)")
-    e2option.flag("Wpolicy", "warn when hurting policies")
-    e2option.flag("Whint", "enable hints to the user")
+    flag("Wpolicy", "warn when hurting policies")
+    flag("Whint", "enable hints to the user")
     category = "General Options"
-    e2option.flag("help", "show usage information", 
+    flag("help", "show usage information",
 	          function()
-		    e2option.usage()
+		    usage()
 		  end,
 		  category)
-    e2option.flag("version", "show version number",
+    flag("version", "show version number",
 	          function()
 		    print(buildconfig.VERSIONSTRING)
 		    e2lib.finish(0)
 		  end,
 		  category)
-    e2option.flag("licence", "show licence information",
+    flag("licence", "show licence information",
 		  function()
 		    print(_version)
 		    print()
@@ -286,17 +285,17 @@ function e2option.parse(args)
     local v = args[ i ]
     local s, e, opt, val = string.find(v, "^%-%-?([^= ]+)=(.*)$")
     if s then
-      opt = e2option.aliases[ opt ] or opt
+      opt = aliases[ opt ] or opt
       if options[ opt ] then 
 	local proc = options[ opt ].proc
 	if proc then val = proc(val) end
 	opts[ opt ] = val
-      else e2option.usage(1)
+      else usage(1)
       end
     else 
       s, e, opt = string.find(v, "^%-%-?(.*)$")
       if s then
-	opt = e2option.aliases[ opt ] or opt
+	opt = aliases[ opt ] or opt
 	if options[ opt ] then
 	  local proc = options[ opt ].proc
 	  if options[ opt ].type == "option" then
@@ -320,7 +319,7 @@ function e2option.parse(args)
 	  local set = string.explode(opt)
 	  for k, v in pairs(set) do
 	    if not options[ v ] then
-	      e2option.usage(1)
+	      usage(1)
 	    else
 	      table.insert(args, "-" .. v)
 	    end
@@ -354,7 +353,7 @@ end
 --- display builtin option documentation and exit
 -- @param rc number: return code, passed to e2lib.finish()
 -- @return nil
-function e2option.usage(rc)
+function usage(rc)
   print(_version)
   print([[
 Copyright (C) 2007-2009 by Gordon Hecker and Oskar Schirmer, emlix GmbH
@@ -364,7 +363,7 @@ This program comes with ABSOLUTELY NO WARRANTY; This is free software,
 and you are welcome to redistribute it under certain conditions. 
 Type e2 --licence for more information.
 ]])
-  print(e2option.documentation)
+  print(documentation)
   local category = nil
   for _, n in ipairs(optionlist) do
     local opt = options[n]
