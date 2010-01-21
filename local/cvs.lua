@@ -27,29 +27,15 @@
 
 -- cvs.lua - CVS-specific SCM operations -*- Lua -*-
 --
--- See e2scm.lua for more information about these operations.
---
--- A "cvs" source description file "src" has this content:
---
--- <server> <remote> <working> <branch> <tag>
---
--- Restrictions:
---
--- * the working copy directory must have the same basename as
---   the CVS module name
--- * branches are not supported, yet
---
--- This code has only been tested superficially.
-
-
-local cvs = {}
+module("cvs", package.seeall)
+require("scm")
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
 -- @param sourcename the source name
 -- @return bool
 function cvs.validate_source(info, sourcename)
-  local rc, re = generic_validate_source(info, sourcename)
+  local rc, re = git.generic_validate_source(info, sourcename)
   if not rc then
     -- error in generic configuration. Don't try to go on.
     return false, re
@@ -59,7 +45,7 @@ function cvs.validate_source(info, sourcename)
     src.sourceid = {}
   end
   local e = new_error("in source %s:", sourcename)
-  rc, re = source_apply_default_working(info, sourcename)
+  rc, re = git.source_apply_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
   end
@@ -329,7 +315,7 @@ function cvs.sourceid(info, sourcename, source_set)
 		src.sourceid[source_set] = "working-copy"
 	end
 	if src.sourceid[source_set] then
-		return src.sourceid[source_set]
+		return true, nil, src.sourceid[source_set]
 	end
 	local e = new_error("calculating sourceid failed for source %s", 
 								sourcename)
@@ -340,7 +326,7 @@ function cvs.sourceid(info, sourcename, source_set)
 		hash.hash_line(hc, l)
 		local licenceid, re = e2tool.licenceid(info, l)
 		if not licenceid then
-			return nil, re
+			return false, re
 		end
 		hash.hash_line(hc, licenceid)
 	end
@@ -362,7 +348,7 @@ function cvs.sourceid(info, sourcename, source_set)
 	-- skip src.working
 	e2lib.logf(4, "hash data for source %s\n%s", src.name, hc.data)
 	src.sourceid[source_set] = hash.hash_finish(hc)
-	return src.sourceid[source_set], nil
+	return true, nil, src.sourceid[source_set]
 end
 
 function cvs.toresult(info, sourcename, sourceset, directory)
@@ -371,7 +357,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
 	-- <directory>/licences
 	local rc, re
 	local e = new_error("converting result")
-	rc, re = check(info, sourcename, true)
+	rc, re = git.check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -442,4 +428,4 @@ function cvs.check_workingcopy(info, sourcename)
 	return true, nil
 end
 
-e2scm.register("cvs", cvs)
+scm.register("cvs", cvs)

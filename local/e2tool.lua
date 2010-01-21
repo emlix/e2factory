@@ -30,6 +30,11 @@
 -- High-level tools used by the build process and basic build operations.
 
 module("e2tool", package.seeall)
+require("scm")
+require("files")
+require("git")
+require("cvs")
+require("svn")
 
 -- Information gathering and inquiry
 --
@@ -1410,9 +1415,9 @@ function pbuildid(info, resultname)
 	for _,s in ipairs(r.sources) do
 		local src = info.sources[s]
 		local source_set = r.build_mode.source_set()
-		local sourceid, re = 
+		local rc, re, sourceid =
 				scm.sourceid(info, s, source_set)
-		if not sourceid then
+		if not rc then
 			return nil, e:cat(re)
 		end
 		hash.hash_line(hc, s)			-- source name
@@ -1622,10 +1627,6 @@ function check_source(info, sourcename)
 		e2lib.warnf("WDEFAULT", "in source %s", sourcename)
 		e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
 		src.type = "files"
-	end
-	if not e2scm[src.type] then
-		e:append("unknown scm type: %s", src.type)
-		return false, e
 	end
 	rc, re = scm.validate_source(info, sourcename)
 	if not rc then

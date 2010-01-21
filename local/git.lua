@@ -29,7 +29,8 @@
 --
 -- See e2scm.lua for more information about these operations.
 
-local git = {}
+module("git", package.seeall)
+require("scm")
 
 --- git branch wrapper
 -- get the current branch
@@ -656,12 +657,12 @@ function git.sourceid(info, sourcename, sourceset)
 		src.commitid = {}
 	end
 	if src.sourceid[sourceset] then
-		return src.sourceid[sourceset]
+		return true, nil, src.sourceid[sourceset]
 	end
 	src.commitid[sourceset], e = git.get_revision_id(info, sourcename,
 				sourceset, e2option.opts["check-remote"])
 	if not src.commitid[sourceset] then
-		return nil, e
+		return false, e
 	end
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
@@ -670,7 +671,7 @@ function git.sourceid(info, sourcename, sourceset)
 		hash.hash_line(hc, l)
 		local licenceid, re = e2tool.licenceid(info, l)
 		if not licenceid then
-			return nil, re
+			return false, re
 		end
 		hash.hash_line(hc, licenceid)
 	end
@@ -684,7 +685,7 @@ function git.sourceid(info, sourcename, sourceset)
 	e2lib.log(4, string.format("hash data for source %s\n%s", src.name,
 								hc.data))
 	src.sourceid[sourceset] = hash.hash_finish(hc)
-	return src.sourceid[sourceset]
+	return true, nil, src.sourceid[sourceset]
 end
 
 function git.toresult(info, sourcename, sourceset, directory)
@@ -813,4 +814,4 @@ function git.check_workingcopy(info, sourcename)
 	return true, nil
 end
 
-e2scm.register("git", git)
+scm.register("git", git)

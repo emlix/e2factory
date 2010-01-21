@@ -26,15 +26,9 @@
 ]]
 
 -- svn.lua - Subversion-specific SCM operations -*- Lua -*-
---
--- See e2scm.lua for more information about these operations.
---
--- The code assumes the directory layout in a svn repository looks like this:
---
--- <source>/<branch>/<dir>
--- <source>/<tag>/<dir>
 
--- helper functions
+module("svn", package.seeall)
+require("scm")
 
 --- translate url into subversion url
 -- @param u table: url table
@@ -220,7 +214,7 @@ function svn.sourceid(info, sourcename, source_set) --OK
 	end
 	src.sourceid["working-copy"] = "working-copy"
 	if src.sourceid[source_set] then
-		return src.sourceid[source_set]
+		return true, nil, src.sourceid[source_set]
 	end
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
@@ -236,7 +230,7 @@ function svn.sourceid(info, sourcename, source_set) --OK
 	e2lib.log(4, string.format("hash data for source %s\n%s", src.name,
 								hc.data))
 	src.sourceid[source_set] = hash.hash_finish(hc)
-	return src.sourceid[source_set]
+	return true, nil, src.sourceid[source_set]
 end
 
 function svn.toresult(info, sourcename, sourceset, directory) --OK
@@ -245,7 +239,7 @@ function svn.toresult(info, sourcename, sourceset, directory) --OK
 	-- <directory>/licences
 	local rc, re
 	local e = new_error("converting result")
-	rc, re = check(info, sourcename, true)
+	rc, re = git.check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -325,7 +319,7 @@ end
 -- @param sourcename the source name
 -- @return bool
 function svn.validate_source(info, sourcename) --OK
-  local rc, re = generic_validate_source(info, sourcename)
+  local rc, re = git.generic_validate_source(info, sourcename)
   if not rc then
     -- error in generic configuration. Don't try to go on.
     return false, re
@@ -335,7 +329,7 @@ function svn.validate_source(info, sourcename) --OK
     src.sourceid = {}
   end
   local e = new_error("in source %s:", sourcename)
-  rc, re = source_apply_default_working(info, sourcename)
+  rc, re = git.source_apply_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
   end
@@ -377,4 +371,4 @@ function svn.validate_source(info, sourcename) --OK
   return true, nil
 end
 
-e2scm.register("svn", svn)
+scm.register("svn", svn)

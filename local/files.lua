@@ -29,8 +29,8 @@
 --
 -- See e2scm.lua for more information about these operations.
 
-
-local files = {}
+module("files", package.seeall)
+require("scm")
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
@@ -38,7 +38,7 @@ local files = {}
 -- @return bool
 function files.validate_source(info, sourcename)
   local rc1 = true   -- the return value
-  local rc, e = generic_validate_source(info, sourcename)
+  local rc, e = git.generic_validate_source(info, sourcename)
   if not rc then
     return false, e
   end
@@ -317,7 +317,7 @@ function files.sourceid(info, sourcename, sourceset)
 	end
 	local src = info.sources[sourcename]
 	if src.sourceid then
-		return src.sourceid
+		return true, nil, src.sourceid
 	end
 	-- sourceset is ignored for files sources
 	local hc = hash.hash_start()
@@ -327,7 +327,7 @@ function files.sourceid(info, sourcename, sourceset)
 		hash.hash_line(hc, l)
 		local licenceid, re = e2tool.licenceid(info, l)
 		if not licenceid then
-			return nil, re
+			return false, re
 		end
 		hash.hash_line(hc, licenceid)
 	end
@@ -346,7 +346,7 @@ function files.sourceid(info, sourcename, sourceset)
 	e2lib.log(4, string.format("hash data for source %s\n%s", src.name, 
 								hc.data))
 	src.sourceid = hash.hash_finish(hc)
-	return src.sourceid
+	return true, nil, src.sourceid
 end
 
 -- export the source to a result structure
@@ -443,4 +443,8 @@ function files.check_workingcopy(info, sourcename)
 	return true, nil
 end
 
-e2scm.register("files", files)
+function files.update(info, sourcename)
+	return true, nil
+end
+
+scm.register("files", files)

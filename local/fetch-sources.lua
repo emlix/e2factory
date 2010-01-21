@@ -140,7 +140,7 @@ function fetch_sources(info, opts, sel)
   -- fetch
   for _, s in pairs(info.sources) do
     local has_wc = scm.has_working_copy(info, s.name)
-    local wc_avail = e2scm[s.type].working_copy_available(info, s.name)
+    local wc_avail = scm.working_copy_available(info, s.name)
     if opts.fetch and sel[s.name] then
       if wc_avail then
         e2lib.log(1, "working copy for " .. s.name .. " is already available")
@@ -159,7 +159,7 @@ function fetch_sources(info, opts, sel)
   -- update
   for _, s in pairs(info.sources) do
     local has_wc = scm.has_working_copy(info, s.name)
-    local wc_avail = e2scm[s.type].working_copy_available(info, s.name)
+    local wc_avail = scm.working_copy_available(info, s.name)
     if opts.update and has_wc and sel[s.name] then
       if not wc_avail then
         e2lib.log(1, string.format("working copy for %s is not available",
