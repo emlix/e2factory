@@ -29,8 +29,7 @@
 --
 -- High-level tools used by the build process and basic build operations.
 
-
-e2tool = e2lib.module("e2tool")
+module("e2tool", package.seeall)
 
 -- Information gathering and inquiry
 --
@@ -242,7 +241,7 @@ local function check_tab(tab, keys, inherit)
 	return true, nil
 end
 
-function e2tool.opendebuglogfile(info)
+function opendebuglogfile(info)
   local rc, re = e2lib.mkdir(info.root .. "/log", "-p")
   if not rc then
     local e = new_error("error making log directory")
@@ -267,7 +266,7 @@ end
 -- @param var
 -- @return bool
 -- @return an error object on failure
-function e2tool.load_user_config(info, path, dest, index, var)
+function load_user_config(info, path, dest, index, var)
   local rc, re
   local e = new_error("loading configuration failed")
   e2lib.log(3, "loading " .. path)
@@ -299,7 +298,7 @@ end
 -- @param type list of strings: allowed config types
 -- @return list of config items
 -- @return an error object on failure
-function e2tool.load_user_config2(info, path, types)
+function load_user_config2(info, path, types)
   local e = new_error("loading configuration file failed")
   local rc, re
   local list = {}
@@ -356,7 +355,7 @@ function e2tool.load_user_config2(info, path, types)
   return list, nil
 end
 
-function e2tool.collect_project_info(path)
+function collect_project_info(path)
   local rc, re
   local e = new_error("reading project configuration")
 
@@ -364,13 +363,13 @@ function e2tool.collect_project_info(path)
 
   -- set the umask value to be used in chroot
   info.chroot_umask = 18   -- 0022 octal
-  e2tool.init_umask(info)
+  init_umask(info)
 
   info.root, re = e2lib.locate_project_root(path)
   if not info.root then
     return false, e:append("you are not located in a project directory")
   end
-  rc, re = e2tool.lcd(info, ".")
+  rc, re = lcd(info, ".")
   if not rc then
     return false, e:cat(re)
   end
@@ -382,7 +381,7 @@ function e2tool.collect_project_info(path)
     resultid = {},			-- f(info, resultname)
     pbuildid = {},			-- f(info, resultname)
   }
-  rc, re = e2tool.register_check_result(info, e2tool.check_result)
+  rc, re = register_check_result(info, check_result)
   if not rc then
     return nil, e:cat(re)
   end
@@ -404,7 +403,7 @@ function e2tool.collect_project_info(path)
   -- check for configuration compatibility
   info.config_syntax_compat = buildconfig.SYNTAX
   info.config_syntax_file = ".e2/syntax"
-  rc, re = e2tool.check_config_syntax_compat(info)
+  rc, re = check_config_syntax_compat(info)
   if not rc then
     local s = [[
 Your configuration syntax is incompatible with this tool version.
@@ -432,7 +431,7 @@ The newest configuration syntax supported by the tools is %s.
 
   e2lib.init2() -- configuration must be available
 
-  local rc, re = e2tool.opendebuglogfile(info)
+  local rc, re = opendebuglogfile(info)
   if not rc then
     return false, e:cat(re)
   end
@@ -476,7 +475,7 @@ The newest configuration syntax supported by the tools is %s.
   info.build_numbers  = {}
 
   info.hashcache_file = string.format("%s/.e2/hashcache", info.root)
-  rc, re = e2tool.hashcache_setup(info)
+  rc, re = hashcache_setup(info)
   if not rc then
     return false, e:cat(re)
   end
@@ -506,13 +505,13 @@ The newest configuration syntax supported by the tools is %s.
   info.env_files = {}   -- a list of environment files
   info.global_env = environment.new()
   info.result_env = {} -- result specific env only
-  local rc, re = e2tool.load_env_config(info, "proj/env")
+  local rc, re = load_env_config(info, "proj/env")
   if not rc then
     return false, e:cat(re)
   end
 
   -- read project configuration
-  local rc, re = e2tool.load_user_config(info, info.root .. "/proj/config",
+  local rc, re = load_user_config(info, info.root .. "/proj/config",
 						info, "project", "e2project")
   if not rc then
     return false, e:cat(re)
@@ -557,13 +556,13 @@ The newest configuration syntax supported by the tools is %s.
 
   -- chroot config
   info.chroot_config_file = "proj/chroot"
-  rc, re = e2tool.read_chroot_config(info)
+  rc, re = read_chroot_config(info)
   if not rc then
     return false, e:cat(re)
   end
   
   -- licences
-  rc, re = e2tool.load_user_config(info, info.root .. "/proj/licences",
+  rc, re = load_user_config(info, info.root .. "/proj/licences",
 					info, "licences", "e2licence")
   if not rc then
     return false, e:cat(re)
@@ -576,12 +575,12 @@ The newest configuration syntax supported by the tools is %s.
   end
   table.sort(info.licences_sorted)
 
-  rc, re = e2tool.load_source_config(info)
+  rc, re = load_source_config(info)
   if not rc then 
     return false, e:cat(re)
   end
 
-  rc, re = e2tool.load_result_config(info)
+  rc, re = load_result_config(info)
   if not rc then
     return false, e:cat(re)
   end
@@ -686,7 +685,7 @@ The newest configuration syntax supported by the tools is %s.
   end
 
   if e2option.opts["check"] then
-    e2tool.lcd(info, ".")
+    lcd(info, ".")
     rc, re = generic_git.verify_head_match_tag(nil, info.release_id)
     if rc == nil then
       e2lib.abort(e:cat(re))
@@ -730,26 +729,26 @@ end
 --     When ACCESS is true, checks also server locations
 --     When VERBOSE is true, sends error messages to stderr
 
-function e2tool.check_project_info(info, all, access, verbose)
+function check_project_info(info, all, access, verbose)
   local rc, re
   local e = new_error("error in project configuration")
-  rc, re = e2tool.check_chroot_config(info)
+  rc, re = check_chroot_config(info)
   if not rc then
     return false, e:cat(re)
   end
-  local rc, re = e2tool.check_sources(info)
+  local rc, re = check_sources(info)
   if not rc then
     return false, e:cat(re)
   end
-  local rc, re = e2tool.check_results(info)
+  local rc, re = check_results(info)
   if not rc then
     return false, e:cat(re)
   end
-  local rc, re = e2tool.check_licences(info)
+  local rc, re = check_licences(info)
   if not rc then
     return false, e:cat(re)
   end
-  local rc = e2tool.dsort(info)
+  local rc = dsort(info)
   if not rc then
     return false, e:cat("cyclic dependencies")
   end
@@ -776,7 +775,7 @@ end
 --
 --      Add a new field to a source/result configuration entry.
 
-function e2tool.save_user_config(path, entry)
+function save_user_config(path, entry)
   local function save_field(file, indent, key, value, ender)
     file:write(ender .. "\n" .. string.rep("  ", indent))
     if type(key) ~= "number" then file:write(key .. " = ") end
@@ -815,7 +814,7 @@ function e2tool.save_user_config(path, entry)
   f:close()
 end
 
-function e2tool.config_create(configtype)
+function config_create(configtype)
   if configtype ~= "e2source" and
      configtype ~= "e2result" and
      configtype ~= "e2chroot" and
@@ -829,7 +828,7 @@ function e2tool.config_create(configtype)
   return c
 end
 
-function e2tool.config_insert(entry, key, value)
+function config_insert(entry, key, value)
   local k = key or (#entry + 1)
   entry[k] = value
   table.insert(entry[".fix"], k)
@@ -854,13 +853,13 @@ end
 --     If RESULT is a table, calculate dependencies for all elements, inclusive,
 --     otherwise calculate dependencies for RESULT, exclusive.
 
-function e2tool.dlist(info, res)
+function dlist(info, res)
   local t = info.results[res] and info.results[res].depends or {}
   table.sort(t)
   return t
 end
 
-function e2tool.dlist_recursive(info, result)
+function dlist_recursive(info, result)
   local had = {}
   local path = {}
   local col = {}
@@ -872,7 +871,7 @@ function e2tool.dlist_recursive(info, result)
       table.insert(path, res)
       had[res] = true
       col[res] = true
-      for _, d in ipairs(e2tool.dlist(info, res)) do
+      for _, d in ipairs(dlist(info, res)) do
 	local rc, re = visit(d)
 	if not rc then
 	  return false, re
@@ -885,7 +884,7 @@ function e2tool.dlist_recursive(info, result)
     return true
   end
   for _, r in ipairs(
-	type(result) == "table" and result or e2tool.dlist(info, result)) do
+	type(result) == "table" and result or dlist(info, result)) do
     local rc, re = visit(r)
     if not rc then
       return nil, re
@@ -894,11 +893,11 @@ function e2tool.dlist_recursive(info, result)
   return t, nil
 end
 
-function e2tool.dsort(info)
-  return e2tool.dlist_recursive(info, info.default_results)
+function dsort(info)
+  return dlist_recursive(info, info.default_results)
 end
 
-function e2tool.read_hash_file(info, server, location)
+function read_hash_file(info, server, location)
   local e = new_error("error reading hash file")
   local cs = nil
   local cache_flags = { cache = true }
@@ -920,7 +919,7 @@ end
 -- @param path string: path to a file
 -- @return string the hash value, nil on error
 -- @return nil, an error string on error
-function e2tool.hash_path(path)
+function hash_path(path)
   e2lib.log(4, string.format("hashing %s", path))
   local f = io.popen(string.format("sha1sum %s", path), "r")
   if not f then
@@ -944,7 +943,7 @@ end
 -- @param location file location relative to the server
 -- @return string the hash value, nil on error
 -- @return nil, an error string on error
-function e2tool.hash_file(info, server, location)
+function hash_file(info, server, location)
   local e = new_error("error hashing file")
   local cache_flags = { cache = true }
   local rc, re = info.cache:cache_file(server, location, cache_flags)
@@ -955,7 +954,7 @@ function e2tool.hash_file(info, server, location)
   if not path then
     return nil, e:cat(re)
   end
-  return e2tool.hash_path(path)
+  return hash_path(path)
 end
 
 --- verify that a file addressed by server name and location matches the
@@ -966,12 +965,12 @@ end
 -- @param sha1 string: the hash to verify against
 -- @return bool true if verify succeeds, false otherwise
 -- @return nil, an error string on error
-function e2tool.verify_hash(info, server, location, sha1)
+function verify_hash(info, server, location, sha1)
   e2lib.logf(4, "verify_hash %s %s %s %s", tostring(info), tostring(server),
 					tostring(location), tostring(sha1))
   local rc, re
   local e = new_error("error verifying checksum")
-  local is_sha1, re = e2tool.hash_file(info, server, location)
+  local is_sha1, re = hash_file(info, server, location)
   if not is_sha1 then
     return false, e:cat(re)
   end
@@ -983,7 +982,7 @@ function e2tool.verify_hash(info, server, location, sha1)
   return true, nil
 end
 
-function e2tool.projid(info)
+function projid(info)
 	if info.projid then
 		return info.projid
 	end
@@ -997,7 +996,7 @@ function e2tool.projid(info)
 				server = info.root_server_name,
 				location = location,
 			}
-			local fileid, e = e2tool.fileid(info, f)
+			local fileid, e = fileid(info, f)
 			if not fileid then
 				e2lib.abort(e)
 			end
@@ -1019,7 +1018,7 @@ end
 --
 --     return true if e2 is at fixed tag, and false if not.
 
-function e2tool.e2_has_fixed_tag(info)
+function e2_has_fixed_tag(info)
   local v = e2lib.parse_e2versionfile(info.root .. "/.e2/e2version")
   e2lib.log(2, "Checking for fixed e2 tag.")
   if v.tag == "^" then
@@ -1035,7 +1034,7 @@ end
 --
 --     return true if the tag exists and false if not.
 
-function e2tool.e2_tag_exists(tag)
+function e2_tag_exists(tag)
   local rc = e2scm["git"].tag_available(tag, nil)
   if rc then
     e2lib.log(1, "Fatal: Tag exists in the local repository. FIXME")
@@ -1051,7 +1050,7 @@ end
 --     Return true if there is at least one source on a pseudo
 --     tag.
 
-function e2tool.has_pseudotags(info)
+function has_pseudotags(info)
   local rc=false
   local l={}
   e2lib.log(2, "Checking for pseudo tagged sources.")
@@ -1076,7 +1075,7 @@ end
 --     TODO: works with the null project. Use and/or write scm specific 
 --     code to make it usable for projects that use non-git scms.
 
-function e2tool.tag_available(info, check_local, check_remote)
+function tag_available(info, check_local, check_remote)
   local missing_local = {}
   local missing_remote = {}
   local rc = true
@@ -1095,7 +1094,7 @@ function e2tool.tag_available(info, check_local, check_remote)
       end
     end
     if s.tag and check_remote then
-      local cmd = "GIT_DIR=" .. e2tool.lookup_server(info, s.server) .. "/" 
+      local cmd = "GIT_DIR=" .. lookup_server(info, s.server) .. "/"
 		.. s.remote
 		.. " git rev-list --max-count=1 refs/tags/"
 		.. s.tag .. " --"
@@ -1117,15 +1116,15 @@ end
 --     For offline usage local and remote checking can be turned on 
 --     as needed.
 
-function e2tool.pre_tag_check(info, tag, check_local, check_remote)
+function pre_tag_check(info, tag, check_local, check_remote)
   -- do all checks first
   local e2_has_fixed_tag_flag, has_pseudotags_flag, has_pseudotags_list
   local tag_unavailable_flag, e2_tag_exists_flag
-  e2_has_fixed_tag_flag = e2tool.e2_has_fixed_tag(info)
-  has_pseudotags_flag, has_pseudotags_list = e2tool.has_pseudotags(info)
-  tag_unavailable_flag = e2tool.tag_available(info, check_local, check_remote)
+  e2_has_fixed_tag_flag = e2_has_fixed_tag(info)
+  has_pseudotags_flag, has_pseudotags_list = has_pseudotags(info)
+  tag_unavailable_flag = tag_available(info, check_local, check_remote)
   if tag then
-    e2_tag_exists_flag = e2tool.e2_tag_exists(tag)
+    e2_tag_exists_flag = e2_tag_exists(tag)
   else
     e2_tag_exists_flag = false
   end
@@ -1145,7 +1144,7 @@ end
 -- @param sourceset
 -- @return bool
 -- @return an error object on failure
-function e2tool.calc_sourceids(info, sourceset)
+function calc_sourceids(info, sourceset)
 	local e = new_error("calculating sourceids failed")
 	for _,src in pairs(info.sources) do
 		local sourceid, re = scm.sourceid(info, src.name, sourceset)
@@ -1159,7 +1158,7 @@ function e2tool.calc_sourceids(info, sourceset)
 	return true, nil
 end
 
-function e2tool.hashcache_setup(info)
+function hashcache_setup(info)
 	local e = new_error("reading hash cache")
 	local rc, re
 	local s = e2util.stat(info.hashcache_file)
@@ -1207,7 +1206,7 @@ function hashcache_write(info)
 	return true
 end
 
-function e2tool.hashcache(info, file)
+function hashcache(info, file)
 	local e = new_error("getting fileid from hash cache")
 	local rc, re, fileid
 	local p, re = info.cache:file_path(file.server,	file.location, {})
@@ -1221,7 +1220,7 @@ function e2tool.hashcache(info, file)
 	local id = string.format("%s:%s", file.server, file.location)
 	local fileid
 	if s.mtime >= info.hashcache_mtime or not info.hashcache[id] then
-		fileid, re = e2tool.hash_file(info, file.server, file.location)
+		fileid, re = hash_file(info, file.server, file.location)
                 if not fileid then
                         return nil, e:cat(re)
                 end
@@ -1245,7 +1244,7 @@ end
 -- @param fileid string: hash to verify against
 -- @return bool
 -- @return an error object on failure
-function e2tool.verify_remote_fileid(info, file, fileid)
+function verify_remote_fileid(info, file, fileid)
 	local rc, re
 	local e = new_error("error calculating remote file id for file %s:%s",
 						file.server, file.location)
@@ -1299,7 +1298,7 @@ end
 -- @param file table: file table from configuration
 -- @return fileid string: hash value, or nil
 -- @return an error object on failure
-function e2tool.fileid(info, file)
+function fileid(info, file)
 	local fileid
 	local re
 	local e = new_error("error calculating file id for file %s:%s",
@@ -1307,12 +1306,12 @@ function e2tool.fileid(info, file)
 	if file.sha1 then
 		fileid = file.sha1
 	else
-		fileid, re = e2tool.hashcache(info, file)
+		fileid, re = hashcache(info, file)
 		if not fileid then
 			return nil, e:cat(re)
 		end
 	end
-	local rc, re = e2tool.verify_remote_fileid(info, file, fileid)
+	local rc, re = verify_remote_fileid(info, file, fileid)
 	if not rc then
 		return nil, re
 	end
@@ -1324,7 +1323,7 @@ end
 -- @param licence
 -- @return string
 -- @return an error object on failure
-function e2tool.licenceid(info, licence)
+function licenceid(info, licence)
 	local rc, re
 	local e = new_error("calculating licence id failed for licence: %s",
 								licence)
@@ -1337,7 +1336,7 @@ function e2tool.licenceid(info, licence)
 	for _,f in ipairs(lic.files) do
 		hc:hash_line(f.server)
 		hc:hash_line(f.location)
-		local fileid, re = e2tool.fileid(info, f)
+		local fileid, re = fileid(info, f)
 		if not fileid then
 			return false, e:cat(re)
 		end
@@ -1354,10 +1353,10 @@ end
 -- @param info
 -- @return bool
 -- @return an error object on failure
-function e2tool.calc_licenceids(info)
+function calc_licenceids(info)
 	local e = new_error("calculating licenceids failed")
 	for l,_ in pairs(info.licences) do
-		local licenceid, re = e2tool.licenceid(info, l)
+		local licenceid, re = licenceid(info, l)
 		if not licenceid then
 			e:cat(re)
 		end
@@ -1371,7 +1370,7 @@ end
 --- return the first eight digits of buildid hash
 -- @param buildid string: hash value
 -- @return string: a short representation of the hash value
-function e2tool.bid_display(buildid)
+function bid_display(buildid)
 	return string.format("%s...", string.sub(buildid, 1, 8))
 end
 
@@ -1381,10 +1380,10 @@ end
 -- @param resultname
 -- @param mode
 -- @return the buildid
-function e2tool.buildid(info, resultname)
+function buildid(info, resultname)
 	e2lib.log(4, string.format("get buildid for %s", resultname))
 	local r = info.results[resultname]
-	local id, e = e2tool.pbuildid(info, resultname)
+	local id, e = pbuildid(info, resultname)
 	if not id then
 		e2lib.abort(e)
 	end
@@ -1400,7 +1399,7 @@ end
 -- @param info
 -- @param resultname
 -- @return the buildid
-function e2tool.pbuildid(info, resultname)
+function pbuildid(info, resultname)
 	e2lib.log(4, string.format("get pbuildid for %s", resultname))
 	local e = new_error("calculating result id failed")
 	local r = info.results[resultname]
@@ -1435,33 +1434,33 @@ function e2tool.pbuildid(info, resultname)
 		hash.hash_line(hc, l)		-- name
 		-- We collect all licences. So we cannot be sure to catch
 		-- them via results/sources. Include them explicitly here.
-		local lid, re = e2tool.licenceid(info, l)
+		local lid, re = licenceid(info, l)
 		if not lid then
 			return nil, e:cat(re)
 		end
 		hash.hash_line(hc, lid)		-- licence id
 	end
-	local groupid, re = e2tool.chrootgroupid(info, "base")
+	local groupid, re = chrootgroupid(info, "base")
 	if not groupid then
 		return nil, e:cat(re)
 	end
 	hc:hash_line(groupid)
 	if r.chroot then
 		for _,g in ipairs(r.chroot) do
-			local groupid = e2tool.chrootgroupid(info, g)
+			local groupid = chrootgroupid(info, g)
 			hash.hash_line(hc, g)
 			hash.hash_line(hc, groupid)
 		end
 	end
-	r.envid = e2tool.envid(info, resultname)
+	r.envid = envid(info, resultname)
 	hc:hash_line(r.envid)
 	if not r.pseudo_result then
-		local location = e2tool.resultbuildscript(info.results[resultname].directory)
+		local location = resultbuildscript(info.results[resultname].directory)
 		local f = {
 			server = info.root_server_name,
 			location = location,
 		}
-		local fileid, re = e2tool.fileid(info, f)
+		local fileid, re = fileid(info, f)
 		if not fileid then
 			return nil, e:cat(re)
 		end
@@ -1483,11 +1482,11 @@ function e2tool.pbuildid(info, resultname)
 	r.resultid = hash.hash_finish(hc)	-- result id (without deps)
 
 	hc = hash.hash_start()
-	local projid = e2tool.projid(info)
+	local projid = projid(info)
 	hc:hash_line(projid)		-- project id
 	hash.hash_line(hc, r.resultid)	-- result id
 	for _,d in ipairs(r.depends) do
-		local id, re = e2tool.pbuildid(info, d)
+		local id, re = pbuildid(info, d)
 		if not id then
 			e2lib.abort(re)
 		end
@@ -1496,7 +1495,7 @@ function e2tool.pbuildid(info, resultname)
 	for _,c in ipairs(r.collect_project_results) do
 		local res = info.results[c]
 					-- pbuildids of collected results
-		local pbid, re = e2tool.pbuildid(info, c)
+		local pbid, re = pbuildid(info, c)
 		if not pbid then
 			e2lib.abort(re)
 		end
@@ -1522,25 +1521,25 @@ end
 --- calculate the buildids for all results
 -- @param info
 -- @return nothing
-function e2tool.calc_buildids(info)
+function calc_buildids(info)
 	e2lib.logf(3, "calculating buildids")
 	for _,r in ipairs(info.results) do
 		local bid, pbid
-		bid = e2tool.buildid(info, r)
-		pbid = e2tool.pbuildid(info, r)
+		bid = buildid(info, r)
+		pbid = pbuildid(info, r)
 		e2lib.logf(3, "result %20s: pbid(%s) bid(%s)",
-			r, e2tool.bid_display(pbid), e2tool.bid_display(bid))
+			r, bid_display(pbid), bid_display(bid))
 	end
 end
 
-function e2tool.flush_buildids(info)
+function flush_buildids(info)
 	for r, res in pairs(info.results) do
 		res.buildid = nil
 		res.pbuildid = nil
 	end
 end
 
-function e2tool.chrootgroupid(info, groupname)
+function chrootgroupid(info, groupname)
 	local e = new_error("calculating chroot group id failed for group %s",
 								groupname)
 	local g = info.chroot.groups_byname[groupname]
@@ -1552,7 +1551,7 @@ function e2tool.chrootgroupid(info, groupname)
 	for _,f in ipairs(g.files) do
 		hc:hash_line(f.server)
 		hc:hash_line(f.location)
-		local fileid, re = e2tool.fileid(info, f)
+		local fileid, re = fileid(info, f)
 		if not fileid then
 			return false, e:cat(re)
 		end
@@ -1564,9 +1563,9 @@ function e2tool.chrootgroupid(info, groupname)
 	return g.groupid
 end
 
-function e2tool.calc_chrootids(info)
+function calc_chrootids(info)
 	for _,grp in pairs(info.chroot.groups) do
-		e2tool.chrootgroupid(info, grp.name)
+		chrootgroupid(info, grp.name)
 	end
 end
 
@@ -1574,7 +1573,7 @@ end
 -- @param info the info table
 -- @param resultname string: name of a result
 -- @return table: environment variables valid for the result
-function e2tool.env_by_result(info, resultname)
+function env_by_result(info, resultname)
 	local res = info.results[resultname]
 	local env = environment.new()
 	env:merge(info.global_env, false)
@@ -1586,11 +1585,11 @@ end
 -- @param info the info table
 -- @param resultname string: name of a result
 -- @return string: envid value
-function e2tool.envid(info, resultname)
-	return e2tool.env_by_result(info, resultname):id()
+function envid(info, resultname)
+	return env_by_result(info, resultname):id()
 end
 
-function e2tool.add_source_result(info, sourcename, source_set)
+function add_source_result(info, sourcename, source_set)
 	e2lib.log(3, string.format("adding source result for source %s", 
 								sourcename))
 	local src = info.sources[sourcename]
@@ -1604,14 +1603,14 @@ function e2tool.add_source_result(info, sourcename, source_set)
 	info.results[r.name] = r
 end
 
-function e2tool.add_source_results(info, source_set)
+function add_source_results(info, source_set)
 	e2lib.log(4, "add source results")
 	for _, src in pairs(info.sources) do
-		e2tool.add_source_result(info, src.name)
+		add_source_result(info, src.name)
 	end
 end
 
-function e2tool.check_source(info, sourcename)
+function check_source(info, sourcename)
 	local src = info.sources[sourcename]
 	local rc, e, re
 	if not src then
@@ -1635,11 +1634,11 @@ function e2tool.check_source(info, sourcename)
 	return true, nil
 end
 
-function e2tool.check_sources(info)
+function check_sources(info)
 	local e = new_error("Error while checking sources")
 	local rc, re
 	for n,s in pairs(info.sources) do
-		rc, re = e2tool.check_source(info, n)
+		rc, re = check_source(info, n)
 		if not rc then
 			e:cat(re)
 		end
@@ -1650,7 +1649,7 @@ function e2tool.check_sources(info)
 	return true, nil
 end
 
-function e2tool.check_licence(info, l)
+function check_licence(info, l)
 	local e = new_error("in licence: %s", l)
 	local lic = info.licences[l]
 	if not lic.server then
@@ -1698,11 +1697,11 @@ function e2tool.check_licence(info, l)
 	return true
 end
 
-function e2tool.check_licences(info)
+function check_licences(info)
 	local e = new_error("Error while checking licences")
 	local rc, re
 	for l, lic in pairs(info.licences) do
-		rc, re = e2tool.check_licence(info, l)
+		rc, re = check_licence(info, l)
 		if not rc then
 			e:cat(re)
 		end
@@ -1713,7 +1712,7 @@ function e2tool.check_licences(info)
 	return true, nil
 end
 
-function e2tool.check_workingcopies(info)
+function check_workingcopies(info)
 	local e = new_error("Error while checking working copies")
 	local rc, re
 	for n,s in pairs(info.sources) do
@@ -1728,7 +1727,7 @@ function e2tool.check_workingcopies(info)
 	return true, nil
 end
 
-function e2tool.check_results(info)
+function check_results(info)
 	local e = new_error("Error while checking results")
 	local rc, re
 	for _,f in ipairs(info.ftab.check_result) do
@@ -1743,7 +1742,7 @@ function e2tool.check_results(info)
 		return false, e
 	end
 	for r,_ in pairs(info.results) do
-		rc, re = e2tool.check_collect_project(info, r)
+		rc, re = check_collect_project(info, r)
 		if not rc then
 			e:cat(re)
 		end
@@ -1757,7 +1756,7 @@ end
 --- check result configuration
 -- @param info table: the info table
 -- @param resultname string: the result to check
-function e2tool.check_result(info, resultname)
+function check_result(info, resultname)
 	local res = info.results[resultname]
 	local e = new_error("in result %s:", resultname)
 	if not res then
@@ -1851,7 +1850,7 @@ function e2tool.check_result(info, resultname)
 		res.buildno = "0"
 	end
 	local build_script = string.format("%s/%s", info.root,
-		e2tool.resultbuildscript(info.results[resultname].directory))
+		resultbuildscript(info.results[resultname].directory))
 	if not e2lib.isfile(build_script) then
 		e:append("build-script does not exist: %s", build_script)
 	end
@@ -1868,7 +1867,7 @@ end
 -- Run only after check_result() was run on all results.
 -- @param info table: the info table
 -- @param resultname string: the result to check
-function e2tool.check_collect_project(info, resultname)
+function check_collect_project(info, resultname)
 	local res = info.results[resultname]
 	local e = new_error("in result %s:", resultname)
 	local rc, re
@@ -1895,7 +1894,7 @@ function e2tool.check_collect_project(info, resultname)
 	if e:getcount() > 1 then
 		return false, e
 	end
-	res.collect_project_results, re = e2tool.dlist_recursive(info,
+	res.collect_project_results, re = dlist_recursive(info,
 				res.collect_project_default_result)
 	if not res.collect_project_results then
 		return false, e:cat(re)
@@ -1949,7 +1948,7 @@ end
 -- @param build_numbers table: build number table (optional)
 -- @return bool
 -- @return nil, an error object on error
-function e2tool.string2bn(info, s, build_numbers)
+function string2bn(info, s, build_numbers)
 	e2lib.logf(4, "string2bn()")
 	if not build_numbers then
 		build_numbers = info.build_numbers
@@ -2005,7 +2004,7 @@ end
 -- @param build_numbers table: build number table (optional)
 -- @return bool
 -- @return an error object on error
-function e2tool.buildnumber_write(info, file, build_numbers)
+function buildnumber_write(info, file, build_numbers)
 	e2lib.logf(4, "e2tool.buildnumber_write()")
 	local rc, msg
 	if not file then
@@ -2035,7 +2034,7 @@ end
 -- @param build_numbers table: build number table (optional)
 -- @return bool
 -- @return an error object on error
-function e2tool.buildnumber_read(info, file, build_numbers)
+function buildnumber_read(info, file, build_numbers)
 	e2lib.logf(4, "e2tool.buildnumber_read()")
 	local rc, re, msg
 	if not file then
@@ -2054,7 +2053,7 @@ function e2tool.buildnumber_read(info, file, build_numbers)
 		e2lib.warnf("WOTHER", "build number file does not exist")
 		s = ""
 	end
-	local rc, re = e2tool.string2bn(info, s, build_numbers)
+	local rc, re = string2bn(info, s, build_numbers)
 	if not rc then
 		e:cat(re)
 		return false, e
@@ -2066,7 +2065,7 @@ end
 -- @param info table: the info table
 -- @return bool
 -- @return nil, an error object on failure
-function e2tool.buildnumber_mergetoresults(info)
+function buildnumber_mergetoresults(info)
 	e2lib.log(3, string.format("merging build numbers to results"))
 	local e = new_error("merging build numbers to results:")
 	for r, res in pairs(info.results) do
@@ -2093,7 +2092,7 @@ end
 -- @param info table: the info table
 -- @return bool
 -- @return nil, an error object on failure
-function e2tool.buildnumber_mergefromresults(info)
+function buildnumber_mergefromresults(info)
 	e2lib.log(3, string.format("merging build numbers from results"))
 	for r, res in pairs(info.results) do
 		local bn = info.build_numbers[r]
@@ -2106,7 +2105,7 @@ function e2tool.buildnumber_mergefromresults(info)
 			bn.num = res.buildno
 			info.build_numbers[r] = bn
 		end
-		bn.bid = e2tool.pbuildid(info, r)
+		bn.bid = pbuildid(info, r)
 		e2lib.logf(4, "%s %s %s %s", r, tostring(bn.bid), bn.status, bn.num)
 	end
 	return true, nil
@@ -2116,7 +2115,7 @@ end
 -- @param build_numbers table: build number table
 -- @param loglevel (optional, default 2)
 -- @return nil
-function e2tool.buildnumber_display(build_numbers, loglevel)
+function buildnumber_display(build_numbers, loglevel)
 	if not loglevel then
 		loglevel = 2
 	end
@@ -2137,7 +2136,7 @@ end
 -- @param info
 -- @return bool
 -- @return an error object on failure
-function e2tool.buildnumber_request(info)
+function buildnumber_request(info)
 	e2lib.log(3, "requesting build numbers from server")
 	local rc, re
 	local e = new_error("error requesting build numbers")
@@ -2155,7 +2154,7 @@ function e2tool.buildnumber_request(info)
 			"--data-binary '@%s' %s -o %s",
 			curlflags,
 			tmpreq, url, tmpres)
-	rc, re = e2tool.buildnumber_write(info, tmpreq)
+	rc, re = buildnumber_write(info, tmpreq)
 	if not rc then
 		e:append(re)
 		return false, e
@@ -2166,7 +2165,7 @@ function e2tool.buildnumber_request(info)
 		e:append(re)
 		return false, e
 	end
-	rc, re = e2tool.buildnumber_read(info, tmpres)
+	rc, re = buildnumber_read(info, tmpres)
 	if not rc then
 		e:append(re)
 		return false, e
@@ -2179,7 +2178,7 @@ end
 -- @param info
 -- @return bool
 -- @return an error object on failure
-function e2tool.buildnumber_request_local(info)
+function buildnumber_request_local(info)
 	e2lib.log(3, "requesting build numbers locally")
 	local rc, re
 	local req  -- the request
@@ -2190,13 +2189,13 @@ function e2tool.buildnumber_request_local(info)
 	req = info.build_numbers
 	-- compose the state
 	sta = {}
-	rc, re = e2tool.buildnumber_read(info, nil, sta)
+	rc, re = buildnumber_read(info, nil, sta)
 	if not rc then
 		return false, e:cat(re)
 	end
 	-- run the update function locally
 	res = {}
-	rc, re = e2tool.buildnumber_update(sta, req, res)
+	rc, re = buildnumber_update(sta, req, res)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -2207,7 +2206,7 @@ function e2tool.buildnumber_request_local(info)
 		return false, e:cat(re)
 	end
 	-- convert the string back into the info structure
-	rc, re = e2tool.string2bn(info, s)
+	rc, re = string2bn(info, s)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -2220,12 +2219,12 @@ end
 -- @param request table: build number table request
 -- @param response table: build number table response
 -- @return build number table
-function e2tool.buildnumber_update(state, request, response)
+function buildnumber_update(state, request, response)
 	e2lib.log(4, "buildnumber_update()")
 	e2lib.log(4, "state:")
-	e2tool.buildnumber_display(state, 4)
+	buildnumber_display(state, 4)
 	e2lib.log(4, "request")
-	e2tool.buildnumber_display(request, 4)
+	buildnumber_display(request, 4)
 	for r,bn in pairs(request) do
 		local req = bn
 		local sta = state[r]
@@ -2262,7 +2261,7 @@ end
 -- @param build_mode table: build mode policy
 -- @param playground bool
 -- @return nil
-function e2tool.select_result(info, r, force_rebuild, request_buildno,							keep_chroot, build_mode, playground)
+function select_result(info, r, force_rebuild, request_buildno,							keep_chroot, build_mode, playground)
 	local res = info.results[r]
 	if not res then
 		e2lib.abort(string.format("selecting invalid result: %s", r))
@@ -2289,9 +2288,9 @@ end
 -- @param playground bool
 -- @return bool
 -- @return an error object on failure
-function e2tool.select_results(info, results, force_rebuild, request_buildno, keep_chroot, build_mode, playground)
+function select_results(info, results, force_rebuild, request_buildno, keep_chroot, build_mode, playground)
 	for _,r in ipairs(results) do
-		e2tool.select_result(info, r, force_rebuild, request_buildno,
+		select_result(info, r, force_rebuild, request_buildno,
 					keep_chroot, build_mode, playground)
 	end
 	return true, nil
@@ -2302,7 +2301,7 @@ end
 -- @param results table: list of result names
 -- @return bool
 -- @return an error object on failure
-function e2tool.print_selection(info, results)
+function print_selection(info, results)
 	for _,r in ipairs(results) do
 		local e = new_error("error printing selected results")
 		local res = info.results[r]
@@ -2326,7 +2325,7 @@ end
 -- @param dir string: directory
 -- @return bool
 -- @return an error object on failure
-function e2tool.lcd(info, dir)
+function lcd(info, dir)
   local e = new_error("chdir failed")
   local abspath = string.format("%s/%s", info.root, dir)
   local rc, re = e2lib.chdir(abspath)
@@ -2340,7 +2339,7 @@ end
 -- @param info
 -- @return bool
 -- @return an error object on failure
-function e2tool.display_config_syntax_compat(info)
+function display_config_syntax_compat(info)
   local e = new_error("displaying configuration syntax compatibilitly failed")
   for _,m in ipairs(info.config_syntax_compat) do
     print(m)
@@ -2352,7 +2351,7 @@ end
 -- @param info
 -- @return bool
 -- @return an error object on failure
-function e2tool.check_config_syntax_compat(info)
+function check_config_syntax_compat(info)
   local e = new_error("checking configuration syntax compatibilitly failed")
   local l, re = e2lib.read_line(info.config_syntax_file)
   if not l then
@@ -2371,10 +2370,10 @@ end
 -- @param info
 -- @return bool
 -- @return an error object on failure
-function e2tool.read_chroot_config(info)
+function read_chroot_config(info)
   local e = new_error("reading chroot config failed")
   local t = {}
-  local rc, re = e2tool.load_user_config(info, info.chroot_config_file,
+  local rc, re = load_user_config(info, info.chroot_config_file,
 						t, "chroot", "e2chroot")
   if not rc then
     return false, e:cat(re)
@@ -2424,7 +2423,7 @@ end
 -- @param chroot
 -- @return bool
 -- @return an error object on failure
-function e2tool.check_chroot_config(info)
+function check_chroot_config(info)
   local e = new_error("error validating chroot configuration")
   for g,grp in pairs(info.chroot.groups) do
     if not grp.server then
@@ -2488,14 +2487,14 @@ end
 
 local function gather_result_paths(info, basedir, results)
   results = results or {}
-  for dir in e2lib.directory(info.root .. "/" .. e2tool.resultdir(basedir)) do
+  for dir in e2lib.directory(info.root .. "/" .. resultdir(basedir)) do
     local tmp
     if basedir then
       tmp = basedir .. "/" .. dir
     else
       tmp = dir
     end
-    if e2util.exists(e2tool.resultconfig(tmp)) then
+    if e2util.exists(resultconfig(tmp)) then
       table.insert(results, tmp)
     else
       --try subfolder
@@ -2508,14 +2507,14 @@ end
 
 local function gather_source_paths(info, basedir, sources)
   sources = sources or {}
-  for dir in e2lib.directory(info.root .. "/" .. e2tool.sourcedir(basedir)) do
+  for dir in e2lib.directory(info.root .. "/" .. sourcedir(basedir)) do
     local tmp
     if basedir then
       tmp = basedir .. "/" .. dir
     else
       tmp = dir
     end
-    if e2util.exists(e2tool.sourceconfig(tmp)) then
+    if e2util.exists(sourceconfig(tmp)) then
       table.insert(sources, tmp)
     else
       --try subfolder
@@ -2552,13 +2551,13 @@ local function slashToDot(str)
   return string.gsub(str,"/",".",100)
 end
 
-function e2tool.load_source_config(info)
+function load_source_config(info)
   local e = new_error("error loading source configuration")
   info.sources = {}
 
   for _,src in ipairs(gather_source_paths(info)) do
     local list, re
-    local path = e2tool.sourceconfig(src)
+    local path = sourceconfig(src)
     local types = { "e2source", }
     local rc, re = checkFilenameInvalidCharacters(src)
     if not rc then
@@ -2567,7 +2566,7 @@ function e2tool.load_source_config(info)
         return false, e
     end
 
-    list, re = e2tool.load_user_config2(info, path, types)
+    list, re = load_user_config2(info, path, types)
     if not list then
       return false, e:cat(re)
     end
@@ -2605,13 +2604,13 @@ function e2tool.load_source_config(info)
   return true, nil
 end
 
-function e2tool.load_result_config(info)
+function load_result_config(info)
   local e = new_error("error loading result configuration")
   info.results = {}
 
   for _,res in ipairs(gather_result_paths(info)) do
     local list, re
-    local path = e2tool.resultconfig(res)
+    local path = resultconfig(res)
     local types = { "e2result", }
 
     local rc, re = checkFilenameInvalidCharacters(res)
@@ -2621,7 +2620,7 @@ function e2tool.load_result_config(info)
         return false, e
     end
 
-    list, re = e2tool.load_user_config2(info, path, types)
+    list, re = load_user_config2(info, path, types)
     if not list then
       return false, e:cat(re)
     end
@@ -2660,21 +2659,21 @@ end
 
 --- set umask to value used for build processes
 -- @param info 
-function e2tool.set_umask(info)
+function set_umask(info)
   e2lib.logf(4, "setting umask to %04o", info.chroot_umask)
   e2util.umask(info.chroot_umask)
 end
 
 -- set umask back to the value used on the host
 -- @param info
-function e2tool.reset_umask(info)
+function reset_umask(info)
   e2lib.logf(4, "setting umask to %04o", info.host_umask)
   e2util.umask(info.host_umask)
 end
 
 -- initialize the umask set/reset mechanism (i.e. store the host umask)
 -- @param info
-function e2tool.init_umask(info)
+function init_umask(info)
   -- save the umask value we run with
   info.host_umask = e2util.umask(022);
   -- restore the previous umask value again
@@ -2700,7 +2699,7 @@ end
 -- @param result name optional
 -- @param optional postfix for the direcory
 -- @return path of the result
-function e2tool.resultdir(name, postfix)
+function resultdir(name, postfix)
   return generatePath("res",name,postfix)
 end
 
@@ -2710,32 +2709,32 @@ end
 -- @param source name optional
 -- @param optional postfix for the direcory
 -- @return path of the source
-function e2tool.sourcedir(name, postfix)
+function sourcedir(name, postfix)
   return generatePath("src",name,postfix)
 end
 
 -- get path to the result config
 -- @param resultname
 -- @return path to the resultconfig
-function e2tool.resultconfig(name)
-  return e2tool.resultdir(name,"config")
+function resultconfig(name)
+  return resultdir(name,"config")
 end
 
 -- get path to the result build-script
 -- @param resultname
 -- @return path to the result build-script
-function e2tool.resultbuildscript(name)
-  return e2tool.resultdir(name,"build-script")
+function resultbuildscript(name)
+  return resultdir(name,"build-script")
 end
 
 --- get path to the source config
 -- @param sourcename
 -- @return path to the sourceconfig
-function e2tool.sourceconfig(name)
-  return e2tool.sourcedir(name,"config")
+function sourceconfig(name)
+  return sourcedir(name,"config")
 end
 
-function e2tool.register_check_result(info, func)
+function register_check_result(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
     return false, new_error("register_check_result: invalid argument")
   end
@@ -2743,7 +2742,7 @@ function e2tool.register_check_result(info, func)
   return true, nil
 end
 
-function e2tool.register_resultid(info, func)
+function register_resultid(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
     return false, new_error("register_resultid: invalid argument")
   end
@@ -2751,7 +2750,7 @@ function e2tool.register_resultid(info, func)
   return true, nil
 end
 
-function e2tool.register_pbuildid(info, func)
+function register_pbuildid(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
     return false, new_error("register_pbuildid: invalid argument")
   end
@@ -2759,13 +2758,13 @@ function e2tool.register_pbuildid(info, func)
   return true, nil
 end
 
-function e2tool.load_env_config(info, file)
+function load_env_config(info, file)
   e2lib.logf(4, "loading environment: %s", file)
   local e = new_error("loading environment: %s", file)
   local rc, re
 
   local info = info
-  local load_env_config = e2tool.load_env_config
+  local load_env_config = load_env_config
   local merge_error = false
   local function mergeenv(data)
     -- upvalues: info, load_env_config(), merge_error

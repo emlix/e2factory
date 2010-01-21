@@ -28,6 +28,7 @@
 -- ls-project - show project information -*- Lua -*-
 
 require("e2local")
+require("e2tool")
 e2lib.init()
 
 e2option.documentation = [[
