@@ -117,7 +117,6 @@ clean:
 	$(LUAC) -o $@ $<
 
 e2local.lc: strict.lua \
-		result.lua \
 		loader.lua \
 		environment.lua \
 		plugin.lua \
