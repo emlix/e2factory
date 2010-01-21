@@ -122,7 +122,7 @@ e2.conf: e2.conf.in
 e2generic.lc: strict.lua collection.lua loader.lua \
 		plugin.lua \
 		e2lib.lua e2option.lua hash.lua tools.lua \
-		transport.lua cache.lua url.lua scm.git.lua \
+		transport.lua cache.lua url.lua generic_git.lua \
 		luafile.lua lua-version-map.lua \
 		error.lua lock.lua
 	$(BUILD_LUAC) -o $@ $^

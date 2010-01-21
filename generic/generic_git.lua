@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -28,7 +28,7 @@
 --- functions with '1' postfix take url strings as parameter. the others
 -- take server / location
 
-generic_git = {}
+module("generic_git", package.seeall)
 
 --- clone a git repository
 -- @param surl url to the server
@@ -36,7 +36,7 @@ generic_git = {}
 -- @param skip_checkout bool: pass -n to git clone?
 -- @return true on success, false on error
 -- @return nil, an error object on failure
-function generic_git.git_clone_url1(surl, location, destdir, skip_checkout)
+function git_clone_url1(surl, location, destdir, skip_checkout)
   if (not surl) or (not location) or (not destdir) then
     e2lib.abort("git_clone2(): missing parameter")
   end
@@ -47,7 +47,7 @@ function generic_git.git_clone_url1(surl, location, destdir, skip_checkout)
   if not u then
     return false, e:cat(re)
   end
-  local src, re = generic_git.git_url1(u)
+  local src, re = git_url1(u)
   if not src then
     return false, e:cat(re)
   end
@@ -70,7 +70,7 @@ end
 -- @param start_point string: where to start the branch
 -- @return bool
 -- @return nil, an error object on failure
-function generic_git.git_branch_new1(gitwc, track, branch, start_point)
+function git_branch_new1(gitwc, track, branch, start_point)
   -- git branch [--track|--no-track] <branch> <start_point>
   local f_track = nil
   if track == true then
@@ -79,7 +79,7 @@ function generic_git.git_branch_new1(gitwc, track, branch, start_point)
     f_track = "--no-track"
   end
   local cmd = string.format(
-	"cd \"%s\" && git branch %s \"%s\" \"%s\"", 
+	"cd \"%s\" && git branch %s \"%s\" \"%s\"",
 	gitwc, f_track, branch, start_point)
   local rc = e2lib.callcmd_capture(cmd)
   if rc ~= 0 then
@@ -93,7 +93,7 @@ end
 -- @param branch name of the branch to checkout
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_checkout1(gitwc, branch)
+function git_checkout1(gitwc, branch)
   e2lib.log(3, string.format("checking out branch: %s", branch))
   -- git checkout <branch>
   local cmd = string.format(
@@ -111,7 +111,7 @@ end
 -- @param ref string: a reference, according to the git manual
 -- @return string: the commit id matching the ref parameter, or nil on error
 -- @return an error object on failure
-function generic_git.git_rev_list1(gitdir, ref)
+function git_rev_list1(gitdir, ref)
   e2lib.log(4, string.format("git_rev_list(): %s %s",
 					tostring(gitdir), tostring(ref)))
   local e = new_error("git rev-list failed")
@@ -144,7 +144,7 @@ end
 -- @param rurl string: remote url
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_init_db1(rurl)
+function git_init_db1(rurl)
   if (not rurl) then
     e2lib.abort("git_init_db1(): missing parameter")
   end
@@ -181,7 +181,7 @@ end
 -- @param refspec string: a git refspec
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_push1(gitdir, rurl, refspec)
+function git_push1(gitdir, rurl, refspec)
   if (not rurl) or (not gitdir) or (not refspec) then
     e2lib.abort("git_push1(): missing parameter")
   end
@@ -191,7 +191,7 @@ function generic_git.git_push1(gitdir, rurl, refspec)
   if not u then
     return false, e:cat(re)
   end
-  local remote_git_url, re = generic_git.git_url1(u)
+  local remote_git_url, re = git_url1(u)
   if not remote_git_url then
     return false, e:cat(re)
   end
@@ -211,7 +211,7 @@ end
 -- @param name string: remote name
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_remote_add1(lurl, rurl, name)
+function git_remote_add1(lurl, rurl, name)
   if (not lurl) or (not rurl) or (not name) then
     e2lib.abort("missing parameter")
   end
@@ -225,7 +225,7 @@ function generic_git.git_remote_add1(lurl, rurl, name)
   if not rrepo then
     return false, e:cat(re)
   end
-  local giturl, re = generic_git.git_url1(rrepo)
+  local giturl, re = git_url1(rrepo)
   if not giturl then
     return false, e:cat(re)
   end
@@ -243,7 +243,7 @@ end
 -- @param u url table
 -- @return string: the git url
 -- @return an error object on failure
-function generic_git.git_url1(u)
+function git_url1(u)
   e2lib.log(4, string.format("git_url(%s)", tostring(u)))
   local giturl
   if u.transport == "ssh" or u.transport == "scp" or
@@ -265,7 +265,7 @@ end
 -- @param skip_checkout bool: pass -n to git clone?
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_clone_from_server(c, server, location, destdir, 
+function git_clone_from_server(c, server, location, destdir,
 								skip_checkout)
   local rc, re
   local e = new_error("cloning git repository")
@@ -273,7 +273,7 @@ function generic_git.git_clone_from_server(c, server, location, destdir,
   if not surl then
     return false, e:cat(re)
   end
-  local rc, re = generic_git.git_clone_url1(surl, "", destdir, skip_checkout)
+  local rc, re = git_clone_url1(surl, "", destdir, skip_checkout)
   if not rc then
     return false, re
   end
@@ -286,14 +286,14 @@ end
 -- @param location string: location
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_init_db(c, server, location)
+function git_init_db(c, server, location)
   local rc, re
   local e = new_error("initializing git repository")
   local rurl, re = cache.remote_url(c, server, location)
   if not rurl then
     return false, e:cat(re)
   end
-  local rc, re = generic_git.git_init_db1(rurl)
+  local rc, re = git_init_db1(rurl)
   if not rc then
     return false, re
   end
@@ -308,14 +308,14 @@ end
 -- @param refspec string: a git refspec
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_push(c, gitdir, server, location, refspec)
+function git_push(c, gitdir, server, location, refspec)
   local rc, re
   local e = new_error("git push failed")
   local rurl, re = cache.remote_url(c, server, location)
   if not rurl then
     return false, e:cat(re)
   end
-  return generic_git.git_push1(gitdir, rurl, refspec)
+  return git_push1(gitdir, rurl, refspec)
 end
 
 --- do a git config query
@@ -323,7 +323,7 @@ end
 -- @param query string: query to pass to git config
 -- @return string: the value printed to stdout by git config, or nil
 -- @return an error object on failure
-function generic_git.git_config(gitdir, query)
+function git_config(gitdir, query)
   local rc, re
   local e = new_error("running git config")
   local tmpfile = e2lib.mktempfile()
@@ -347,7 +347,7 @@ end
 -- @param args string: args to pass to git add
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_add(gitdir, args)
+function git_add(gitdir, args)
   local rc, re
   local e = new_error("running git add")
   if not gitdir then
@@ -367,7 +367,7 @@ end
 -- @param args string: args to pass to git add
 -- @return bool
 -- @return an error object on failure
-function generic_git.git_commit(gitdir, args)
+function git_commit(gitdir, args)
   local rc, re
   local e = new_error("git commit failed")
   return e2lib.git("commit", gitdir, args)
@@ -378,7 +378,7 @@ end
 -- @param tag string: tag name
 -- @return bool, or nil on error
 -- @return an error object on failure
-function generic_git.verify_remote_tag(gitdir, tag)
+function verify_remote_tag(gitdir, tag)
   e2lib.logf(4, "generic_git.verify_remote_tag(%s, %s)", tostring(gitdir),
 							tostring(tag))
   local e = new_error("verifying remote tag")
@@ -394,11 +394,11 @@ function generic_git.verify_remote_tag(gitdir, tag)
   end
 
   -- store commit ids for use in the error message, if any
-  local lrev = generic_git.git_rev_list1(gitdir, tag)
+  local lrev = git_rev_list1(gitdir, tag)
   if not lrev then
     return nil, e:cat(re)
   end
-  local rrev = generic_git.git_rev_list1(gitdir, rtag)
+  local rrev = git_rev_list1(gitdir, rtag)
   if not rrev then
     return nil, e:cat(re)
   end
@@ -428,7 +428,7 @@ end
 -- @param gitwc string: path to a git working tree (default: .)
 -- @return bool, or nil on error
 -- @return an error object on failure
-function generic_git.verify_clean_repository(gitwc)
+function verify_clean_repository(gitwc)
   e2lib.logf(4, "generic_git.verify_clean_repository(%s)", tostring(gitwc))
   gitwc = gitwc or "."
   local e = new_error("verifying that repository is clean")
@@ -498,7 +498,7 @@ end
 -- @param tag string: tag name
 -- @return bool, or nil on error
 -- @return an error object on failure
-function generic_git.verify_head_match_tag(gitwc, verify_tag)
+function verify_head_match_tag(gitwc, verify_tag)
   e2lib.logf(4, "generic_git.verify_head_match_tag(%s, %s)", tostring(gitwc),
 							tostring(verify_tag))
   assert(verify_tag)
@@ -530,7 +530,7 @@ function generic_git.verify_head_match_tag(gitwc, verify_tag)
   return true
 end
 
-function generic_git.sourceset2ref(sourceset, branch, tag)
+function sourceset2ref(sourceset, branch, tag)
 	if sourceset == "branch" or
 	   (sourceset == "lazytag" and tag == "^") then
 		return string.format("refs/heads/%s", branch)
