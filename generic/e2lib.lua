@@ -1920,7 +1920,6 @@ end
 
 -- "seal" modules e2util and e2lib
 
-e2lib.module("e2util", e2util)
 e2lib.module("e2lib", e2lib)
 
 e2lib.debuglogfile = io.open("/dev/null", "w")
