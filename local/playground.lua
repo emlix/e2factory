@@ -28,6 +28,8 @@
 -- playground - enter existing chroot(1) environment -*- Lua -*-
 
 require("e2local")
+require("e2tool")
+require("e2build")
 e2lib.init()
 
 local e = new_error("entering playground failed")

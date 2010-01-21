@@ -27,8 +27,7 @@
 
 -- e2build.lua -*- Lua -*-
 
-
-e2build = e2lib.module("e2build")
+module("e2build", package.seeall)
 
 --- cache a result
 -- @param info
@@ -36,7 +35,7 @@ e2build = e2lib.module("e2build")
 -- @param location
 -- @return bool
 -- @return an error object on failure
-function e2build.cache_result(info, server, location)
+function cache_result(info, server, location)
   return result.fetch(info.cache, server, location)
 end
 
@@ -48,8 +47,8 @@ end
 -- @param return_flags table: return values through this table
 -- @return bool
 -- @return an error object on failure
-function e2build.result_available(info, r, return_flags)
-  e2lib.log(4, string.format("e2build.result_available(%s)", tostring(r)))
+function result_available(info, r, return_flags)
+  e2lib.log(4, string.format("result_available(%s)", tostring(r)))
   local res = info.results[r]
   local mode = res.build_mode
   local buildid = res.build_mode.buildid(e2tool.buildid(info, r))
@@ -96,14 +95,14 @@ function e2build.result_available(info, r, return_flags)
   end
   e2lib.log(3, "result is available locally")
 --[[
-  rc, re = e2build.update_result_timestamp(info, server, location)
+  rc, re = update_result_timestamp(info, server, location)
   if not rc then
     return false, e:cat(re)
   end
   -- and push the updated metadata to the server again, if the result
   -- exists on the server.
 ]]
-  rc, re = e2build.linklast(info, r, return_flags)
+  rc, re = linklast(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
@@ -115,7 +114,7 @@ function e2build.result_available(info, r, return_flags)
   return true, nil
 end
 
-function e2build.update_result_timestamp(info, server, location)
+function update_result_timestamp(info, server, location)
   -- update the timestamp
   sr:update_timestamp()
   local rc, re = sr:write(rp)
@@ -149,8 +148,8 @@ end
 -- @param r string: result name
 -- @return bool
 -- @return an error object on failure
-function e2build.build_config(info, r)
-  e2lib.log(4, string.format("e2build.build_config(%s, %s)",
+function build_config(info, r)
+  e2lib.log(4, string.format("build_config(%s, %s)",
 						tostring(info), tostring(r)))
   local e = new_error("setting up build configuration for result `%s' failed",
 									r)
@@ -211,7 +210,7 @@ function e2build.build_config(info, r)
   return tab
 end
 
-function e2build.chroot_lock(info, r, return_flags)
+function chroot_lock(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("error locking chroot")
@@ -226,7 +225,7 @@ function e2build.chroot_lock(info, r, return_flags)
   return true, nil
 end
 
-function e2build.chroot_unlock(info, r, return_flags)
+function chroot_unlock(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("error unlocking chroot")
@@ -237,7 +236,7 @@ function e2build.chroot_unlock(info, r, return_flags)
   return true, nil
 end
 
-function e2build.setup_chroot(info, r, return_flags)
+function setup_chroot(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("error setting up chroot")
@@ -298,7 +297,7 @@ function e2build.setup_chroot(info, r, return_flags)
   return true, nil
 end
 
-function e2build.enter_playground(info, r, chroot_command)
+function enter_playground(info, r, chroot_command)
   if not chroot_command then
     chroot_command = "/bin/bash"
   end
@@ -318,7 +317,7 @@ function e2build.enter_playground(info, r, chroot_command)
   return true, nil
 end
 
-function e2build.fix_permissions(info, r, return_flags)
+function fix_permissions(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("fixing permissions failed")
@@ -342,7 +341,7 @@ function e2build.fix_permissions(info, r, return_flags)
   return true, nil
 end
 
-function e2build.playground(info, r, return_flags)
+function playground(info, r, return_flags)
   local res = info.results[r]
   if res.playground then
     return_flags.message = string.format("playground done for: %-20s", r)
@@ -353,7 +352,7 @@ function e2build.playground(info, r, return_flags)
   return true, nil
 end
 
-function e2build.runbuild(info, r, return_flags)
+function runbuild(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("build failed")
@@ -388,16 +387,16 @@ function e2build.runbuild(info, r, return_flags)
   return true, nil
 end
 
-function e2build.chroot_cleanup(info, r, return_flags)
+function chroot_cleanup(info, r, return_flags)
   local res = info.results[r]
   -- do not remove chroot if the user requests to keep it
   if res.keep_chroot then
     return true, nil
   end
-  return e2build.chroot_remove(info, r, return_flags)
+  return chroot_remove(info, r, return_flags)
 end
 
-function e2build.chroot_remove(info, r, return_flags)
+function chroot_remove(info, r, return_flags)
   local res = info.results[r]
   local e = new_error("removing chroot failed")
   local args = string.format("remove_chroot_2_3 '%s'", res.build_config.base)
@@ -422,10 +421,10 @@ function e2build.chroot_remove(info, r, return_flags)
   return true, nil
 end
 
-function e2build.chroot_cleanup_if_exists(info, r, return_flags)
+function chroot_cleanup_if_exists(info, r, return_flags)
   local res = info.results[r]
-  if e2build.chroot_remove(info, r, return_flags) then
-    return e2build.chroot_cleanup(info, r, return_flags)
+  if chroot_remove(info, r, return_flags) then
+    return chroot_cleanup(info, r, return_flags)
   end
   return true, nil
 end
@@ -434,12 +433,12 @@ end
 -- @param info
 -- @param r string: result name
 -- @return bool
-function e2build.chroot_exists(info, r)
+function chroot_exists(info, r)
   local res = info.results[r]
   return e2lib.isfile(res.build_config.chroot_marker)
 end
 
-function e2build.sources(info, r, return_flags)
+function sources(info, r, return_flags)
   local e = new_error("installing sources")
   local i, k, l, source, cp
 
@@ -651,7 +650,7 @@ function e2build.sources(info, r, return_flags)
   return true, nil
 end
 
-function e2build.linklast(info, r, return_flags)
+function linklast(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("creating link to last results")
@@ -694,11 +693,11 @@ end
 -- @param return_flags table
 -- @return bool
 -- @return an error object on failure
-function e2build.store_result(info, r, return_flags)
+function store_result(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("fetching build results from chroot")
-  e2lib.log(4, string.format("e2build.store_result"))
+  e2lib.log(4, string.format("store_result"))
 
   -- create a temporary directory to build up the result
   local tmpdir = e2lib.mktempdir()
@@ -780,13 +779,13 @@ end
 -- @param results table: list of results, sorted by dependencies
 -- @return bool
 -- @return an error object on failure
-function e2build.build_results(info, results)
+function build_results(info, results)
   e2lib.logf(3, "building results")
   for _, r in ipairs(results) do
     local e = new_error("building result failed: %s", r)
     local flags = {}
     local t1 = os.time()
-    local rc, re = e2build.build_result(info, r, flags)
+    local rc, re = build_result(info, r, flags)
     if not rc then
       -- do not insert an error message from this layer.
       return false, e:cat(re)
@@ -806,11 +805,11 @@ end
 -- @param result string: result name
 -- @return bool
 -- @return an error object on failure
-function e2build.build_result(info, result, return_flags)
+function build_result(info, result, return_flags)
   e2lib.logf(3, "building result: %s", result)
   local res = info.results[result]
-  for _,f in ipairs(e2build.build_process) do
-    --e2lib.logf(3, "running function: e2build.%s", f.name)
+  for _,f in ipairs(build_process) do
+    --e2lib.logf(3, "running function: %s", f.name)
     local t1 = os.time()
     local flags = {}
     local rc, re = f.func(info, result, flags)
@@ -919,7 +918,7 @@ end
 -- @param c table: build context
 -- @return bool
 -- @return an error object on failure
-function e2build.collect_project(info, r, return_flags)
+function collect_project(info, r, return_flags)
 	local res = info.results[r]
 	if not res.collect_project then
 		-- nothing to be done here...
@@ -1039,7 +1038,7 @@ function e2build.collect_project(info, r, return_flags)
 	for _,n in ipairs(res.collect_project_results) do
 		e2lib.log(3, string.format("result: %s", n))
 		local rn = info.results[n]
-		rc, re = e2build.build_config(info, n)
+		rc, re = build_config(info, n)
 		if not rc then
 			return false, e:cat(re)
 		end
@@ -1162,11 +1161,11 @@ end
 --                     the named function
 -- @return bool
 -- @return an error object on failure
-function e2build.register_build_function(info, name, func, pos)
+function register_build_function(info, name, func, pos)
   local e = new_error("register build function")
   local ipos = nil
-  for i=1, #e2build.build_process, 1 do
-    if e2build.build_process[i].name == pos then
+  for i=1, #build_process, 1 do
+    if build_process[i].name == pos then
       ipos = i
       break
     end
@@ -1178,24 +1177,24 @@ function e2build.register_build_function(info, name, func, pos)
     name = name,
     func = func,
   }
-  table.insert(e2build.build_process, ipos, tab)
+  table.insert(build_process, ipos, tab)
   return true, nil
 end
 
-e2build.build_process = {
-	{ prio=0100, name="build_config", func=e2build.build_config },
-	{ prio=0200, name="result_available", func=e2build.result_available },
-	{ prio=0300, name="chroot_lock", func=e2build.chroot_lock },
+build_process = {
+	{ prio=0100, name="build_config", func=build_config },
+	{ prio=0200, name="result_available", func=result_available },
+	{ prio=0300, name="chroot_lock", func=chroot_lock },
 	{ prio=0400, name="chroot_cleanup_if_exists",
-			func=e2build.chroot_cleanup_if_exists },
-	{ prio=0500, name="setup_chroot", func=e2build.setup_chroot },
-	{ prio=0600, name="sources", func=e2build.sources },
-	{ prio=0700, name="collect_project", func=e2build.collect_project },
-	{ prio=0800, name="fix_permissions", func=e2build.fix_permissions},
-        { prio=0900, name="playground", func=e2build.playground },
-	{ prio=1000, name="runbuild", func=e2build.runbuild },
-	{ prio=1100, name="store_result", func=e2build.store_result },
-	{ prio=1200, name="linklast", func=e2build.linklast },
-	{ prio=1300, name="chroot_cleanup", func=e2build.chroot_cleanup },
-	{ prio=1400, name="chroot_unlock", func=e2build.chroot_unlock },
+			func=chroot_cleanup_if_exists },
+	{ prio=0500, name="setup_chroot", func=setup_chroot },
+	{ prio=0600, name="sources", func=sources },
+	{ prio=0700, name="collect_project", func=collect_project },
+	{ prio=0800, name="fix_permissions", func=fix_permissions},
+        { prio=0900, name="playground", func=playground },
+	{ prio=1000, name="runbuild", func=runbuild },
+	{ prio=1100, name="store_result", func=store_result },
+	{ prio=1200, name="linklast", func=linklast },
+	{ prio=1300, name="chroot_cleanup", func=chroot_cleanup },
+	{ prio=1400, name="chroot_unlock", func=chroot_unlock },
 }
