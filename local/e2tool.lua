@@ -35,6 +35,14 @@ require("files")
 require("git")
 require("cvs")
 require("svn")
+require("cache")
+require("transport")
+require("tools")
+require("environment")
+require("plugin")
+require("url")
+require("hash")
+require("lock")
 
 -- Information gathering and inquiry
 --
