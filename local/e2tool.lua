@@ -30,6 +30,8 @@
 -- High-level tools used by the build process and basic build operations.
 
 module("e2tool", package.seeall)
+require("strict")
+require("collection")
 require("err")
 require("scm")
 require("files")

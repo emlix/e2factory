@@ -46,7 +46,7 @@ LUA_LIBS = e2option.lua luafile.lua generic_git.lua err.lua
 LUA_LIBS += e2tool.lua scm.lua git.lua svn.lua cvs.lua files.lua
 LUA_LIBS += tools.lua transport.lua cache.lua
 LUA_LIBS += environment.lua plugin.lua url.lua hash.lua lock.lua
-LUA_LIBS += policy.lua
+LUA_LIBS += policy.lua strict.lua collection.lua
 LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
 
 SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
@@ -119,8 +119,7 @@ clean:
 %.lc: %.lua
 	$(LUAC) -o $@ $<
 
-e2local.lc: strict.lua \
-		collection.lua \
+e2local.lc: \
 		e2lib.lua \
 		e2build.lua
 	$(LUAC) -o $@ $^
