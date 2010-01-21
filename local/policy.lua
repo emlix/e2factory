@@ -25,18 +25,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-e2policy = e2lib.module("e2policy")
+module("policy", package.seeall)
 
-local function source_set_lazytag()
+function source_set_lazytag()
 	return "lazytag"
 end
-local function source_set_tag()
+function source_set_tag()
 	return "tag"
 end
-local function source_set_branch()
+function source_set_branch()
 	return "branch"
 end
-local function source_set_working_copy()
+function source_set_working_copy()
 	return "working-copy"
 end
 
@@ -44,30 +44,30 @@ end
 local results_server = "results"
 local release_server = "releases"
 local local_server = "."
-local function storage_release(location, release_id)
+function storage_release(location, release_id)
 	return release_server, string.format("%s/release/%s", location,
 								release_id)
 end
-local function storage_default(location, release_id)
+function storage_default(location, release_id)
 	return results_server, string.format("%s/shared", location)
 end
-local function storage_local(location, release_id)
+function storage_local(location, release_id)
 	return local_server, string.format("out")
 end
 
 
-local function dep_set_buildid(buildid)
+function dep_set_buildid(buildid)
 	return buildid
 end
-local function dep_set_last(buildid)
+function dep_set_last(buildid)
 	return "last"
 end
 
 
-local function buildid_buildid(buildid)
+function buildid_buildid(buildid)
 	return buildid
 end
-local function buildid_scratch(buildid)
+function buildid_scratch(buildid)
 	return "scratch"
 end
 
@@ -78,7 +78,7 @@ end
 -- 			buildid
 -- @param val the function to use : storage_*, source_set_*, etc.
 -- @return nil
-local function set(mode, id, val)
+function set(mode, id, val)
 	if not id or not val then
 		print(id)
 		print(val)
@@ -94,7 +94,7 @@ end
 -- @param id string: the policy identifier: storage, source_set, dep_set, 
 -- 			buildid
 -- @return function: the policy function
-local function get(mode, id)
+function get(mode, id)
 	if type(mode) ~= "table" then
 		print(mode, id)
 		e2lib.abort("policy.get() mode is not a table")
@@ -229,24 +229,7 @@ function handle_commandline_options(opts, use_default)
 	return mode
 end
 
-policy = {}
-policy.init = init
-policy.register_commandline_options = register_commandline_options
 policy.default_build_mode_name = "tag"
-policy.handle_commandline_options = handle_commandline_options
-policy.set = set
-policy.get = get
-policy.source_set_lazytag = source_set_lazytag
-policy.source_set_tag = source_set_tag
-policy.source_set_branch = source_set_branch
-policy.source_set_working_copy = source_set_working_copy
-policy.storage_release = storage_release
-policy.storage_default = storage_default
-policy.storage_local = storage_local
-policy.dep_set_buildid = dep_set_buildid
-policy.dep_set_last = dep_set_last
-policy.buildid_buildid = buildid_buildid
-policy.buildid_scratch = buildid_scratch
 
 policy.default_build_mode = {}
 policy.default_build_mode["lazytag"] = {
@@ -283,4 +266,3 @@ policy.default_build_mode["working-copy"] = {
 	buildid = policy.buildid_scratch,
 	storage = policy.storage_local,
 }
-

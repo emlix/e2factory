@@ -49,6 +49,7 @@ require("luafile_ll")
 require("e2option")
 require("luafile")
 require("generic_git")
+require("policy")
 
 -- Information gathering and inquiry
 --
