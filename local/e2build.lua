@@ -55,7 +55,7 @@ function result_available(info, r, return_flags)
   local sbid = e2tool.bid_display(buildid)
   local rc, re
   local e = new_error("error while checking if result is available: %s", r)
-  local columns = tonumber(e2lib.osenv["COLUMNS"])
+  local columns = tonumber(e2lib.globals.osenv["COLUMNS"])
   if res.playground then
     return_flags.message = e2lib.align(columns,
 		0, string.format("building %-20s", r),
@@ -163,7 +163,8 @@ function build_config(info, r)
   end
   res.build_config = {} -- build up a new build config
   local tab = res.build_config
-  local tmpdir = string.format("%s/e2factory-%s.%s.%s-build", e2lib.tmpdir,
+  local tmpdir = string.format("%s/e2factory-%s.%s.%s-build",
+		e2lib.globals.tmpdir,
 		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL)
   local project = info.name
   local builddir = "tmp/e2"
@@ -218,7 +219,7 @@ function chroot_lock(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  rc, re = e2lib.lock:lock(res.build_config.chroot_lock)
+  rc, re = e2lib.globals.lock:lock(res.build_config.chroot_lock)
   if not rc then
     return false, e:cat(re)
   end
@@ -229,7 +230,7 @@ function chroot_unlock(info, r, return_flags)
   local res = info.results[r]
   local rc, re
   local e = new_error("error unlocking chroot")
-  rc, re = e2lib.lock:unlock(res.build_config.chroot_lock)
+  rc, re = e2lib.globals.lock:unlock(res.build_config.chroot_lock)
   if not rc then
     return false, e:cat(re)
   end
@@ -305,7 +306,7 @@ function enter_playground(info, r, chroot_command)
   local rc, re
   local e = new_error("entering playground")
   e2lib.log(4, "entering playground for " .. r .. " ...")
-  local term = e2lib.terminal
+  local term = e2lib.globals.terminal
   local e2_su = tools.get_tool("e2-su-2.2")
   local cmd = string.format("%s %s chroot_2_3 '%s' %s",
 				res.build_config.chroot_call_prefix, e2_su, 

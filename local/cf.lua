@@ -65,7 +65,7 @@ if not rc then
   e2lib.abort(re)
 end
 
-local editor = e2lib.osenv["EDITOR"]
+local editor = e2lib.globals.osenv["EDITOR"]
 
 local commands = {}
 

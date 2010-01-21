@@ -124,7 +124,7 @@ local function p3(s1, s2, k, v)
 end
 
 local function p3t(s1, s2, k, t)
-	local col = tonumber(e2lib.osenv["COLUMNS"])
+	local col = tonumber(e2lib.globals.osenv["COLUMNS"])
 	local header1 = string.format("   %s  %s  o--%-10s =", s1, s2, k)
 	local header2 = string.format("   %s  %s     %-10s  ", s1, s2, "")
 	local header = header1

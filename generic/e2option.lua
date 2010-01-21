@@ -247,7 +247,7 @@ function parse(args)
   end
 
   local function userdefaultoptions()
-    local home = e2lib.homedir
+    local home = e2lib.globals.homedir
     if not home then return end
     local file = home .. "/.e2/e2rc"
     if not e2util.exists(file) then

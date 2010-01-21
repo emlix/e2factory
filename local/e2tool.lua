@@ -30,6 +30,7 @@
 -- High-level tools used by the build process and basic build operations.
 
 module("e2tool", package.seeall)
+require("e2lib")
 require("strict")
 require("collection")
 require("err")
@@ -641,7 +642,7 @@ The newest configuration syntax supported by the tools is %s.
 
   -- read global interface version and check if this version of the local
   -- tools supports the version used for the project
-  local line, re = e2lib.read_line(e2lib.global_interface_version_file)
+  local line, re = e2lib.read_line(e2lib.globals.global_interface_version_file)
   if not line then
     return false, e:cat(re)
   end
@@ -654,7 +655,7 @@ The newest configuration syntax supported by the tools is %s.
   end
   if not supported then
     e:append("%s: Invalid global interface version",
-					e2lib.global_interface_version_file)
+					e2lib.globals.global_interface_version_file)
     e:append("supported global interface versions are: %s",
 		table.concat(buildconfig.GLOBAL_INTERFACE_VERSION), " ")
     return false, e
@@ -2164,8 +2165,8 @@ function buildnumber_request(info)
 	local curlflags = "--create-dirs --silent --show-error --fail"
 	local url = string.format(
 		"'%s?project=%s&user=%s&host=%s'",
-		e2lib.buildnumber_server_url, info.name, e2lib.osenv["USER"],
-		e2lib.hostname)
+		e2lib.buildnumber_server_url, info.name,
+		e2lib.globals.osenv["USER"], e2lib.hostname)
 	local args = string.format(
 			"%s " ..
 			"--header 'Content-type: text/plain' " ..

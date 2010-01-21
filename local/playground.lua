@@ -90,7 +90,7 @@ local f, msg = io.open(profile, "w")
 if not f then
   e2lib.abort(e:cat(msg))
 end
-f:write(string.format("export TERM='%s'\n", e2lib.osenv["TERM"]))
+f:write(string.format("export TERM='%s'\n", e2lib.globals.osenv["TERM"]))
 f:write(string.format("export HOME=/root\n"))
 if opts.runinit then
   f:write(string.format("source %s/script/%s\n", bc.Tc, bc.buildrc_file))

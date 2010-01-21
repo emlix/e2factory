@@ -25,6 +25,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+module("e2lib", package.seeall)
+require("strict")
 require("buildconfig")
 
 _version = "e2factory, the emlix embedded build system, version " .. 
@@ -46,13 +48,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.]]
 
 -- Module-level global variables
 --
---   e2lib.interactive -> BOOL
+--   globals.interactive -> BOOL
 --
 --     True, when lua was started in interactive mode (either by giving
 --     the "-i" option or by starting lua and loading the e2 files
 --     manually).
 
-e2lib = { 
+local global_config = false
+
+globals = {
   logflags = {
     { "v1", true },    -- minimal
     { "v2", true },    -- verbose
@@ -63,7 +67,7 @@ e2lib = {
   debug = false, 
   playground = false,
   interactive = arg and (arg[ -1 ] == "-i"),
-  -- variables initialized in e2lib.init()
+  -- variables initialized in init()
   username = nil, 
   homedir = nil, 
   hostname = nil,
@@ -94,38 +98,17 @@ e2lib = {
 --
 -- e2util sets up a SIGINT handler that calls back into this function.
 
-function e2lib.interrupt_hook()
-  e2lib.abort("*interrupted by user*")
+function interrupt_hook()
+  abort("*interrupted by user*")
 end
 
-
--- Extended error checking for module bindings
---
---   e2lib.module(NAME, [TABLE]) -> TABLE
---
---     Manipulates the meta-table of TABLE to signal an error, when a
---     non-existant field of it is accessed. Also sets the "name" entry for
---     TABLE to the given argument. If no table argument is given, a new
---     table is returned.
-
-function e2lib.module(name, t)
-  t = t or {}
-  t.name = name
-  local mt = {}
-  function mt.__index(t, k)
-    error("access to non-existant module binding `" .. k .. "' in `" .. t.name .. "'")
-  end
-  setmetatable(t, mt)
-  return t
-end
-
---- make sure the environment variables inside the e2lib table are
+--- make sure the environment variables inside the globals table are
 -- initialized properly, and abort otherwise
 -- This function always succeeds or aborts.
-function e2lib.init()
-  e2lib.log(4, "e2lib.init()")
+function init()
+  log(4, "init()")
 
-  e2lib.warn_category = {
+  globals.warn_category = {
 	WDEFAULT = false,
 	WDEPRECATED = false,
 	WOTHER = true,
@@ -152,40 +135,40 @@ function e2lib.init()
   for _, var in pairs(getenv) do
     var.val = os.getenv(var.name)
     if var.required and not var.val then
-      e2lib.abort(string.format("%s is not set in the environment", var.name))
+      abort(string.format("%s is not set in the environment", var.name))
     end
     if var.default and not var.val then
       var.val = var.default
     end
     osenv[var.name] = var.val
   end
-  e2lib.osenv = osenv
+  globals.osenv = osenv
 
   -- assign some frequently used environment variables
-  e2lib.homedir = e2lib.osenv["HOME"]
-  e2lib.username = e2lib.osenv["USER"]
-  e2lib.terminal = e2lib.osenv["TERM"]
-  if e2lib.osenv["E2TMPDIR"] then
-    e2lib.tmpdir = e2lib.osenv["E2TMPDIR"]
+  globals.homedir = globals.osenv["HOME"]
+  globals.username = globals.osenv["USER"]
+  globals.terminal = globals.osenv["TERM"]
+  if globals.osenv["E2TMPDIR"] then
+    globals.tmpdir = globals.osenv["E2TMPDIR"]
   else
-    e2lib.tmpdir = e2lib.osenv["TMPDIR"]
+    globals.tmpdir = globals.osenv["TMPDIR"]
   end
 
   -- get the host name
-  e2lib.hostname = e2lib.program_output("hostname")
-  if not e2lib.hostname then
-    e2lib.abort("hostname ist not set")
+  globals.hostname = program_output("hostname")
+  if not globals.hostname then
+    abort("hostname ist not set")
   end
 
-  e2lib.lock = lock.new()
+  globals.lock = lock.new()
 end
 
-function e2lib.init2()
+function init2()
   local rc, re
-  local e = new_error("initializing e2lib (step2)")
+  local e = new_error("initializing globals (step2)")
 
   -- get the global configuration
-  local config = e2lib.get_global_config()
+  local config = get_global_config()
 
   -- honour tool customizations from the config file
   if config.tools then
@@ -196,9 +179,9 @@ function e2lib.init2()
 
   -- handle E2_SSH environment setting
   local ssh = nil
-  ssh  = e2lib.osenv["E2_SSH"]
+  ssh  = globals.osenv["E2_SSH"]
   if ssh then
-    e2lib.log(3, string.format(
+    log(3, string.format(
 	"using ssh command from the E2_SSH environment variable: %s", ssh))
     tools.set_tool("ssh", ssh)
   end
@@ -206,23 +189,23 @@ function e2lib.init2()
   -- initialize the tools library after resetting tools
   local rc, re = tools.init()
   if not rc then
-    e2lib.abort(e:cat(re))
+    abort(e:cat(re))
   end
 
   -- get host system architecture
-  e2lib.host_system_arch, re = e2lib.get_sys_arch()
-  if not e2lib.host_system_arch then
-    e2lib.abort(e:cat(re))
+  host_system_arch, re = get_sys_arch()
+  if not host_system_arch then
+    abort(e:cat(re))
   end
 end
 
 --- return the output of a program, abort if the call fails
 -- @param cmd string: the program to call
 -- @return string: the program output
-function e2lib.program_output(cmd)
+function program_output(cmd)
   local i = io.popen(cmd)
   if not i then
-    e2lib.abort("invocation of program failed:  ", cmd) 
+    abort("invocation of program failed:  ", cmd)
   else
     local input = i:read("*a")
     return input
@@ -232,28 +215,28 @@ end
 --- print a warning, composed by concatenating all arguments to a string
 -- @param ... any number of strings
 -- @return nil
-function e2lib.warn(category, ...)
+function warn(category, ...)
   local msg = table.concat({...})
-  return e2lib.warnf(category, "%s", msg)
+  return warnf(category, "%s", msg)
 end
 
 --- print a warning
 -- @param format string: a format string
 -- @param ... arguments required for the format string
 -- @return nil
-function e2lib.warnf(category, format, ...)
+function warnf(category, format, ...)
   if (format:len() == 0) or (not format) then
-    e2lib.bomb("calling e2lib.warnf() with zero length format")
+    bomb("calling warnf() with zero length format")
   end
-  if type(e2lib.warn_category[category]) ~= "boolean" then
-    e2lib.bomb("calling e2lib.warnf() with invalid warning category")
+  if type(globals.warn_category[category]) ~= "boolean" then
+    bomb("calling warnf() with invalid warning category")
   end
-  if e2lib.warn_category[category] == true then
+  if globals.warn_category[category] == true then
     local prefix = "Warning: "
-    if e2lib.log_debug then
+    if log_debug then
       prefix = string.format("Warning [%s]: ", category)
     end
-    e2lib.log(1, prefix .. string.format(format, ...))
+    log(1, prefix .. string.format(format, ...))
   end
   return nil
 end
@@ -264,7 +247,7 @@ end
 -- Please pass error objects to this function in the future.
 -- @param ... an error object, or any number of strings
 -- @return This function does not return
-function e2lib.abort(...)
+function abort(...)
   local t = { ... }
   local e = t[1]
   if e and e.print then
@@ -272,13 +255,13 @@ function e2lib.abort(...)
   else
     local msg = table.concat(t)
     if msg:len() == 0 then
-      e2lib.bomb("calling e2lib.abort() with zero length message")
+      bomb("calling abort() with zero length message")
     end
-    e2lib.log(1, "Error: " .. msg)
+    log(1, "Error: " .. msg)
   end
-  e2lib.rmtempdirs()
-  e2lib.rmtempfiles()
-  e2lib.lock:cleanup()
+  rmtempdirs()
+  rmtempfiles()
+  globals.lock:cleanup()
   os.exit(1)
 end
 
@@ -286,7 +269,7 @@ end
 -- and exit. Return code is 32.
 -- @param ... any number of strings
 -- @return This function does not return
-function e2lib.bomb(...)
+function bomb(...)
   local msg = table.concat({...})
   io.stderr:write(
 	 "Internal Error:\n" ..
@@ -302,84 +285,84 @@ function e2lib.bomb(...)
   os.exit(32)
 end
 
-function e2lib.sete2config(file)
+function sete2config(file)
   e2util.setenv("E2_CONFIG", file, 1)
-  e2lib.osenv["E2_CONFIG"] = file
-  e2lib.cmdline["e2-config"] = file
+  globals.osenv["E2_CONFIG"] = file
+  globals.cmdline["e2-config"] = file
 end
 
 --- enable or disable logging for level.
 -- @param level number: loglevel
 -- @param value bool
 -- @return nil
-function e2lib.setlog(level, value)
-  e2lib.logflags[level][2] = value
+function setlog(level, value)
+  globals.logflags[level][2] = value
 end
 
 --- get logging setting for level
 -- @param level number: loglevel
 -- @return bool
-function e2lib.getlog(level)
-  return e2lib.logflags[level][2]
+function getlog(level)
+  return globals.logflags[level][2]
 end
 
 --- return highest loglevel that is enabled
 -- @return number
-function e2lib.maxloglevel()
+function maxloglevel()
   local level = 0
   for i = 1, 4 do
-    if e2lib.getlog(i) then level = i end
+    if getlog(i) then level = i end
   end
   return level
 end
 
 --- get log flags for calling subtools with the same log settings
 -- @return string: a string holding command line flags
-function e2lib.getlogflags()
+function getlogflags()
   local logflags = ""
-  if e2lib.getlog(1) then
+  if getlog(1) then
     logflags = "--v1"
   end
-  if e2lib.getlog(2) then
+  if getlog(2) then
     logflags = logflags .. " --v2"
   end
-  if e2lib.getlog(3) then
+  if getlog(3) then
     logflags = logflags .. " --v3"
   end
-  if e2lib.getlog(4) then
+  if getlog(4) then
     logflags = logflags .. " --v4"
   end
-  if e2lib.log_debug then
+  if log_debug then
     logflags = logflags .. " --log-debug"
   end
   return " " .. logflags
 end
 
---- log to the debug logfile, and log to console if e2lib.getlog(level)
+--- log to the debug logfile, and log to console if getlog(level)
 -- @param level number: loglevel
 -- @param format string: format string
 -- @param ... additional parameters to pass to string.format
 -- @return nil
-function e2lib.logf(level, format, ...)
+function logf(level, format, ...)
   if not format then
-    e2lib.bomb("calling e2lib.log() without format string")
+    bomb("calling log() without format string")
   end
   local msg = string.format(format, ...)
-  return e2lib.log(level, msg)
+  return log(level, msg)
 end
 
---- log to the debug logfile, and log to console if e2lib.getlog(level) 
+--- log to the debug logfile, and log to console if getlog(level)
 -- is true
 -- @param level number: loglevel
 -- @param msg string: log message
 -- @param ... strings: arguments required for the format string
 -- @return nil
-function e2lib.log(level, msg)
+function log(level, msg)
   if level < 1 or level > 4 then
-    e2lib.bomb("invalid log level")
+    bomb("invalid log level")
   end
   if not msg then
-    e2lib.bomb("calling e2lib.log() without log message")
+    bomb("calling log() without log message")
   end
   local log_prefix = "[" .. level .. "] "
   -- remove end of line if it exists
@@ -387,11 +370,11 @@ function e2lib.log(level, msg)
     msg = msg:sub(1, msg:len() - 1)
   end
   -- always write log level to debug logfile
-  e2lib.debuglogfile:write(log_prefix .. msg)
-  e2lib.debuglogfile:write("\n")
-  e2lib.debuglogfile:flush()
-  if e2lib.getlog(level) then
-    if e2lib.log_debug then
+  globals.debuglogfile:write(log_prefix .. msg)
+  globals.debuglogfile:write("\n")
+  globals.debuglogfile:flush()
+  if getlog(level) then
+    if globals.log_debug then
       io.stderr:write(log_prefix)
     end
     io.stderr:write(msg)
@@ -400,11 +383,11 @@ function e2lib.log(level, msg)
   return nil
 end
 
-function e2lib.rotate_log(file)
+function rotate_log(file)
   local e = new_error("rotating logfile: %s", file)
   local rc, re
-  local logdir = e2lib.dirname(file)
-  local logfile = e2lib.basename(file)
+  local logdir = dirname(file)
+  local logfile = basename(file)
   local dir = e2util.directory(logdir, false)
   if not dir then
     return false, e:cat(string.format("%s: can't read directory", dir))
@@ -427,16 +410,16 @@ function e2lib.rotate_log(file)
     local n = f:match(string.format("%s.([0-9]+)", logfile))
     if n then
       n = tonumber(n)
-      if n >= e2lib.logrotate - 1 then
+      if n >= globals.logrotate - 1 then
 	local del = string.format("%s/%s.%d", logdir, logfile, n)
-	rc, re = e2lib.rm(del)
+	rc, re = rm(del)
 	if not rc then
 	  return false, e:cat(re)
 	end
       else
 	local src = string.format("%s/%s.%d", logdir, logfile, n)
 	local dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
-	rc, re = e2lib.mv(src, dst)
+	rc, re = mv(src, dst)
 	if not rc then
 	  return false, e:cat(re)
 	end
@@ -445,8 +428,8 @@ function e2lib.rotate_log(file)
   end
   local src = file
   local dst = string.format("%s/%s.0", logdir, logfile)
-  if e2lib.isfile(src) then
-    rc, re = e2lib.mv(src, dst)
+  if isfile(src) then
+    rc, re = mv(src, dst)
     if not rc then
       return false, e:cat(re)
     end
@@ -474,7 +457,7 @@ end
 -- @param info
 -- @param args
 -- @return nothing
-function e2lib.log_invocation(info, args)
+function log_invocation(info, args)
   local pname = "<none>"
   if info then
     pname = info.name
@@ -482,25 +465,25 @@ function e2lib.log_invocation(info, args)
   local logstring = string.format(
 	"%s %s %s %s \"%s %s\"\n",
 	pname, os.date(), buildconfig.VERSIONSTRING,
-	e2lib.username, arg[0], table.concat(args, " "))
+	globals.username, arg[0], table.concat(args, " "))
 
   -- always log to the user logfile
-  local ulogdir = string.format("%s/.e2", e2lib.homedir)
+  local ulogdir = string.format("%s/.e2", globals.homedir)
   local ulogfile = string.format("%s/run.log", ulogdir)
-  e2lib.mkdir(ulogdir, "-p")
+  mkdir(ulogdir, "-p")
   local rc, e = append_to_file(ulogfile, logstring)
   if not rc then
-    e2lib.abort(string.format("can't log to file %s: %s", ulogfile, e))
+    abort(string.format("can't log to file %s: %s", ulogfile, e))
   end
 
   -- log to the project logfile
   if info then
     local plogdir = string.format("%s/.e2", info.root)
     local plogfile = string.format("%s/run.log", plogdir)
-    e2lib.mkdir(plogdir, "-p")
+    mkdir(plogdir, "-p")
     rc, e = append_to_file(plogfile, logstring)
     if not rc then
-      e2lib.abort(string.format("can't log to file %s: %s", plogfile, e))
+      abort(string.format("can't log to file %s: %s", plogfile, e))
     end
   end
 
@@ -511,54 +494,54 @@ function e2lib.log_invocation(info, args)
 	"--data-binary '@%s' --connect-timeout 1 " ..
 	"'http://e2data:6532/store-run-log.lua?project=%s&user=%s&host=%s' " ..
 	">/dev/null",
-	ulogfile, pname, e2lib.username, e2lib.hostname)
+	ulogfile, pname, globals.username, globals.hostname)
   local rc = true
   local re = nil
-  if e2lib.enable_invocation_log == true then
+  if globals.enable_invocation_log == true then
     -- really send logs only if enabled
-    rc, re = e2lib.curl(args)
+    rc, re = curl(args)
   end
   if not rc then
     local ulogfile_backup = ulogfile .. ".backup"
     local args = string.format("'%s' >>'%s'", ulogfile, ulogfile_backup)
-    e2lib.cat(args)
-    e2lib.rm(ulogfile, "-f")
+    cat(args)
+    rm(ulogfile, "-f")
   else
-    e2lib.log(3, "failed sending queued logs to the server")
+    log(3, "failed sending queued logs to the server")
   end
 end
 
 --- exit from the tool, cleaning up temporary files and directories
 -- @param rc number: return code (optional, defaults to 0)
 -- @return This function does not return.
-function e2lib.finish(returncode)
+function finish(returncode)
   if not returncode then
     returncode = 0
   end
   local rc, re = plugin.exit_plugins()
   if not rc then
-    e2lib.logf(1, "deinitializing plugins failed (ignoring)")
+    logf(1, "deinitializing plugins failed (ignoring)")
   end
-  e2lib.rmtempdirs()
-  e2lib.rmtempfiles()
-  e2lib.lock:cleanup()
+  rmtempdirs()
+  rmtempfiles()
+  globals.lock:cleanup()
   os.exit(returncode)
 end
 
 
 -- Pathname operations
 --
---   e2lib.dirname(PATH) -> STRING
+--   dirname(PATH) -> STRING
 --
 --     Returns the directory part of the string PATH.
 --
---   e2lib.basename(PATH, [EXTENSION]) -> STRING
+--   basename(PATH, [EXTENSION]) -> STRING
 --
 --     Returns the filename part of PATH by stripping the directory part.
 --     if EXTENSION is given and if it matches the file-extension of PATH,
 --     then the extension part is also removed.
 --
---   e2lib.splitpath(PATH) -> DIR, BASE, TYPE
+--   splitpath(PATH) -> DIR, BASE, TYPE
 --
 --     Checks PATH for trailing "/" for a directory,
 --     splits up the real path into dir and base to ensure that
@@ -566,13 +549,13 @@ end
 --     TYPE is set to stat.type. return nil for non existing file
 --
 
-function e2lib.dirname(path)
+function dirname(path)
   local s, e, dir = string.find(path, "^(.*)/[^/]*$")
   if dir == "" then return "/"
   else return dir or "." end
 end
 
-function e2lib.basename(path, ext)
+function basename(path, ext)
   local s, e, base = string.find(path, "^.*/([^/]+)[/]?$")
   if not base then base = path end
   if ext then
@@ -583,7 +566,7 @@ function e2lib.basename(path, ext)
   return base
 end
 
-function e2lib.splitpath(path)
+function splitpath(path)
   local p = e2util.realpath(path)
   if not p then return nil, "path does not exist" end
   local st = e2util.stat(p)
@@ -595,11 +578,11 @@ function e2lib.splitpath(path)
   return d, b == "" and "." or b, st.type
 end
 
-function e2lib.is_backup_file(path)
+function is_backup_file(path)
   return string.find(path, "~$") or string.find(path, "^#.*#$")
 end
 
-function e2lib.chomp(str, chr)
+function chomp(str, chr)
   local chr = chr or "/"
   if string.sub(str, -1, -1) == chr then
     return string.sub(str, 1, -2)
@@ -611,10 +594,10 @@ end
 -- determines the type of an archive
 -- say "z" for gzip, "j" for bzip2, "" for tar archive
 -- nil is returned for unknown data
-function e2lib.tartype(path)
+function tartype(path)
   local f, e = io.open(path, "r")
   if not f then
-    e2lib.abort(e)
+    abort(e)
   end
   local d = f and f:read(512)
   local l = d and string.len(d) or 0
@@ -632,7 +615,7 @@ end
 -- @filename string: filename
 -- @return string: tartype, or nil on failure
 -- @return an error object on failure
-function e2lib.tartype_by_suffix(filename)
+function tartype_by_suffix(filename)
 	local tartype
 	if filename:match("tgz$") or filename:match("tar.gz$") then
 		tartype = "tar.gz"
@@ -652,8 +635,8 @@ end
 -- virtpath is the location and name of the file at the time of unpacking
 -- destdir is the path to where the unpacked files shall be put
 -- return unix command on success, nil otherwise
-function e2lib.howtounpack(physpath, virtpath, destdir)
-  local c = e2lib.tartype(physpath)
+function howtounpack(physpath, virtpath, destdir)
+  local c = tartype(physpath)
   if c == "zip" then
     c = "unzip \"" .. virtpath .. "\" -d \"" .. destdir .. "\""
   elseif c then
@@ -664,16 +647,16 @@ end
 
 -- Input/Output operations
 --
---   e2lib.read_line(PATHNAME)
+--   read_line(PATHNAME)
 --
 --     Reads a single line from the given file and returns it.
 --
---   e2lib.read_all(FD, [BLOCKSIZE]) -> STRING
+--   read_all(FD, [BLOCKSIZE]) -> STRING
 --
 --     Reads all remaining input from a given file-descriptor. BLOCKSIZE
 --     specifies the size of subsequently read blocks and defaults to 1024.
 
-function e2lib.read_line(path)
+function read_line(path)
   local f, msg = io.open(path)
   if not f then
     return nil, new_error("%s", msg)
@@ -686,12 +669,12 @@ function e2lib.read_line(path)
   return l
 end
 
-function e2lib.read_all(fd, blocksize)
+function read_all(fd, blocksize)
   local input = {}
   local blocksize = blocksize or 1024
   while true do
     local s, msg = e2util.read(fd, blocksize)
-    if not s then e2lib.bomb("read error: ", msg) 
+    if not s then bomb("read error: ", msg)
     elseif #s == 0 then break
     else table.insert(input, s) end
   end
@@ -703,18 +686,18 @@ end
 --
 -- These iterators are convenience functions for use in "for" statements.
 --
---   e2lib.read_configuration(PATH)
+--   read_configuration(PATH)
 --
 --     Returns the successive non-empty lines contained in the file PATH.
 --     Comments (of the form "# ...") are removed.
 --
---   e2lib.directory(PATH, [DOTFILES, [NOERROR]])
+--   directory(PATH, [DOTFILES, [NOERROR]])
 --
 --     Successively returns the files in the directory designated by
 --     PATH. If DOTFILES is given and true, then files beginning with "."
 --     are also included in the listing.
 
-function e2lib.read_configuration(p)
+function read_configuration(p)
   if e2util.exists(p) then
     local function nextline(s)
       while true do
@@ -731,7 +714,7 @@ function e2lib.read_configuration(p)
     end
     return nextline, io.open(p)
   else
-    e2lib.abort("no such file: " .. p)
+    abort("no such file: " .. p)
   end
 end
 
@@ -741,11 +724,11 @@ end
 -- @param e2_config_file string: config file path (optional)
 -- @return bool
 -- @return error string on error
-function e2lib.read_global_config(e2_config_file)
-  e2lib.log(4, "e2lib.read_global_config()")
+function read_global_config(e2_config_file)
+  log(4, "read_global_config()")
   local cf = get_first_val({
-	e2lib.cmdline["e2-config"],   -- command line
-	e2lib.osenv["E2_CONFIG"],     -- environment
+	globals.cmdline["e2-config"],   -- command line
+	globals.osenv["E2_CONFIG"],     -- environment
   })
   local cf_path
   if cf then
@@ -755,11 +738,11 @@ function e2lib.read_global_config(e2_config_file)
   else
     cf_path = {
 	-- this is ordered by priority
-	string.format("%s/.e2/e2.conf-%s.%s.%s", e2lib.homedir,
+	string.format("%s/.e2/e2.conf-%s.%s.%s", globals.homedir,
 		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
-	string.format("%s/.e2/e2.conf-%s.%s", e2lib.homedir, buildconfig.MAJOR,
+	string.format("%s/.e2/e2.conf-%s.%s", globals.homedir, buildconfig.MAJOR,
 							buildconfig.MINOR),
-	string.format("%s/.e2/e2.conf", e2lib.homedir),
+	string.format("%s/.e2/e2.conf", globals.homedir),
 	string.format("%s/e2.conf-%s.%s.%s", buildconfig.SYSCONFDIR,
 		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
 	string.format("%s/e2.conf-%s.%s", buildconfig.SYSCONFDIR,
@@ -773,31 +756,31 @@ function e2lib.read_global_config(e2_config_file)
     c.config = function(x)
 	c.data = x
 	end
-    e2lib.log(4, string.format("reading global config file: %s", path))
+    log(4, string.format("reading global config file: %s", path))
     local rc = e2util.exists(path)
     if rc then
-      e2lib.log(3, string.format("using global config file: %s", path))
-      local rc, e = e2lib.dofile_protected(path, c, true)
+      log(3, string.format("using global config file: %s", path))
+      local rc, e = dofile_protected(path, c, true)
       if not rc then
 	return nil, e
       end
       if not c.data then
         return false, "invalid configuration"
       end
-      e2lib.global_config = c.data
-      e2lib.use_global_config()
+      global_config = c.data
+      use_global_config()
       return true, nil
     else
-      e2lib.log(4, string.format(
+      log(4, string.format(
 	"global config file does not exist: %s", path))
     end
   end
   return false, "no config file available"
 end
 
-function e2lib.write_extension_config(extensions)
-  local e = new_error("writing extensions config: %s", e2lib.extension_config)
-  local f, re = io.open(e2lib.extension_config, "w")
+function write_extension_config(extensions)
+  local e = new_error("writing extensions config: %s", globals.extension_config)
+  local f, re = io.open(globals.extension_config, "w")
   if not f then
     return false, e:cat(re)
   end
@@ -819,19 +802,19 @@ end
 -- @param root string: path to project
 -- @return the extension configuration table
 -- @return an error object on failure
-function e2lib.read_extension_config()
+function read_extension_config()
   local e = new_error("reading extension config file: %s",
-						e2lib.extension_config)
-  local rc = e2util.exists(e2lib.extension_config)
+						globals.extension_config)
+  local rc = e2util.exists(globals.extension_config)
   if not rc then
     return false, e:append("config file does not exist")
   end
-  e2lib.logf(3, "reading extension file: %s", e2lib.extension_config)
+  logf(3, "reading extension file: %s", globals.extension_config)
   local c = {}
   c.extensions = function(x)
     c.data = x
   end
-  local rc, re = e2lib.dofile_protected(e2lib.extension_config, c, true)
+  local rc, re = dofile_protected(globals.extension_config, c, true)
   if not rc then
     return false, e:cat(re)
   end
@@ -845,36 +828,36 @@ end
 --- use the global parameters from the global configuration
 -- this function always succeeds or aborts
 -- @return nothing
-function e2lib.use_global_config()
+function use_global_config()
 
   -- check if type(x) == t, and abort if not.
   local function assert_type(x, d, t1)
     local t2 = type(x)
     if t1 ~= t2 then
-      e2lib.abort(
+      abort(
         string.format("configuration error: %s (expected %s got %s)", d, t1, t2))
     end
   end
 
-  local config = e2lib.global_config
+  local config = global_config
   if not config then
-    e2lib.abort("global config not available")
+    abort("global config not available")
   end
   if config.log and config.log.enable ~= nil then
-    e2lib.enable_invocation_log = config.log.enable
-    e2lib.log(3, string.format(
-		"e2lib.enable_invocation_log=%s", tostring(config.log.enable)))
+    globals.enable_invocation_log = config.log.enable
+    log(3, string.format(
+		"globals.enable_invocation_log=%s", tostring(config.log.enable)))
   end
   if config.log then
     assert_type(config.log, "config.log", "table")
     if config.log.logrotate then
       assert_type(config.log.logrotate, "config.log.logrotate", "number")
-      e2lib.logrotate = config.log.logrotate
+      globals.logrotate = config.log.logrotate
     end
   end
   if config.site and config.site.buildnumber_server_url ~= nil then
-    e2lib.buildnumber_server_url = config.site.buildnumber_server_url
-    e2lib.log(3, string.format("e2lib.buildnumber_server_url=%s", 
+    globals.buildnumber_server_url = config.site.buildnumber_server_url
+    log(3, string.format("globals.buildnumber_server_url=%s",
 				tostring(config.site.buildnumber_server_url)))
   end
   assert_type(config.site, "config.site", "table")
@@ -888,19 +871,19 @@ end
 --- get the global configuration
 -- this function always succeeds or aborts
 -- @return the global configuration
-function e2lib.get_global_config()
-  local config = e2lib.global_config
+function get_global_config()
+  local config = global_config
   if not config then
-    e2lib.abort("global config not available")
+    abort("global config not available")
   end
   return config
 end
 
-function e2lib.directory(p, dotfiles, noerror)
+function directory(p, dotfiles, noerror)
   local dir = e2util.directory(p, dotfiles)
   if not dir then
     if noerror then dir = {}
-    else e2lib.abort("directory `", p, "' does not exist")
+    else abort("directory `", p, "' does not exist")
     end
   end
   table.sort(dir)
@@ -923,42 +906,35 @@ end
 --   using an iterator function to be provided. The iterator
 --   function is expected to accept one parameter value.
 --
---     e2lib.compute_hash(ITER, [VALUE...])
+--     compute_hash(ITER, [VALUE...])
 
-function e2lib.compute_hash(iter, ...)
+function compute_hash(iter, ...)
   local n, f, s 
   local i, o, e, p = e2util.pipe("sha1sum")
-  if not i then e2lib.bomb("cannot calculate hash sum: " .. o) end
+  if not i then bomb("cannot calculate hash sum: " .. o) end
   for x in iter(...) do
     n, f = e2util.write(i, x)
-    if not n then e2lib.bomb(f) end
+    if not n then bomb(f) end
   end
   n, f = e2util.close(i)
-  if not n then e2lib.bomb(f) end
+  if not n then bomb(f) end
   s, f = e2util.read(o, 40)
-  if not s then e2lib.bomb(f) end
+  if not s then bomb(f) end
   n, f = e2util.close(o)
-  if not n then e2lib.bomb(f) end
+  if not n then bomb(f) end
   n, f = e2util.wait(p)
-  if not n then e2lib.bomb(f) end
+  if not n then bomb(f) end
   return s 
 end
 
 -- Iterator functions
 --
---   e2lib.impairs(TABLE)
+--   impairs(TABLE)
 --
 --    iterates on a table, returning only the value for each entry, not the key
---    To be used like: for v in e2lib.impairs(table) do ... end
---
---   e2lib.pairs(TABLE)
---
---    iterates on a table, returning both key and value, not simultaneously but
---    one by one, suitable for hash computation. This function iterates twice
---    as often as entries are in the table. To be used like:
---    for kv in e2lib.pairs(table) do ... end
+--    To be used like: for v in impairs(table) do ... end
 
-function e2lib.impairs(table)
+function impairs(table)
   local k = nil
   local function value(t)
     k = next(t, k)
@@ -967,26 +943,10 @@ function e2lib.impairs(table)
   return value, table
 end
 
-function e2lib.pairs(table)
-  local k = nil
-  local v = nil
-  local function value(t)
-    local r = v
-    if v then
-      v = nil
-      return r
-    end
-    k = next(t, k)
-    v = k and t[k]
-    return k
-  end
-  return value, table
-end
-
 -- callcmd: call a command, connecting
 --  stdin, stdout, stderr to luafile objects
 
-function e2lib.callcmd(infile, outfile, errfile, cmd)
+function callcmd(infile, outfile, errfile, cmd)
   -- redirect stdin
   io.stdin:close()
   luafile.dup2(infile:fileno(), 0)
@@ -1005,13 +965,13 @@ end
 --  stdin redirected from /dev/null 
 --  stdout/stderr redirected to a luafile object
 
-function e2lib.callcmd_redirect(cmd, out)
+function callcmd_redirect(cmd, out)
   local devnull, pid, rc
   devnull = luafile.open("/dev/null", "r")
-  e2lib.log(3, "+ " .. cmd)
+  log(3, "+ " .. cmd)
   pid = e2util.fork()
   if pid == 0 then
-    rc = e2lib.callcmd(devnull, out, out, cmd)
+    rc = callcmd(devnull, out, out, cmd)
     os.exit(rc)
   else
     rc = e2util.wait(pid)
@@ -1025,7 +985,7 @@ end
 --  redirect endpoints to /dev/null, unless given
 --  return nil on success, descriptive string on error
 
-function e2lib.callcmd_pipe(cmds, infile, outfile)
+function callcmd_pipe(cmds, infile, outfile)
   local i = infile or luafile.open("/dev/null", "r")
   local c = #cmds
   local rc = nil
@@ -1035,19 +995,19 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
   for n = 1, c do
     local o, pr, fr, er, ew
     pr, er, ew = luafile.pipe()
-    if not pr then e2lib.abort("failed to open pipe (error)") end
+    if not pr then abort("failed to open pipe (error)") end
     if n < c then
       pr, fr, o = luafile.pipe()
-      if not pr then e2lib.abort("failed to open pipe") end
+      if not pr then abort("failed to open pipe") end
     else
       o = outfile or ew
     end
-    e2lib.log(3, "+ " .. cmds[n])
+    log(3, "+ " .. cmds[n])
     local pid = e2util.fork()
     if pid == 0 then
       if n < c then fr:close() end
       er:close()
-      rc = e2lib.callcmd(i, o, ew, cmds[n])
+      rc = callcmd(i, o, ew, cmds[n])
       os.exit(rc)
     end
     pids[pid] = n
@@ -1067,14 +1027,14 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
       ifd[n] = i
     end
     local i, r = e2util.poll(-1, fds)
-    if i <= 0 then e2lib.abort("fatal poll abort " .. tostring(i)) end
+    if i <= 0 then abort("fatal poll abort " .. tostring(i)) end
     i = ifd[fds[i]]
     if r then
       local x
       repeat
 	x = ers[i]:readline()
         if x then
-	  e2lib.log(3, x)
+	  log(3, x)
         end
       until not x
     else
@@ -1086,7 +1046,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
   c = #cmds
   while c > 0 do
     local r, p = e2util.wait(-1)
-    if not r then e2lib.abort(p) end
+    if not r then abort(p) end
     local n = pids[p]
     if n then
       if r ~= 0 then rc = rc or r end
@@ -1104,28 +1064,28 @@ end
 -- the capture function is called for every chunk of output that
 -- is captured from the pipe.
 -- @return unknown
-function e2lib.callcmd_capture(cmd, capture)
+function callcmd_capture(cmd, capture)
   local rc, oread, owrite, devnull, pid
   local function autocapture(...)
     local msg = table.concat({...})
-    e2lib.log(3, msg)
-    e2lib.last_output = msg
+    log(3, msg)
+    globals.last_output = msg
   end
-  e2lib.last_output = false
+  globals.last_output = false
   capture = capture or autocapture
   rc, oread, owrite = luafile.pipe()
   owrite:setlinebuf()
   oread:setlinebuf()
   devnull = luafile.open("/dev/null", "r")
-  e2lib.log(4, "+ " .. cmd)
+  log(4, "+ " .. cmd)
   pid = e2util.fork()
   if pid == 0 then
     oread:close()
-    rc = e2lib.callcmd(devnull, owrite, owrite, cmd)
+    rc = callcmd(devnull, owrite, owrite, cmd)
     os.exit(rc)
   else
     owrite:close()
-    --e2lib.log("capturing...")
+    --log("capturing...")
     while not oread:eof() do
       local x = oread:readline()
       if x then
@@ -1136,8 +1096,8 @@ function e2lib.callcmd_capture(cmd, capture)
     oread:close()
     rc = e2util.wait(pid)
     luafile.close(devnull)
-    --e2lib.log("capturing done...")
-    --e2lib.log("exit status was " .. rc)
+    --log("capturing done...")
+    --log("exit status was " .. rc)
   end
   return rc
 end
@@ -1148,28 +1108,28 @@ end
 -- @param loglevel number: loglevel (optional, defaults to 3)
 -- @return number: the return code
 -- @return string: the program output, or nil
-function e2lib.callcmd_log(cmd, loglevel)
+function callcmd_log(cmd, loglevel)
 	local e = ""
 	if not loglevel then
 		loglevel = 3
 	end
 	local function logto(output)
-		e2lib.log(loglevel, output)
+		log(loglevel, output)
 		e = e .. output
 	end
-	local rc = e2lib.callcmd_capture(cmd, logto)
+	local rc = callcmd_capture(cmd, logto)
 	return rc, e
 end
 
 -- Protected execution of Lua code
 --
---   e2lib.dofile_protected(PATH, TABLE, [ALLOWNEWDEFS])
+--   dofile_protected(PATH, TABLE, [ALLOWNEWDEFS])
 --
 --     Runs the code in the Lua file at PATH with a restricted global environment.
 --     TABLE contains a table with the initial global environment. If ALLOWNEWDEFS
 --     is given and true, then the code may define new global variables.
 
-function e2lib.dofile_protected(path, gtable, allownewdefs)
+function dofile_protected(path, gtable, allownewdefs)
   local chunk, msg = loadfile(path)
   if not chunk then
     return false, msg
@@ -1179,12 +1139,12 @@ function e2lib.dofile_protected(path, gtable, allownewdefs)
   local function checkread(t, k)
     local x = rawget(t, k)
     if x then return x
-    else e2lib.abort(path, ": attempt to reference undefined global variable '",
+    else abort(path, ": attempt to reference undefined global variable '",
 		     k, "'")
     end
   end
   local function checkwrite(t, k, v)
-    e2lib.abort(path, ": attempt to set new global variable `", k, "' to ", v)
+    abort(path, ": attempt to set new global variable `", k, "' to ", v)
   end
   if not allownewdefs then
     setmetatable(t, { __newindex = checkwrite, __index = checkread })
@@ -1192,12 +1152,12 @@ function e2lib.dofile_protected(path, gtable, allownewdefs)
   setfenv(chunk, t)
   local s, msg = pcall(chunk)
   if not s then
-    e2lib.abort(msg)
+    abort(msg)
   end
   return true, nil
 end
 
-function e2lib.dofile2(path, gtable)
+function dofile2(path, gtable)
   local e = new_error("error loading config file: %s", path)
   local chunk, msg = loadfile(path)
   if not chunk then
@@ -1211,14 +1171,14 @@ function e2lib.dofile2(path, gtable)
   return true, nil
 end
 
---   e2lib.locate_project_root([PATH]) -> PATH | nil
+--   locate_project_root([PATH]) -> PATH | nil
 --
 --     Locates the root directory of current project. If PATH is not given,
 --     then the current working directory is taken as the base directory from
 --     where to start.
 --
 
-function e2lib.locate_project_root(path)
+function locate_project_root(path)
   local rc, re
   local e = new_error("checking for project directory failed")
   local save_path = e2util.cwd()
@@ -1226,78 +1186,78 @@ function e2lib.locate_project_root(path)
     return nil, e:append("cannot get current working directory")
   end
   if path then
-    rc = e2lib.chdir(path)
+    rc = chdir(path)
     if not rc then
-      e2lib.chdir(save_path)
+      chdir(save_path)
       return nil, e:cat(re)
     end
   else
     path = e2util.cwd()
     if not path then
-      e2lib.chdir(save_path)
+      chdir(save_path)
       return nil, e:append("cannot get current working directory")
     end
   end
   while true do
     if e2util.exists(".e2") then
-      e2lib.logf(3, "project is located in: %s", path)
-      e2lib.chdir(save_path)
+      logf(3, "project is located in: %s", path)
+      chdir(save_path)
       return path
     end
     if path == "/" then
       break
     end
-    rc = e2lib.chdir("..")
+    rc = chdir("..")
     if not rc then
-      e2lib.chdir(save_path)
+      chdir(save_path)
       return nil, e:cat(re)
     end
     path = e2util.cwd()
     if not path then
-      e2lib.chdir(save_path)
+      chdir(save_path)
       return nil, e:append("cannot get current working directory")
     end
   end
-  e2lib.chdir(save_path)
+  chdir(save_path)
   return nil, new_error("not in a project directory")
 end
 
 -- parse version files:
 
-function e2lib.parse_versionfile(filename)
+function parse_versionfile(filename)
   local f = luafile.open(filename, "r")
   if not f then
-    e2lib.abort("can't open version file: " .. filename)
+    abort("can't open version file: " .. filename)
   end
   local l = f:readline()
   if not l then
-    e2lib.abort("can't parse version file: " .. filename)
+    abort("can't parse version file: " .. filename)
   end
   local v = l:match("[0-9]+")
   if not v then
-    e2lib.abort("invalid format of project version `" .. l .. "' in " .. filename)
+    abort("invalid format of project version `" .. l .. "' in " .. filename)
   end
-  --e2lib.log(4, "project version is " .. v)
+  --log(4, "project version is " .. v)
   return v
 end
 
-function e2lib.parse_e2versionfile(filename)
+function parse_e2versionfile(filename)
   local f = luafile.open(filename, "r")
   if not f then
-    e2lib.abort("can't open e2version file: " .. filename)
+    abort("can't open e2version file: " .. filename)
   end
   local l = f:readline()
   if not l then
-    e2lib.abort("can't parse e2version file: " .. filename)
+    abort("can't parse e2version file: " .. filename)
   end
   local match = l:gmatch("[^%s]+")
   local v = {}
-  v.branch = match() or e2lib.abort("invalid branch name `", l, "' in e2 version file ",
+  v.branch = match() or abort("invalid branch name `", l, "' in e2 version file ",
 				    filename)
-  v.tag = match() or e2lib.abort("invalid tag name `", l, "' in e2 version file ",
+  v.tag = match() or abort("invalid tag name `", l, "' in e2 version file ",
 			       filename)
   --table.print(v)
-  e2lib.log(3, "using e2 branch " .. v.branch .. " tag " .. v.tag)
+  log(3, "using e2 branch " .. v.branch .. " tag " .. v.tag)
   return v
 end
 
@@ -1307,24 +1267,24 @@ end
 -- This function always succeeds (or aborts immediately).
 -- @param template string: template name (optional)
 -- @return string: name of the file
-function e2lib.mktempfile(template)
+function mktempfile(template)
   if not template then
-    template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.tmpdir,
+    template = string.format("%s/e2tmp.%d.XXXXXXXX", globals.tmpdir,
 							e2util.getpid())
   end
   local cmd = string.format("mktemp '%s'", template)
   local mktemp = io.popen(cmd, "r")
   if not mktemp then
-    e2lib.abort("can't mktemp")
+    abort("can't mktemp")
   end
   local tmp = mktemp:read()
   if not tmp then
-    e2lib.abort("can't mktemp")
+    abort("can't mktemp")
   end
   mktemp:close()
   -- register tmp for removing with rmtempfiles() later on
-  table.insert(e2lib.tmpfiles, tmp)
-  e2lib.log(4, string.format("creating temporary file: %s", tmp))
+  table.insert(globals.tmpfiles, tmp)
+  log(4, string.format("creating temporary file: %s", tmp))
   return tmp
 end
 
@@ -1332,12 +1292,12 @@ end
 -- temporary files
 -- This function always succeeds (or aborts immediately)
 -- @param path
-function e2lib.rmtempfile(tmpfile)
-  for i,v in ipairs(e2lib.tmpfiles) do
+function rmtempfile(tmpfile)
+  for i,v in ipairs(globals.tmpfiles) do
     if v == tmpfile then
-      table.remove(e2lib.tmpfiles, i)
-      e2lib.log(4, string.format("removing temporary file: %s", tmpfile))
-      e2lib.rm(tmpfile, "-f")
+      table.remove(globals.tmpfiles, i)
+      log(4, string.format("removing temporary file: %s", tmpfile))
+      rm(tmpfile, "-f")
     end
   end
 end
@@ -1348,24 +1308,24 @@ end
 -- This function always succeeds (or aborts immediately).
 -- @param template string: template name (optional)
 -- @return string: name of the directory
-function e2lib.mktempdir(template)
+function mktempdir(template)
   if not template then
-    template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.tmpdir,
+    template = string.format("%s/e2tmp.%d.XXXXXXXX", globals.tmpdir,
 							e2util.getpid())
   end
   local cmd = string.format("mktemp -d '%s'", template)
   local mktemp = io.popen(cmd, "r")
   if not mktemp then
-    e2lib.abort("can't mktemp")
+    abort("can't mktemp")
   end
   local tmpdir = mktemp:read()
   if not tmpdir then
-    e2lib.abort("can't mktemp")
+    abort("can't mktemp")
   end
   mktemp:close()
   -- register tmpdir for removing with rmtempdirs() later on
-  table.insert(e2lib.tmpdirs, tmpdir)
-  e2lib.log(4, string.format("creating temporary directory: %s", tmpdir))
+  table.insert(globals.tmpdirs, tmpdir)
+  log(4, string.format("creating temporary directory: %s", tmpdir))
   return tmpdir
 end
 
@@ -1373,32 +1333,32 @@ end
 -- temporary directories
 -- This function always succeeds (or aborts immediately)
 -- @param path
-function e2lib.rmtempdir(tmpdir)
-  for i,v in ipairs(e2lib.tmpdirs) do
+function rmtempdir(tmpdir)
+  for i,v in ipairs(globals.tmpdirs) do
     if v == tmpdir then
-      table.remove(e2lib.tmpdirs, i)
-      e2lib.log(4, string.format("removing temporary directory: %s", tmpdir))
-      e2lib.rm(tmpdir, "-fr")
+      table.remove(globals.tmpdirs, i)
+      log(4, string.format("removing temporary directory: %s", tmpdir))
+      rm(tmpdir, "-fr")
     end
   end
 end
 
---- remove temporary directories registered with e2lib.mktempdir()
+--- remove temporary directories registered with mktempdir()
 -- This function does not support error checking and is intended to be
--- called from the e2lib.finish() function.
-function e2lib.rmtempdirs()
-  e2lib.chdir("/")  -- avoid being inside a temporary directory
-  while #e2lib.tmpdirs > 0 do
-    e2lib.rmtempdir(e2lib.tmpdirs[1])
+-- called from the finish() function.
+function rmtempdirs()
+  chdir("/")  -- avoid being inside a temporary directory
+  while #globals.tmpdirs > 0 do
+    rmtempdir(globals.tmpdirs[1])
   end
 end
 
---- remove temporary files registered with e2lib.mktempfile()
+--- remove temporary files registered with mktempfile()
 -- This function does not support error checking and is intended to be
--- called from the e2lib.finish() function.
-function e2lib.rmtempfiles()
-  while #e2lib.tmpfiles > 0 do
-    e2lib.rmtempfile(e2lib.tmpfiles[1])
+-- called from the finish() function.
+function rmtempfiles()
+  while #globals.tmpfiles > 0 do
+    rmtempfile(globals.tmpfiles[1])
   end
 end
 
@@ -1407,24 +1367,24 @@ end
 -- @param flags string: flags to pass to rm (optional)
 -- @return bool
 -- @return an error object on failure
-function e2lib.rm(file, flags)
+function rm(file, flags)
   if not flags then
     flags = ""
   end
   local args = string.format("%s %s", flags, file)
-  return e2lib.call_tool("rm", args)
+  return call_tool("rm", args)
 end
 
 --- call the touch tool with flags and filename
 -- @param file string: the file parameter
 -- @param flags string: flags to pass to touch (optional)
 -- @returns bool
-function e2lib.touch(file, flags)
+function touch(file, flags)
   if not flags then
     flags = ""
   end
   local args = string.format("%s %s", flags, file)
-  return e2lib.call_tool("touch", args)
+  return call_tool("touch", args)
 end
 
 --- call the rmdir command
@@ -1432,12 +1392,12 @@ end
 -- @param flags string: flags to pass to rmdir
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.rmdir(dir, flags)
+function rmdir(dir, flags)
 	if not flags then
 		flags = ""
 	end
 	local args = string.format("%s %s", flags, dir)
-	return e2lib.call_tool("rmdir", args)
+	return call_tool("rmdir", args)
 end
 
 --- call the mkdir command
@@ -1445,12 +1405,12 @@ end
 -- @param flags string: flags to pass to mkdir
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.mkdir(dir, flags)
+function mkdir(dir, flags)
 	if not flags then
 		flags = ""
 	end
 	local args = string.format("%s %s", flags, dir)
-	return e2lib.call_tool("mkdir", args)
+	return call_tool("mkdir", args)
 end
 
 --- call the patch command
@@ -1458,8 +1418,8 @@ end
 -- @param flags string: flags to pass to mkdir
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.patch(args)
-	return e2lib.call_tool("patch", args)
+function patch(args)
+	return call_tool("patch", args)
 end
 
 --- call a tool
@@ -1467,17 +1427,17 @@ end
 -- @param args string: arguments
 -- @return bool
 -- @return string: the last line ouf captured output
-function e2lib.call_tool(tool, args)
+function call_tool(tool, args)
 	local cmd = tools.get_tool(tool)
 	if not tool then
-		e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
+		bomb("trying to call invalid tool: " .. tostring(tool))
 	end
 	local flags = tools.get_tool_flags(tool)
 	if not flags then
-		e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
+		bomb("invalid tool flags for tool: " .. tostring(tool))
 	end
 	local call = string.format("%s %s %s", cmd, flags, args)
-	local rc, e = e2lib.callcmd_log(call)
+	local rc, e = callcmd_log(call)
         if rc ~= 0 then
                 return false, e
         end
@@ -1490,7 +1450,7 @@ end
 -- @param args string: arguments to pass to the tool (optional)
 -- @return bool
 -- @return an error object on failure
-function e2lib.git(gitdir, subtool, args)
+function git(gitdir, subtool, args)
 	local rc, re
 	local e = new_error("calling git failed")
 	if not gitdir then
@@ -1505,7 +1465,7 @@ function e2lib.git(gitdir, subtool, args)
 	end
 	local call = string.format("GIT_DIR='%s' %s %s %s", gitdir, git,
 								subtool, args)
-	rc, re = e2lib.callcmd_log(call)
+	rc, re = callcmd_log(call)
 	if rc ~= 0 then
 		e:append(call)
 		return false, e:cat(re)
@@ -1516,8 +1476,8 @@ end
 --- call the svn command
 -- @param args string
 -- @return bool
-function e2lib.svn(args)
-  return e2lib.call_tool("svn", args)
+function svn(args)
+  return call_tool("svn", args)
 end
 
 --- call the ln command
@@ -1525,9 +1485,9 @@ end
 -- @param link string: link name
 -- @return bool
 -- @return the last line of captured output
-function e2lib.symlink(dst, link)
+function symlink(dst, link)
 	local args = string.format("-s '%s' '%s'", dst, link)
-	return e2lib.call_tool("ln", args)
+	return call_tool("ln", args)
 end
 
 --- call the chmod command
@@ -1535,9 +1495,9 @@ end
 -- @param path string: path
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.chmod(mode, path)
+function chmod(mode, path)
 	local args = string.format("'%s' '%s'", mode, path)
-	return e2lib.call_tool("chmod", args)
+	return call_tool("chmod", args)
 end
 
 --- call the mv command
@@ -1545,9 +1505,9 @@ end
 -- @param dst string: destination name
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.mv(src, dst)
+function mv(src, dst)
 	local args = string.format("'%s' '%s'", src, dst)
-	return e2lib.call_tool("mv", args)
+	return call_tool("mv", args)
 end
 
 --- call the cp command
@@ -1556,12 +1516,12 @@ end
 -- @param flags string: additional flags
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.cp(src, dst, flags)
+function cp(src, dst, flags)
 	if not flags then
 		flags = ""
 	end
 	local args = string.format("%s '%s' '%s'", flags, src, dst)
-	return e2lib.call_tool("cp", args)
+	return call_tool("cp", args)
 end
 
 --- call the ln command
@@ -1570,66 +1530,66 @@ end
 -- @param flags string: additional flags
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.ln(src, dst, flags)
+function ln(src, dst, flags)
 	if not flags then
 		flags = ""
 	end
 	local args = string.format("%s '%s' '%s'", flags, src, dst)
-	return e2lib.call_tool("ln", args)
+	return call_tool("ln", args)
 end
 
 --- call the curl command
 -- @param args
 -- @return bool
 -- @return an error object on failure
-function e2lib.curl(args)
-        return e2lib.call_tool("curl", args)
+function curl(args)
+        return call_tool("curl", args)
 end
 
 --- call the ssh command
 -- @param args
 -- @return bool
 -- @return an error object on failure
-function e2lib.ssh(args)
-        return e2lib.call_tool("ssh", args)
+function ssh(args)
+        return call_tool("ssh", args)
 end
 
 --- call the scp command
 -- @param args
 -- @return bool
 -- @return an error object on failure
-function e2lib.scp(args)
-        return e2lib.call_tool("scp", args)
+function scp(args)
+        return call_tool("scp", args)
 end
 
 --- call the rsync command
 -- @param args
 -- @return bool
 -- @return an error object on failure
-function e2lib.rsync(args)
-        return e2lib.call_tool("rsync", args)
+function rsync(args)
+        return call_tool("rsync", args)
 end
 
 --- call the catcommand
 -- @param args
 -- @return bool
 -- @return an error object on failure
-function e2lib.cat(args)
-	return e2lib.call_tool("cat", args)
+function cat(args)
+	return call_tool("cat", args)
 end
 
 --- check if dir is a directory
 -- @param dir string: path
 -- @return bool
-function e2lib.isdir(dir)
+function isdir(dir)
   local args = string.format("-d '%s'", dir)
-  return e2lib.call_tool("test", args)
+  return call_tool("test", args)
 end
  
 --- check if path is a file
 -- @param dir string: path
 -- @return bool
-function e2lib.isfile(path)
+function isfile(path)
   local t = e2util.stat(path, true)
   if not t or t.type ~= "regular" then
     return false
@@ -1640,7 +1600,7 @@ end
 --- calculate sha1sum for a file
 -- @param path string: path
 -- @return bool
-function e2lib.sha1sum(path)
+function sha1sum(path)
   local args = string.format("'%s'", path)
   local sha1sum, re = tools.get_tool("sha1sum")
   if not sha1sum then
@@ -1667,26 +1627,26 @@ end
 --- call the e2-su command
 -- @param args string
 -- @return bool
-function e2lib.e2_su(args)
-  return e2lib.call_tool("e2-su", args)
+function e2_su(args)
+  return call_tool("e2-su", args)
 end
 
 --- call the e2-su-2.2 command
 -- @param args string
 -- @return bool
-function e2lib.e2_su_2_2(args)
-  return e2lib.call_tool("e2-su-2.2", args)
+function e2_su_2_2(args)
+  return call_tool("e2-su-2.2", args)
 end
 
 --- call the tar command
 -- @param args string
 -- @return bool
-function e2lib.tar(args)
-  return e2lib.call_tool("tar", args)
+function tar(args)
+  return call_tool("tar", args)
 end
 
 --- get system architecture
-function e2lib.get_sys_arch()
+function get_sys_arch()
   local rc, re
   local e = new_error("getting host system architecture failed")
   local uname = tools.get_tool("uname")
@@ -1709,7 +1669,7 @@ end
 --- return a table of parent directories
 -- @param path string: path
 -- @return a table of parent directories, including path.
-function e2lib.parentdirs(path)
+function parentdirs(path)
 	local i = 2
 	local t = {}
 	local stop = false
@@ -1735,7 +1695,7 @@ end
 -- @param data string: data
 -- @return bool
 -- @return nil, or an error string
-function e2lib.write_file(file, data)
+function write_file(file, data)
   local f, msg = io.open(file, "w")
   if not f then
     return false, string.format("open failed: %s", msg)
@@ -1753,7 +1713,7 @@ end
 -- @param file string: filename
 -- @return string: the file content
 -- @return nil, or an error object
-function e2lib.read_file(file)
+function read_file(file)
   local f, msg = io.open(file, "r")
   if not f then
     return nil, new_error("%s", msg)
@@ -1770,10 +1730,10 @@ end
 -- @param file string: relative filename
 -- @return string: the file content
 -- @return an error object on failure
-function e2lib.read_template(file)
+function read_template(file)
   local e = new_error("error reading template file")
-  local filename = string.format("%s/%s", e2lib.template_path, file)
-  local template, re = e2lib.read_file(filename)
+  local filename = string.format("%s/%s", globals.template_path, file)
+  local template, re = read_file(filename)
   if not template then
     return nil, e:cat(re)
   end
@@ -1793,7 +1753,7 @@ end
 -- @param dafault server string: the default server name
 -- @return a table with fields server and location, nil on error
 -- @return nil, an error string on error
-function e2lib.parse_server_location(arg, default_server)
+function parse_server_location(arg, default_server)
 	local sl = {}
 	sl.server, sl.location = arg:match("(%S+):(%S+)")
 	if sl.server and sl.location then
@@ -1810,14 +1770,14 @@ end
 --- setup cache from the global server configuration
 -- @return a cache object
 -- @return an error object on failure
-function e2lib.setup_cache()
+function setup_cache()
   local e = new_error("setting up cache failed")
-  local config = e2lib.get_global_config()
+  local config = get_global_config()
   if type(config.cache) ~= "table" or type(config.cache.path) ~= "string" then
     return false, e:append("invalid cache configuration: config.cache.path")
   end
-  local replace = { u=e2lib.username }
-  local cache_path = e2lib.format_replace(config.cache.path, replace)
+  local replace = { u=globals.username }
+  local cache_path = format_replace(config.cache.path, replace)
   local cache_url = string.format("file://%s", cache_path)
   local c, re = cache.new_cache("local cache", cache_url)
   if not c then
@@ -1842,7 +1802,7 @@ end
 -- @param s string: the string to work on
 -- @param t table: a table of key-value pairs
 -- @return string
-function e2lib.format_replace(s, t)
+function format_replace(s, t)
 	-- t has the format { f="foo" } to replace %f by foo inside the string
 	-- %% is automatically replaced by %
 	local start = 1
@@ -1880,7 +1840,7 @@ end
 -- @param path
 -- @return bool
 -- @return an error object on failure
-function e2lib.chdir(path)
+function chdir(path)
   local rc, re
   rc, re = e2util.cd(path)
   if not rc then
@@ -1895,7 +1855,7 @@ end
 -- @param string1 first string
 -- @param align2 column to align string2 to
 -- @param string2 second string
-function e2lib.align(columns, align1, string1, align2, string2)
+function align(columns, align1, string1, align2, string2)
 	local lines = 1
 	if align2 + #string2 > columns then
 		-- try to move string2 to the left first
@@ -1916,10 +1876,4 @@ function e2lib.align(columns, align1, string1, align2, string2)
 	return s
 end
 
---------------------------------------------------------------------------------
-
--- "seal" modules e2util and e2lib
-
-e2lib.module("e2lib", e2lib)
-
-e2lib.debuglogfile = io.open("/dev/null", "w")
+globals.debuglogfile = io.open("/dev/null", "w")
