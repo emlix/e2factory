@@ -42,7 +42,7 @@ LOCALLUATOOLS = \
 	build dlist dsort fetch-sources new-source ls-project \
 	playground build-numbers cf
 LOCALSHTOOLS =
-LUA_LIBS = e2option.lua luafile.lua generic_git.lua
+LUA_LIBS = e2option.lua luafile.lua generic_git.lua err.lua
 LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
 
 SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
@@ -123,7 +123,6 @@ e2local.lc: strict.lua \
 		tools.lua \
 		transport.lua \
 		cache.lua \
-		error.lua \
 		url.lua \
 		collection.lua \
 		e2lib.lua \
