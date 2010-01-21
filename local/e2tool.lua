@@ -30,6 +30,7 @@
 -- High-level tools used by the build process and basic build operations.
 
 module("e2tool", package.seeall)
+require("err")
 require("scm")
 require("files")
 require("git")
@@ -43,6 +44,11 @@ require("plugin")
 require("url")
 require("hash")
 require("lock")
+require("e2util")
+require("luafile_ll")
+require("e2option")
+require("luafile")
+require("generic_git")
 
 -- Information gathering and inquiry
 --

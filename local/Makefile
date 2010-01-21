@@ -119,7 +119,6 @@ clean:
 	$(LUAC) -o $@ $<
 
 e2local.lc: strict.lua \
-		loader.lua \
 		collection.lua \
 		e2lib.lua \
 		e2build.lua \
