@@ -31,3 +31,4 @@ require("e2util")
 require("luafile_ll")
 
 require("e2option")
+require("luafile")

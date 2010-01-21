@@ -25,24 +25,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-luafile = {}
 
-function luafile.new()
+module("luafile", package.seeall)
+
+function new()
   local f = {}
-  f.close = luafile.close
-  f.read = luafile.read
-  f.write = luafile.write
-  f.seek = luafile.seek
-  f.flush = luafile.flush
-  f.fileno = luafile.fileno
-  f.readline = luafile.readline
-  f.setlinebuf = luafile.setlinebuf
-  f.eof = luafile.eof
+  local meta = { __index = luafile }
+  setmetatable(f, meta)
   return f
 end
 
-function luafile.open(path, mode)
-  local f = luafile.new()
+function open(path, mode)
+  local f = new()
   f.file = luafile_ll.fopen(path, mode)
   if f.file then
     return f
@@ -50,8 +44,8 @@ function luafile.open(path, mode)
   return nil
 end
 
-function luafile.fdopen(fd, mode)
-  local f = luafile.new()
+function fdopen(fd, mode)
+  local f = new()
   f.file = luafile_ll.fdopen(fd, mode)
   if f.file then
     return f
@@ -59,84 +53,84 @@ function luafile.fdopen(fd, mode)
   return nil
 end
 
-function luafile.close(luafile)
+function close(luafile)
   if luafile and luafile.file then
     if luafile_ll.fclose(luafile.file) then
-      luafile.file = nil
+      file = nil
       return true
     end
   end
   return false
 end
 
-function luafile.read(luafile)
+function read(luafile)
   if luafile and luafile.file then
     return luafile_ll.fread(luafile.file)
   end
   return nil
 end
 
-function luafile.write(luafile, buffer)
+function write(luafile, buffer)
   if luafile and luafile.file and buffer then
     return luafile_ll.fwrite(luafile.file, buffer)
   end
   return nil
 end
 
-function luafile.readline(luafile)
+function readline(luafile)
   if luafile and luafile.file then
     return luafile_ll.fgets(luafile.file)
   end
   return nil
 end
 
-function luafile.seek(luafile, offset)
+function seek(luafile, offset)
   if luafile and luafile.file and offset then
     return luafile_ll.fseek(luafile.file, offset)
   end
   return nil
 end
 
-function luafile.flush(luafile)
+function flush(luafile)
   if luafile and luafile.file then
     return luafile_ll.fflush(luafile.file)
   end
   return nil
 end
 
-function luafile.fileno(luafile)
+function fileno(luafile)
   if luafile and luafile.file then
     return luafile_ll.fileno(luafile.file)
   end
   return nil
 end
 
-function luafile.eof(luafile)
+function eof(luafile)
   if luafile and luafile.file then
     return luafile_ll.feof(luafile.file)
   end
   return nil
 end
 
-function luafile.setlinebuf(luafile)
+function setlinebuf(luafile)
   if luafile and luafile.file then
     return luafile_ll.setlinebuf(luafile.file)
   end
   return nil
 end
 
-function luafile.pipe()
+function pipe()
   local rc, r, w = luafile_ll.pipe()
   local fr, fw
   if not rc then
     return false, nil, nil
   end
-  fr = luafile.fdopen(r, "r")
-  fw = luafile.fdopen(w, "w")
+  fr = fdopen(r, "r")
+  fw = fdopen(w, "w")
   return rc, fr, fw
 end
 
-function luafile.dup2(oldfd, newfd)
+function dup2(oldfd, newfd)
   if oldfd and newfd then
     return luafile_ll.dup2(oldfd, newfd)
   end

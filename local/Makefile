@@ -42,7 +42,7 @@ LOCALLUATOOLS = \
 	build dlist dsort fetch-sources new-source ls-project \
 	playground build-numbers cf
 LOCALSHTOOLS =
-LUA_LIBS = e2option.lua
+LUA_LIBS = e2option.lua luafile.lua
 LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
 
 SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
@@ -62,12 +62,14 @@ install:
 		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
 
+install-local-dirs:
+	mkdir -p $(LOCALBINDIR) $(LOCALMAKDIR) $(LOCALLIBDIR)
+
 install-local-lua: $(LUA_LIBS)
 	install -m 644 $^ $(LOCALLIBDIR)
 
-install-local: all install_sourcefiles install-local-lua
+install-local: all install-local-dirs install-local-lua install-local-sourcefiles
 	test -n "$(PROJECTDIR)"
-	mkdir -p $(LOCALBINDIR) $(LOCALMAKDIR) $(LOCALLIBDIR)
 	install -m 755 -d $(LOCALPLUGINDIR)
 	install -m644 e2local.lc $(LOCALLIBDIR)/
 	for i in $(LOCALLUATOOLS); do \
@@ -84,10 +86,8 @@ install-local: all install_sourcefiles install-local-lua
 	install -m 755 luafile_ll.so $(LOCALLIBDIR)
 	install -m 755 e2util.so $(LOCALLIBDIR)
 
-.PHONY: install_sourcefiles
-install_sourcefiles: e2-su-2.2.c
+install-local-sourcefiles: e2-su-2.2.c
 	install -m 644 $^ $(LOCALMAKDIR)
-
 doc:
 	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
@@ -131,7 +131,7 @@ e2local.lc: strict.lua \
 		e2tool.lua e2scm.lua git.lua svn.lua cvs.lua files.lua \
 		hash.lua \
 		lock.lua \
-		e2build.lua luafile.lua \
+		e2build.lua \
 		policy.lua
 	$(LUAC) -o $@ $^
 
