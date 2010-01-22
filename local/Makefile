@@ -32,7 +32,7 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-VPATH = .:$(TOPLEVEL)/generic
+VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
 
 CLEAN_FILES = *~ *.so linux32 *.lc *.o
 CFLAGS += -I. -I$(DESTDIR)$(INCDIR) -I$(DESTDIR)$(INCDIR)/lua-$(LUA_VERSION) \
@@ -47,7 +47,7 @@ LUA_LIBS += e2tool.lua scm.lua git.lua svn.lua cvs.lua files.lua
 LUA_LIBS += tools.lua transport.lua cache.lua
 LUA_LIBS += environment.lua plugin.lua url.lua hash.lua lock.lua
 LUA_LIBS += policy.lua strict.lua collection.lua e2build.lua
-LUA_LIBS += e2lib.lua
+LUA_LIBS += e2lib.lua buildconfig.lua
 LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
 
 SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \

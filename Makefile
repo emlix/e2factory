@@ -115,7 +115,6 @@ install-local:
 	$(MAKE) -C local install-local
 	$(MAKE) -C templates install-local
 	$(MAKE) -C extensions install-local
-	install -m 644 buildconfig.lua $(LOCALLIBDIR)
 
 doc:
 	for s in $(SUBDIRS) ; do \
