@@ -29,7 +29,10 @@ package.path  = "@LIBDIR@/?.lc;@LIBDIR@/?.lua"
 package.cpath = "@LIBDIR@/?.so"
 
 require("buildconfig")
-require("e2generic")
+require("e2lib")
+require("e2option")
+require("e2util")
+
 e2lib.init()
 
 e2option.documentation = [[

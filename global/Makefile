@@ -29,22 +29,38 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-VPATH = .:$(TOPLEVEL)/generic
+VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
 
 SCRIPTS =
 GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2 e2-root
 GLOBALSHTOOLS = e2-locate-project-root e2ssh
 GLOBALTOOLS = $(GLOBALLUATOOLS) $(GLOBALSHTOOLS)
 CLEAN_FILES = *~ $(GLOBALTOOLS) *.lc e2 $(SCRIPTS) *.lua e2-su *.sh e2.conf
-
+LUA_LIBS = strict.lua collection.lua loader.lua plugin.lua e2lib.lua
+LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
+LUA_LIBS += generic_git.lua luafile.lua lua-version-map.lua err.lua lock.lua
+LUA_LIBS += buildconfig.lua
 
 .PHONY: all install uninstall clean
 
 all: e2 e2-root $(SCRIPTS) e2-su $(GLOBALLUATOOLS:=.lc) \
-	$(GLOBALSHTOOLS:=.sh) e2.conf e2generic.lc sha1.so e2-su-2.2 \
+	$(GLOBALSHTOOLS:=.sh) e2.conf sha1.so e2-su-2.2 \
 	luafile_ll.so e2util.so
 
-install: all
+install-dirs:
+	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(LIBDIR)
+	install -d $(DESTDIR)$(LIBEXECDIR)
+	install -d $(DESTDIR)$(INCDIR)
+	install -d $(DESTDIR)$(MANDIR)
+	install -d $(DESTDIR)$(TOOLDIR)
+	install -d $(DESTDIR)$(SYSCONFDIR)
+	install -d -m 2775 -g $(E2_GROUP) $(DESTDIR)$(LOCALSTATEDIR)
+
+install-lua: $(LUA_LIBS)
+	install -m 644 $^ $(DESTDIR)$(LIBDIR)
+
+install: all install-dirs install-lua
 	for i in $(GLOBALLUATOOLS) ; do \
 		install -m 755 $$i.lc $(DESTDIR)$(TOOLDIR)/$$i ; \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
@@ -55,13 +71,10 @@ install: all
 	install -m 755 e2-root $(DESTDIR)$(TOOLDIR)/
 	install -m 4754 -o root -g $(E2_GROUP) e2-su $(DESTDIR)$(BINDIR)/
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
-	install -d $(DESTDIR)$(SYSCONFDIR)
 	if [ ! -f "$(DESTDIR)$(SYSCONFDIR)/e2.conf" ] ; then \
 		install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf ; \
 	fi
 	install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf.sample
-	install -d -m 2775 -g $(E2_GROUP) $(DESTDIR)$(LOCALSTATEDIR)
-	install -m 644 e2generic.lc $(DESTDIR)$(LIBDIR)
 	install -m 755 sha1.so $(DESTDIR)$(LIBDIR)
 	install -m 755 luafile_ll.so $(DESTDIR)$(LIBDIR)
 	install -m 755 e2util.so $(DESTDIR)$(LIBDIR)
@@ -76,7 +89,6 @@ uninstall:
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
-	rm -f $(DESTDIR)$(LIBDIR)/e2generic.lc
 	rm -f $(DESTDIR)$(LIBDIR)/luafile_ll.so
 	rm -f $(DESTDIR)$(LIBDIR)/e2util.so
 	rm -f $(DESTDIR)$(TOOLDIR)/e2-root
@@ -118,14 +130,6 @@ e2-root: e2-root.lc
 
 e2.conf: e2.conf.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
-
-e2generic.lc: strict.lua collection.lua loader.lua \
-		plugin.lua \
-		e2lib.lua e2option.lua hash.lua tools.lua \
-		transport.lua cache.lua url.lua generic_git.lua \
-		luafile.lua lua-version-map.lua \
-		error.lua lock.lua
-	$(BUILD_LUAC) -o $@ $^
 
 sha1.so: sha1.o lsha1.o
 

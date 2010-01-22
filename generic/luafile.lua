@@ -27,6 +27,7 @@
 
 
 module("luafile", package.seeall)
+require("luafile_ll")
 
 function new()
   local f = {}

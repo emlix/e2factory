@@ -72,16 +72,9 @@ all: e2commit buildconfig.lua
 	$(MAKE) -C extensions all
 
 install: all
-	mkdir -p $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	mkdir -p $(DESTDIR)$(LIBEXECDIR)
-	mkdir -p $(DESTDIR)$(INCDIR)
-	mkdir -p $(DESTDIR)$(MANDIR)
-	mkdir -p $(DESTDIR)$(TOOLDIR)
-	install -m 644 buildconfig.lua $(DESTDIR)$(LIBDIR)
+	$(MAKE) -C global install
 	$(MAKE) -C lua install
 	$(MAKE) -C generic install
-	$(MAKE) -C global install
 	$(MAKE) -C local install
 	$(MAKE) -C doc/man install
 	$(MAKE) -C templates install

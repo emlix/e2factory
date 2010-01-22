@@ -26,7 +26,9 @@
 ]]
 
 require("buildconfig")
-require("e2generic")
+require("e2lib")
+require("e2option")
+require("generic_git")
 
 e2lib.init()
 local e = new_error("fetching project failed")
@@ -37,7 +39,8 @@ fetch the project located in server:location to a directory given in
 <destination>.
 <server> defaults to '%s'.
 ]]
-e2option.documentation = string.format(doc, e2lib.default_projects_server)
+e2option.documentation = string.format(doc,
+				e2lib.globals.default_projects_server)
 
 e2option.flag("binary", "install binary local tools [broken]")
 e2option.option("branch", "retrieve a specific project branch")
@@ -71,7 +74,7 @@ if #opts.arguments > 2 then
 end
 
 local sl, re = e2lib.parse_server_location(opts.arguments[1],
-						e2lib.default_projects_server)
+					e2lib.globals.default_projects_server)
 if not sl then
   e2lib.abort(e:cat(re))
 end
@@ -175,7 +178,8 @@ if not rc then
 end
 
 -- write version file
-local rc, re = e2lib.write_file(e2lib.global_interface_version_file, string.format("%d\n", v))
+local rc, re = e2lib.write_file(e2lib.globals.global_interface_version_file,
+						string.format("%d\n", v))
 
 -- call e2-install-e2
 e2_install_e2 = string.format("'%s' '%s/e2-install-e2'", 

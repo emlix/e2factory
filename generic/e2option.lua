@@ -216,7 +216,7 @@ function parse(args)
 		  category)
     flag("log-debug", "enable logging of debugging output",
 		  function()
-		    e2lib.log_debug = true
+		    e2lib.globals.log_debug = true
 		    return true
 		  end,
 		  category)
@@ -241,9 +241,9 @@ function parse(args)
 		  category)
     flag("licence", "show licence information",
 		  function()
-		    print(_version)
+		    print(e2lib.globals._version)
 		    print()
-		    print(_licence)
+		    print(e2lib.globals._licence)
 		    e2lib.finish(0)
 		  end,
 		  category)
@@ -357,7 +357,7 @@ end
 -- @param rc number: return code, passed to e2lib.finish()
 -- @return nil
 function usage(rc)
-  print(_version)
+  print(e2lib.globals._version)
   print([[
 Copyright (C) 2007-2009 by Gordon Hecker and Oskar Schirmer, emlix GmbH
 Copyright (C) 2007-2008 by Felix Winkelmann, emlix GmbH

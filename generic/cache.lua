@@ -26,6 +26,9 @@
 ]]
 
 module("cache", package.seeall)
+require("e2lib")
+require("transport")
+require("url")
 
 --- cache
 -- @class table

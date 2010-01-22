@@ -28,6 +28,12 @@
 module("e2lib", package.seeall)
 require("strict")
 require("buildconfig")
+require("lock")
+require("err")
+require("plugin")
+require("tools")
+require("cache")
+require("luafile")
 
 _version = "e2factory, the emlix embedded build system, version " .. 
 							buildconfig.VERSION
@@ -92,6 +98,8 @@ globals = {
   global_interface_version_file = ".e2/global-version",
   lock = nil,
   logrotate = 5,   -- configurable via config.log.logrotate
+  _version = _version,
+  _licence = _licence,
 }
 
 -- Interrupt handling
@@ -233,7 +241,7 @@ function warnf(category, format, ...)
   end
   if globals.warn_category[category] == true then
     local prefix = "Warning: "
-    if log_debug then
+    if globals.log_debug then
       prefix = string.format("Warning [%s]: ", category)
     end
     log(1, prefix .. string.format(format, ...))
@@ -332,7 +340,7 @@ function getlogflags()
   if getlog(4) then
     logflags = logflags .. " --v4"
   end
-  if log_debug then
+  if globals.log_debug then
     logflags = logflags .. " --log-debug"
   end
   return " " .. logflags
