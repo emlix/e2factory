@@ -63,7 +63,11 @@ if opts.all then
   end
 elseif #opts.arguments > 0 then
   for _, r in ipairs(opts.arguments) do
-    table.insert(results, r)
+    if info.results[r] then
+      table.insert(results, r)
+    else
+      e2lib.abort(new_error("not a result: %s", r))
+    end
   end
 end
 if #results > 0 then
