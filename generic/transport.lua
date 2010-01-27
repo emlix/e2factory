@@ -74,8 +74,8 @@ function fetch_file(surl, location, destdir, destname)
 			user = ""
 		end
 		-- rsync --rsh="ssh" "server:sourcefile" "destdir/destfile"
-		local rsh = string.format("%s %s", tools.ssh.name,
-							tools.ssh.flags)
+		local rsh = string.format("%s %s", tools.get_tool("ssh"),
+						tools.get_tool_flags("ssh"))
 		local args = string.format(
 				"--rsh=\"%s\" '%s%s:/%s/%s' '%s/%s'",
 				rsh, user, u.servername, u.path, location,
@@ -221,8 +221,8 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 			return false, re
 		end
 		e2lib.rmtempfile(tmp)
-		local rsh = string.format("%s %s", tools.ssh.name,
-							tools.ssh.flags)
+		local rsh = string.format("%s %s", tools.get_tool("ssh"),
+						tools.get_tool_flags("ssh"))
 		-- rsync --rsh="ssh" "sourcefile" "destfile"
 		local args = string.format(
 				"%s --rsh='%s' '%s' '%s%s:/%s/%s'",
