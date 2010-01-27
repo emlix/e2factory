@@ -623,9 +623,11 @@ The newest configuration syntax supported by the tools is %s.
   -- check for environment for non-existent results
   for r, t in pairs(info.result_env) do
     if not info.results[r] then
-      return false, e:append(
-		"configured environment for non existent result: %s", r)
+      e:append("configured environment for non existent result: %s", r)
     end
+  end
+  if e:getcount() > 1 then
+    return false, e
   end
 
   -- read .e2/proj-location
