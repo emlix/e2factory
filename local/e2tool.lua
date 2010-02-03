@@ -459,6 +459,9 @@ The newest configuration syntax supported by the tools is %s.
     return false, e:cat(re)
   end
 
+  e2lib.logf(4, "VERSION:       %s", buildconfig.VERSION)
+  e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
+
   --XXX create some policy module where the following policy settings
   --XXX and functions reside (server names, paths, etc.)
 
