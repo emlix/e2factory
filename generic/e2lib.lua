@@ -370,9 +370,11 @@ function log(level, msg)
     msg = msg:sub(1, msg:len() - 1)
   end
   -- always write log level to debug logfile
-  globals.debuglogfile:write(log_prefix .. msg)
-  globals.debuglogfile:write("\n")
-  globals.debuglogfile:flush()
+  if globals.debuglogfile then
+    globals.debuglogfile:write(log_prefix .. msg)
+    globals.debuglogfile:write("\n")
+    globals.debuglogfile:flush()
+  end
   if getlog(level) then
     if globals.log_debug then
       io.stderr:write(log_prefix)
@@ -1875,5 +1877,3 @@ function align(columns, align1, string1, align2, string2)
 	end
 	return s
 end
-
-globals.debuglogfile = io.open("/dev/null", "w")

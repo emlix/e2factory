@@ -277,7 +277,7 @@ function opendebuglogfile(info)
     local e = new_error("error opening debug logfile")
     return false, e:cat(re)
   end
-  e2lib.debuglogfile = debuglogfile
+  e2lib.globals.debuglogfile = debuglogfile
   return true, nil
 end
 
