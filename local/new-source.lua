@@ -29,6 +29,7 @@
 
 
 require("e2local")
+require("e2tool")
 e2lib.init()
 
 e2option.documentation = [[
