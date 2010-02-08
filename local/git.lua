@@ -363,7 +363,7 @@ function git.fetch_source(info, sourcename)
   local wrk = info.root .. "/" .. src.working
   e2lib.log(2, string.format("cloning %s:%s [%s]",
 				src.server, src.location, src.branch))
-  local skip_checkout = e2lib.git_skip_checkout
+  local skip_checkout = e2lib.globals.git_skip_checkout
   rc, re = generic_git.git_clone_from_server(info.cache, src.server, 
 					src.location, wrk, skip_checkout)
   if not rc then
