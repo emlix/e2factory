@@ -26,6 +26,9 @@
 ]]
 
 module("e2option", package.seeall)
+require("e2lib")
+require("e2util")
+require("collection")
 
 -- Parsing of command-line options
 
