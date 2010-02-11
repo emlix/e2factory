@@ -1766,15 +1766,18 @@ end
 function parse_server_location(arg, default_server)
 	local sl = {}
 	sl.server, sl.location = arg:match("(%S+):(%S+)")
-	if sl.server and sl.location then
-		return sl
-	end
-	sl.location = arg:match("(%S+)")
-	if sl.location and default_server then
+	if not (sl.server and sl.location) then
+		sl.location = arg:match("(%S+)")
+		if not (sl.location and default_server) then
+			return nil, "can't parse location"
+		end
 		sl.server = default_server
-		return sl
 	end
-	return nil, "can't parse location"
+	if sl.location:match("[.][.]") or
+	   sl.location:match("^/") then
+		return nil, "invalid location"
+	end
+	return sl
 end
 
 --- setup cache from the global server configuration
