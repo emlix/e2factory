@@ -259,7 +259,7 @@ if opts.git then
   local lserver = info.root_server_name
   local llocation = string.format("in/%s/.git", name)
   local flags = {}
-  local rc, re = e2scm["git"].new_git_source(info.cache, lserver, llocation, 
+  local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
 						rserver, rlocation, flags)
   if not rc then
     e2lib.abort(re)
