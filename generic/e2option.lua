@@ -322,7 +322,8 @@ function parse(args)
 	  local set = string.explode(opt)
 	  for k, v in pairs(set) do
 	    if not options[ v ] then
-	      usage(1)
+	      e2lib.abort(string.format("invalid option: %s\n"..
+			"Try the --help option for usage information.", opt))
 	    else
 	      table.insert(args, "-" .. v)
 	    end
