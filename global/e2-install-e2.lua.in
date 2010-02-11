@@ -40,8 +40,6 @@ usage: e2-install-e2 [OPTION ...]
 Installs local tools in project environment.
 ]]
 
-e2option.flag("binary", "install binary tools")
-
 local opts = e2option.parse(arg)
 local rc, e = e2lib.read_global_config()
 if not rc then

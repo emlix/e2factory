@@ -42,7 +42,6 @@ fetch the project located in server:location to a directory given in
 e2option.documentation = string.format(doc,
 				e2lib.globals.default_projects_server)
 
-e2option.flag("binary", "install binary local tools [broken]")
 e2option.option("branch", "retrieve a specific project branch")
 e2option.option("tag", "retrieve a specific project tag")
 
