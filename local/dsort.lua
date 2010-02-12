@@ -45,8 +45,6 @@ if not info then
   e2lib.abort(re)
 end
 
-e2lib.log_invocation(info, arg)
-
 local d = e2tool.dsort(info)
 if d then
   for i = 1, #d do print(d[i]) end

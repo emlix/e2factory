@@ -243,8 +243,6 @@ if not info then
   e2lib.abort(re)
 end
 
-e2lib.log_invocation(info, arg)
-
 if opts.git then
   if #opts.arguments ~= 1 then
     e2lib.abort("<name> argument required")

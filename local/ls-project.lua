@@ -54,8 +54,6 @@ if not rc then
   e2lib.abort(re)
 end
 
---e2lib.log_invocation(info, arg)
-
 local results = {}
 if opts.all then
   for r, _ in pairs(info.results) do

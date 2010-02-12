@@ -21,6 +21,7 @@ NEXT:
  * code related to external tools was moved into the new tools module
  * a lot of effort was done to further modularize code
  * fix alignment of status messages for better readability
+ * tool invocations are no longer logged
 
 e2factory-2.3.3
  * use sha1 module instead of calling the sha1sum tool

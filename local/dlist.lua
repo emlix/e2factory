@@ -51,8 +51,6 @@ if not info then
   e2lib.abort(re)
 end
 
-e2lib.log_invocation(info, arg)
-
 if not info.results[ result ] then
   e2lib.abort("no such result: ", result)
 end

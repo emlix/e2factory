@@ -59,8 +59,6 @@ for _,res in pairs(info.results) do
 	res.build_mode = build_mode
 end
 
-e2lib.log_invocation(info, arg)
-
 -- read build numbers,
 -- merge to results,
 -- flush buildids,

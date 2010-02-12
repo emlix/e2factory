@@ -82,7 +82,6 @@ globals = {
   last_output = false,
   tmpdirs = {},
   tmpfiles = {},
-  enable_invocation_log = false,
   default_projects_server = "projects",
   default_project_version = "2",
   local_e2_branch = nil,
@@ -462,65 +461,6 @@ local function append_to_file(file, line)
   return true, nil
 end
 
---- log tool invocations
--- this function always succeeds or aborts
--- @param info
--- @param args
--- @return nothing
-function log_invocation(info, args)
-  local pname = "<none>"
-  if info then
-    pname = info.name
-  end
-  local logstring = string.format(
-	"%s %s %s %s \"%s %s\"\n",
-	pname, os.date(), buildconfig.VERSIONSTRING,
-	globals.username, arg[0], table.concat(args, " "))
-
-  -- always log to the user logfile
-  local ulogdir = string.format("%s/.e2", globals.homedir)
-  local ulogfile = string.format("%s/run.log", ulogdir)
-  mkdir(ulogdir, "-p")
-  local rc, e = append_to_file(ulogfile, logstring)
-  if not rc then
-    abort(string.format("can't log to file %s: %s", ulogfile, e))
-  end
-
-  -- log to the project logfile
-  if info then
-    local plogdir = string.format("%s/.e2", info.root)
-    local plogfile = string.format("%s/run.log", plogdir)
-    mkdir(plogdir, "-p")
-    rc, e = append_to_file(plogfile, logstring)
-    if not rc then
-      abort(string.format("can't log to file %s: %s", plogfile, e))
-    end
-  end
-
-  -- send the queued logs from the user logfile to the server
-  local args = string.format(
-	"--silent --fail -0 -q -f " ..
-	"--header 'Content-type: text/plain' " ..
-	"--data-binary '@%s' --connect-timeout 1 " ..
-	"'http://e2data:6532/store-run-log.lua?project=%s&user=%s&host=%s' " ..
-	">/dev/null",
-	ulogfile, pname, globals.username, globals.hostname)
-  local rc = true
-  local re = nil
-  if globals.enable_invocation_log == true then
-    -- really send logs only if enabled
-    rc, re = curl(args)
-  end
-  if not rc then
-    local ulogfile_backup = ulogfile .. ".backup"
-    local args = string.format("'%s' >>'%s'", ulogfile, ulogfile_backup)
-    cat(args)
-    rm(ulogfile, "-f")
-  else
-    log(3, "failed sending queued logs to the server")
-  end
-end
-
 --- exit from the tool, cleaning up temporary files and directories
 -- @param rc number: return code (optional, defaults to 0)
 -- @return This function does not return.
@@ -852,11 +792,6 @@ function use_global_config()
   local config = global_config
   if not config then
     abort("global config not available")
-  end
-  if config.log and config.log.enable ~= nil then
-    globals.enable_invocation_log = config.log.enable
-    log(3, string.format(
-		"globals.enable_invocation_log=%s", tostring(config.log.enable)))
   end
   if config.log then
     assert_type(config.log, "config.log", "table")

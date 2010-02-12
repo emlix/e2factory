@@ -58,8 +58,6 @@ if not scache then
   e2lib.abort(e:cat(re))
 end
 
-e2lib.log_invocation(nil, arg)
-
 -- standard global tool setup finished
 
 if e2lib.globals.osenv["E2_LOCAL_TAG"] and e2lib.globals.osenv["E2_LOCAL_BRANCH"] then

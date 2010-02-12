@@ -65,8 +65,6 @@ if not rc then
   e2lib.abort(re)
 end
 
-e2lib.log_invocation(info, arg)
-
 -- apply the standard build mode to all results
 for _,res in pairs(info.results) do
 	res.build_mode = build_mode

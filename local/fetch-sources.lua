@@ -76,8 +76,6 @@ if not rc then
   e2lib.abort(e:cat(re))
 end
 
-e2lib.log_invocation(info, arg)
-
 if not (opts.fetch or opts.update) then
   opts.fetch = true
   e2lib.warn("WOTHER", "Selecting fetch by default")

@@ -59,8 +59,6 @@ if not rc then
   e2lib.abort(re)
 end
 
-e2lib.log_invocation(info, arg)
-
 if #opts.arguments ~= 1 then
   e2option.usage(1)
 end
