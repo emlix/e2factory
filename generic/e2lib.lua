@@ -1515,6 +1515,15 @@ function rsync(args)
         return call_tool("rsync", args)
 end
 
+--- call the gzip command
+-- @param file string: file to compress
+-- @return bool
+-- @return the last line ouf captured output
+function gzip(file)
+	local args = string.format("'%s'", file)
+	return call_tool("gzip", args)
+end
+
 --- call the catcommand
 -- @param args
 -- @return bool
