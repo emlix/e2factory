@@ -1,4 +1,5 @@
 NEXT:
+ * compressed build log is stored within the result packages
 
 e2factory-2.3.4pre1
  * a plugin interface was introduced. Local code is capable of loading

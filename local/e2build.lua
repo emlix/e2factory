@@ -745,6 +745,15 @@ function store_result(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
+  -- include compressed build logfile into the result tarball
+  rc, re = e2lib.cp(res.build_config.buildlog, "build.log")
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.gzip("build.log")
+  if not rc then
+    return false, e:cat(re)
+  end
   rc, re = e2lib.chdir("..")
   if not rc then
     return false, e:cat(re)
