@@ -115,9 +115,9 @@ end
 -- @return bool
 -- @return nil, an error string on error
 function cache_chroot(info)
-  for _,c in ipairs(info.chroot) do
-    for _,file in ipairs(c.files) do
-      local rc, e = info.cache:cache_file(c.server, file, {})
+  for _,c in ipairs(info.chroot.groups_sorted) do
+    for _,file in ipairs(info.chroot.groups_byname[c].files) do
+      local rc, e = info.cache:cache_file(file.server, file.location, {})
       if not rc then
         return false, "caching file failed"
       end
