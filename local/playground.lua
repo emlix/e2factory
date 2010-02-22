@@ -36,7 +36,7 @@ local e = new_error("entering playground failed")
 local rc, re
 
 e2option.documentation = [[
-usage: e2-playground RESULT
+usage: e2-playground [<options> ...] <result>
 
 Jump into chroot(1) environment for specified result, if it exists.
 ]]
