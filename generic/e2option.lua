@@ -336,19 +336,19 @@ function parse(args)
     i = i + 1
   end
   if opts["Wdefault"] or opts["Wall"] then
-    e2lib.warn_category.WDEFAULT = true
+    e2lib.globals.warn_category.WDEFAULT = true
   end
   if opts["Wdeprecated"] or opts["Wall"] then
-    e2lib.warn_category.WDEPRECATED = true
+    e2lib.globals.warn_category.WDEPRECATED = true
   end
   if opts["Wnoother"] then
-    e2lib.warn_category.WOTHER = false
+    e2lib.globals.warn_category.WOTHER = false
   end
   if opts["Wpolicy"] or opts["Wall"] then
-    e2lib.warn_category.WPOLICY = true
+    e2lib.globals.warn_category.WPOLICY = true
   end
   if opts["Whint"] or opts["Wall"] then
-    e2lib.warn_category.WHINT = true
+    e2lib.globals.warn_category.WHINT = true
   end
   e2option.opts = opts
   return opts, vals
