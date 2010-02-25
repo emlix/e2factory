@@ -378,7 +378,7 @@ function load_user_config2(info, path, types)
   return list, nil
 end
 
-function collect_project_info(path)
+function collect_project_info(path, skip_load_config)
   local rc, re
   local e = new_error("reading project configuration")
 
@@ -453,6 +453,10 @@ The newest configuration syntax supported by the tools is %s.
 								info.root)
 
   e2lib.init2() -- configuration must be available
+
+  if skip_load_config == true then
+    return info
+  end
 
   local rc, re = opendebuglogfile(info)
   if not rc then

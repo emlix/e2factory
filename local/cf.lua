@@ -52,12 +52,10 @@ modify and create configuration files
 
 local opts = e2option.parse(arg)
 
-local info, re = e2tool.collect_project_info()
+-- initialize some basics in the info structure without actually loading
+-- the project configuration.
+local info, re = e2tool.collect_project_info(nil, true)
 if not info then
-  e2lib.abort(re)
-end
-local rc, re = e2tool.check_project_info(info)
-if not rc then
   e2lib.abort(re)
 end
 
