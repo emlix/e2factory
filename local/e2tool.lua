@@ -2525,11 +2525,14 @@ local function gather_result_paths(info, basedir, results)
     else
       tmp = dir
     end
-    if e2util.exists(resultconfig(tmp)) then
-      table.insert(results, tmp)
-    else
-      --try subfolder
-      gather_result_paths(info,tmp, results)
+    local s = e2util.stat(info.root .. "/" .. resultdir(tmp), false)
+    if s.type == "directory" then
+      if e2util.exists(resultconfig(tmp)) then
+	table.insert(results, tmp)
+      else
+	--try subfolder
+	gather_result_paths(info,tmp, results)
+      end
     end
   end
   return results
@@ -2545,11 +2548,14 @@ local function gather_source_paths(info, basedir, sources)
     else
       tmp = dir
     end
-    if e2util.exists(sourceconfig(tmp)) then
-      table.insert(sources, tmp)
-    else
-      --try subfolder
-      gather_source_paths(info,tmp, sources)
+    local s = e2util.stat(info.root .. "/" .. sourcedir(tmp), false)
+    if s.type == "directory" then
+      if e2util.exists(sourceconfig(tmp)) then
+        table.insert(sources, tmp)
+      else
+        --try subfolder
+        gather_source_paths(info,tmp, sources)
+      end
     end
   end
   return sources
