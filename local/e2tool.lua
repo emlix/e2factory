@@ -747,7 +747,10 @@ The newest configuration syntax supported by the tools is %s.
   end
 
   for _,f in ipairs(info.ftab.collect_project_info) do
-    f(info)
+    rc, re = f(info)
+    if not rc then
+      e2lib.abort(e:cat(re))
+    end
   end
   return info, nil
 end
@@ -2760,6 +2763,14 @@ end
 -- @return path to the sourceconfig
 function sourceconfig(name)
   return sourcedir(name,"config")
+end
+
+function register_collect_project_info(info, func)
+  if type(info) ~= "table" or type(func) ~= "function" then
+    return false, new_error("register_collect_project_info: invalid argument")
+  end
+  table.insert(info.ftab.collect_project_info, func)
+  return true, nil
 end
 
 function register_check_result(info, func)
