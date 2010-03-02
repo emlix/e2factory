@@ -268,7 +268,9 @@ function abort(...)
   end
   rmtempdirs()
   rmtempfiles()
-  globals.lock:cleanup()
+  if globals.lock then
+    globals.lock:cleanup()
+  end
   os.exit(1)
 end
 
@@ -474,7 +476,9 @@ function finish(returncode)
   end
   rmtempdirs()
   rmtempfiles()
-  globals.lock:cleanup()
+  if globals.lock then
+    globals.lock:cleanup()
+  end
   os.exit(returncode)
 end
 
