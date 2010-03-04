@@ -549,7 +549,7 @@ function sources(info, r, return_flags)
     local e = new_error("installing build time dependencies")
     e2lib.log(3, string.format("install_build_time_dependencies"))
     local deps
-    deps = e2tool.dlist(info, r)
+    deps = e2tool.get_depends(info, r)
     for i, dep in pairs(deps) do
       local tmpdir = e2lib.mktempdir()
       local e = new_error("installing build time dependency failed: %s", dep)

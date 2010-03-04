@@ -403,8 +403,13 @@ function collect_project_info(path, skip_load_config)
     check_result = {},			-- f(info, resultname)
     resultid = {},			-- f(info, resultname)
     pbuildid = {},			-- f(info, resultname)
+    dlist = {},				-- f(info, resultname)
   }
   rc, re = register_check_result(info, check_result)
+  if not rc then
+    return nil, e:cat(re)
+  end
+  rc, re = register_dlist(info, get_depends)
   if not rc then
     return nil, e:cat(re)
   end
@@ -888,9 +893,28 @@ end
 --     If RESULT is a table, calculate dependencies for all elements, inclusive,
 --     otherwise calculate dependencies for RESULT, exclusive.
 
-function dlist(info, res)
-  local t = info.results[res] and info.results[res].depends or {}
-  table.sort(t)
+--- get dependencies for use in build order calculation
+function get_depends(info, resultname)
+  local t = {}
+  local res = info.results[resultname]
+  if not res.depends then
+    return t
+  end
+  table.sort(res.depends)
+  for _,d in ipairs(res.depends) do
+    table.insert(t, d)
+  end
+  return t
+end
+
+function dlist(info, resultname)
+  local t = {}
+  for _,f in ipairs(info.ftab.dlist) do
+    local deps = f(info, resultname)
+    for _,d in ipairs(deps) do
+      table.insert(t, d)
+    end
+  end
   return t
 end
 
@@ -2800,6 +2824,14 @@ function register_pbuildid(info, func)
     return false, new_error("register_pbuildid: invalid argument")
   end
   table.insert(info.ftab.pbuildid, func)
+  return true, nil
+end
+
+function register_dlist(info, func)
+  if type(info) ~= "table" or type(func) ~= "function" then
+    return false, new_error("register_dlist: invalid argument")
+  end
+  table.insert(info.ftab.dlist, func)
   return true, nil
 end
 
