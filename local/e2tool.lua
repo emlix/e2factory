@@ -1547,7 +1547,7 @@ function pbuildid(info, resultname)
 			hc:hash_line(hash)
 		end
 	end
-	e2lib.log(4, string.format("hash data for resultid %s\n%s",
+	e2lib.log(4, string.format("hash data for buildid %s\n%s",
 							resultname, hc.data))
 	r.pbuildid = hash.hash_finish(hc)	-- buildid (with deps)
 	return r.build_mode.buildid(r.pbuildid)
