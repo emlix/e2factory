@@ -1892,7 +1892,6 @@ function check_result(info, resultname)
 			end
 		end
 	end
-	table.sort(res.depends)
 	if type(res.chroot) == "nil" then
 		e2lib.warnf("WDEFAULT", "in result %s:", resultname)
 		e2lib.warnf("WDEFAULT", " chroot groups not configured. " ..
