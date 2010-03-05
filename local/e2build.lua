@@ -457,9 +457,8 @@ function unpack_result(info, r, dep, destdir)
   local location1 = string.format("%s/%s/%s/result.tar", location, dep,
 					dep_set)
   local cache_flags = {}
-  local rc, re = info.cache:fetch_file(server, location1, tmpdir,
-					nil, cache_flags)
-  if not rc then
+  local path, re = info.cache:file_path(server, location1, cache_flags)
+  if not path then
     return false, e:cat(re)
   end
   rc, re = e2lib.chdir(tmpdir)
@@ -470,7 +469,7 @@ function unpack_result(info, r, dep, destdir)
   if not rc then
     return false, e:cat(re)
   end
-  rc, re = e2lib.tar("-xf result.tar -C result")
+  rc, re = e2lib.tar(string.format("-xf '%s' -C result", path))
   if not rc then
     return false, e:cat(re)
   end
