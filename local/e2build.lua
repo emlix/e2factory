@@ -439,6 +439,70 @@ function chroot_exists(info, r)
   return e2lib.isfile(res.build_config.chroot_marker)
 end
 
+function unpack_result(info, r, dep, destdir)
+  local res = info.results[r]
+  local rc, re
+  local tmpdir = e2lib.mktempdir()
+  local e = new_error("unpacking result failed: %s", dep)
+  local d = info.results[dep]
+  local buildid = e2tool.buildid(info, dep)
+
+  local dep_set = res.build_mode.dep_set(buildid)
+  local server, location = res.build_mode.storage(info.project_location,
+					info.release_id)
+  e2lib.log(3, string.format("searching for dependency %s in %s:%s",
+					dep, server, location))
+  local location1 = string.format("%s/%s/%s/result.tar", location, dep,
+					dep_set)
+  local cache_flags = {}
+  local rc, re = info.cache:fetch_file(server, location1, tmpdir,
+					nil, cache_flags)
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.chdir(tmpdir)
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.mkdir("result")
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.tar("-xf result.tar -C result")
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.chdir("result")
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.call_tool("sha1sum", "-c checksums")
+  if not rc then
+    e:append("checksum mismatch in dependency: %s", dep)
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.chdir("files")
+  if not rc then
+    return false, e:cat(re)
+  end
+  rc, re = e2lib.mkdir(destdir, "-p")
+  if not rc then
+    return false, e:cat(re)
+  end
+  for f in e2lib.directory(".") do
+    rc, re = e2lib.mv(f, destdir)
+    if not rc then
+      return false, e:cat(re)
+    end
+  end
+  rc, re = e2tool.lcd(info, ".")
+  if not rc then
+    return false, e:cat(re)
+  end
+  e2lib.rmtempdir(tmpdir)
+  return true, nil
+end
+
 function sources(info, r, return_flags)
   local e = new_error("installing sources")
   local i, k, l, source, cp
@@ -551,65 +615,11 @@ function sources(info, r, return_flags)
     local deps
     deps = e2tool.get_depends(info, r)
     for i, dep in pairs(deps) do
-      local tmpdir = e2lib.mktempdir()
-      local e = new_error("installing build time dependency failed: %s", dep)
-      local d = info.results[dep]
-      local buildid = e2tool.buildid(info, dep)
-
-      local dep_set = res.build_mode.dep_set(buildid)
-      local server, location = res.build_mode.storage(info.project_location,
-							info.release_id)
-      e2lib.log(3, string.format("searching for dependency %s in %s:%s",
-						dep, server, location))
-      local location1 = string.format("%s/%s/%s/result.tar", location, dep,
-								dep_set)
-      local cache_flags = {}
-      local rc, re = info.cache:fetch_file(server, location1, tmpdir,
-							nil, cache_flags)
-      if not rc then
-        return false, e:cat(re)
-      end
-      rc, re = e2lib.chdir(tmpdir)
-      if not rc then
-        return false, e:cat(re)
-      end
-      rc, re = e2lib.mkdir("result")
-      if not rc then
-        return false, e:cat(re)
-      end
-      rc, re = e2lib.tar("-xf result.tar -C result")
-      if not rc then
-        return false, e:cat(re)
-      end
-      rc, re = e2lib.chdir("result")
-      if not rc then
-        return false, e:cat(re)
-      end
-      rc, re = e2lib.call_tool("sha1sum", "-c checksums")
-      if not rc then
-        e:append("checksum mismatch in dependency: %s", dep)
-        return false, e:cat(re)
-      end
-      rc, re = e2lib.chdir("files")
-      if not rc then
-	return false, e:cat(re)
-      end
       local destdir = string.format("%s/dep/%s", res.build_config.T, dep)
-      rc, re = e2lib.mkdir(destdir)
-      if not rc then
-        return false, e:cat(re)
-      end
-      for f in e2lib.directory(".") do
-	rc, re = e2lib.mv(f, destdir)
-	if not rc then
-	  return false, e:cat(re)
-	end
-      end
-      rc, re = e2tool.lcd(info, ".")
+      rc, re = unpack_result(info, r, dep, destdir)
       if not rc then
 	return false, e:cat(re)
       end
-      e2lib.rmtempdir(tmpdir)
     end
     return true, nil
   end
