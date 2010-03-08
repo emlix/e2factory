@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.4pre3
  * the plugin interface was extended to allow plugins to change the
    way dependencies are processed into the build order
