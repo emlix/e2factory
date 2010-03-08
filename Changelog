@@ -1,4 +1,7 @@
 NEXT:
+ * the plugin interface was extended to allow plugins to change the
+   way dependencies are processed into the build order
+ * bugs were fixed
 
 e2factory-2.3.4pre2
  * compressed build log is stored within the result packages
