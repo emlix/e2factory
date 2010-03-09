@@ -55,7 +55,7 @@ config {
 		},
 		releases = {
 			url="file://@LOCALSTATEDIR@/releases",
-			cacheable = true,
+			cachable = true,
 			cache = true,
 			writeback = true,
 			-- push_permissions does not work with ssh/scp.
