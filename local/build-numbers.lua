@@ -30,6 +30,10 @@
 require("e2local")
 require("e2tool")
 e2lib.init()
+local info, re = e2tool.local_init(nil, "build-numbers")
+if not info then
+  e2lib.abort(re)
+end
 
 e2option.documentation = [[
 usage:
@@ -45,7 +49,7 @@ local build_mode = policy.handle_commandline_options(opts, true)
 if not build_mode then
 	e2lib.abort("no build mode given")
 end
-local info, re = e2tool.collect_project_info()
+info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
 end

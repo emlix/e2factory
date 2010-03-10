@@ -31,6 +31,10 @@
 require("e2local")
 require("e2tool")
 e2lib.init()
+local info, re = e2tool.local_init(nil, "new-source")
+if not info then
+  e2lib.abort(re)
+end
 
 e2option.documentation = [[
 usage: e2-new-source --git [--server <server>] <name>
@@ -238,7 +242,7 @@ function new_files_source(c, server, location, source_file, checksum_file,
 	return true, nil
 end
 
-local info, re = e2tool.collect_project_info()
+info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
 end

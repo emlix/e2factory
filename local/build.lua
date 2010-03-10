@@ -31,6 +31,10 @@ require("e2local")
 require("e2tool")
 require("e2build")
 e2lib.init()
+local info, re = e2tool.local_init(nil, "build")
+if not info then
+  e2lib.abort(re)
+end
 
 e2option.documentation = [[
 usage: e2-build [<option> | <result> ...]
@@ -56,7 +60,7 @@ if not build_mode then
 	e2lib.abort("no build mode given")
 end
 
-local info, re = e2tool.collect_project_info()
+info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
 end

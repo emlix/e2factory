@@ -30,6 +30,10 @@
 require("e2local")
 require("e2tool")
 e2lib.init()
+local info, re = e2tool.local_init(nil, "ls-project")
+if not info then
+  e2lib.abort(re)
+end
 
 e2option.documentation = [[
 usage: e2-ls-project [<result> ...]
@@ -45,7 +49,7 @@ e2option.flag("all", "show unused results and sources, too")
 
 local opts = e2option.parse(arg)
 
-local info, re = e2tool.collect_project_info()
+info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
 end

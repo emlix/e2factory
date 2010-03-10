@@ -376,11 +376,19 @@ function load_user_config2(info, path, types)
   return list, nil
 end
 
-function collect_project_info(path, skip_load_config)
+--- initialize the local library, load and initialize local plugins
+-- @param path string: path to project tree
+-- @param tool string: tool name (without the 'e2-' prefix)
+-- @return table: the info table, or false on failure
+-- @return an error object on failure
+function local_init(path, tool)
   local rc, re
-  local e = new_error("reading project configuration")
-
+  local e = new_error("initializing")
   local info = {}
+
+  -- provide the current tool name to allow conditionals in plugin
+  -- initialization
+  info.current_tool = tool
 
   -- set the umask value to be used in chroot
   info.chroot_umask = 18   -- 0022 octal
@@ -425,6 +433,13 @@ function collect_project_info(path, skip_load_config)
   if not rc then
     return false, e:cat(re)
   end
+
+  return info
+end
+
+function collect_project_info(info, skip_load_config)
+  local rc, re
+  local e = new_error("reading project configuration")
 
   -- check for configuration compatibility
   info.config_syntax_compat = buildconfig.SYNTAX

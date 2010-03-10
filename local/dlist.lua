@@ -31,6 +31,10 @@ require("e2local")
 require("e2tool")
 require("e2build")
 e2lib.init()
+local info, re = e2tool.local_init(nil, "dlist")
+if not info then
+  e2lib.abort(re)
+end
 
 e2option.documentation = [[
 usage: e2-dlist [<option> | <result> ...]
@@ -46,7 +50,7 @@ if #opts.arguments == 0 then
 elseif #opts.arguments ~= 1 then e2option.usage(1) end
 
 local result = opts.arguments[1]
-local info, re = e2tool.collect_project_info()
+info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
 end

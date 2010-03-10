@@ -803,7 +803,7 @@ end
 -- @param results table: list of results, sorted by dependencies
 -- @return bool
 -- @return an error object on failure
-function build_results(info, results)
+function build_results_default(info, results)
   e2lib.logf(3, "building results")
   for _, r in ipairs(results) do
     local e = new_error("building result failed: %s", r)
@@ -822,6 +822,35 @@ function build_results(info, results)
     end
   end
   return true, nil
+end
+
+function build_results(info, results)
+  for i,f in ipairs(build_results_ftab) do
+    rc, re = f(info, results)
+    if not rc then
+      return rc, re
+    end
+  end
+  return true, nil
+end
+
+build_results_ftab = {
+	build_results_default,
+}
+
+function register_build_results(func, position, post)
+  for i,f in ipairs(build_results_ftab) do
+    if f == position then
+      if post then
+        table.insert(build_results_ftab, i + 1 ,func)
+	return true, nil
+      else
+	table.insert(build_results_ftab, i, func)
+	return true, nil
+      end
+    end
+  end
+  return false, new_error("registering build_results function failed")
 end
 
 --- build a result

@@ -30,6 +30,10 @@
 require("e2local")
 require("e2tool")
 e2lib.init()
+local info, re = e2tool.local_init(nil, "cf")
+if not info then
+  e2lib.abort(re)
+end
 
 e2option.documentation = [[
 usage: e2 cf <command> ...
@@ -54,7 +58,7 @@ local opts = e2option.parse(arg)
 
 -- initialize some basics in the info structure without actually loading
 -- the project configuration.
-local info, re = e2tool.collect_project_info(nil, true)
+info, re = e2tool.collect_project_info(info, true)
 if not info then
   e2lib.abort(re)
 end

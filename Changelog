@@ -1,4 +1,6 @@
 NEXT:
+ * the plugin interface was extended to permit plugins to register
+   commandline options and permit tool specific initialization of plugins
  * a serious bug in the hashcache was fixed. The buildid calculation
    used outdated hash of files from the project tree.
  * the username is included in the chroot environment path again
