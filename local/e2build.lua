@@ -370,7 +370,10 @@ function runbuild(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  local out = luafile.open(res.build_config.buildlog, "w")
+  local out, msg = io.open(res.build_config.buildlog, "w")
+  if not out then
+    return false, e:cat(msg)
+  end
   local function logto(output)
     e2lib.log(3, output)
     out:write(output)

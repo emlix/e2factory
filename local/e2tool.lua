@@ -48,9 +48,7 @@ require("url")
 require("hash")
 require("lock")
 require("e2util")
-require("luafile_ll")
 require("e2option")
-require("luafile")
 require("generic_git")
 require("policy")
 
@@ -272,10 +270,10 @@ function opendebuglogfile(info)
   end
   local logfile = info.root .. "/log/debug.log"
   local rc, re = e2lib.rotate_log(logfile)
-  local debuglogfile, re = luafile.open(logfile, "w")
+  local debuglogfile, msg = io.open(logfile, "w")
   if not debuglogfile then
     local e = new_error("error opening debug logfile")
-    return false, e:cat(re)
+    return false, e:append(msg)
   end
   e2lib.globals.debuglogfile = debuglogfile
   return true, nil
