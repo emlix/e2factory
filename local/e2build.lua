@@ -163,9 +163,10 @@ function build_config(info, r)
   end
   res.build_config = {} -- build up a new build config
   local tab = res.build_config
-  local tmpdir = string.format("%s/e2factory-%s.%s.%s-build",
+  local tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
 		e2lib.globals.tmpdir,
-		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL)
+		buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL,
+		e2lib.globals.username)
   local project = info.name
   local builddir = "tmp/e2"
   tab.mode = nil -- XXX
