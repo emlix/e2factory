@@ -1217,31 +1217,31 @@ end
 function hashcache_setup(info)
 	local e = new_error("reading hash cache")
 	local rc, re
-	local s = e2util.stat(info.hashcache_file)
-	if not s then
-		e2lib.logf(4, "loading hashcache from file: %s",
-							info.hashcache_file)
-		info.hashcache = {}
-		info.hashcache_mtime = 0
-		return true, nil
-	end
-	info.hashcache_mtime = s.mtime
-	local e1 = new_error("broken hash cache file: %s", info.hashcache_file)
-	local c = loadfile(info.hashcache_file)
+	e2lib.logf(4, "loading hashcache from file: %s", info.hashcache_file) 
+	info.hashcache = {}
+	local c, msg = loadfile(info.hashcache_file)
 	if not c then
-		return false, e:cat(e1)
+		e2lib.warnf("WHINT", "loading hashcache failed: %s", msg)
+		return true
 	end
 	-- set empty environment for this chunk
 	setfenv(c, {})
 	info.hashcache = c()
 	if type(info.hashcache) ~= "table" then
-		return false, e:cat(e1)
+		e2lib.warnf("WHINT", "clearing malformed hashcache")
+		info.hashcache = {}
+		return true
 	end
-	for k,v in pairs(info.hashcache) do
-		if not k:match("([^:]+):(%S+)") or
-		   not v:match("^([a-f0-9]+)$") or
-		   #v ~= 40 then
-			return false, e:cat(e1)
+	for k,hce in pairs(info.hashcache) do
+		if (not k:match("([^:]+):(%S+)")) or
+		   type(hce) ~= "table" or
+		   type(hce.hash) ~= "string" or
+		   type(hce.time) ~= "number" or
+		   (not hce.hash:match("^([a-f0-9]+)$")) or
+		   #(hce.hash) ~= 40 then
+			e2lib.warnf("WHINT", "clearing malformed hashcache")
+			info.hashcache = {}
+			return true
 		end
 	end
 	return true
@@ -1254,8 +1254,10 @@ function hashcache_write(info)
 		return false, e:append(msg)
 	end
 	f:write("return {\n")
-	for k,v in pairs(info.hashcache) do
-		f:write(string.format("[\"%s\"] = \"%s\",\n", k, v))
+	for k,hce in pairs(info.hashcache) do
+		f:write(string.format(
+				"[\"%s\"] = { hash=\"%s\", time=%d, },\n",
+				k, hce.hash, hce.time))
 	end
 	f:write("}\n")
 	f:close()
@@ -1275,20 +1277,25 @@ function hashcache(info, file)
 	end
 	local id = string.format("%s:%s", file.server, file.location)
 	local fileid
-	if s.mtime >= info.hashcache_mtime or not info.hashcache[id] then
+	local hce = info.hashcache[id]
+	if not hce or s.mtime >= hce.time then
 		fileid, re = hash_file(info, file.server, file.location)
                 if not fileid then
                         return nil, e:cat(re)
                 end
+		hce = {
+			hash = fileid,
+			time = s.mtime,
+		}
 		-- update hashcache and the hashcachefile
 		-- TBD: mark hashcache dirty and write hashcachefile once.
-		info.hashcache[id] = fileid
+		info.hashcache[id] = hce
 		rc, re = hashcache_write(info)
 		if not rc then
 			return nil, e:cat(re)
 		end
 	else
-		fileid = info.hashcache[id]
+		fileid = hce.hash
 	end
 	return fileid
 end
