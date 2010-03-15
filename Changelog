@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.4rc1
  * the plugin interface was extended to permit plugins to register
    commandline options and permit tool specific initialization of plugins
