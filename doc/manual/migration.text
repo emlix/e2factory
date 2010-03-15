@@ -1,6 +1,27 @@
 Migrating to newer versions of e2factory
 -----------------------------
 
+### Migrating from e2factory-2.3.3 to e2factory-2.3.4 ###
+
+*   The file `.e2/version` was maintained with the project configuration
+    in versions up to 2.3.3. This is no longer the case now.
+
+Remove the `.e2/version` file from the repository
+
+    $ git rm .e2/version
+    $ git commit
+
+*   A file `.e2/global-version` is automatically created on project
+    checkout, using the server side project descriptor file.
+    This file must not be checked into the project repository.
+    If it is not possible to re-checkout the project, copy the file
+    `.e2/version` to `.e2/global-version` manually before removing
+    it, or fetching the update from upstream.
+
+### Migrating from e2factory-2.3.2 to e2factory-2.3.3 ###
+
+*   No changes required
+
 ### Migrating from e2factory-2.3.1 to e2factory-2.3.2 ###
 
 *   change the chroot configuration format according to the documentation
