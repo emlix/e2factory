@@ -142,3 +142,12 @@ function exit_plugins()
   end
   return true, nil
 end
+
+--- print a description for each plugin. This is for use with the --version
+-- option. This version always succeeds.
+-- @return nil
+function print_descriptions()
+  for i,pd in ipairs(plugins) do
+    print(pd.description)
+  end
+end

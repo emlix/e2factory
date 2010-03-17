@@ -29,6 +29,7 @@ module("e2option", package.seeall)
 require("e2lib")
 require("e2util")
 require("collection")
+require("plugin")
 
 -- Parsing of command-line options
 
@@ -236,6 +237,7 @@ function parse(args)
     flag("version", "show version number",
 	          function()
 		    print(buildconfig.VERSIONSTRING)
+		    plugin.print_descriptions()
 		    e2lib.finish(0)
 		  end,
 		  category)
