@@ -152,55 +152,62 @@ get_file_statistics(lua_State *lua)
   static struct stat statbuf;
   int fl = lua_gettop(lua) > 1 && lua_toboolean(lua, 2);
   int s;
+  if(!fl) {
+    s = lstat(p, &statbuf);
+  } else {
+    s = stat(p, &statbuf);
+  }
+  if(s < 0) {
+    char buf[256];
+    strerror_r(errno, buf, sizeof(buf));
+    lua_pushnil(lua);
+    lua_pushstring(lua, buf);
+    return 2;
+  }
+  lua_newtable(lua);
+  int t = lua_gettop(lua);
+  lua_pushstring(lua, "dev");
+  lua_pushnumber(lua, statbuf.st_dev);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "ino");
+  lua_pushnumber(lua, statbuf.st_ino);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "mode");
+  lua_pushnumber(lua, statbuf.st_mode);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "nlink");
+  lua_pushnumber(lua, statbuf.st_nlink);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "uid");
+  lua_pushnumber(lua, statbuf.st_uid);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "gid");
+  lua_pushnumber(lua, statbuf.st_gid);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "rdev");
+  lua_pushnumber(lua, statbuf.st_rdev);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "size");
+  lua_pushnumber(lua, statbuf.st_size);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "atime");
+  lua_pushnumber(lua, statbuf.st_atime);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "mtime");
+  lua_pushnumber(lua, statbuf.st_mtime);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "ctime");
+  lua_pushnumber(lua, statbuf.st_ctime);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "blksize");
+  lua_pushnumber(lua, statbuf.st_blksize);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "blocks");
+  lua_pushnumber(lua, statbuf.st_blocks);
+  lua_rawset(lua, t);
+  lua_pushstring(lua, "type");
 
-  if(!fl) s = lstat(p, &statbuf);
-  else s = stat(p, &statbuf);
-
-  if(s == 0) {
-    lua_newtable(lua);
-    int t = lua_gettop(lua);
-    lua_pushstring(lua, "dev");
-    lua_pushnumber(lua, statbuf.st_dev);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "ino");
-    lua_pushnumber(lua, statbuf.st_ino);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "mode");
-    lua_pushnumber(lua, statbuf.st_mode);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "nlink");
-    lua_pushnumber(lua, statbuf.st_nlink);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "uid");
-    lua_pushnumber(lua, statbuf.st_uid);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "gid");
-    lua_pushnumber(lua, statbuf.st_gid);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "rdev");
-    lua_pushnumber(lua, statbuf.st_rdev);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "size");
-    lua_pushnumber(lua, statbuf.st_size);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "atime");
-    lua_pushnumber(lua, statbuf.st_atime);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "mtime");
-    lua_pushnumber(lua, statbuf.st_mtime);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "ctime");
-    lua_pushnumber(lua, statbuf.st_ctime);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "blksize");
-    lua_pushnumber(lua, statbuf.st_blksize);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "blocks");
-    lua_pushnumber(lua, statbuf.st_blocks);
-    lua_rawset(lua, t);
-    lua_pushstring(lua, "type");
-
-    switch(statbuf.st_mode & S_IFMT) {
+  switch(statbuf.st_mode & S_IFMT) {
     case S_IFBLK: lua_pushstring(lua, "block-special"); break;
     case S_IFCHR: lua_pushstring(lua, "character-special"); break;
     case S_IFIFO: lua_pushstring(lua, "fifo-special"); break;
@@ -209,12 +216,9 @@ get_file_statistics(lua_State *lua)
     case S_IFLNK: lua_pushstring(lua, "symbolic-link"); break;
     case S_IFSOCK: lua_pushstring(lua, "socket"); break;
     default: lua_pushstring(lua, "unknown");
-    }
-
-    lua_rawset(lua, t);    
   }
-  else lua_pushnil(lua);
 
+  lua_rawset(lua, t);
   return 1;
 }
 
