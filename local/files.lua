@@ -310,7 +310,8 @@ end
 -- @return an error string on error
 function files.sourceid(info, sourcename, sourceset)
 	local rc, re
-	local e = new_error("%s: error calculating sourceid", sourcename)
+	local e = new_error("error calculating sourceid for source: %s",
+								sourcename)
 	rc, re = files.validate_source(info, sourcename)
 	if not rc then
 		return false, re

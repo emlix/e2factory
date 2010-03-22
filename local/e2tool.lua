@@ -1280,15 +1280,15 @@ function hashcache_write(info)
 end
 
 function hashcache(info, file)
-	local e = new_error("getting fileid from hash cache")
+	local e = new_error("getting fileid from hash cache failed")
 	local rc, re, fileid
 	local p, re = info.cache:file_path(file.server,	file.location, {})
 	if not p then
 		return nil, e:cat(re)
 	end
-	local s = e2util.stat(p)
+	local s, msg = e2util.stat(p)
 	if not s then
-		return nil, e:cat(new_error("stat() failed"))
+		return nil, new_error("%s: %s", p, msg)
 	end
 	local id = string.format("%s:%s", file.server, file.location)
 	local fileid
@@ -1324,7 +1324,7 @@ end
 -- @return an error object on failure
 function verify_remote_fileid(info, file, fileid)
 	local rc, re
-	local e = new_error("error calculating remote file id for file %s:%s",
+	local e = new_error("error calculating remote file id for file: %s:%s",
 						file.server, file.location)
 	if not info.cache:cache_enabled(file.server) or
 	   not e2option.opts["check-remote"] then
@@ -1379,7 +1379,7 @@ end
 function fileid(info, file)
 	local fileid
 	local re
-	local e = new_error("error calculating file id for file %s:%s",
+	local e = new_error("error calculating file id for file: %s:%s",
 						file.server, file.location)
 	if file.sha1 then
 		fileid = file.sha1
@@ -1479,7 +1479,8 @@ end
 -- @return the buildid
 function pbuildid(info, resultname)
 	e2lib.log(4, string.format("get pbuildid for %s", resultname))
-	local e = new_error("calculating result id failed")
+	local e = new_error("error calculating result id for result: %s",
+								resultname)
 	local r = info.results[resultname]
 	if r.pbuildid then
 		return r.build_mode.buildid(r.pbuildid)

@@ -427,7 +427,7 @@ function cache_file(cache, server, location, flags)
 	e2lib.log(4, string.format("cache_file(): %s %s %s %s",
 		tostring(cache), tostring(server), tostring(location), 
 		tostring(flags)))
-	local e = new_error("caching file failed")
+	local e = new_error("caching file failed: %s:%s", server, location)
 	local rc, re
 	local ce, re = ce_by_server(cache, server)
 	if not ce then
