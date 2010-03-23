@@ -458,7 +458,8 @@ The newest configuration syntax supported by the tools is %s.
   end
 
   -- try to get project specific config file paht
-  local config_file_config = string.format("%s/.e2/e2config", info.root)
+  local config_file_config = string.format("%s/%s", info.root,
+							e2lib.globals.e2config)
   local config_file = e2lib.read_line(config_file_config)
   -- don't care if this succeeds, the parameter is optional.
 
