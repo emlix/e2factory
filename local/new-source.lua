@@ -39,7 +39,7 @@ end
 e2option.documentation = [[
 usage: e2-new-source --git [--server <server>] <name>
        e2-new-source --files [--no-checksum]
-		[<server>:]<location> <source_file> [<checksum_file>]
+		[<server>:]<location> <source_file_url> [<checksum_file_url>]
 
  Put new source onto an existing server.
 
@@ -52,6 +52,9 @@ usage: e2-new-source --git [--server <server>] <name>
  --files
  Put a new file onto the server.
  Server defaults to 'upstream'
+
+ Note that URLs must be passed as the <source_file_url> and
+ <checksum_file_url> arguments, not filesystem paths.
 ]]
 
 e2option.flag("git", "create a git repository")

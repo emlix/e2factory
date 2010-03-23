@@ -2,6 +2,7 @@ NEXT:
  * version information for plugins is displayed now when requested
  * configuration file setting in .e2/e2config is honoured in e2-install-e2
    now
+ * bugs and documentation issues in e2-new-source were fixed
 
 e2factory-2.3.4rc1
  * the plugin interface was extended to permit plugins to register
