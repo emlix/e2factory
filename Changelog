@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.4rc2
  * version information for plugins is displayed now when requested
  * configuration file setting in .e2/e2config is honoured in e2-install-e2
