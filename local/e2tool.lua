@@ -1871,8 +1871,8 @@ function check_result(info, resultname)
 		end
 	end
 	if type(res.depends) == "nil" then
-		e2lib.warn("WDEFAULT", "in result %s: ", resultname)
-		e2lib.warn("WDEFAULT", " depends attribute not configured. " ..
+		e2lib.warnf("WDEFAULT", "in result %s: ", resultname)
+		e2lib.warnf("WDEFAULT", " depends attribute not configured. " ..
 				"Defaulting to empty list")
 		res.depends = {}
 	elseif type(res.depends) == "string" then
