@@ -41,7 +41,18 @@ Installs local tools in project environment.
 ]]
 
 local opts = e2option.parse(arg)
-local rc, e = e2lib.read_global_config()
+
+local root = e2lib.locate_project_root()
+if not root then
+  e2lib.abort("can't locate project root.")
+end
+
+-- try to get project specific config file paht
+local config_file_config = string.format("%s/%s", root, e2lib.globals.e2config)
+local config_file = e2lib.read_line(config_file_config)
+-- don't care if this succeeds, the parameter is optional.
+
+local rc, e = e2lib.read_global_config(config_file)
 if not rc then
   e2lib.abort(e)
 end
@@ -63,11 +74,6 @@ end
 
 if #opts.arguments > 0 then
   e2option.usage(1)
-end
-
-local root = e2lib.locate_project_root()
-if not root then
-  e2lib.abort("can't locate project root.")
 end
 
 local rc, re
