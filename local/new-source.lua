@@ -130,7 +130,7 @@ function download(f)
 									name)
 	local rc = e2lib.callcmd_capture(cmd)
 	if rc ~= 0 then
-		return false, "download failed"
+		return false, new_error("download failed: %s", f)
 	end
 	return true, nil
 end
@@ -174,17 +174,17 @@ function new_files_source(c, server, location, source_file, checksum_file,
 	
 	-- download
 	e2lib.log(1, string.format("fetching %s ...", source_file))
-	local rc, e = download(source_file)
+	local rc, re = download(source_file)
 	if not rc then
-		e2lib.abort(estring(e, source_file))
+		e2lib.abort(re)
 	end
 
 	-- checksum checking
 	if do_checksum then
 		e2lib.log(1, string.format("fetching %s ...", checksum_file))
-		rc, e = download(checksum_file)
+		local rc, re = download(checksum_file)
 		if not rc then
-			e2lib.abort(estring(e, checksum_file))
+			e2lib.abort(re)
 		end
 		checksum_file_base = e2lib.basename(checksum_file)
 		checksum_file1 = string.format("%s.orig", 
