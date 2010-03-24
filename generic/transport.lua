@@ -55,14 +55,21 @@ function fetch_file(surl, location, destdir, destname)
 	local tmpfile_path = e2lib.mktempfile(template)
 	local tmpfile = e2lib.basename(tmpfile_path)
 	-- fetch the file to the temporary directory
-	if u.transport == "file" or 
-	   u.transport == "http" or
+	if u.transport == "http" or
 	   u.transport == "https" then
 		-- use special flags here
 		local curlflags = "--create-dirs --silent --show-error --fail"
 		local args = string.format("%s '%s/%s' -o '%s/%s'",
 				curlflags, u.url, location, destdir, tmpfile)
 		rc, re = e2lib.curl(args)
+		if not rc then
+			return false, e:cat(re)
+		end
+	elseif u.transport == "file" then
+		-- rsync "sourcefile" "destdir/destfile"
+		local args = string.format("'/%s/%s' '%s/%s'",
+					u.path, location, destdir, tmpfile)
+		rc, re = e2lib.rsync(args)
 		if not rc then
 			return false, e:cat(re)
 		end

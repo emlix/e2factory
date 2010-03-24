@@ -1,4 +1,5 @@
 NEXT:
+ * rsync is now used instead of curl to access local files
  * allow environment configuration in source and results configuration
    files
 
