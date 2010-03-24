@@ -60,7 +60,7 @@ function fetch_file(surl, location, destdir, destname)
 	   u.transport == "https" then
 		-- use special flags here
 		local curlflags = "--create-dirs --silent --show-error --fail"
-		local args = string.format("%s %s/%s -o %s/%s",
+		local args = string.format("%s '%s/%s' -o '%s/%s'",
 				curlflags, u.url, location, destdir, tmpfile)
 		rc, re = e2lib.curl(args)
 		if not rc then
