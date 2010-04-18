@@ -392,18 +392,21 @@ function files.toresult(info, sourcename, sourceset, directory)
 					"\tcd source && sha1sum -c '%s'\n",
 					e2lib.basename(checksum_file)))
 		end
-		local c = e2lib.howtounpack(
-			string.format("%s/%s", destdir,
+		if file.unpack then
+			local c = e2lib.howtounpack(
+				string.format("%s/%s", destdir,
 						e2lib.basename(file.location)),
-			string.format("%s/%s", source,
+				string.format("%s/%s", source,
 						e2lib.basename(file.location)),
-			string.format("$(BUILD)"))
-		if c then
-			f:write(string.format("\t%s\n", c))
-		end
-		if file.unpack and file.unpack ~= sourcename then
-			f:write(string.format(
-			"\tln -s %s $(BUILD)/%s\n", file.unpack, sourcename))
+				string.format("$(BUILD)"))
+			if c then
+				f:write(string.format("\t%s\n", c))
+			end
+			if file.unpack ~= sourcename then
+				f:write(string.format(
+				"\tln -s %s $(BUILD)/%s\n", file.unpack,
+				sourcename))
+			end
 		end
 		if file.copy then
 			f:write(string.format(

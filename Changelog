@@ -1,4 +1,5 @@
 NEXT:
+ * bugfixes in collect_project: Copying files was not handled correctly
 
 e2factory-2.3.4
  * version information for plugins is displayed now when requested
