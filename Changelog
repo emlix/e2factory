@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.5
  * bugfixes in collect_project: Copying files was not handled correctly
 
 e2factory-2.3.4
