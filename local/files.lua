@@ -399,9 +399,12 @@ function files.toresult(info, sourcename, sourceset, directory)
 				string.format("%s/%s", source,
 						e2lib.basename(file.location)),
 				string.format("$(BUILD)"))
-			if c then
-				f:write(string.format("\t%s\n", c))
+			if not c then
+				return false, e:cat("%s:%s: "..
+					"can't generate command to unpack",
+					file.server, file.location)
 			end
+			f:write(string.format("\t%s\n", c))
 			if file.unpack ~= sourcename then
 				f:write(string.format(
 				"\tln -s %s $(BUILD)/%s\n", file.unpack,
