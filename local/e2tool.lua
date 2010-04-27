@@ -1657,6 +1657,9 @@ function env_by_result(info, resultname)
 	local res = info.results[resultname]
 	local env = environment.new()
 	env:merge(info.global_env, false)
+	for _, s in ipairs(res.sources) do
+		env:merge(info.sources[s]._env, true)
+	end
 	env:merge(res._env, true)
 	return env
 end

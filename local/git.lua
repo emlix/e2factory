@@ -188,6 +188,25 @@ function generic_validate_source(info, sourcename)
   if not src.type then
     e:append("source has no `type' attribute")
   end
+  if src.env and type(src.env) ~= "table" then
+    e:append("source has invalid `env' attribute")
+  else
+    if not src.env then
+      e2lib.warnf("WDEFAULT",
+	    "source has no `env' attribute. Defaulting to empty dictionary")
+      src.env = {}
+    end
+    src._env = environment.new()
+    for k,v in pairs(src.env) do
+      if type(k) ~= "string" then
+        e:append("in `env' dictionary: key is not a string: %s", tostring(k))
+      elseif type(v) ~= "string" then
+        e:append("in `env' dictionary: value is not a string: %s", tostring(v))
+      else
+        src._env:set(k, v)
+      end
+    end
+  end
   if e:getcount() > 1 then
     return false, e
   end
@@ -613,6 +632,7 @@ function git.sourceid(info, sourcename, sourceset)
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
 	hash.hash_line(hc, src.type)
+	hash.hash_line(hc, src._env:id())
 	for _,l in ipairs(src.licences) do
 		hash.hash_line(hc, l)
 		local licenceid, re = e2tool.licenceid(info, l)

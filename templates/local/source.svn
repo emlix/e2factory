@@ -7,6 +7,10 @@ e2source {
 	name = "name",
 	-- the source type
 	type = "svn",
+	-- environment
+	env = {
+		key = "value",
+	},
 	-- a list of licences from proj/licences
 	licences={ },
 	-- svn specific attributes

@@ -219,6 +219,7 @@ function svn.sourceid(info, sourcename, source_set) --OK
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
 	hash.hash_line(hc, src.type)
+	hash.hash_line(hc, src._env:id())	
 	for _,l in pairs(src.licences) do
 		hash.hash_line(hc, l)
 	end
