@@ -640,7 +640,7 @@ The newest configuration syntax supported by the tools is %s.
     if not info.result_env[r] then
       info.result_env[r] = environment.new()
     end
-    res.env = info.result_env[r]
+    res._env = info.result_env[r]
   end
 
   -- check for environment for non-existent results
@@ -1657,7 +1657,7 @@ function env_by_result(info, resultname)
 	local res = info.results[resultname]
 	local env = environment.new()
 	env:merge(info.global_env, false)
-	env:merge(res.env, true)
+	env:merge(res._env, true)
 	return env
 end
 
