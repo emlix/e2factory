@@ -787,6 +787,10 @@ function store_result(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
+  rc, re = deploy(info, r, return_flags)
+  if not rc then
+    return false, e:cat(re)
+  end
   rc, re = e2tool.lcd(info, ".")
   if not rc then
     return false, e:cat(re)
@@ -1201,6 +1205,49 @@ function collect_project(info, r, return_flags)
 		end
 	end
 	return true, nil
+end
+
+--- deploy a result to the archive
+-- @param info
+-- @param r string: result name
+-- @param return_flags table
+-- @return bool
+-- @return an error object on failure
+function deploy(info, r, return_flags)
+--[[
+  This function is called located in a temporary directory that contains
+  the unpacked result structure and the result tarball itself as follows:
+  ./result/build.log.gz
+  ./result/checksums
+  ./result/files/*
+  ./result.tar
+
+  This function pushes the result files and the checksum file as follows:
+  -- result/checksums
+  --   -> releases:<project>/<archive>/<release_id>/<result>/checksums
+  -- result/files/*
+  --   -> releases:<project>/<archive>/<release_id>/<result>/files/*
+--]]
+  local files = {}
+  for f in e2lib.directory("result/files") do
+    table.insert(files, string.format("files/%s", f))
+  end
+  table.insert(files, "checksums")
+  local server = "releases"
+  local location = string.format("%s/archive/%s/%s", info.project_location,
+							info.release_id, r)
+  for _,f in ipairs(files) do
+    local sourcefile = string.format("result/%s", f)
+    local location1 = string.format("%s/%s", location, f)
+    local cache_flags = {}
+    e2lib.logf(1, "result: %s deploying %s:%s", r, server, location1)
+    local rc, re = info.cache:push_file(sourcefile, server, location1,
+								cache_flags)
+    if not rc then
+      return false, e:cat(re)
+    end
+  end
+  return true
 end
 
 --- register a function to extend the build process
