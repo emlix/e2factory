@@ -1925,6 +1925,27 @@ function check_result(info, resultname)
 			end
 		end
 	end
+	if res.env and type(res.env) ~= "table" then
+		e:append("result has invalid `env' attribute")
+	else
+		if not res.env then
+			e2lib.warnf("WDEFAULT",
+				"result has no `env' attribute. "..
+				"Defaulting to empty dictionary")
+			res.env = {}
+		end
+		for k,v in pairs(res.env) do
+			if type(k) ~= "string" then
+				e:append("in `env' dictionary: "..
+				    "key is not a string: %s", tostring(k))
+			elseif type(v) ~= "string" then
+				e:append("in `env' dictionary: "..
+				    "value is not a string: %s", tostring(v))
+			else
+				res._env:set(k, v)
+			end
+		end
+	end
 	if not res.buildno then
 		res.bn = {}
 		res.buildno = "0"

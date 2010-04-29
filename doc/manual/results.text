@@ -9,6 +9,7 @@ following keys:
 *   sources list of sources
 *   chroot list of chroot groups
 *   depends list of dependencies
+*   env dictionary of environment variables
 
 To use the `collect_project` feature the following keys must be used
 in addition:
@@ -46,6 +47,9 @@ Example configuration:
         },
         depends = {
             "toolchain",
+        },
+        env = {
+            key = "val",
         },
     }
 
