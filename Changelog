@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.6pre1
  * minor bugfixes
  * rsync is now used instead of curl to access local files
