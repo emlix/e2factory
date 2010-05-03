@@ -1,4 +1,6 @@
 NEXT:
+ * allow environment configuration in source and results configuration
+   files
 
 e2factory-2.3.5
  * bugfixes in collect_project: Copying files was not handled correctly
