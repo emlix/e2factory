@@ -1230,11 +1230,11 @@ function deploy(info, r, return_flags)
 --]]
   local res = info.results[r]
   if not res.build_mode.deploy then
-    e2lib.logf(1, "deployment disabled for this build mode")
+    e2lib.logf(4, "deployment disabled for this build mode")
     return true
   end
   if not res._deploy then
-    e2lib.logf(1, "deployment disabled for this result")
+    e2lib.logf(4, "deployment disabled for this result")
     return true
   end
   local files = {}
@@ -1244,11 +1244,11 @@ function deploy(info, r, return_flags)
   table.insert(files, "checksums")
   local server, location = res.build_mode.deploy_storage(info.project_location,
 							info.release_id)
+  e2lib.logf(1, "deploying %s to %s:%s", r, server, location)
   for _,f in ipairs(files) do
     local sourcefile = string.format("result/%s", f)
     local location1 = string.format("%s/%s/%s", location, r, f)
     local cache_flags = {}
-    e2lib.logf(1, "result: %s deploying %s:%s", r, server, location1)
     local rc, re = info.cache:push_file(sourcefile, server, location1,
 								cache_flags)
     if not rc then
