@@ -1233,6 +1233,10 @@ function deploy(info, r, return_flags)
     e2lib.logf(1, "deployment disabled for this build mode")
     return true
   end
+  if not res._deploy then
+    e2lib.logf(1, "deployment disabled for this result")
+    return true
+  end
   local files = {}
   for f in e2lib.directory("result/files") do
     table.insert(files, string.format("files/%s", f))

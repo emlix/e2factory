@@ -13,6 +13,7 @@ The table must specify the following keys:
 *   release_id string: release identifier
 *   name string: project name
 *   default_results table: list of results to build by default
+*   deploy_results table: list of results to deploy to archive in release mode
 
 The table may specify the following additional keys:
 
@@ -31,6 +32,9 @@ Example:
         name = "foo",
         release_id = "foo-1.0beta",
         default_results = { "foo" },
+        deploy_results = {
+                "bar",
+        },
         chroot_arch = "x86_32",
     }
 

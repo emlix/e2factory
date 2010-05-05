@@ -579,6 +579,11 @@ The newest configuration syntax supported by the tools is %s.
 		"default_results ist not set. Defaulting to empty list.")
     info.project.default_results = {}
   end
+  rc, re = listofstrings(info.project.deploy_results, true, true)
+  if not rc then
+    e:append("deploy_results ist not a valid list of strings")
+    e:cat(re)
+  end
   rc, re = listofstrings(info.project.default_results, true, false)
   if not rc then
     e:append("default_results ist not a valid list of strings")
@@ -805,6 +810,11 @@ function check_project_info(info, all, access, verbose)
   for _, r in ipairs(info.project.default_results) do
     if not info.results[r] then
       e:append("default_results: No such result: %s", r)
+    end
+  end
+  for _, r in ipairs(info.project.deploy_results) do
+    if not info.results[r] then
+      e:append("deploy_results: No such result: %s", r)
     end
   end
   if e:getcount() > 1 then
@@ -1956,6 +1966,12 @@ function check_result(info, resultname)
 	if not res.buildno then
 		res.bn = {}
 		res.buildno = "0"
+	end
+	for _,r in ipairs(info.project.deploy_results) do
+		if r == resultname then
+			res._deploy = true
+			break
+		end
 	end
 	local build_script = string.format("%s/%s", info.root,
 		resultbuildscript(info.results[resultname].directory))
