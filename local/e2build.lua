@@ -1228,6 +1228,11 @@ function deploy(info, r, return_flags)
   -- result/files/*
   --   -> releases:<project>/<archive>/<release_id>/<result>/files/*
 --]]
+  local res = info.results[r]
+  if not res.build_mode.deploy then
+    e2lib.logf(1, "deployment disabled for this build mode")
+    return true
+  end
   local files = {}
   for f in e2lib.directory("result/files") do
     table.insert(files, string.format("files/%s", f))

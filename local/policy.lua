@@ -236,6 +236,7 @@ policy.default_build_mode["lazytag"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_default,
+	deploy = false,
 }
 
 policy.default_build_mode["tag"] = {
@@ -243,6 +244,7 @@ policy.default_build_mode["tag"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_default,
+	deploy = false,
 }
 
 policy.default_build_mode["release"] = {
@@ -250,6 +252,7 @@ policy.default_build_mode["release"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_release,
+	deploy = true,
 }
 
 policy.default_build_mode["branch"] = {
@@ -257,6 +260,7 @@ policy.default_build_mode["branch"] = {
 	dep_set = policy.dep_set_buildid,
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_default,
+	deploy = false,
 }
 
 policy.default_build_mode["working-copy"] = {
@@ -264,4 +268,5 @@ policy.default_build_mode["working-copy"] = {
 	dep_set = policy.dep_set_last,
 	buildid = policy.buildid_scratch,
 	storage = policy.storage_local,
+	deploy = false,
 }
