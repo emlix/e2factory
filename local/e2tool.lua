@@ -802,6 +802,14 @@ function check_project_info(info, all, access, verbose)
   if not rc then
     return false, e:cat(re)
   end
+  for _, r in ipairs(info.project.default_results) do
+    if not info.results[r] then
+      e:append("default_results: No such result: %s", r)
+    end
+  end
+  if e:getcount() > 1 then
+    return false, e
+  end
   local rc = dsort(info)
   if not rc then
     return false, e:cat("cyclic dependencies")
