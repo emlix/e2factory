@@ -1242,12 +1242,11 @@ function deploy(info, r, return_flags)
     table.insert(files, string.format("files/%s", f))
   end
   table.insert(files, "checksums")
-  local server = "releases"
-  local location = string.format("%s/archive/%s/%s", info.project_location,
-							info.release_id, r)
+  local server, location = res.build_mode.deploy_storage(info.project_location,
+							info.release_id)
   for _,f in ipairs(files) do
     local sourcefile = string.format("result/%s", f)
-    local location1 = string.format("%s/%s", location, f)
+    local location1 = string.format("%s/%s/%s", location, r, f)
     local cache_flags = {}
     e2lib.logf(1, "result: %s deploying %s:%s", r, server, location1)
     local rc, re = info.cache:push_file(sourcefile, server, location1,

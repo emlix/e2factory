@@ -54,6 +54,11 @@ function storage_local(location, release_id)
 	return local_server, string.format("out")
 end
 
+local releases_server = "releases"
+function deploy_storage_default(location, release_id)
+	return releases_server, string.format("%s/archive/%s", location,
+								release_id)
+end
 
 function dep_set_buildid(buildid)
 	return buildid
@@ -134,6 +139,7 @@ function init(info)
 		storage_release,
 		storage_default,
 		storage_local,
+		deploy_storage_default,
 	}
 	for i,s in ipairs(storage) do
 		local location = "test/test"
@@ -253,6 +259,7 @@ policy.default_build_mode["release"] = {
 	buildid = policy.buildid_buildid,
 	storage = policy.storage_release,
 	deploy = true,
+	deploy_storage = policy.deploy_storage_default,
 }
 
 policy.default_build_mode["branch"] = {
