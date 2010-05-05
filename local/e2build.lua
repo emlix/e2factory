@@ -1244,6 +1244,19 @@ function deploy(info, r, return_flags)
   table.insert(files, "checksums")
   local server, location = res.build_mode.deploy_storage(info.project_location,
 							info.release_id)
+
+  -- do not re-deploy if this release was already done earlier
+  local location1 = string.format("%s/%s/checksums", location, r)
+  local cache_flags = {
+    cache = false,
+  }
+  rc, re = info.cache:fetch_file(server, location1, ".", nil, cache_flags)
+  if rc then
+    e2lib.warnf("WOTHER",
+		"Skipping deployment. This release was already deployed.")
+    return true
+  end
+
   e2lib.logf(1, "deploying %s to %s:%s", r, server, location)
   for _,f in ipairs(files) do
     local sourcefile = string.format("result/%s", f)
