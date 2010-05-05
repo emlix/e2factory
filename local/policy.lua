@@ -42,10 +42,9 @@ end
 
 
 local results_server = "results"
-local release_server = "releases"
 local local_server = "."
 function storage_release(location, release_id)
-	return release_server, string.format("%s/release/%s", location,
+	return results_server, string.format("%s/release/%s", location,
 								release_id)
 end
 function storage_default(location, release_id)
