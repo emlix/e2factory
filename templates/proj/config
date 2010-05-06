@@ -1,7 +1,7 @@
 e2project {
 	-- these must be configured
-	name = "project",
-	release_id = "release-id",
+	name = "<<name>>",
+	release_id = "<<release_id>>",
 	default_results = { },
 	deploy_results = {
 	},

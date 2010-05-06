@@ -164,18 +164,12 @@ local env, re = e2lib.read_template("proj/env")
 if not env then
   e2lib.abort(re)
 end
--- XXX moge pconfig to builtin template table file
-local pconfig = [[
--- e2factory project configuration file --
-
-e2project {
-	name = "%s",
-	release_id = "%s",
-	default_results = { },
-	chroot_arch = "x86_32",
-}
-]]
-pconfig = string.format(pconfig, p.name, p.name)
+local pconfig, re = e2lib.read_template("proj/config")
+if not pconfig then
+  e2lib.abort(re)
+end
+pconfig = pconfig:gsub("<<release_id>>", p.name)
+pconfig = pconfig:gsub("<<name>>", p.name)
 local name = string.format("%s\n", p.name)
 local release_id = string.format("%s\n", p.name) -- use the name for now
 local version = string.format("%s\n", p.version)
