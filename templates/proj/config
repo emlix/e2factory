@@ -3,6 +3,8 @@ e2project {
 	name = "project",
 	release_id = "release-id",
 	default_results = { },
+	deploy_results = {
+	},
 
 	-- these may be configured optionally
         --chroot_arch = "x86_32",  -- or: x86_64
