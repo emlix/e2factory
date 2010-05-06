@@ -576,17 +576,17 @@ The newest configuration syntax supported by the tools is %s.
   if not info.project.default_results then
     e2lib.warnf("WDEFAULT", "in project configuration:")
     e2lib.warnf("WDEFAULT",
-		"default_results ist not set. Defaulting to empty list.")
+		"default_results is not set. Defaulting to empty list.")
     info.project.default_results = {}
   end
   rc, re = listofstrings(info.project.deploy_results, true, true)
   if not rc then
-    e:append("deploy_results ist not a valid list of strings")
+    e:append("deploy_results is not a valid list of strings")
     e:cat(re)
   end
   rc, re = listofstrings(info.project.default_results, true, false)
   if not rc then
-    e:append("default_results ist not a valid list of strings")
+    e:append("default_results is not a valid list of strings")
     e:cat(re)
   end
   if not info.project.chroot_arch then
