@@ -1,9 +1,7 @@
-NEXT:
+e2factory-2.3.6
  * the release build process changed: Results are now stored on the
    results server, results listed in the deploy_results list are
    deployed to the releases server for archive purposes.
-
-e2factory-2.3.6pre1
  * minor bugfixes
  * rsync is now used instead of curl to access local files
  * allow environment configuration in source and results configuration
