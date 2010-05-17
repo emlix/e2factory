@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.6
  * the release build process changed: Results are now stored on the
    results server, results listed in the deploy_results list are
