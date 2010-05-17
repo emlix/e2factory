@@ -10,16 +10,10 @@ Prepare building a release with *e2factory*:
 *   change the release_id attribute in proj/config to the release string
 *   commit the file
 *   push
-
-To make sure everything is really available from the server:
-
-*   create a fresh checkout for the project
-*   fetch sources
 *   build in release mode
-*   e2factory will 
-    * build everything from scratch
-    * store the results to the releases server
-    * the location will be `releases:<project-location>/release/<release-id>/`
+*   e2factory will store the results listed in the `deploy_results`
+    attribute in the project configuration to the releases server.
+    The location will be `releases:<project-location>/archive/<release-id>/`
 
 Example:
 
@@ -29,4 +23,4 @@ Example:
     $ e2-build --build-mode=release
 
 prev [results](results.html)
-next [migrate from e2-2.1 to e2-2.2](migration.html)
+next [Migrating to newer versions of e2factory](migration.html)
