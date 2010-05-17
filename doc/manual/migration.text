@@ -1,6 +1,10 @@
 Migrating to newer versions of e2factory
 -----------------------------
 
+### Migrating from e2factory-2.3.4 to e2factory-2.3.5 ###
+
+*   No changes required
+
 ### Migrating from e2factory-2.3.3 to e2factory-2.3.4 ###
 
 *   The file `.e2/version` was maintained with the project configuration
