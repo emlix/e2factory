@@ -31,7 +31,9 @@ Example:
     e2project {
         name = "foo",
         release_id = "foo-1.0beta",
-        default_results = { "foo" },
+        default_results = {
+                "foo",
+        },
         deploy_results = {
                 "bar",
         },
