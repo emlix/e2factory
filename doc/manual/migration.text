@@ -1,6 +1,16 @@
 Migrating to newer versions of e2factory
 -----------------------------
 
+### Migrating from e2factory-2.3.5 to e2factory-2.3.6 ###
+
+*   configure a list of results to be deployed in release mode in the
+    `deploy_results` attribute in the project configuration according to
+    [project](project.html).
+*   optional: consider moving environment configuration from `proj/env`
+    to source- or result configuration.
+*   change the syntax version to `2_3_6` to acknowledge that you changed
+    the configuration.
+
 ### Migrating from e2factory-2.3.4 to e2factory-2.3.5 ###
 
 *   No changes required
