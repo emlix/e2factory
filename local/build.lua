@@ -160,8 +160,13 @@ if opts["buildnumber"] then
 	end
 end
 
--- calculate build ids ids
-e2tool.calc_buildids(info)
+-- calculate buildids for selected results
+for _,r in ipairs(sel_res) do
+  local bid, re = e2tool.buildid(info, r)
+  if not bid then
+    e2lib.abort(re)
+  end
+end
 
 if opts["buildid"] then
   for _,r in ipairs(sel_res) do
