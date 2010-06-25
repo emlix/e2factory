@@ -390,6 +390,9 @@ function local_init(path, tool)
   -- initialization
   info.current_tool = tool
 
+  -- provide the current working directory at tool startup
+  info.startup_cwd = e2util.cwd()
+
   -- set the umask value to be used in chroot
   info.chroot_umask = 18   -- 0022 octal
   init_umask(info)
