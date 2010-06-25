@@ -1,6 +1,8 @@
 NEXT:
  * BuildIds are now calculated in advance to detect errors immediately
    before starting the first build process
+ * remove old local installation before re-installing. Plugins were not
+   removed in e2-install-e2 before.
 
 e2factory-2.3.6
  * the release build process changed: Results are now stored on the

@@ -104,6 +104,12 @@ local: e2commit buildconfig.lua
 
 install-local:
 	scripts/e2-locate-project-root
+	@echo removing old installation...
+	rm -rf $(LOCALBINDIR)
+	rm -rf $(LOCALLIBDIR)
+	rm -rf $(LOCALMAKDIR)
+	@echo removing old plugins...
+	rm -rf $(LOCALPLUGINDIR)
 	$(MAKE) -C generic install-local
 	$(MAKE) -C local install-local
 	$(MAKE) -C templates install-local
