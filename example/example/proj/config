@@ -4,5 +4,7 @@ e2project {
 	name = "e2factory-example",
 	release_id = "e2factory-example",
 	default_results = { "final", },
+	deploy_results = {
+	},
 	chroot_arch = "x86_32",
 }
