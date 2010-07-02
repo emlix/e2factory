@@ -1,6 +1,4 @@
-NEXT:
-
-e2factory-2.3.7pre1
+e2factory-2.3.7
  * BuildIds are now calculated in advance to detect errors immediately
    before starting the first build process
  * remove old local installation before re-installing. Plugins were not
