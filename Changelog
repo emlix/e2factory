@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.7
  * BuildIds are now calculated in advance to detect errors immediately
    before starting the first build process
