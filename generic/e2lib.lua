@@ -214,10 +214,10 @@ function program_output(cmd)
   local i = io.popen(cmd)
   if not i then
     abort("invocation of program failed:  ", cmd)
-  else
-    local input = i:read("*a")
-    return input
   end
+  local input = i:read("*a")
+  i:close()
+  return input
 end
 
 --- print a warning, composed by concatenating all arguments to a string
