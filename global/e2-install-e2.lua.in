@@ -202,7 +202,7 @@ end
 local cmd = string.format("make PREFIX='%s' local install-local",
 								install_prefix)
 rc, re = e2lib.callcmd_capture(cmd)
-if not rc then
+if rc ~= 0 then
   e2lib.abort(e:cat(re))
 end
 
