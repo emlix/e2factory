@@ -2758,7 +2758,8 @@ function load_result_config(info)
       return false, e:cat(re)
     end
     if #list ~= 1 then
-      return false, e:append("only one result allowed per config file")
+      return false, e:append("%s: only one result allowed per config file",
+									path)
     end
     for _,item in ipairs(list) do
       local name = item.data.name
