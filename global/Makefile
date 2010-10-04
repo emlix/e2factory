@@ -146,5 +146,5 @@ CLEAN_FILES += *.o
 
 CLEAN_FILES += e2-su-2.2
 e2-su-2.2: e2-su-2.2.c
-	$(CC) $(CFLAGS) $(E2_SU_CFLAGS) $(LDFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(E2_SU_CFLAGS) $(LDFLAGS) $< -o $@
 
