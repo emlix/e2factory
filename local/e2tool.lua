@@ -449,14 +449,6 @@ function collect_project_info(info, skip_load_config)
   info.config_syntax_file = ".e2/syntax"
   rc, re = check_config_syntax_compat(info)
   if not rc then
-    local s = [[
-Your configuration syntax is incompatible with this tool version.
-Please read the configuration Changelog, update your project configuration
-and finally insert the new configuration syntax version into %s
-
-The newest configuration syntax supported by the tools is %s.
-]]
-    e2lib.logf(2, s, info.config_syntax_file, info.config_syntax_compat[1])
     e2lib.finish(1)
   end
 
@@ -2462,19 +2454,9 @@ function lcd(info, dir)
   return true
 end
 
---- check for configuration syntax compatibility
--- @param info
--- @return bool
--- @return an error object on failure
-function display_config_syntax_compat(info)
-  local e = new_error("displaying configuration syntax compatibilitly failed")
-  for _,m in ipairs(info.config_syntax_compat) do
-    print(m)
-  end
-  return true
-end
-
---- check for configuration syntax compatibility
+--- check for configuration syntax compatibility and log informational
+-- message including list of supported syntaxes if incompatibility is
+-- detected.
 -- @param info
 -- @return bool
 -- @return an error object on failure
@@ -2489,6 +2471,17 @@ function check_config_syntax_compat(info)
     if l:match(m) then
       return true, nil
     end
+  end
+  local s = [[
+Your configuration syntax is incompatible with this tool version.
+Please read the configuration Changelog, update your project configuration
+and finally insert the new configuration syntax version into %s
+
+Configuration syntax versions supported by this version of the tools are:
+]]
+  e2lib.logf(2, s, info.config_syntax_file)
+  for _,m in ipairs(info.config_syntax_compat) do
+    e2lib.logf(2, "    %s", m)
   end
   return false, e:append("configuration syntax mismatch")
 end
