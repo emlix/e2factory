@@ -97,8 +97,8 @@ end
 
 -- version is 1 or 2
 
--- remove the old e2 source, if it exists
-rc, re = e2lib.rm(".e2/e2 .e2/bin .e2/lib", "-fr")
+-- remove the old e2 source, installation and plugins, if it exists
+rc, re = e2lib.rm(".e2/e2 .e2/bin .e2/lib .e2/plugins", "-fr")
 if not rc then
   e2lib.abort(e:cat(re))
 end
