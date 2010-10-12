@@ -1,6 +1,8 @@
 module("environment", package.seeall)
 require("sha1")
 
+--- create new environment
+-- @return environment
 function new()
   local env = {}
   local meta = { __index = environment }
@@ -10,6 +12,11 @@ function new()
   return env
 end
 
+--- set variable
+-- @param env environment
+-- @param var key
+-- @param val value
+-- @return env as passed in the first parameter
 function set(env, var, val)
   env.dict[var] = val
   table.insert(env.sorted, var)
@@ -18,6 +25,7 @@ function set(env, var, val)
 end
 
 --- return a hash representing the environment
+-- @param env environment
 function id(env)
   local sha1 = sha1.sha1_init()
   for var, val in env:iter() do
@@ -27,7 +35,10 @@ function id(env)
 end
 
 --- merge environment from merge into env.
--- override bool: shall vars from merge override vars from env?
+-- @param env environment
+-- @param merge environment
+-- @param override bool: shall vars from merge override vars from env?
+-- @return environment as merged from env and merge
 function merge(env, merge, override)
   for i, var in ipairs(merge.sorted) do
     if not env.dict[var] then
@@ -41,6 +52,7 @@ function merge(env, merge, override)
 end
 
 --- iterate over the environment, in alphabetical order
+-- @param env environment
 function iter(env)
   local index = nil
   local function _iter(t)
@@ -52,6 +64,8 @@ function iter(env)
 end
 
 --- return a (copy of the) dictionary
+-- @param env environment
+-- @return a copy of the dictionary representing the environment
 function get_dict(env)
   local dict = {}
   for k,v in env:iter() do
