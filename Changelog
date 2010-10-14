@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.8
  * Bugfix: Large files (>2GB) in cache are detected correctly now on 32bit
  * Bugfix: e2-install-e2 reports errors in local tools installation now
  * Bugfix: e2-install-e2 removes an existing local plugin directory before
