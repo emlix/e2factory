@@ -27,6 +27,59 @@
 
 module("transport", package.seeall)
 
+--- call rsync with appropriate rsh argument according to the tools
+-- configuration
+-- @param opts: options to pass to rsync
+-- @param src: source
+-- @param dest: destination
+-- @return bool
+-- @return an error object on failure
+local function rsync_ssh(opts, src, dest)
+	local rsh = string.format("%s %s", tools.get_tool("ssh"),
+                                                tools.get_tool_flags("ssh"))
+	if not opts then
+		opts = ""
+	end
+	return e2lib.rsync(string.format("%s --rsh='%s' '%s' '%s'",
+							opts, rsh, src, dest))
+end
+
+--- create a remote directory by copying an empty directory using rsync
+-- (for use with restriced shell access)
+-- @param opts: options to pass to rsync
+-- @param server: the server part of the directory to create
+-- @param directory: the directory to create on the server
+-- @return bool
+-- @return an error object on failure
+local function rsync_ssh_mkdir(opts, server, dir)
+	local emptydir = e2lib.mktempdir()
+	local stack = {}
+	while dir ~= "/" do
+		rc, re = rsync_ssh(opts .. " -r", emptydir, server .. dir)
+		if rc then
+			-- successfully made a directory
+			break
+		else
+			-- this directory could not be made, put on stack
+			-- and try again with one component removed
+			table.insert(stack, 1, e2lib.basename(dir))
+			dir = e2lib.dirname(dir)
+		end
+	end
+	while #stack > 0 do
+		dir = dir .. "/" .. stack[1]
+		table.remove(stack, 1)
+		rc, re = rsync_ssh(opts .. " -r", emptydir, server .. dir)
+		if not rc then
+			e2lib.rmtempdir(emptydir)
+			local e = new_error("could not make remote directory")
+			return false, e:cat(re)
+		end
+	end
+	e2lib.rmtempdir(emptydir)
+	return true, nil
+end
+
 --- fetch a file from a server
 -- @param surl url to the server
 -- @param location location relative to the server url
@@ -200,42 +253,23 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 		else
 			user = ""
 		end
-		local mkdir_perm = ""
 		local rsync_perm = ""
 		if push_permissions then
-			mkdir_perm = string.format("--mode \"%s\"", 
-							push_permissions)
 			rsync_perm = string.format("--perms --chmod \"%s\"",
 							push_permissions)
 		end
-		-- split directories, to apply permissions to all newly
-		-- created parent directories, too.
-		local dirs = e2lib.parentdirs(destdir)
-		local tmp = e2lib.mktempfile()
-		local f = io.open(tmp, "w")
-		for _,d in ipairs(dirs) do
-			local s = string.format("mkdir -p %s \"%s\"\n",
-								mkdir_perm, d)
-			e2lib.log(4, s)
-			f:write(s)
-		end
-		f:close()
-		-- run the mkdir script via ssh
-		local args = string.format("'%s%s' <'%s'", user, u.servername,
-									tmp)
-		rc, re = e2lib.ssh(args)
+		rc, re = rsync_ssh_mkdir(
+				rsync_perm,
+				string.format("%s%s:", user, u.servername),
+				destdir)
 		if not rc then
 			return false, re
 		end
-		e2lib.rmtempfile(tmp)
-		local rsh = string.format("%s %s", tools.get_tool("ssh"),
-						tools.get_tool_flags("ssh"))
-		-- rsync --rsh="ssh" "sourcefile" "destfile"
-		local args = string.format(
-				"%s --rsh='%s' '%s' '%s%s:/%s/%s'",
-				rsync_perm, rsh, sourcefile, 
-				user, u.servername, destdir, destname)
-		rc, re = e2lib.rsync(args)
+		rc, re = rsync_ssh(
+				rsync_perm,
+				sourcefile,
+				string.format("'%s%s:/%s/%s'", user,
+					u.servername, destdir, destname))
 		if not rc then
 			return false, re
 		end
