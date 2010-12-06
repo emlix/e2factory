@@ -493,3 +493,28 @@ function file_path(cache, server, location, flags)
 	end
 	return path, nil
 end
+
+--- enable/disable writeback for a server
+-- @param cache the cache data structure
+-- @param server the server where the file is located
+-- @param value boolean: the new setting
+-- @return boolean
+-- @return an error object on failure
+function set_writeback(cache, server, value)
+        e2lib.log(4, string.format("set_writeback(): %s %s %s",
+                                        cache.name, server, tostring(value)))
+	if type(value) ~= "boolean" then
+		return false, new_error(
+				"cache.set_writeback(): value is not boolean")
+	end
+	local rc, re = cache:valid_server(server)
+	if not rc then
+		return false, re
+	end
+	local ce, re = cache:ce_by_server(server)
+	if not rc then
+		return false, re
+	end
+	ce.flags.writeback = value
+	return true, nil
+end
