@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.9pre1
  * e2-build: allow enabling/disabling writeback on command line
  * use rsync to create remote directories when using rsync+ssh url, to
    simplify restricted-shell setups
