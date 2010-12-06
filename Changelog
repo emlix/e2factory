@@ -1,4 +1,7 @@
 NEXT:
+ * e2-build: allow enabling/disabling writeback on command line
+ * use rsync to create remote directories when using rsync+ssh url, to
+   simplify restricted-shell setups
 
 e2factory-2.3.8
  * Bugfix: Large files (>2GB) in cache are detected correctly now on 32bit
