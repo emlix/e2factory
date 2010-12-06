@@ -63,9 +63,9 @@ local function enable_writeback(server)
 end
 local function perform_writeback_settings(writeback)
 	local rc, re
-	local enable_msg = "enabling writeback for server '%s' [--writeback]"
+	local enable_msg = "enabling writeback for server '%s' [--enable-writeback]"
 	local disable_msg =
-			"disabling writeback for server '%s' [--no-writeback]"
+			"disabling writeback for server '%s' [--disable-writeback]"
 	for _,set in ipairs(writeback) do
 		if set.set == "disable" then
 			e2lib.logf(3, disable_msg, set.server)
@@ -84,9 +84,9 @@ local function perform_writeback_settings(writeback)
 		end
 	end
 end
-e2option.option("no-writeback", "disable writeback for server", nil,
+e2option.option("disable-writeback", "disable writeback for server", nil,
 						disable_writeback, "SERVER")
-e2option.option("writeback", "enable writeback for server", nil,
+e2option.option("enable-writeback", "enable writeback for server", nil,
 						enable_writeback, "SERVER")
 
 local opts = e2option.parse(arg)
