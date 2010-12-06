@@ -51,6 +51,43 @@ e2option.flag("playground", "prepare environment but do not build")
 e2option.flag("keep", "do not remove chroot environment after build")
 e2option.flag("buildnumber", "use real build numbers")
 e2option.flag("buildid", "display buildids and exit")
+-- cache is not yet initialized when parsing command line options, so
+-- remember settings in order of appearance, and perform settings as soon
+-- as the cache is initialized.
+local writeback = {}
+local function disable_writeback(server)
+	table.insert(writeback, { set = "disable", server = server })
+end
+local function enable_writeback(server)
+	table.insert(writeback, { set = "enable", server = server })
+end
+local function perform_writeback_settings(writeback)
+	local rc, re
+	local enable_msg = "enabling writeback for server '%s' [--writeback]"
+	local disable_msg =
+			"disabling writeback for server '%s' [--no-writeback]"
+	for _,set in ipairs(writeback) do
+		if set.set == "disable" then
+			e2lib.logf(3, disable_msg, set.server)
+			rc, re = info.cache:set_writeback(set.server, false)
+			if not rc then
+				local e = new_error(disable_msg, set.server)
+				e2lib.abort(e:cat(re))
+			end
+		elseif set.set == "enable" then
+			e2lib.logf(3, enable_msg, set.server)
+			rc, re = info.cache:set_writeback(set.server, true)
+			if not rc then
+				local e = new_error(enable_msg, set.server)
+				e2lib.abort(e:cat(re))
+			end
+		end
+	end
+end
+e2option.option("no-writeback", "disable writeback for server", nil,
+						disable_writeback, "SERVER")
+e2option.option("writeback", "enable writeback for server", nil,
+						enable_writeback, "SERVER")
 
 local opts = e2option.parse(arg)
 
@@ -64,6 +101,7 @@ info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
 end
+perform_writeback_settings(writeback)
 local rc, re = e2tool.check_project_info(info)
 if not rc then
   e2lib.abort(re)
