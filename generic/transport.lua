@@ -55,7 +55,8 @@ local function rsync_ssh_mkdir(opts, server, dir)
 	local emptydir = e2lib.mktempdir()
 	local stack = {}
 	while dir ~= "/" do
-		rc, re = rsync_ssh(opts .. " -r", emptydir, server .. dir)
+		rc, re = rsync_ssh(opts .. " -r", emptydir .. "/",
+							server .. dir .. "/")
 		if rc then
 			-- successfully made a directory
 			break
@@ -69,7 +70,8 @@ local function rsync_ssh_mkdir(opts, server, dir)
 	while #stack > 0 do
 		dir = dir .. "/" .. stack[1]
 		table.remove(stack, 1)
-		rc, re = rsync_ssh(opts .. " -r", emptydir, server .. dir)
+		rc, re = rsync_ssh(opts .. " -r", emptydir .. "/",
+							server .. dir .. "/")
 		if not rc then
 			e2lib.rmtempdir(emptydir)
 			local e = new_error("could not make remote directory")
