@@ -104,6 +104,39 @@ function set_tool(name, value, flags)
 	return true, nil
 end
 
+--- add a new tool
+-- @param name string: the tool name
+-- @param value string: the new tool command
+-- @param flags string: the new tool flags.
+-- @param optional bool: wheter the tool is optional or not
+-- @return bool
+-- @return nil, an error string on error
+function add_tool(name, value, flags, optional)
+	if tools[name] then
+		e2lib.bomb("trying to add a tool that already exists: " ..
+			tostring(name))
+	end
+
+	if type(name) ~= "string" or type(value) ~= "string" or
+		type(flags) ~= "string" or type(optional) ~= "boolean" then
+		print("error in add_tool")
+		e2lib.bomb("one or more parameters wrong while adding tool " ..
+		tostring(name))
+	end
+
+	tools[name] = {
+		name = value,
+		flags = flags,
+		optional = optional,
+	}
+
+	local t = tools[name]
+	e2lib.log(3, string.format("adding tool: %s=%s flags=%s optional=%s",
+		name, t.name, t.flags, tostring(t.optional)))
+
+	return true, nil
+end
+
 --- check if a tool is available
 -- @param name string a valid tool name
 -- @return bool
