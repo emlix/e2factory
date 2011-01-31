@@ -1,5 +1,3 @@
-NEXT:
-
 e2factory-2.3.10
  * add method for plugins to register additional tools
 
