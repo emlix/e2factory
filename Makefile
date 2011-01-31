@@ -35,7 +35,7 @@ CLEAN_FILES = *~ buildconfig.lua
 
 
 .PHONY: all e2commit install install-local clean local localdist uninstall \
-	doc buildconfig.lua
+	doc buildconfig.lua tags
 
 help:
 	@cat INSTALL
@@ -169,3 +169,6 @@ tag:
 
 showtag:
 	@echo $(TAG)
+
+tags:
+	$(CTAGS) -R .
