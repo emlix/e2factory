@@ -91,7 +91,7 @@ clean:
 	man2html -r $< >$@
 
 man.tar.gz: $(MANPAGES_HTML)
-	mkdir -p html man/man{1,5,7}
+	mkdir -p html man/man1 man/man5 man/man7
 	cp *.1.html man/man1/
 	cp *.5.html man/man5/
 	cp *.7.html man/man7/
