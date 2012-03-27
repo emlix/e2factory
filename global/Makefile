@@ -69,7 +69,7 @@ install: all install-dirs install-lua
 		install -m 755 $$i.sh $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	install -m 755 e2-root $(DESTDIR)$(TOOLDIR)/
-	install -m 4754 -o root -g $(E2_GROUP) e2-su $(DESTDIR)$(BINDIR)/
+	$(SUDO) install -m 4754 -o root -g $(E2_GROUP) e2-su $(DESTDIR)$(BINDIR)/
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
 	if [ ! -f "$(DESTDIR)$(SYSCONFDIR)/e2.conf" ] ; then \
 		install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf ; \
@@ -78,7 +78,8 @@ install: all install-dirs install-lua
 	install -m 755 sha1.so $(DESTDIR)$(LIBDIR)
 	install -m 755 luafile_ll.so $(DESTDIR)$(LIBDIR)
 	install -m 755 e2util.so $(DESTDIR)$(LIBDIR)
-	install -m 4754 -o root -g $(E2_GROUP) e2-su-2.2 $(DESTDIR)$(BINDIR)/
+	$(SUDO) install -m 4754 -o root -g $(E2_GROUP) e2-su-2.2 \
+		$(DESTDIR)$(BINDIR)/
 
 uninstall:
 	for i in $(GLOBALLUATOOLS) ; do \
