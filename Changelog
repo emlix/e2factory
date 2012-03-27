@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.11
  * remove bashism, noted by Dominic Lemire
  * release to sync with extensions
