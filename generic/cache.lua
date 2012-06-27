@@ -215,8 +215,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function cache_enabled(c, server)
-	e2lib.log(4, "cache.file_in_cache(%s,%s,%s)", tostring(c),
-							tostring(server))
+	e2lib.logf(4, "cache.cache_enabled(%s,%s)", tostring(c), server)
 	local ce, re = ce_by_server(c, server)
 	if not ce then
 		return false, re
@@ -231,8 +230,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function file_in_cache(c, server, location)
-	e2lib.logf(4, "cache.file_in_cache(%s,%s,%s)", tostring(c),
-					tostring(server), tostring(location))
+	e2lib.logf(4, "cache.file_in_cache(%s,%s,%s)", tostring(c), server, location)
 	local ce, re = ce_by_server(c, server)
 	if not ce then
 		return false, re
@@ -257,7 +255,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function file_local(c, server, location)
-	e2lib.logf(4, "file_local(%s,%s,%s)", tostring(c), tostring(server),
+	e2lib.logf(4, "cache.file_local(%s,%s,%s)", tostring(c), tostring(server),
 							tostring(location))
 	local rc, re = file_in_cache(c, server, location)
 	if re then
