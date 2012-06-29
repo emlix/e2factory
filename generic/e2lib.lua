@@ -116,7 +116,8 @@ end
 -- initialized properly, and abort otherwise
 -- This function always succeeds or aborts.
 function init()
-  log(4, "init()")
+  log(4, "e2lib.init()")
+  debug.sethook(e2lib.tracer, "cr")
 
   globals.warn_category = {
 	WDEFAULT = false,
@@ -206,6 +207,131 @@ function init2()
   host_system_arch, re = get_sys_arch()
   if not host_system_arch then
     abort(e:cat(re))
+  end
+end
+
+local tracer_bl_lua_fn = {
+  ["xpcall"] = 0,
+  ["tostring"] = 0,
+  ["print"] = 0,
+  ["unpack"] = 0,
+  ["require"] = 0,
+  ["getfenv"] = 0,
+  ["setmetatable"] = 0,
+  ["next"] = 0,
+  ["assert"] = 0,
+  ["tonumber"] = 0,
+  ["rawequal"] = 0,
+  ["collectgarbage"] = 0,
+  ["getmetatable"] = 0,
+  ["module"] = 0,
+  ["rawset"] = 0,
+  ["pcall"] = 0,
+  ["newproxy"] = 0,
+  ["type"] = 0,
+  ["select"] = 0,
+  ["gcinfo"] = 0,
+  ["pairs"] = 0,
+  ["rawget"] = 0,
+  ["loadstring"] = 0,
+  ["ipairs"] = 0,
+  ["dofile"] = 0,
+  ["setfenv"] = 0,
+  ["load"] = 0,
+  ["error"] = 0,
+  ["loadfile"] = 0,
+  ["sub"] = 0,
+  ["upper"] = 0,
+  ["len"] = 0,
+  ["gfind"] = 0,
+  ["rep"] = 0,
+  ["find"] = 0,
+  ["match"] = 0,
+  ["char"] = 0,
+  ["dump"] = 0,
+  ["gmatch"] = 0,
+  ["reverse"] = 0,
+  ["byte"] = 0,
+  ["format"] = 0,
+  ["gsub"] = 0,
+  ["lower"] = 0,
+  ["setn"] = 0,
+  ["insert"] = 0,
+  ["getn"] = 0,
+  ["foreachi"] = 0,
+  ["maxn"] = 0,
+  ["foreach"] = 0,
+  ["concat"] = 0,
+  ["sort"] = 0,
+  ["remove"] = 0,
+  ["lines"] = 0,
+  ["write"] = 0,
+  ["close"] = 0,
+  ["flush"] = 0,
+  ["open"] = 0,
+  ["output"] = 0,
+  ["type"] = 0,
+  ["read"] = 0,
+  ["input"] = 0,
+  ["popen"] = 0,
+  ["tmpfile"] = 0,
+}
+
+local tracer_bl_e2_fn = {
+  -- logging stuff
+  ["log"] = 0,
+  ["logf"] = 0,
+  ["getlog"] = 0,
+  ["warn"] = 0,
+  ["warnf"] = 0,
+
+  -- error handling
+  ["new_error"] = 0,
+  ["append"] = 0,
+  ["getcount"] = 0,
+
+  -- lua internals
+  ["(for generator)"] = 0,
+}
+
+--- function call tracer
+-- @param event string: type of event
+-- @param line line number of event (unused)
+function tracer(event, line)
+  if event == "tail return" then
+    return
+  end
+
+  local ftbl = debug.getinfo(2)
+  if ftbl == nil or ftbl.name == nil then
+    return
+  end
+
+  if tracer_bl_lua_fn[ftbl.name] ~= nil then
+    return
+  end
+
+  if tracer_bl_e2_fn[ftbl.name] ~= nil then
+    return
+  end
+
+  if event == "call" then
+    local out = string.format("=> %s(", ftbl.name)
+    for lo = 1, 10 do
+      local name, value = debug.getlocal(2, lo)
+      if name == nil or name == "(*temporary)" then
+        break
+      end
+      if lo > 1 then
+        out = out .. ", "
+      end
+      out = string.format("%s%s=\"%s\" (%s)", out, name, tostring(value),
+        type(value))
+    end
+    out = out .. ")'"
+    e2lib.log(4, out)
+  elseif event == "return" then
+    e2lib.log(4, "<= " .. tostring(ftbl.name))
   end
 end
 
