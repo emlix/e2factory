@@ -50,12 +50,12 @@ function parse(url)
 	u.url = url
 	-- parse: transport://server/path
 	u.transport, u.server, u.path = 
-			u.url:match("(%S+)://([^/]*)(%S*)")
+			u.url:match("(%S+)://([^/]*)(.*)")
 	if not u.transport then
 		return nil, string.format("can't parse url: %s", url)
 	end
 	-- remove leading slashes from the path
-	u.path = u.path:match("^[/]*(%S*)")
+	u.path = u.path:match("^[/]*(.*)")
 	-- parse the server part
 	if u.server:match("(%S+):(%S+)@(%S+)") then
 		-- user:pass@host
