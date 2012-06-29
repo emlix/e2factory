@@ -681,6 +681,16 @@ function chomp(str, chr)
   end
 end
 
+--- quotes a string so it can be safely passed to a shell
+-- @param str string to quote
+-- @return quoted string
+function shquote(str)
+  assert(type(str) == "string")
+  e2lib.logf(4, "e2lib.shquote(%s)", str)
+  str = string.gsub(str, "'", "'\"'\"'")
+  return "'"..str.."'"
+end
+
 -- determines the type of an archive
 -- say "z" for gzip, "j" for bzip2, "" for tar archive
 -- nil is returned for unknown data
