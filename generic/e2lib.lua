@@ -100,6 +100,8 @@ globals = {
   logrotate = 5,   -- configurable via config.log.logrotate
   _version = _version,
   _licence = _licence,
+  debuglogfile = nil,
+  debuglogfilebuffer = {},
 }
 
 -- Interrupt handling
@@ -379,18 +381,25 @@ function log(level, msg)
   if msg:match("\n$") then
     msg = msg:sub(1, msg:len() - 1)
   end
-  -- always write log level to debug logfile
+
   if globals.debuglogfile then
-    globals.debuglogfile:write(log_prefix .. msg)
-    globals.debuglogfile:write("\n")
+
+    -- write out buffered messages first
+    for _,m in ipairs(globals.debuglogfilebuffer) do
+      globals.debuglogfile:write(m)
+    end
+    globals.debuglogfilebuffer = {}
+
+    globals.debuglogfile:write(log_prefix .. msg .. "\n")
     globals.debuglogfile:flush()
+  else
+    table.insert(globals.debuglogfilebuffer, log_prefix .. msg .. "\n")
   end
   if getlog(level) then
     if globals.log_debug then
       io.stderr:write(log_prefix)
     end
-    io.stderr:write(msg)
-    io.stderr:write("\n")
+    io.stderr:write(msg .. "\n")
   end
   return nil
 end
