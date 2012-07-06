@@ -584,21 +584,6 @@ function rotate_log(file)
   return true, nil
 end
 
---- append a line to a file
--- @param file string: filename
--- @param line string: a line to append to the file
--- @return bool
--- @return nil, an error string on error
-local function append_to_file(file, line)
-  local f, msg = io.open(file, "a+")
-  if not f then
-    return false, msg
-  end
-  f:write(line)
-  f:close()
-  return true, nil
-end
-
 --- exit from the tool, cleaning up temporary files and directories
 -- @param rc number: return code (optional, defaults to 0)
 -- @return This function does not return.
