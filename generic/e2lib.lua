@@ -1659,52 +1659,63 @@ function ln(src, dst, flags)
 end
 
 --- call the curl command
--- @param args
+-- @param argv table: argument vector
 -- @return bool
 -- @return an error object on failure
-function curl(args)
-        return call_tool("curl", args)
+function curl(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("curl", argv)
 end
 
 --- call the ssh command
--- @param args
+-- @param argv table: argument vector
 -- @return bool
 -- @return an error object on failure
-function ssh(args)
-        return call_tool("ssh", args)
+function ssh(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("ssh", argv)
 end
 
 --- call the scp command
--- @param args
+-- @param argv table: argument vector
 -- @return bool
 -- @return an error object on failure
-function scp(args)
-        return call_tool("scp", args)
+function scp(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("scp", argv)
 end
 
 --- call the rsync command
--- @param args
+-- @param argv table: vector filled with arguments
 -- @return bool
 -- @return an error object on failure
-function rsync(args)
-        return call_tool("rsync", args)
+function rsync(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("rsync", argv)
 end
 
 --- call the gzip command
--- @param file string: file to compress
+-- @param argv table: argument vector
 -- @return bool
 -- @return the last line ouf captured output
-function gzip(file)
-	local args = string.format("'%s'", file)
-	return call_tool("gzip", args)
+function gzip(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("gzip", argv)
 end
 
 --- call the catcommand
--- @param args
+-- @param argv table: argument vector
 -- @return bool
 -- @return an error object on failure
-function cat(args)
-	return call_tool("cat", args)
+function cat(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("cat", argv)
 end
 
 --- check if dir is a directory
