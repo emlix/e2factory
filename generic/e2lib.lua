@@ -1899,14 +1899,6 @@ function read_template(file)
   return template, nil
 end
 
---- generate an error string from an error string and a token
--- @param e string: error string
--- @param token string: the token leading to the error
--- @return string: an error string suitable for printing
-function estring(e, token)
-  return string.format("%s: %s", tostring(token), tostring(e))
-end
-
 --- parse a server:location string, taking a default server into account
 -- @param arg string: the string to parse
 -- @param dafault server string: the default server name
