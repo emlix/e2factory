@@ -250,11 +250,9 @@ function setup_chroot(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  -- e2-su set_permissions_2_3 <chroot_path>
-  local args = string.format("set_permissions_2_3 '%s'",
-							res.build_config.base)
+
   e2tool.set_umask(info)
-  local rc, re = e2lib.e2_su_2_2(args)
+  local rc, re = e2lib.e2_su_2_2({"set_permissions_2_3", res.build_config.base})
   e2tool.reset_umask(info)
   if not rc then
     return false, e:cat(re)
@@ -282,11 +280,10 @@ function setup_chroot(info, r, return_flags)
 	if not tartype then
 		return false, e:cat(re)
 	end
-	-- e2-su extract_tar_2_3 <path> <tartype> <file>
-	local args = string.format("extract_tar_2_3 '%s' '%s' '%s'",
-					res.build_config.base, tartype, path)
+
 	e2tool.set_umask(info)
-	local rc, re = e2lib.e2_su_2_2(args)
+        local argv = { "extract_tar_2_3", res.build_config.base, tartype, path }
+	local rc, re = e2lib.e2_su_2_2(argv)
 	e2tool.reset_umask(info)
 	if not rc then
 	  return false, e:cat(re)
@@ -322,18 +319,18 @@ function fix_permissions(info, r, return_flags)
   local rc, re
   local e = new_error("fixing permissions failed")
   e2lib.log(3, "fix permissions")
-  local args = string.format("chroot_2_3 '%s' chown -R root:root '%s'",
-				res.build_config.base, res.build_config.Tc)
   e2tool.set_umask(info)
-  rc, re = e2lib.e2_su_2_2(args)
+  local argv = { "chroot_2_3", res.build_config.base, "chown", "-R",
+    "root:root", res.build_config.Tc }
+  rc, re = e2lib.e2_su_2_2(argv)
   e2tool.reset_umask(info)
   if not rc then
     return false, e:cat(re)
   end
-  local args = string.format("chroot_2_3 '%s' chmod -R u=rwX,go=rX '%s'",
-				res.build_config.base, res.build_config.Tc)
   e2tool.set_umask(info)
-  rc, re = e2lib.e2_su_2_2(args)
+  argv = { "chroot_2_3", res.build_config.base, "chmod", "-R", "u=rwX,go=rX",
+    res.build_config.Tc }
+  rc, re = e2lib.e2_su_2_2(argv)
   e2tool.reset_umask(info)
   if not rc then
     return false, e:cat(re)
@@ -357,13 +354,15 @@ function runbuild(info, r, return_flags)
   local rc, re
   local e = new_error("build failed")
   e2lib.log(3, "building " .. r .. " ...")
-  local runbuild = string.format("/bin/bash -e -x '%s/%s/%s'",
-			res.build_config.Tc, res.build_config.scriptdir,
-					res.build_config.build_driver_file)
+  local runbuild = string.format("/bin/bash -e -x %s/%s/%s",
+    e2lib.shquote(res.build_config.Tc),
+    e2lib.shquote(res.build_config.scriptdir),
+    e2lib.shquote(res.build_config.build_driver_file))
   local e2_su = tools.get_tool("e2-su-2.2")
-  local cmd = string.format("%s %s chroot_2_3 '%s' %s", 
-				res.build_config.chroot_call_prefix, e2_su, 
-				res.build_config.base, runbuild)
+  local cmd = string.format("%s %s chroot_2_3 %s %s",
+    e2lib.shquote(res.build_config.chroot_call_prefix),
+    e2lib.shquote(e2_su),
+    e2lib.shquote(res.build_config.base), runbuild)
   -- the build log is written to an external logfile
   rc, re = e2lib.rotate_log(res.build_config.buildlog)
   if not rc then
@@ -402,9 +401,8 @@ end
 function chroot_remove(info, r, return_flags)
   local res = info.results[r]
   local e = new_error("removing chroot failed")
-  local args = string.format("remove_chroot_2_3 '%s'", res.build_config.base)
   e2tool.set_umask(info)
-  local rc, re = e2lib.e2_su_2_2(args)
+  local rc, re = e2lib.e2_su_2_2({"remove_chroot_2_3", res.build_config.base})
   e2tool.reset_umask(info)
   if not rc then
     return e:cat(re)
@@ -469,7 +467,7 @@ function unpack_result(info, r, dep, destdir)
   if not rc then
     return false, e:cat(re)
   end
-  rc, re = e2lib.tar(string.format("-xf '%s' -C result", path))
+  rc, re = e2lib.tar({ "-xf", path, "-C", "result" })
   if not rc then
     return false, e:cat(re)
   end
@@ -706,6 +704,8 @@ end
 -- @return bool
 -- @return an error object on failure
 function store_result(info, r, return_flags)
+  e2lib.logf(4, 'e2_build.store_result(%s, "%s", %s', tostring(info), r,
+    tostring(return_flags))
   local res = info.results[r]
   local rc, re
   local e = new_error("fetching build results from chroot")
@@ -720,7 +720,7 @@ function store_result(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  rc, re = e2lib.mkdir("result result/files")
+  rc, re = e2lib.mkdir("result/files", "-p")
   if not rc then
     return false, e:cat(re)
   end
@@ -761,7 +761,7 @@ function store_result(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  rc, re = e2lib.gzip("build.log")
+  rc, re = e2lib.gzip({ "build.log" })
   if not rc then
     return false, e:cat(re)
   end
@@ -769,8 +769,7 @@ function store_result(info, r, return_flags)
   if not rc then
     return false, e:cat(re)
   end
-  local args = string.format("-cf result.tar -C result .")
-  rc, re = e2lib.tar(args)
+  rc, re = e2lib.tar({ "-cf", "result.tar", "-C", "result", "." })
   if not rc then
     return false, e:cat(re)
   end
