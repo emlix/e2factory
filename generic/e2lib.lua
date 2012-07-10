@@ -1580,8 +1580,9 @@ function git(gitdir, subtool, args)
 	if not git then
 		return false, e:cat(re)
 	end
-	local call = string.format("GIT_DIR='%s' %s %s %s", gitdir, git,
-								subtool, args)
+	-- TODO: args should be quoted as well
+	local call = string.format("GIT_DIR=%s %s %s %s",
+	    shquote(gitdir), shquote(git), shquote(subtool), args)
 	rc, re = callcmd_log(call)
 	if rc ~= 0 then
 		e:append(call)
