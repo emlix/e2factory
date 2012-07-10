@@ -38,7 +38,7 @@ module("generic_git", package.seeall)
 -- @return nil, an error object on failure
 function git_clone_url1(surl, location, destdir, skip_checkout)
   if (not surl) or (not location) or (not destdir) then
-    e2lib.abort("git_clone2(): missing parameter")
+    e2lib.abort("git_clone_url1(): missing parameter")
   end
   local rc, re
   local e = new_error("cloning git repository")
@@ -55,7 +55,8 @@ function git_clone_url1(surl, location, destdir, skip_checkout)
   if skip_checkout then
     flags = "-n"
   end
-  local cmd = string.format("git clone %s --quiet %s %s", flags, src, destdir)
+  local cmd = string.format("git clone %s --quiet %s %s", flags,
+  	e2lib.shquote(src), e2lib.shquote(destdir))
   local rc, re = e2lib.callcmd_log(cmd)
   if rc ~= 0 then
     return false, e:cat(re)
@@ -78,9 +79,9 @@ function git_branch_new1(gitwc, track, branch, start_point)
   else
     f_track = "--no-track"
   end
-  local cmd = string.format(
-	"cd \"%s\" && git branch %s \"%s\" \"%s\"",
-	gitwc, f_track, branch, start_point)
+  local cmd = string.format( "cd %s && git branch %s %s %s",
+    e2lib.shquote(gitwc), f_track, e2lib.shquote(branch),
+    e2lib.shquote(start_point))
   local rc = e2lib.callcmd_capture(cmd)
   if rc ~= 0 then
     return false, new_error("creating new branch failed")
@@ -96,9 +97,8 @@ end
 function git_checkout1(gitwc, branch)
   e2lib.log(3, string.format("checking out branch: %s", branch))
   -- git checkout <branch>
-  local cmd = string.format(
-	"cd %s && git checkout \"%s\"",
-	gitwc, branch)
+  local cmd = string.format("cd %s && git checkout %s", e2lib.shquote(gitwc),
+    e2lib.shquote(branch))
   local rc = e2lib.callcmd_capture(cmd)
   if rc ~= 0 then
     return false, new_error("git checkout failed")
@@ -157,12 +157,13 @@ function git_init_db1(rurl)
   local rc = false
   local cmd = nil
   local gitdir = string.format("/%s", u.path)
-  local gitcmd = string.format(
-		"mkdir -p \"%s\" && GIT_DIR=\"%s\" git init-db --shared", 								gitdir, gitdir)
+  local gitcmd = string.format("mkdir -p %s && GIT_DIR=%s git init-db --shared",
+    e2lib.shquote(gitdir), e2lib.shquote(gitdir))
   if u.transport == "ssh" or u.transport == "scp" or
      u.transport == "rsync+ssh" then
     local ssh = tools.get_tool("ssh")
-    cmd = string.format("%s '%s' '%s'", ssh, u.server, gitcmd)
+    cmd = string.format("%s %s %s", e2lib.shquote(ssh), e2lib.shquote(u.server),
+      e2lib.shquote(gitcmd))
   elseif u.transport == "file" then
     cmd = gitcmd
   else
@@ -196,8 +197,8 @@ function git_push1(gitdir, rurl, refspec)
     return false, e:cat(re)
   end
   -- GIT_DIR=gitdir git push remote_git_url refspec
-  local cmd = string.format("GIT_DIR=\"%s\" git push \"%s\" \"%s\"",
-		gitdir, remote_git_url, refspec)
+  local cmd = string.format("GIT_DIR=%s git push %s %s", e2lib.shquote(gitdir),
+    e2lib.shquote(remote_git_url), e2lib.shquote(refspec))
   local rc = e2lib.callcmd_capture(cmd)
   if rc ~= 0 then
     return false, e
@@ -230,8 +231,8 @@ function git_remote_add1(lurl, rurl, name)
     return false, e:cat(re)
   end
   -- git remote add <name> <giturl>
-  local cmd = string.format(
-	"cd \"/%s\" && git remote add \"%s\" \"%s\"", lrepo.path, name, giturl)
+  local cmd = string.format("cd %s && git remote add %s %s",
+    e2lib.shquote("/"..lrepo.path), e2lib.shquote(name), e2lib.shquote(giturl))
   local rc = e2lib.callcmd_capture(cmd)
   if rc ~= 0 then
     return false, e
@@ -327,8 +328,8 @@ function git_config(gitdir, query)
   local rc, re
   local e = new_error("running git config")
   local tmpfile = e2lib.mktempfile()
-  local cmd = string.format("GIT_DIR=\"%s\" git config \"%s\" > %s",
-							gitdir, query, tmpfile)
+  local cmd = string.format("GIT_DIR=%s git config %s > %s",
+    e2lib.shquote(gitdir), e2lib.shquote(query), e2lib.shquote(tmpfile))
   local rc, re = e2lib.callcmd_log(cmd)
   if rc ~= 0 then
     e:append("git config failed")
@@ -353,8 +354,8 @@ function git_add(gitdir, args)
   if not gitdir then
 	gitdir = ".git"
   end
-  local cmd = string.format("GIT_DIR=\"%s\" git add '%s'",
-							gitdir, args)
+  local cmd = string.format("GIT_DIR=%s git add %s",
+    e2lib.shquote(gitdir), e2lib.shquote(args))
   local rc, re = e2lib.callcmd_log(cmd)
   if rc ~= 0 then
     return nil, e:cat(re)
@@ -385,6 +386,7 @@ function verify_remote_tag(gitdir, tag)
   local rc, re
 
   -- fetch the remote tag
+  -- TODO: escape args, tag, rtag
   local rtag = string.format("%s.remote", tag)
   local args = string.format("origin refs/tags/%s:refs/tags/%s",
 								tag, rtag)
