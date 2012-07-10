@@ -48,7 +48,8 @@ function mksvnurl(surl)
   elseif u.transport == "file" then
     transport = "file"
   else
-    return nil, e:append("invalid transport")
+    return nil, e:append(string.format("unsupported subversion transport: %s",
+      u.transport))
   end
   return string.format("%s://%s/%s", transport, u.server, u.path)
 end
