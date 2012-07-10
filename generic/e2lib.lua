@@ -1490,11 +1490,14 @@ end
 -- @return bool
 -- @return the last line ouf captured output
 function mkdir(dir, flags)
-	if not flags then
-		flags = ""
-	end
-	local args = string.format("%s %s", flags, dir)
-	return call_tool("mkdir", args)
+  flags = flags or ""
+  assert(type(dir) == "string")
+  assert(string.len(dir) > 0)
+  assert(type(flags) == "string")
+
+  -- TODO: quote flags as well
+  local args = string.format("%s %s", flags, e2lib.shquote(dir))
+  return call_tool("mkdir", args)
 end
 
 --- call the patch command
