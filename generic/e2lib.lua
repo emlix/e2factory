@@ -316,11 +316,20 @@ function tracer(event, line)
   end
 
   -- approximate module name, not always accurate but good enough
-  local module = string.match(ftbl.short_src, "(%w+)")
-  module = module or "<unknown module>"
+  local module
+  if ftbl.source == nil or ftbl.source == "=[C]" then
+    module = ""
+  else
+    module = string.match(ftbl.source, "(%w+)%.lua$")
+    module = module .. "."
+  end
+
+  if module == nil then
+    module "<unknown module>."
+  end
 
   if event == "call" then
-    local out = string.format("%s.%s(", module, ftbl.name)
+    local out = string.format("%s%s(", module, ftbl.name)
     for lo = 1, 10 do
       local name, value = debug.getlocal(2, lo)
       if name == nil or name == "(*temporary)" then
@@ -335,7 +344,7 @@ function tracer(event, line)
     out = out .. ")'"
     e2lib.log(4, out)
   else
-    e2lib.log(4, string.format("< %s.%s", module, ftbl.name))
+    e2lib.log(4, string.format("< %s%s", module, ftbl.name))
   end
 end
 
