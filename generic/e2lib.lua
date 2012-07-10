@@ -1776,24 +1776,30 @@ function sha1sum(path)
 end
 
 --- call the e2-su command
--- @param args string
+-- @param argv table: argument vector
 -- @return bool
-function e2_su(args)
-  return call_tool("e2-su", args)
+function e2_su(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("e2-su", argv)
 end
 
 --- call the e2-su-2.2 command
--- @param args string
+-- @param argv table: argument vector
 -- @return bool
-function e2_su_2_2(args)
-  return call_tool("e2-su-2.2", args)
+function e2_su_2_2(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("e2-su-2.2", argv)
 end
 
 --- call the tar command
--- @param args string
+-- @param argv table: argument vector
 -- @return bool
-function tar(args)
-  return call_tool("tar", args)
+function tar(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("tar", argv)
 end
 
 --- get system architecture
