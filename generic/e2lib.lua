@@ -1737,29 +1737,40 @@ function isfile(path)
   return true
 end
 
---- calculate sha1sum for a file
+--- calculate SHA1 sum for a file
 -- @param path string: path
--- @return bool
+-- @return string: sha1 sum of file
+-- @return an error object on failure
 function sha1sum(path)
-  local args = string.format("'%s'", path)
+  assert(type(path) == "string")
+
+  local e = new_error("calculating SHA1 checksum failed")
+
   local sha1sum, re = tools.get_tool("sha1sum")
   if not sha1sum then
-    return nil, re
+    return nil, e:cat(re)
   end
+
   local sha1sum_flags, re = tools.get_tool_flags("sha1sum")
   if not sha1sum_flags then
-    return nil, re
+    return nil, e:cat(re)
   end
-  local cmd = string.format("%s %s %s", sha1sum, sha1sum_flags, args)
+
+  -- TODO: sha1sum_flags should be quoted as well
+  local cmd = string.format("%s %s %s", e2lib.shquote(sha1sum), sha1sum_flags,
+    e2lib.shquote(path))
+
   local p, msg = io.popen(cmd, "r")
   if not p then
-    return nil, new_error(msg)
+    return nil, e:cat(msg)
   end
+
   local out, msg = p:read("*l")
   p:close()
+
   local sha1, file = out:match("(%S+)  (%S+)")
   if type(sha1) ~= "string" then
-    return nil, new_error(msg)
+    return nil, e:cat("parsing sha1sum output failed")
   end
   return sha1
 end
