@@ -1803,11 +1803,13 @@ function tar(argv)
 end
 
 --- get system architecture
+-- @return string: machine hardware name
+-- @return an error object on failure
 function get_sys_arch()
   local rc, re
   local e = new_error("getting host system architecture failed")
   local uname = tools.get_tool("uname")
-  local cmd = string.format("%s -m", uname)
+  local cmd = string.format("%s -m", e2lib.shquote(uname))
   local p, msg = io.popen(cmd, "r")
   if not p then
     return nil, e:cat(msg)
