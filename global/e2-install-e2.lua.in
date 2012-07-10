@@ -199,8 +199,8 @@ rc, re = e2lib.chdir(root .. "/.e2/e2")
 if not rc then
   e2lib.abort(e:cat(re))
 end
-local cmd = string.format("make PREFIX='%s' local install-local",
-								install_prefix)
+local cmd = string.format("make PREFIX=%s local install-local",
+  e2lib.shquote(install_prefix))
 rc, re = e2lib.callcmd_capture(cmd)
 if rc ~= 0 then
   e2lib.abort(e:cat(re))
