@@ -1588,10 +1588,12 @@ function git(gitdir, subtool, args)
 end
 
 --- call the svn command
--- @param args string
+-- @param argv table: vector with arguments for svn
 -- @return bool
-function svn(args)
-  return call_tool("svn", args)
+function svn(argv)
+  assert(type(argv) == "table")
+
+  return call_tool_argv("svn", argv)
 end
 
 --- call the ln command
