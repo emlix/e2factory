@@ -62,7 +62,7 @@ function print(e, depth)
 	for _,m in ipairs(e.msg) do
 		if type(m) == "string" then
 			e2lib.log(1, string.format("%s%s", prefix, m))
-			prefix = string.format("[%d] ", depth)
+			prefix = string.format("      [%d]: ", depth)
 		else
 			-- it's a sub error
 			m:print(depth)
