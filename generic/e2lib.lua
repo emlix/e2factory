@@ -298,7 +298,7 @@ local tracer_bl_e2_fn = {
 -- @param event string: type of event
 -- @param line line number of event (unused)
 function tracer(event, line)
-  if event == "tail return" then
+  if event ~= "call" and event ~= "return" then
     return
   end
 
@@ -315,8 +315,12 @@ function tracer(event, line)
     return
   end
 
+  -- approximate module name, not always accurate but good enough
+  local module = string.match(ftbl.short_src, "(%w+)")
+  module = module or "<unknown module>"
+
   if event == "call" then
-    local out = string.format("=> %s(", ftbl.name)
+    local out = string.format("%s.%s(", module, ftbl.name)
     for lo = 1, 10 do
       local name, value = debug.getlocal(2, lo)
       if name == nil or name == "(*temporary)" then
@@ -330,8 +334,8 @@ function tracer(event, line)
     end
     out = out .. ")'"
     e2lib.log(4, out)
-  elseif event == "return" then
-    e2lib.log(4, "<= " .. tostring(ftbl.name))
+  else
+    e2lib.log(4, string.format("< %s.%s", module, ftbl.name))
   end
 end
 
