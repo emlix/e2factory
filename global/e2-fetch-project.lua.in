@@ -179,8 +179,8 @@ local rc, re = e2lib.write_file(e2lib.globals.global_interface_version_file,
 						string.format("%d\n", v))
 
 -- call e2-install-e2
-e2_install_e2 = string.format("'%s' '%s/e2-install-e2'", 
-			buildconfig.LUA, buildconfig.TOOLDIR)
+e2_install_e2 = string.format("%s %s/e2-install-e2",
+  e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
 rc, re = e2lib.callcmd_log(e2_install_e2)
 if rc ~= 0 then
 	e2lib.abort(new_error("installing local e2 failed"))
