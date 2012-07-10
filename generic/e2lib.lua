@@ -1513,7 +1513,7 @@ end
 -- @return string: the last line ouf captured output
 function call_tool(tool, args)
 	local cmd = tools.get_tool(tool)
-	if not tool then
+	if not cmd then
 		bomb("trying to call invalid tool: " .. tostring(tool))
 	end
 	local flags = tools.get_tool_flags(tool)
