@@ -116,10 +116,10 @@ end
 -- @return bool
 -- @return nil, an error string on error
 function write_checksum_file_sha1(source_file, checksum_file)
-	e2lib.log(4, string.format("write_checksum_file_sha1(%s, %s)", 
+	e2lib.log(4, string.format("write_checksum_file_sha1(%s, %s)",
 					source_file, checksum_file))
-	local cmd = string.format("sha1sum \"%s\" >\"%s\"", source_file, 
-								checksum_file)
+	local cmd = string.format("sha1sum %s > %s",
+          e2lib.shquote(source_file), e2lib.shquote(checksum_file))
 	local rc = e2lib.callcmd_capture(cmd)
 	if rc ~= 0 then
 		return false, "error writing checksum file"
@@ -129,8 +129,8 @@ end
 
 function download(f)
 	local name = e2lib.basename(f)
-	local cmd = string.format("curl --silent --fail \"%s\" >\"%s\"", f, 
-									name)
+	local cmd = string.format("curl --silent --fail %s > %s",
+          e2lib.shquote(f), e2lib.shquote(name))
 	local rc = e2lib.callcmd_capture(cmd)
 	if rc ~= 0 then
 		return false, new_error("download failed: %s", f)
@@ -139,7 +139,8 @@ function download(f)
 end
 
 function mv(s, d)
-	local cmd = string.format("mv \"%s\" \"%s\"", s, d)
+	local cmd = string.format("mv %s %s", e2lib.shquote(s),
+          e2lib.shquote(d))
 	local rc = e2lib.callcmd_capture(cmd)
 	if rc ~= 0 then
 		return false, "mv failed"
