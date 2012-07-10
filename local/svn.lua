@@ -57,13 +57,13 @@ end
 
 local svn = {}
 
-function svn.fetch_source(info, sourcename) --OK
+function svn.fetch_source(info, sourcename)
   local rc, re = svn.validate_source(info, sourcename)
   if not rc then
     return false, re
   end
   local e = new_error("fetching source failed: %s", sourcename)
-  local src = info.sources[ sourcename ]
+  local src = info.sources[sourcename]
   local location = src.location
   local server = src.server
   local surl, re = info.cache:remote_url(server, location)
@@ -74,9 +74,10 @@ function svn.fetch_source(info, sourcename) --OK
   if not svnurl then
     return false, e:cat(re)
   end
-  local args = string.format("checkout '%s' '%s/%s'", svnurl, info.root,
-								src.working)
-  rc, re = e2lib.svn(args)
+
+  local argv = { "checkout", svnurl, info.root .. "/" .. src.working }
+
+  rc, re = e2lib.svn(argv)
   if not rc then
     return false, e:cat(re)
   end
@@ -107,9 +108,9 @@ function svn.prepare_source(info, sourcename, source_set, build_path) --OK
     else -- source_set == "branch"
       rev = src.branch
     end
-    local args = string.format("export '%s/%s' '%s/%s'", svnurl, rev,
-						build_path, sourcename)
-    rc, re = e2lib.svn(args)
+    local argv = { "export", svnurl .. "/" .. rev,
+      build_path .. "/" .. sourcename }
+    rc, re = e2lib.svn(argv)
     if not rc then
       return false, e:cat(re)
     end
@@ -307,8 +308,7 @@ function svn.update(info, sourcename)
   if not rc then
     return false, e:cat(re)
   end
-  local args = "update"
-  rc, re = e2lib.svn(args)
+  rc, re = e2lib.svn({ "update", })
   if not rc then
     return false, e:cat(re)
   end
