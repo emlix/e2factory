@@ -341,7 +341,7 @@ function tracer(event, line)
       out = string.format("%s%s=\"%s\" (%s)", out, name, tostring(value),
         type(value))
     end
-    out = out .. ")'"
+    out = out .. ")"
     e2lib.log(4, out)
   else
     e2lib.log(4, string.format("< %s%s", module, ftbl.name))
