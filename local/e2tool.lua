@@ -1005,8 +1005,7 @@ end
 -- @return string the hash value, nil on error
 -- @return nil, an error string on error
 function hash_path(path)
-  e2lib.log(4, string.format("hashing %s", path))
-  local f = io.popen(string.format("sha1sum %s", path), "r")
+  local f = io.popen(string.format("sha1sum %s", e2lib.shquote(path)), "r")
   if not f then
     return false, "can't calculation checksum"
   end
@@ -1168,9 +1167,9 @@ function tag_available(info, check_local, check_remote)
   e2lib.log(2, "Checking for tag availability.")
   for _,s in pairs(info.sources) do
     if s.tag and check_local then
-      local cmd = "GIT_DIR=in/" .. s.name
-		.. "/.git git rev-list --max-count=1 refs/tags/"
-		.. s.tag .. " --"
+      local cmd = string.format("GIT_DIR=in/%s/.git git rev-list " ..
+        "--max-count=1 refs/tags/%s --", e2lib.shquote(s.name),
+        e2lib.shquote(s.tag))
       rc = e2lib.callcmd_capture(cmd)
       if rc ~= 0 then
         e2lib.log(1, "Fatal: source " .. s.name 
@@ -1179,10 +1178,10 @@ function tag_available(info, check_local, check_remote)
       end
     end
     if s.tag and check_remote then
-      local cmd = "GIT_DIR=" .. lookup_server(info, s.server) .. "/"
-		.. s.remote
-		.. " git rev-list --max-count=1 refs/tags/"
-		.. s.tag .. " --"
+      local server = lookup_server(info, s.server)
+      local cmd = string.format("GIT_DIR=%s/%s git rev-list --max-count=1 " ..
+        "refs/tags/%s --", e2lib.shquote(server), e2lib.shquote(s.remote),
+        e2lib.shquote(s.tag))
       rc = e2lib.callcmd_capture(cmd)
       if rc ~= 0 then
         e2lib.log(1, "Fatal: " .. s.name .. ": remote tag not available: " 
