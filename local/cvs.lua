@@ -168,13 +168,11 @@ function cvs.fetch_source(info, sourcename)
   else
     rev = string.format("-r '%s'", rev)
   end
-  cmd = string.format(
-	"cd \"%s/%s\" && " ..
-	"CVS_RSH=\"%s\" " ..
-	"%s %s -d \"%s\" checkout -R %s -d \"%s\" \"%s\"",
-			info.root, dir, rsh, 
-			cvstool, cvsflags, cvsroot,
-			rev, base, src.module)
+  cmd = string.format("cd %s/%s && CVS_RSH=%s " ..
+    "%s %s -d %s checkout -R %s -d %s %s",
+    e2lib.shquote(info.root), e2lib.shquote(dir), e2lib.shquote(rsh),
+    e2lib.shquote(cvstool), cvsflags, e2lib.shquote(cvsroot),
+    e2lib.shquote(rev), e2lib.shquote(base), e2lib.shquote(src.module))
   local rc, re = e2lib.callcmd_log(cmd)
   if rc ~= 0 then
     return false, e:cat(re)
@@ -210,17 +208,16 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
     local cvstool = tools.get_tool("cvs")
     local cvsflags = tools.get_tool_flags("cvs")
     -- cd buildpath && cvs -d cvsroot export -R -r rev module
-    cmd = string.format(
-	"cd \"%s\" && " ..
-	"CVS_RSH=\"%s\" " ..
-	"%s %s -d \"%s\" export -R -r \"%s\" -d \"%s\" \"%s\"",
-	buildpath, rsh, 
-	cvstool, cvsflags, cvsroot, rev, src.name, src.module)
+    cmd = string.format("cd %s && CVS_RSH=%s " ..
+      "%s %s -d %s export -R -r %s -d %s %s",
+      e2lib.shquote(buildpath), e2lib.shquote(rsh), e2lib.shquote(cvstool),
+      cvsflags, e2lib.shquote(cvsroot), e2lib.shquote(rev),
+      e2lib.shquote(src.name), e2lib.shquote(src.module))
   elseif source_set == "working-copy" then
     -- cp -R info.root/src.working buildpath
-    cmd = string.format(
-	"cp -R \"%s/%s\" \"%s/%s\"", 
-	info.root, src.working, buildpath, src.name)
+    cmd = string.format("cp -R %s/%s %s/%s",
+      e2lib.shquote(info.root), e2lib.shquote(src.working),
+      e2lib.shquote(buildpath), e2lib.shquote(src.name))
   else
     e2lib.abort("invalid build mode")
   end
@@ -242,11 +239,9 @@ function cvs.update(info, sourcename)
   local rsh = tools.get_tool("ssh")
   local cvstool = tools.get_tool("cvs")
   local cvsflags = tools.get_tool_flags("cvs")
-  local cmd = string.format(
-	"cd \"%s\" && " ..
-	"CVS_RSH=\"%s\" " ..
-	"%s %s update -R",
-	working, rsh, cvstool, cvsflags)
+  local cmd = string.format("cd %s && CVS_RSH=%s %s %s update -R",
+    e2lib.shquote(working), e2lib.shquote(rsh), e2lib.shquote(cvstool),
+    cvsflags)
   local rc, re = e2lib.callcmd_log(cmd)
   if rc ~= 0 then
     e:cat(re)
