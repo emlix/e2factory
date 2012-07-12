@@ -2257,6 +2257,11 @@ end
 -- @return an error object on failure
 function buildnumber_request(info)
 	e2lib.log(3, "requesting build numbers from server")
+
+        if e2lib.globals.buildnumber_server_url == nil then
+          return false, new_error("no build number server configured")
+        end
+
 	local rc, re
 	local e = new_error("error requesting build numbers")
 	local tmpdir = e2lib.mktempdir()
@@ -2265,8 +2270,8 @@ function buildnumber_request(info)
 	local curlflags = "--create-dirs --silent --show-error --fail"
 	local url = string.format(
 		"'%s?project=%s&user=%s&host=%s'",
-		e2lib.buildnumber_server_url, info.name,
-		e2lib.globals.osenv["USER"], e2lib.hostname)
+		e2lib.globals.buildnumber_server_url, info.name,
+		e2lib.globals.osenv["USER"], e2lib.globals.hostname)
 	local args = string.format(
 			"%s " ..
 			"--header 'Content-type: text/plain' " ..
