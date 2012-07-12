@@ -43,7 +43,9 @@ function mksvnurl(surl)
     return nil, e:cat(re)
   end
   local transport
-  if u.transport == "ssh" or u.transport == "rsync+ssh" then
+  -- TODO: http, https and svn are valid transports that should be added
+  if u.transport == "ssh" or u.transport == "scp" or
+    u.transport == "rsync+ssh" then
     transport = "svn+ssh"
   elseif u.transport == "file" then
     transport = "file"
