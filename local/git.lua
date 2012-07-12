@@ -429,10 +429,11 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
       return false, e:cat(re)
     end
     gitdir = string.format("%s/%s/.git", info.root, src.working)
-    local git = string.format("GIT_DIR=\"%s\" "..
-		"git archive --format=tar --prefix=\"%s/\" \"refs/heads/%s\"",
-		gitdir, sourcename, src.branch)
-    local tar = string.format("tar -C \"%s\" -xf -", buildpath)
+    local git = string.format("GIT_DIR=%s "..
+      "git archive --format=tar --prefix=%s/ refs/heads/%s",
+      e2lib.shquote(gitdir), e2lib.shquote(sourcename),
+      e2lib.shquote(src.branch))
+    local tar = string.format("tar -C %s -xf -", e2lib.shquote(buildpath))
     local re = e2lib.callcmd_pipe({git, tar})
     if re then
       return false, e:cat(re)
@@ -444,10 +445,10 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
       return false, e:cat(re)
     end
     gitdir = string.format("%s/%s/.git", info.root, src.working)
-    local git = string.format("GIT_DIR=\"%s\" "..
-		"git archive --format=tar --prefix=\"%s/\" \"refs/tags/%s\"",
-		gitdir, sourcename, src.tag)
-    local tar = string.format("tar -C \"%s\" -xf -", buildpath)
+    local git = string.format("GIT_DIR=%s "..
+      "git archive --format=tar --prefix=%s/ refs/tags/%s",
+      e2lib.shquote(gitdir), e2lib.shquote(sourcename), e2lib.shquote(src.tag))
+    local tar = string.format("tar -C %s -xf -", e2lib.shquote(buildpath))
     local re = e2lib.callcmd_pipe({git, tar})
     if re then
       return false, e:cat(re)
@@ -467,10 +468,11 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     end
     local tar = tools.get_tool("tar")
     local tarflags = tools.get_tool_flags("tar")
-    local cmd1 = string.format("%s %s -c -C '%s/%s' --exclude '.git' .", tar,
-					tarflags, info.root, src.working)
-    local cmd2 = string.format("%s %s -x -C '%s/%s'", tar, tarflags, buildpath,
-								sourcename)
+    local cmd1 = string.format("%s %s -c -C %s/%s --exclude '.git' .",
+      e2lib.shquote(tar), tarflags, e2lib.shquote(info.root),
+      e2lib.shquote(src.working))
+    local cmd2 = string.format("%s %s -x -C %s/%s", e2lib.shquote(tar),
+      tarflags, e2lib.shquote(buildpath), e2lib.shquote(sourcename))
     local r = e2lib.callcmd_pipe({ cmd1, cmd2 })
     if r then e2lib.abort(r) end
   else e2lib.abort("invalid sourceset: ", sourceset)
@@ -672,15 +674,19 @@ function git.toresult(info, sourcename, sourceset, directory)
 		local ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
 		-- git archive --format=tar <ref> | gzip > <tarball>
 		cmd = string.format(
-			"cd %s/%s && git archive --format=tar --prefix=\"%s/\" %s | "..
-			"gzip > %s/%s",
-			info.root, src.working, sourcename, ref, sourcedir, archive)
+			"cd %s/%s && git archive --format=tar --prefix=%s/ %s"..
+			" | gzip > %s/%s",
+			e2lib.shquote(info.root), e2lib.shquote(src.working),
+			e2lib.shquote(sourcename), e2lib.shquote(ref),
+			e2lib.shquote(sourcedir), e2lib.shquote(archive))
 	elseif sourceset == "working-copy" or sourceset == "mmm" then
-		cmd = string.format("tar -C '%s/%s' "..
-			"--transform='s,^./,./%s/,' "..
+		cmd = string.format("tar -C %s/%s " ..
+			"--transform=s,^./,./%s/, "..
 			"--exclude=.git "..
-			"-czf '%s/%s' .",
-			info.root, src.working, sourcename, sourcedir, archive)
+			"-czf %s/%s .",
+			e2lib.shquote(info.root), e2lib.shquote(src.working),
+			e2lib.shquote(sourcename), e2lib.shquote(sourcedir),
+			e2lib.shquote(archive))
 	else
 		return false, e:append("sourceset not supported: %s",
 								sourceset)
