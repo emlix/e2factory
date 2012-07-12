@@ -1353,34 +1353,53 @@ function verify_remote_fileid(info, file, fileid)
 	if not u then
 		return false, e:cat(re)
 	end
-	local cmd = "sha1sum"
-	local retcmd
+
+        local remote_fileid = ""
+
 	if u.transport == "ssh" or u.transport == "scp" or
 		u.transport == "rsync+ssh" then
+	        local cmd = "sha1sum"
 		local ssh = tools.get_tool("ssh")
-		retcmd = string.format("%s '%s' %s /%s", ssh, u.server,
-								cmd, u.path)
+
+		local retcmd = string.format("%s %s ",
+                  e2lib.shquote(ssh), e2lib.shquote(u.server))
+
+                retcmd = retcmd .. e2lib.shquote(string.format("%s /%s",
+                  e2lib.shquote(cmd), e2lib.shquote(u.path)))
+
+                local p = io.popen(retcmd, "r")
+                if not p then
+                        return false, e:cat(re)
+                end
+
+                local out = p:read("*l")
+                p:close()
+                if not out then
+                        return false, e:cat(re)
+                end
+
+                remote_fileid, filename = out:match("(%S+)  (%S+)")
+                e2lib.logf(1, "remote_fileid=%s filename=%s", remote_fileid, tostring(filename))
+                if type(remote_fileid) ~= "string" then
+                  return nil, e:cat("parsing sha1sum output failed")
+                end
 	elseif u.transport == "file" then
-		retcmd = string.format("%s /%s", cmd, u.path)
+                remote_fileid, re = e2lib.sha1sum("/" .. u.path)
+                if not remote_fileid then
+                  return false, e:cat(re)
+                end
 	else
-		return nil, new_error("transport not supported: %s",
-								u.transport)
+		return false, new_error("transport not supported: %s",
+                  u.transport)
 	end
-	local p = io.popen(retcmd, "r")
-	if not p then
-		return nil, e:cat(re)
-	end
-	local remote_fileid = p:read()
-	if not remote_fileid then
-		return nil, e:cat(re)
-	end
-	if fileid ~= remote_fileid:sub(1,40) then
+	if fileid ~= remote_fileid then
 		return false, new_error(
-			"checksum for remote file %s:%s does not match",
-			file.server, file.location)
+			"checksum for remote file %s:%s (%s) does not match" ..
+                        " configured checksum (%s)",
+			file.server, file.location, remote_fileid, fileid)
 	end
-	e2lib.logf(4, "checksum for remote file %s:%s matches",
-						file.server, file.location)
+	e2lib.logf(4, "checksum for remote file %s:%s matches (%s)",
+            file.server, file.location, fileid)
 	return true
 end
 
