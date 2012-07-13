@@ -318,14 +318,12 @@ function tracer(event, line)
   -- approximate module name, not always accurate but good enough
   local module
   if ftbl.source == nil or ftbl.source == "=[C]" then
-    module = ""
+    module = "C."
   else
-    module = string.match(ftbl.source, "(%w+)%.lua$")
-    module = module .. "."
-  end
-
-  if module == nil then
-    module "<unknown module>."
+    module = string.match(ftbl.source, "(%w+%.)lua$")
+    if module == nil then
+      module = "<unknown module>."
+    end
   end
 
   if event == "call" then
