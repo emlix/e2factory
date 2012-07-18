@@ -45,7 +45,7 @@ end
 function cat(e, re)
 	-- auto-convert strings to error objects before inserting
 	if type(re) == "string" then
-		re = new_error(re)
+		re = new_error("%s", re)
 	end
 	table.insert(e.msg, re)
 	e.count = e.count + 1
