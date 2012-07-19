@@ -29,57 +29,100 @@ module("transport", package.seeall)
 
 --- call rsync with appropriate rsh argument according to the tools
 -- configuration
--- @param opts: options to pass to rsync
--- @param src: source
--- @param dest: destination
+-- @param opts table: options vector to pass to rsync
+-- @param src string: source path
+-- @param dest string: destination path
 -- @return bool
 -- @return an error object on failure
 local function rsync_ssh(opts, src, dest)
-	local rsh = string.format("%s %s", tools.get_tool("ssh"),
-                                                tools.get_tool_flags("ssh"))
-	if not opts then
-		opts = ""
-	end
-	return e2lib.rsync(string.format("%s --rsh='%s' '%s' '%s'",
-							opts, rsh, src, dest))
+  assert(type(opts) == "table")
+  assert(type(src) == "string")
+  assert(type(dest) == "string")
+
+  local argv = {}
+
+  for _,opt in ipairs(opts) do
+    table.insert(argv, opt)
+  end
+
+  local rsh = tools.get_tool("ssh") .. " " .. tools.get_tool_flags("ssh")
+  table.insert(argv, "--rsh=" .. rsh)
+
+  table.insert(argv, src)
+  table.insert(argv, dest)
+
+  return e2lib.rsync(argv)
+end
+
+--- escape remote directory name
+-- @param user string: optional username or nil
+-- @param server string: server name
+-- @param dir string: remote directory
+-- @return string: quoted remote dir string
+local function rsync_quote_remote(user, server, dir)
+  assert(user == nil or type(user) == "string")
+  assert(type(server) == "string")
+  assert(type(dir) == "string")
+
+  if user then
+    user = string.format("%s@", user)
+  else
+    user = ""
+  end
+
+  return string.format("%s%s:%s", user, server, e2lib.shquote(dir))
 end
 
 --- create a remote directory by copying an empty directory using rsync
 -- (for use with restriced shell access)
--- @param opts: options to pass to rsync
--- @param server: the server part of the directory to create
--- @param directory: the directory to create on the server
+-- @param opts table: options vector to pass to rsync
+-- @param user string: optional username or nil
+-- @param server string: the server part of the directory to create
+-- @param directory string: the directory to create on the server
 -- @return bool
 -- @return an error object on failure
-local function rsync_ssh_mkdir(opts, server, dir)
-	local emptydir = e2lib.mktempdir()
-	local stack = {}
-	while dir ~= "/" do
-		rc, re = rsync_ssh(opts .. " -r", emptydir .. "/",
-							server .. dir .. "/")
-		if rc then
-			-- successfully made a directory
-			break
-		else
-			-- this directory could not be made, put on stack
-			-- and try again with one component removed
-			table.insert(stack, 1, e2lib.basename(dir))
-			dir = e2lib.dirname(dir)
-		end
-	end
-	while #stack > 0 do
-		dir = dir .. "/" .. stack[1]
-		table.remove(stack, 1)
-		rc, re = rsync_ssh(opts .. " -r", emptydir .. "/",
-							server .. dir .. "/")
-		if not rc then
-			e2lib.rmtempdir(emptydir)
-			local e = new_error("could not make remote directory")
-			return false, e:cat(re)
-		end
-	end
-	e2lib.rmtempdir(emptydir)
-	return true, nil
+local function rsync_ssh_mkdir(opts, user, server, dir)
+  assert(type(opts) == "table")
+  assert(type(server) == "string")
+  assert(type(dir) == "string")
+
+  local emptydir = e2lib.mktempdir()
+  local stack = {}
+  local argv = {}
+  for _,opt in ipairs(opts) do
+    table.insert(argv, opt)
+  end
+  table.insert(argv, "-r")
+
+  while dir ~= "/" do
+    local dest = rsync_quote_remote(user, server, dir .. "/")
+    rc, re = rsync_ssh(argv, emptydir .. "/", dest)
+    if rc then
+      e2lib.logf(4, "created remote directory '%s'", dir)
+      -- successfully made a directory
+      break
+    else
+      -- this directory could not be made, put on stack
+      -- and try again with one component removed
+      e2lib.logf(4, "could not create remote directory '%s'", dir)
+      table.insert(stack, 1, e2lib.basename(dir))
+      dir = e2lib.dirname(dir)
+    end
+  end
+
+  while #stack > 0 do
+    dir = dir .. "/" .. stack[1]
+    table.remove(stack, 1)
+    local dest = rsync_quote_remote(user, server, dir .. "/")
+    rc, re = rsync_ssh(argv, emptydir .. "/", dest)
+    if not rc then
+      e2lib.rmtempdir(emptydir)
+      local e = new_error("could not create remote directory")
+      return false, e:cat(re)
+    end
+  end
+  e2lib.rmtempdir(emptydir)
+  return true, nil
 end
 
 --- fetch a file from a server
@@ -122,52 +165,35 @@ function fetch_file(surl, location, destdir, destname)
 		end
 	elseif u.transport == "file" then
 		-- rsync "sourcefile" "destdir/destfile"
-		local args = string.format("'/%s/%s' '%s/%s'",
-					u.path, location, destdir, tmpfile)
-		rc, re = e2lib.rsync(args)
+                local argv = {}
+                table.insert(argv, "/" .. u.path .. "/" .. location)
+                table.insert(argv, destdir .. "/" .. tmpfile)
+		rc, re = e2lib.rsync(argv)
 		if not rc then
 			return false, e:cat(re)
 		end
 	elseif u.transport == "rsync+ssh" then
-		local user
-		if u.user then
-			user = string.format("%s@", u.user)
-		else
-			user = ""
-		end
-		-- rsync --rsh="ssh" "server:sourcefile" "destdir/destfile"
-		local rsh = string.format("%s %s", tools.get_tool("ssh"),
-						tools.get_tool_flags("ssh"))
-		local args = string.format(
-				"--rsh=\"%s\" '%s%s:/%s/%s' '%s/%s'",
-				rsh, user, u.servername, u.path, location,
-				destdir, tmpfile)
-		rc, re = e2lib.rsync(args)
+                local sdir = "/" .. u.path .. "/" .. location
+                local ddir = destdir .. "/" .. tmpfile
+                local src =  rsync_quote_remote(u.user, u.servername, sdir)
+                rc, re = rsync_ssh({}, src, ddir)
 		if not rc then
 			return false, e:cat(re)
 		end
 	elseif u.transport == "scp" or
 	       u.transport == "ssh" then
-		local user,port
+		local user = ""
 		if u.user then
 			user = string.format("%s@", u.user)
-		else
-			user = ""
-		end
-		if u.port then
-			if u.transport == "scp" then
-				port = "-P " .. u.port
-			else
-				port = "-p " .. u.port
-			end
-		else
-			port = ""
-		end
+                end
 
-		local args = string.format(" %s '%s%s:/%s/%s' '%s/%s'",
-					port,user, u.servername, u.path,
-					location, destdir, tmpfile)
-		rc, re = e2lib.scp(args)
+                local sourceserv = string.format("%s%s:", user, u.servername)
+		local sourcefile = string.format("/%s/%s", u.path, location)
+                sourcefile = e2lib.shquote(sourcefile)
+                sourcefile = sourceserv .. sourcefile
+                local destfile = string.format("%s/%s", destdir, tmpfile)
+
+		rc, re = e2lib.scp({ sourcefile , destfile })
 		if not rc then
 			return false, e:cat(re)
 		end
@@ -213,12 +239,15 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 		-- created parent directories, too.
 		local dirs = e2lib.parentdirs(destdir)
 		local mkdir_perm = ""
-		local rsync_perm = ""
+                local rsync_argv = {}
 		if push_permissions then
 			mkdir_perm = string.format("--mode \"%s\"",
 							push_permissions)
-			rsync_perm = string.format("--perms --chmod \"%s\"",
-							push_permissions)
+
+                        table.insert(rsync_argv, "--perms")
+                        table.insert(rsync_argv, "--chmod")
+                        table.insert(rsync_argv, push_permissions)
+
 		end
 		for _,d in ipairs(dirs) do
 			local mkdir_flags = string.format("-p %s", mkdir_perm)
@@ -227,8 +256,8 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 				return false, e:cat(re)
 			end
 		end
-		local args = string.format("%s '%s' '%s/%s'", rsync_perm,
-						sourcefile, destdir, destname)
+                table.insert(rsync_argv, sourcefile)
+                table.insert(rsync_argv, destdir .. "/" .. destname)
 		local done = false
 		if (not push_permissions) and try_hardlink then
 			local dst = string.format("%s/%s", destdir, destname)
@@ -241,7 +270,7 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 			end
 		end
 		if not done then
-			rc, re = e2lib.rsync(args)
+			rc, re = e2lib.rsync(rsync_argv)
 			if not rc then
 				return false, re
 			end
@@ -249,29 +278,23 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 	elseif u.transport == "rsync+ssh" then
 		local destdir = string.format("/%s", e2lib.dirname(u.path))
 		local destname = e2lib.basename(u.path)
-		local user
-		if u.user then
-			user = string.format("%s@", u.user)
-		else
-			user = ""
-		end
-		local rsync_perm = ""
+
+                local rsync_argv = {}
 		if push_permissions then
-			rsync_perm = string.format("--perms --chmod \"%s\"",
-							push_permissions)
+                        table.insert(rsync_argv, "--perms")
+                        table.insert(rsync_argv, "--chmod")
+                        table.insert(rsync_argv, push_permissions)
 		end
-		rc, re = rsync_ssh_mkdir(
-				rsync_perm,
-				string.format("%s%s:", user, u.servername),
-				destdir)
+
+		rc, re = rsync_ssh_mkdir(rsync_argv, u.user,
+                  u.servername, destdir)
 		if not rc then
 			return false, re
 		end
-		rc, re = rsync_ssh(
-				rsync_perm,
-				sourcefile,
-				string.format("'%s%s:/%s/%s'", user,
-					u.servername, destdir, destname))
+
+                local ddir = destdir .. "/" .. destname
+                local dest = rsync_quote_remote(u.user, u.servername, ddir)
+		rc, re = rsync_ssh(rsync_argv, sourcefile, dest)
 		if not rc then
 			return false, re
 		end
@@ -286,21 +309,22 @@ function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 		end
 		local destdir = string.format("/%s", e2lib.dirname(u.path))
 		local destname = e2lib.basename(u.path)
-		local user
+		local user = ""
 		if u.user then
 			user = string.format("%s@", u.user)
-		else
-			user = ""
-		end
-		local args = string.format("'%s%s' mkdir -p '%s'",
-						user, u.servername, destdir)
-		rc, re = e2lib.ssh(args)
+                end
+
+                local argv = { user..u.servername, "mkdir", "-p",
+                  e2lib.shquote(destdir) }
+		rc, re = e2lib.ssh(argv)
 		if not rc then
 			return false, re
 		end
-		local args = string.format("'%s' '%s%s:%s/%s'",
-			sourcefile, user, u.servername, destdir, destname)
-		rc, re = e2lib.scp(args)
+                local destserv = string.format("%s%s:", user, u.servername)
+		local destfile = string.format("%s/%s", destdir, destname)
+                destfile = e2lib.shquote(destfile)
+                destfile = destserv .. destfile
+		rc, re = e2lib.scp({ sourcefile, destfile })
 		if not rc then
 			return false, re
 		end
