@@ -1,4 +1,6 @@
-NEXT:
+e2factory-2.3.12rc1
+ * allow server paths to contain whitespace
+ * bugfixes
 
 e2factory-2.3.11
  * remove bashism, noted by Dominic Lemire
