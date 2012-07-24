@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.12
  * allow server paths to contain whitespace
  * bugfixes
