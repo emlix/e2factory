@@ -103,7 +103,7 @@ local: e2commit buildconfig.lua
 	$(MAKE) -C extensions local
 
 install-local:
-	scripts/e2-locate-project-root
+	$(BINDIR)/e2-locate-project-root
 	@echo removing old installation...
 	rm -rf $(LOCALBINDIR)
 	rm -rf $(LOCALLIBDIR)

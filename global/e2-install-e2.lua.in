@@ -30,8 +30,6 @@ require("e2lib")
 require("e2option")
 require("generic_git")
 
-install_prefix = buildconfig.PREFIX
-
 e2lib.init()
 
 e2option.documentation = [[
@@ -199,8 +197,8 @@ rc, re = e2lib.chdir(root .. "/.e2/e2")
 if not rc then
   e2lib.abort(e:cat(re))
 end
-local cmd = string.format("make PREFIX=%s local install-local",
-  e2lib.shquote(install_prefix))
+local cmd = string.format("make PREFIX=%s BINDIR=%s local install-local",
+  e2lib.shquote(buildconfig.PREFIX), e2lib.shquote(buildconfig.BINDIR))
 rc, re = e2lib.callcmd_capture(cmd)
 if rc ~= 0 then
   e2lib.abort(e:cat(re))
