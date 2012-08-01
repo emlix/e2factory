@@ -1,9 +1,0 @@
-mkdir work
-cd work
-mkdir projects
-mkdir upstream
-mkdir results
-cd ..
-mkdir -p work/projects/emlix/null/git
-git clone --bare ../../ work/projects/emlix/e2/git/e2.git
-e2-create-project --tooldebug projects:e2testsuite/tp

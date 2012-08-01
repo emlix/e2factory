@@ -1,4 +1,0 @@
-source ../tests/init.lib
-source ../tests/fetch.lib
-source ../tests/configure.lib
-source ../tests/new_files_source.lib
