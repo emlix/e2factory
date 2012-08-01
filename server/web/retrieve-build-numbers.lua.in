@@ -24,7 +24,7 @@ local function readbn(str)
   local t = {}
   for ln in string.gmatch(str, "[^\n]*\n") do
     if not string.match(ln, "^%s*$") then
-      local res, bid, status, num = 
+      local res, bid, status, num =
 	string.match(ln, "([-%w_]+)%s+(%x+)%s+(%S+)%s+(%d+)")
       if res then
 	t[ res ] = { id = bid, num = num, status = status }

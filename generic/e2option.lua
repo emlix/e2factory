@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -55,7 +55,7 @@ local program_name = arg[ 0 ]
 --   option(NAME, [DOC, [DEFAULT, [FUNCTION, [ARGUMENTNAME]]]])
 --
 --     Declares an option with argument. DEFAULT defaults to "true".
---     ARGUMENTNAME will be used in the generated usage information 
+--     ARGUMENTNAME will be used in the generated usage information
 --     (see "usage()").
 --
 --   alias(NAME, OPTION)
@@ -93,7 +93,7 @@ function option(name, doc, default, func, argname)
     return false, new_error("option exists: %s", name)
   end
   options[ name ] = {type = "option", documentation = doc or "", name = name,
-    proc=func, default=default or true, 
+    proc=func, default=default or true,
     argumentname=argname or "ARGUMENT"}
   table.insert(optionlist, name)
 end
@@ -259,7 +259,7 @@ function parse(args)
       return
     end
     local e2rc = {}
-    local rc, e = e2lib.dofile_protected(file, 
+    local rc, e = e2lib.dofile_protected(file,
 				{ e2rc = function(t) e2rc = t end })
     if not rc then
       e2lib.abort(e)
@@ -286,18 +286,18 @@ function parse(args)
   local vals = {}
   local opts={ arguments=vals }
   local i = 1
-  while i <= #args do		-- we may modify args 
+  while i <= #args do		-- we may modify args
     local v = args[ i ]
     local s, e, opt, val = string.find(v, "^%-%-?([^= ]+)=(.*)$")
     if s then
       opt = aliases[ opt ] or opt
-      if options[ opt ] then 
+      if options[ opt ] then
 	local proc = options[ opt ].proc
 	if proc then val = proc(val) end
 	opts[ opt ] = val
       else usage(1)
       end
-    else 
+    else
       s, e, opt = string.find(v, "^%-%-?(.*)$")
       if s then
 	opt = aliases[ opt ] or opt
@@ -307,16 +307,16 @@ function parse(args)
 	    if i == #args then
 	      e2lib.abort("argument missing for option: " .. opt)
 	    end
-	    if proc then 
+	    if proc then
 	      opts[ opt ] = proc(args[ i + 1 ])
-	    else 
+	    else
 	      opts[ opt ] = args[ i + 1 ]
 	    end
 	    i = i + 1
 	  else
-	    if proc then 
+	    if proc then
 	      opts[ opt ] = proc()
-	    else 
+	    else
 	      opts[ opt ] = options[ opt ].default
 	    end
 	  end
@@ -365,8 +365,8 @@ function usage(rc)
 Copyright (C) 2007-2009 by Gordon Hecker and Oskar Schirmer, emlix GmbH
 Copyright (C) 2007-2008 by Felix Winkelmann, emlix GmbH
 
-This program comes with ABSOLUTELY NO WARRANTY; This is free software, 
-and you are welcome to redistribute it under certain conditions. 
+This program comes with ABSOLUTELY NO WARRANTY; This is free software,
+and you are welcome to redistribute it under certain conditions.
 Type e2 --licence for more information.
 ]])
   print(documentation)

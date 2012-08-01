@@ -22,10 +22,10 @@ cvs and subversion do not support auto-creation of repositories for now.
 When creating a git repository a server side repository is created and
 a local repository is created and set up to be related to the server side
 repository via the remote named origin.
-No commits are initially created. The user must create the initial commit 
+No commits are initially created. The user must create the initial commit
 and push it to the server. See Examples below.
 
-e2-new-source(1) does not create any configuration files. Use e2-cf(1) to 
+e2-new-source(1) does not create any configuration files. Use e2-cf(1) to
 create a source configuration.
 
 .SH RETURN VALUE
@@ -47,7 +47,7 @@ For further global options, see \fBe2intro\fR(7).
 .SH EXAMPLES
 To place an external source file on the default server:
 .IP
-e2-new-source --files a/anything/0.1 file:///tmp/download/anything-0.1.tar.bz2 
+e2-new-source --files a/anything/0.1 file:///tmp/download/anything-0.1.tar.bz2
 file:///tmp/download/anything-0.1.tar.bz2.sha1
 .PP
 To create a new, empty git repository on server and client side:

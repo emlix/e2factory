@@ -3,7 +3,7 @@ Results
 
 
 To create a result in the configuration call the e2result function
-with a table argument. Usually a source configures one or more of the 
+with a table argument. Usually a source configures one or more of the
 following keys:
 
 *   sources list of sources
@@ -28,11 +28,11 @@ separated with a dot (e.g. xorg.libXau). This occurrs when specify dependencies 
 
 The `collect_project` flag provides a tree holding everything to rebuild
 the result configured in `collect_project_default_result` in $E2_TMPDIR/project.
-The user must write a build-script to package that tree to a file in 
+The user must write a build-script to package that tree to a file in
 $E2_TMPDIR/out
 
-All configuration options can be combined. And even a configuration with 
-no keys is valid: The `base` chroot group is used automatically, and the 
+All configuration options can be combined. And even a configuration with
+no keys is valid: The `base` chroot group is used automatically, and the
 `build-script` runs and may create a result.
 
 Example configuration:
@@ -60,7 +60,6 @@ Example (using the `collect_project` flag)
         collect_project_default_result = "bsp",
         sources = { },
         depends = { },
-        
     }
 
 Example build script:

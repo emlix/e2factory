@@ -7,7 +7,7 @@ and correct description. But let's have a look step-by-step.
 
 Building embedded systems from source usually means taking a lot of steps,
 building different parts of the system, starting with a toolchain, going
-on building the root filesystem and finally creating a flash image, for 
+on building the root filesystem and finally creating a flash image, for
 example. You may even want to build an up-to-date set of documentation
 with the final result.
 
@@ -17,7 +17,7 @@ or more other results, a compiler and assembler and the c library will
 make up the toolchain while the root filesystem could consist of some
 libraries, e.g. zlib and the busybox.
 
-Zlib and busybox are usually results again, but they are built from 
+Zlib and busybox are usually results again, but they are built from
 sources (that may or may not be named like the results in those cases).
 
 Thats basically the whole concept: Configure sources and configure

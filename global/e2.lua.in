@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -76,7 +76,7 @@ else
 end
 
 e2call.globaltool = buildconfig.TOOLDIR .. "/" .. e2call.toolname
-if root then 
+if root then
   e2call.localtool = root .. "/.e2/bin/" .. e2call.toolname
 end
 
@@ -88,7 +88,7 @@ if e2util.stat(e2call.globaltool) then
   lua = buildconfig.LUA
   cmd = string.format("%s %s %s %s", env, lua, e2call.tool, e2call.arg_string)
 elseif not root then
-  e2lib.abort(e2call.toolname .. 
+  e2lib.abort(e2call.toolname ..
 	" is not a global tool and we're not in a project environment")
 elseif root and e2util.stat(e2call.localtool) then
   e2call.tool = e2call.localtool
@@ -96,7 +96,7 @@ elseif root and e2util.stat(e2call.localtool) then
                         root .. "/.e2/lib/e2/?.lua' " ..
         "LUA_CPATH=" .. root .. "/.e2/lib/e2/?.so"
   cmd = env .. " " ..
-        root .. "/.e2/bin/e2-lua " .. 
+        root .. "/.e2/bin/e2-lua " ..
         e2call.tool .. " " .. e2call.arg_string
 else
   e2lib.abort(e2call.toolname .. " is neither local nor global tool")

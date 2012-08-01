@@ -6,7 +6,7 @@ Licences
 configurations later on.
 
 To configure licences call the e2licence function with a table argument.
-The table must specify keys with table values. The keys are used as 
+The table must specify keys with table values. The keys are used as
 the licence identifier, that can be referenced in source configurations.
 The table assigns files to the licence:
 

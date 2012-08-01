@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -35,7 +35,7 @@ require("tools")
 require("cache")
 require("luafile")
 
-_version = "e2factory, the emlix embedded build system, version " .. 
+_version = "e2factory, the emlix embedded build system, version " ..
 							buildconfig.VERSION
 
 _licence = [[
@@ -70,12 +70,12 @@ globals = {
     { "v4", false }    -- tooldebug
   },
   log_debug = false,
-  debug = false, 
+  debug = false,
   playground = false,
   interactive = arg and (arg[ -1 ] == "-i"),
   -- variables initialized in init()
-  username = nil, 
-  homedir = nil, 
+  username = nil,
+  homedir = nil,
   hostname = nil,
   termwidth = 72,
   env = {},
@@ -388,7 +388,7 @@ function warnf(category, format, ...)
   return nil
 end
 
---- exit, cleaning up temporary files and directories. 
+--- exit, cleaning up temporary files and directories.
 -- Return code is '1' and cannot be overrided.
 -- This function takes any number of strings or an error object as arguments.
 -- Please pass error objects to this function in the future.
@@ -798,7 +798,7 @@ function read_configuration(p)
     local function nextline(s)
       while true do
 	local ln = s:read("*l")
-	if not ln then 
+	if not ln then
 	  s:close()
 	  return nil
 	elseif not string.find(ln, "^%s*#") and string.find(ln, "%S") then
@@ -1000,7 +1000,7 @@ end
 --     compute_hash(ITER, [VALUE...])
 
 function compute_hash(iter, ...)
-  local n, f, s 
+  local n, f, s
   local i, o, e, p = e2util.pipe("sha1sum")
   if not i then bomb("cannot calculate hash sum: " .. o) end
   for x in iter(...) do
@@ -1015,7 +1015,7 @@ function compute_hash(iter, ...)
   if not n then bomb(f) end
   n, f = e2util.wait(p)
   if not n then bomb(f) end
-  return s 
+  return s
 end
 
 -- Iterator functions
@@ -1052,8 +1052,8 @@ function callcmd(infile, outfile, errfile, cmd)
   return (rc/256)
 end
 
--- callcmd_redirect: call a command with 
---  stdin redirected from /dev/null 
+-- callcmd_redirect: call a command with
+--  stdin redirected from /dev/null
 --  stdout/stderr redirected to a luafile object
 
 function callcmd_redirect(cmd, out)
@@ -1150,7 +1150,7 @@ function callcmd_pipe(cmds, infile, outfile)
 		.. table.concat(rcs, ", ")
 end
 
---- call a command with stdin redirected from /dev/null, stdout/stderr 
+--- call a command with stdin redirected from /dev/null, stdout/stderr
 -- captured via a pipe
 -- the capture function is called for every chunk of output that
 -- is captured from the pipe.
@@ -1732,7 +1732,7 @@ function isdir(dir)
   local args = string.format("-d '%s'", dir)
   return call_tool("test", args)
 end
- 
+
 --- check if path is a file
 -- @param dir string: path
 -- @return bool

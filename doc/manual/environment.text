@@ -6,7 +6,7 @@ Environment
 as in the build processes.
 
 Variables can be published across the whole project or local to a set of
-results. In the first case the variables are available in the whole 
+results. In the first case the variables are available in the whole
 configuration and in all build processes. They influence all buildids.
 
 Publishing variables to a specific set of results will make the variables
@@ -22,8 +22,8 @@ with a table argument. The table must have the following structure:
     The table must hold keys with string values assigned. These key-value
     pairs are usable in that results configuration and build process.
 
-Calling the env function with a string argument takes that string as a 
-env file to load in addition to the current configuration file. The 
+Calling the env function with a string argument takes that string as a
+env file to load in addition to the current configuration file. The
 filename is relative to the project root.
 
 Examples:

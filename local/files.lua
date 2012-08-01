@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -118,7 +118,7 @@ function files.cache_source(info, sourcename)
   local s = info.sources[sourcename]
   -- cache all files for this source
   for i,f in pairs(s.file) do
-    e2lib.log(4, string.format("files.cache_source: caching file %s:%s", 
+    e2lib.log(4, string.format("files.cache_source: caching file %s:%s",
   						f.server, f.location))
     local flags = { cache = true }
     if f.server ~= info.root_server_name then
@@ -127,7 +127,7 @@ function files.cache_source(info, sourcename)
         return false, e
       end
     else
-      e2lib.log(4, string.format("not caching %s:%s (stored locally)", 
+      e2lib.log(4, string.format("not caching %s:%s (stored locally)",
 							f.server, f.location))
     end
   end
@@ -206,7 +206,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
 	symlink = buildpath .. "/" .. sourcename
 	if file.unpack ~= sourcename then
 	  if not e2util.symlink(file.unpack, symlink) then
-	    return false, e:append("cannot create symlink: %s -> %s", symlink, 
+	    return false, e:append("cannot create symlink: %s -> %s", symlink,
 								file.unpack)
 	  end
 	end
@@ -264,7 +264,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
 	  return false, e:cat(re)
 	end
       else
-	e2lib.abort(string.format("missing destiny for file %s (%s)", 
+	e2lib.abort(string.format("missing destiny for file %s (%s)",
 						file.location, file.server))
       end
     end
@@ -298,7 +298,7 @@ function files.display(info, sourcename)
   if src.sourceid then
     display[i] = string.format("sourceid   = %s", src.sourceid)
     i = i + 1
-  end	
+  end
   return display
 end
 
@@ -324,7 +324,7 @@ function files.sourceid(info, sourcename, sourceset)
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
 	hash.hash_line(hc, src.type)
-	hash.hash_line(hc, src._env:id())	
+	hash.hash_line(hc, src._env:id())
 	for _,l in ipairs(src.licences) do
 		hash.hash_line(hc, l)
 		local licenceid, re = e2tool.licenceid(info, l)
@@ -345,7 +345,7 @@ function files.sourceid(info, sourcename, sourceset)
 		hash.hash_line(hc, tostring(f.patch))
 		hash.hash_line(hc, tostring(f.copy))
 	end
-	e2lib.log(4, string.format("hash data for source %s\n%s", src.name, 
+	e2lib.log(4, string.format("hash data for source %s\n%s", src.name,
 								hc.data))
 	src.sourceid = hash.hash_finish(hc)
 	return true, nil, src.sourceid

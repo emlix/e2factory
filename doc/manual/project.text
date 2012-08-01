@@ -5,7 +5,7 @@ Project
 *e2factory* needs some configuration information to run, that is collected in the
 project configuration.
 
-To setup the project configuration call the e2project function with a 
+To setup the project configuration call the e2project function with a
 table argument.
 
 The table must specify the following keys:

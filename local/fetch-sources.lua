@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -90,7 +90,7 @@ end
 if #opts.arguments > 0 then
   opts.selection = true
 end
-if not (opts.scm or opts.files or opts.chroot or opts.selection 
+if not (opts.scm or opts.files or opts.chroot or opts.selection
    or opts.git or opts.cvs or opts.svn) then
   e2lib.warn("WOTHER", "Selecting scm sources by default")
   opts.scm = true
@@ -159,7 +159,7 @@ function fetch_sources(info, opts, sel)
       end
     end
   end
-  
+
   -- update
   for _, s in pairs(info.sources) do
     local has_wc = scm.has_working_copy(info, s.name)
@@ -172,7 +172,7 @@ function fetch_sources(info, opts, sel)
         e2lib.log(1, "updating working copy for " .. s.name)
         local rc, re = scm.update(info, s.name)
         if not rc then
-          e2lib.log(4, string.format("updating working copy failed: %s", 
+          e2lib.log(4, string.format("updating working copy failed: %s",
 								s.name))
 	  e:cat(re)
         end
@@ -241,7 +241,7 @@ if opts.chroot then
   end
 end
 
-if opts.scm or opts.files or opts.git or opts.cvs or opts.svn or 
+if opts.scm or opts.files or opts.git or opts.cvs or opts.svn or
 	opts.selection then
   e2lib.log(2, "fetching sources...")
   local rc, re = fetch_sources(info, opts, sel)

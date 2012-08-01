@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -64,7 +64,7 @@ function new_cache(name, url)
 	c.ce = {}
 	e2lib.log(4, "Cache: " .. c.name)
 	e2lib.log(4, " url: " .. c.url)
-	if debug then 
+	if debug then
 		for k,v in pairs(c) do
 			print(k,v)
 		end
@@ -295,8 +295,8 @@ end
 -- @return bool
 -- @return an error object on failure
 function fetch_file(cache, server, location, destdir, destname, flags)
-	e2lib.log(4, string.format("%s: %s, %s, %s, %s, %s", "fetch_file()", 
-		tostring(server), tostring(location), tostring(destdir), 
+	e2lib.log(4, string.format("%s: %s, %s, %s, %s, %s", "fetch_file()",
+		tostring(server), tostring(location), tostring(destdir),
 		tostring(destname), tostring(flags)))
 	local rc, re
 	local e = new_error("cache: fetching file failed")
@@ -350,7 +350,7 @@ end
 function push_file(cache, sourcefile, server, location, flags)
 	local rc, re
 	local e = new_error("error pushing file to cache/server")
-	e2lib.log(4, string.format("%s: %s, %s, %s", "push_file()", 
+	e2lib.log(4, string.format("%s: %s, %s, %s", "push_file()",
 						sourcefile, server, location))
 	local ce, re = ce_by_server(cache, server)
 	if not ce then
@@ -389,7 +389,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function writeback(cache, server, location, flags)
-	e2lib.log(4, string.format("writeback(): %s %s %s", cache.name, 
+	e2lib.log(4, string.format("writeback(): %s %s %s", cache.name,
 						server, location))
 	local e = new_error("writeback failed")
 	local rc, re
@@ -423,7 +423,7 @@ end
 -- @return an error object on failure
 function cache_file(cache, server, location, flags)
 	e2lib.log(4, string.format("cache_file(): %s %s %s %s",
-		tostring(cache), tostring(server), tostring(location), 
+		tostring(cache), tostring(server), tostring(location),
 		tostring(flags)))
 	local e = new_error("caching file failed: %s:%s", server, location)
 	local rc, re
@@ -447,7 +447,7 @@ function cache_file(cache, server, location, flags)
 		-- file is in the cache and no refresh requested
 		return true, nil
 	end
-	local destdir = string.format("/%s/%s", ceurl.path, 
+	local destdir = string.format("/%s/%s", ceurl.path,
 					e2lib.dirname(location))
 	-- fetch the file to the cache
 	rc, re = transport.fetch_file(ce.remote_url, location, destdir, nil)
@@ -465,7 +465,7 @@ end
 -- @return string the path to the cached file, nil on error
 -- @return an error object on failure
 function file_path(cache, server, location, flags)
-	e2lib.log(4, string.format("file_path(): %s %s %s", 
+	e2lib.log(4, string.format("file_path(): %s %s %s",
 					cache.name, server, location))
 	local rc, re
 	local e = new_error("providing file path failed")

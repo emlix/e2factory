@@ -2,15 +2,15 @@ buildid
 -------
 
 
-A buildid is calculated for each result that is built. The buildid, 
+A buildid is calculated for each result that is built. The buildid,
 technically being a sha1 hash, identifies all configuration values
-that influence the build process. That key is used to store the 
+that influence the build process. That key is used to store the
 result.
 
 That means, if the user requests building a result, *e2factory* may
 check if the result already exists and simply skip building it if
 it does. This feature offers the unique combination of being sure to
-build exactly all results that are influenced by changes done to the 
+build exactly all results that are influenced by changes done to the
 project configuration or sources.
 
 That makes the workflow as easy as just doing changes and requesting

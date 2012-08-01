@@ -19,9 +19,9 @@ must belong to that group. Create the group.
 
 Be sure to add yourself to that group.
 
-e2factory, for historical reasons, builds and installs its own lua. 
-Make sure you download the lua-5.1.3.tar.gz package and place it in 
-the top level of the e2factory source tree prior to building. That 
+e2factory, for historical reasons, builds and installs its own lua.
+Make sure you download the lua-5.1.3.tar.gz package and place it in
+the top level of the e2factory source tree prior to building. That
 can be done by creating a symlink.
 
   ln -s ../lua-5.1.3.tar.gz

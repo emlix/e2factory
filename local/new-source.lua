@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -44,9 +44,9 @@ usage: e2-new-source --git [--server <server>] <name>
  Put new source onto an existing server.
 
  --git
- Put a repository named <name> into the projects' 'git/' directory on 
+ Put a repository named <name> into the projects' 'git/' directory on
  the server, i.e. <server>/<project>/git/<name>.git
- The server defaults to the default repository server, and the <project> 
+ The server defaults to the default repository server, and the <project>
  part is the project location relative to the projects server.
 
  --files
@@ -69,7 +69,7 @@ local opts = e2option.parse(arg)
 -- @return a table with fields checksum and checksum_type ("sha1", "md5")
 -- @return nil, or an error string on error
 function read_checksum(checksum_file, filename)
-	e2lib.log(4, string.format("read_checksum(%s, %s)", checksum_file, 
+	e2lib.log(4, string.format("read_checksum(%s, %s)", checksum_file,
 								filename))
 	local f, e = io.open(checksum_file, "r")
 	if not f then
@@ -155,7 +155,7 @@ end
 -- @param flags table: flags
 -- @return bool
 -- @return nil, an error string on error
-function new_files_source(c, server, location, source_file, checksum_file, 
+function new_files_source(c, server, location, source_file, checksum_file,
 					checksum_file_format, no_checksum)
 	local source_file_base = e2lib.basename(source_file)
 	local do_checksum = (not no_checksum)
@@ -175,7 +175,7 @@ function new_files_source(c, server, location, source_file, checksum_file,
 	if not e2lib.chdir(tmpdir) then
 		e2lib.abort("can't chdir")
 	end
-	
+
 	-- download
 	e2lib.log(1, string.format("fetching %s ...", source_file))
 	local rc, re = download(source_file)
@@ -191,7 +191,7 @@ function new_files_source(c, server, location, source_file, checksum_file,
 			e2lib.abort(re)
 		end
 		checksum_file_base = e2lib.basename(checksum_file)
-		checksum_file1 = string.format("%s.orig", 
+		checksum_file1 = string.format("%s.orig",
 							checksum_file_base)
 		rc = mv(checksum_file_base, checksum_file1)
 		if not rc then
@@ -215,7 +215,7 @@ function new_files_source(c, server, location, source_file, checksum_file,
 	if do_checksum then
 		if cs1.checksum == cs2.checksum then
 			e2lib.log(2, string.format(
-					"checksum matches (%s): %s", 
+					"checksum matches (%s): %s",
 					cs1.checksum_type, cs1.checksum))
 		else
 			e2lib.abort("checksum mismatch")
@@ -225,7 +225,7 @@ function new_files_source(c, server, location, source_file, checksum_file,
 	-- store
 	local flags = {}
 	local rlocation = string.format("%s/%s", location, source_file_base)
-	e2lib.log(1, string.format("storing file %s to %s:%s", 
+	e2lib.log(1, string.format("storing file %s to %s:%s",
 					source_file_base, server, rlocation))
 	local rc, e = cache.push_file(c, source_file_base, server,
 							rlocation, flags)
@@ -233,7 +233,7 @@ function new_files_source(c, server, location, source_file, checksum_file,
 		e2lib.abort(e)
 	end
 	local rlocation = string.format("%s/%s", location, checksum_file2)
-	e2lib.log(1, string.format("storing file %s to %s:%s", 
+	e2lib.log(1, string.format("storing file %s to %s:%s",
 					checksum_file2, server, rlocation))
 	local rc, e = cache.push_file(c, checksum_file2, server,
 							rlocation, flags)
@@ -288,10 +288,10 @@ elseif opts.files then
   if not no_checksum and not checksum_file then
     e2lib.abort("checksum file not given")
   end
-  local rc = new_files_source(info.cache, server, location, source_file, 
+  local rc = new_files_source(info.cache, server, location, source_file,
 			checksum_file, checksum_file_format, no_checksum)
 else
-  e2lib.log(1, 
+  e2lib.log(1,
 	"Creating repositories other than git is not supported yet.\n"..
  	"You might nevertheless use 'e2-use-source' to use existing\n"..
 	"sources in your project")

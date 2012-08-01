@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -51,7 +51,7 @@
 static char buffer[ PATH_MAX + 1 ];
 
 
-/* e2util.fork() -> pid 
+/* e2util.fork() -> pid
                  | nil, ERRORMESSAGE
 
    Forks a subprocess.
@@ -75,8 +75,8 @@ lua_fork(lua_State *lua)
 }
 
 
-/* e2util.cwd() -> STRING 
-   
+/* e2util.cwd() -> STRING
+
    Returns the current working directory.
  */
 
@@ -92,8 +92,8 @@ get_working_directory(lua_State *lua)
 }
 
 
-/* e2util.realpath(PATH) -> PATH' | nil 
-   
+/* e2util.realpath(PATH) -> PATH' | nil
+
    If PATH names an existing object in the file-system, then this
    function will return the absolute, canonical representation of PATH,
    otherwise nil is returned.
@@ -111,8 +111,8 @@ get_realpath(lua_State *lua)
 }
 
 
-/* e2util.stat(PATH, [FOLLOWLINKS?]) -> TABLE | nil 
-   
+/* e2util.stat(PATH, [FOLLOWLINKS?]) -> TABLE | nil
+
    Returns stat(3) information for the file system object designated by PATH.
    If FOLLOWLINKS? is not given or false, then the returned information will
    apply to the actual symbolic link, if PATH designates one. Otherwise
@@ -134,7 +134,7 @@ get_realpath(lua_State *lua)
      blocks        number of blocks (number)
 
      type          one of the following strings:
-               
+
                      block-special
 		     character-special
 		     fifo-special
@@ -223,7 +223,7 @@ get_file_statistics(lua_State *lua)
 }
 
 
-/* e2util.readlink(PATH) -> PATH' | nil 
+/* e2util.readlink(PATH) -> PATH' | nil
 
    Returns the path pointed to by the symbolic link PATH or nil, if the
    link does not exist.
@@ -236,7 +236,7 @@ read_symbolic_link(lua_State *lua)
   int len;
 
   len = readlink(p, buffer, sizeof(buffer));
-  
+
   if(len > -1) lua_pushlstring(lua, buffer, len);
   else lua_pushnil(lua);
 
@@ -244,7 +244,7 @@ read_symbolic_link(lua_State *lua)
 }
 
 
-/* e2util.directory(PATH, [DOTFILES?]) -> TABLE | nil 
+/* e2util.directory(PATH, [DOTFILES?]) -> TABLE | nil
 
    Returns an array with the contents of the directory designated by PATH.
    If DOTFILES? is given and true then files beginning with "." are also
@@ -266,7 +266,7 @@ get_directory(lua_State *lua)
     lua_newtable(lua);
 
     for(;;) {
-      de = readdir(dir); 
+      de = readdir(dir);
 
       if(de == NULL) break;
 
@@ -278,12 +278,12 @@ get_directory(lua_State *lua)
 
     closedir(dir);
   }
-  
+
   return 1;
 }
 
 
-/* e2util.tempnam(DIR) -> PATH 
+/* e2util.tempnam(DIR) -> PATH
 
    Returns a random temporary pathname.
  */
@@ -297,7 +297,7 @@ create_temporary_filename(lua_State *lua)
 }
 
 
-/* e2util.exists(PATH, [EXECUTABLE?]) -> BOOL 
+/* e2util.exists(PATH, [EXECUTABLE?]) -> BOOL
 
    Returns true if the file given in PATH exists. If EXECUTABLE? is given
    and true, then it is also checked whether the file is executable.
@@ -316,7 +316,7 @@ file_exists(lua_State *lua)
 }
 
 
-/* e2util.cd(PATH) 
+/* e2util.cd(PATH)
 
    Changes the current working directory to PATH.
 */
@@ -339,7 +339,7 @@ change_directory(lua_State *lua)
   return 2;
 }
 
-/* e2util.symlink(OLDPATH, NEWPATH) 
+/* e2util.symlink(OLDPATH, NEWPATH)
 
    Creates a symbolic link named NEWPATH which contains the string OLDPATH.
 */
@@ -398,21 +398,21 @@ run_pipe(lua_State *lua)
     }
     else if(child == 0) {
       close(in[ 1 ]);
-      
+
       if(in[ 0 ] != STDIN_FILENO) {
 	dup2(in[ 0 ], STDIN_FILENO);
 	close(in[ 0 ]);
       }
 
       close(out[ 0 ]);
-      
+
       if(out[ 1 ] != STDOUT_FILENO) {
 	dup2(out[ 1 ], STDOUT_FILENO);
 	close(out[ 1 ]);
       }
 
       close(err[ 0 ]);
-      
+
       if(err[ 1 ] != STDERR_FILENO) {
 	dup2(err[ 1 ], STDERR_FILENO);
 	close(err[ 1 ]);
@@ -450,10 +450,10 @@ run_pipe(lua_State *lua)
 /* e2util.wait(PID) -> STATUS, PID
                     |  nil, ERRORMESSAGE
 
-   waits for process to terminate and returns exit code. 
+   waits for process to terminate and returns exit code.
 */
 
-static int 
+static int
 process_wait(lua_State *lua)
 {
   pid_t pid = luaL_checkinteger(lua, 1);
@@ -485,7 +485,7 @@ read_fd(lua_State *lua)
   int m;
 
   if(buf == NULL) return 0;
-  
+
   m = read(fd, buf, n);
 
   if(m < 0) {
@@ -540,7 +540,7 @@ static int
 close_fd(lua_State *lua)
 {
   int fd = luaL_checkinteger(lua, 1);
-  
+
   if(close(fd) < 0) {
     lua_pushnil(lua);
     lua_pushstring(lua, (char *)strerror(errno));
@@ -710,7 +710,7 @@ do_getpid(lua_State *lua) {
 
    Establish signal handler for SIGINT that aborts. */
 
-static void 
+static void
 lstop(lua_State *L, lua_Debug *ar) {
   lua_sethook(L, NULL, 0, 0);
   lua_getglobal(L, "e2lib");
@@ -722,7 +722,7 @@ lstop(lua_State *L, lua_Debug *ar) {
 static lua_State *globalL;
 
 
-static void 
+static void
 laction (int i) {
   signal(i, SIG_DFL); /* if another SIGINT happens before lstop,
                               terminate process (default action) */
@@ -762,6 +762,6 @@ int luaopen_e2util(lua_State *lua)
 {
   luaL_register(lua, "e2util", lib);
   globalL = lua;
-  signal(SIGINT, laction);  
+  signal(SIGINT, laction);
   return 1;
 }

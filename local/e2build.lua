@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -305,7 +305,7 @@ function enter_playground(info, r, chroot_command)
   local term = e2lib.globals.terminal
   local e2_su = tools.get_tool("e2-su-2.2")
   local cmd = string.format("%s %s chroot_2_3 '%s' %s",
-				res.build_config.chroot_call_prefix, e2_su, 
+				res.build_config.chroot_call_prefix, e2_su,
 				res.build_config.base, chroot_command)
   e2tool.set_umask(info)
   os.execute(cmd)
@@ -519,7 +519,7 @@ function sources(info, r, return_flags)
 
   local function append_to_build_driver(info, r, script)
     local res = info.results[r]
-    res.build_config.build_driver = 
+    res.build_config.build_driver =
       res.build_config.build_driver .. string.format("%s\n", script)
   end
 
@@ -667,7 +667,7 @@ function linklast(info, r, return_flags)
   -- calculate the path to the result
   local server, location = res.build_mode.storage(info.project_location,
 							info.release_id)
-  local location1 = string.format("%s/%s/%s", location, r, 
+  local location1 = string.format("%s/%s/%s", location, r,
 					res.build_mode.buildid(res.buildid))
   local cache_flags = {
     check_only = true
@@ -966,7 +966,7 @@ end
 -- skip results that depend on this result
 -- example: toolchain, busybox, sources, iso,
 -- sources being the result collecting the project:
--- the results sources and iso won't be included, as that would lead to 
+-- the results sources and iso won't be included, as that would lead to
 -- an impossibility to calculate buildids (infinite recursion)
 -- @param c table: build context
 -- @return bool
@@ -981,7 +981,7 @@ function collect_project(info, r, return_flags)
 	local rc, re
 	local e = new_error("providing project data to this build failed")
 	-- project/proj/init/<files>
-	local destdir = string.format("%s/project/proj/init", 
+	local destdir = string.format("%s/project/proj/init",
 							res.build_config.T)
 	e2lib.mkdir(destdir, "-p")
 	local init_files = e2util.directory(info.root .. "/proj/init")
@@ -1020,7 +1020,7 @@ function collect_project(info, r, return_flags)
 	for _,g in pairs(res.collect_project_chroot_groups) do
 		e2lib.log(3, string.format("chroot group: %s", g))
 		local grp = info.chroot.groups_byname[g]
-		local destdir = string.format("%s/project/chroot/%s", 
+		local destdir = string.format("%s/project/chroot/%s",
 							res.build_config.T, g)
 		e2lib.mkdir(destdir, "-p")
 		local makefile, msg = io.open(
@@ -1095,7 +1095,7 @@ function collect_project(info, r, return_flags)
 		if not rc then
 			return false, e:cat(re)
 		end
-		local destdir = string.format("%s/project/%s", 
+		local destdir = string.format("%s/project/%s",
 							res.build_config.T, e2tool.resultdir(n))
 		e2lib.mkdir(destdir, "-p")
 		-- copy files
@@ -1150,7 +1150,7 @@ function collect_project(info, r, return_flags)
 	for _,s in ipairs(info.results[r].collect_project_sources) do
 		local src = info.sources[s]
 		e2lib.log(3, string.format("source: %s", s))
-		local destdir = string.format("%s/project/%s", 
+		local destdir = string.format("%s/project/%s",
 							res.build_config.T, e2tool.sourcedir(s))
 		e2lib.mkdir(destdir, "-p")
 		local source_set = res.build_mode.source_set()

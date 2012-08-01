@@ -46,7 +46,7 @@ and clean up the build directory
 2.5 all
 read the following from stdin
  chroot path c
- build path T 
+ build path T
  build path in chroot Tc
  result name r
 and run all steps required to build without using a chroot environment
@@ -57,7 +57,7 @@ and run all steps required to build without using a chroot environment
 read a result name from stdin
 print the following to stdout for use as input to most build tools
  chroot path c
- build path T 
+ build path T
  build path in chroot Tc
  result name r
 
@@ -109,12 +109,12 @@ if successful print the following to stdout:
  the absolute path to the projects' bin/ directory
 
 5.3 e2
-e2 is the main script that calls all local tools. e2 refuses to call a 
+e2 is the main script that calls all local tools. e2 refuses to call a
 local tool if the cwd is not inside a project directory.
 Local tools are called from ./bin in the project root unless the
 E2_LOCAL_TOOL_PATH environment variable is set.
 
-6. Bootstrap process to check out a project and the corresponding 
+6. Bootstrap process to check out a project and the corresponding
    version of the e2 tool
 
 6.1 steps
@@ -143,5 +143,5 @@ This chapter describes how to make hacking the e2 tool convenient.
     $ make install-local-symlinks LOCALBINDIR=$PWD/devel
  use the development tools while testing
     $ export E2_LOCAL_TOOL_PATH=$PWD/devel
- It is possible to edit the local tools in the working copy and immediately 
+ It is possible to edit the local tools in the working copy and immediately
  use them in any project without performing additional steps ('make install').

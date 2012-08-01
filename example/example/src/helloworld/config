@@ -2,7 +2,7 @@
 
 e2source {
 	-- the source name
-	-- (is derived from the config file path if only one source is 
+	-- (is derived from the config file path if only one source is
 	-- specified per file)
 	name = "helloworld",
 	-- the source type

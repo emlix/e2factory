@@ -21,7 +21,7 @@ files source (type = files, default)
  *   location (old: name) string: file location
  *   unpack string: the directory included in the source package
  *   patch string: strip n directories when
- *   copy string: the directory to copy the file into, relative to 
+ *   copy string: the directory to copy the file into, relative to
 
 Example:
 
@@ -37,7 +37,7 @@ Example:
             sha1 = "60faeaaf250642db5c0ea36cd6dcc9f99c8f3902",
           },
         }
-    }    
+    }
 
 cvs source (type = cvs)
 

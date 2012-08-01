@@ -37,10 +37,10 @@ sub-directories:
 |   |   |-- build-script      build instructions executed in chroot
 |   |   o-- <local file>      project-local files (related to result)
     |-- <subfolder>           results can be grouped in subfolders
-|   |   o-- <result>          
-|   |   |   |-- config         
-|   |   |   |-- build-script   
-|   |   |   o-- <local file>   
+|   |   o-- <result>
+|   |   |   |-- config
+|   |   |   |-- build-script
+|   |   |   o-- <local file>
     |   :
 |   :
 |
@@ -49,9 +49,9 @@ o-- src                       source descriptions for each source
     |   |-- config            source configuration
     |   o-- <local file>      project-local files (related to source)
     |-- <subfolder>           sources can be groupd in subfolders
-    |   o-- <source>           
-    |   |   |-- config       
-    |   |   o-- <local file> 
+    |   o-- <source>
+    |   |   |-- config
+    |   |   o-- <local file>
     |   :
     :
 .fi
@@ -72,7 +72,7 @@ env {
   <variable1> = "<value1>",
   <variable2> = "<value2>",
   :
-} 
+}
 .fi
 
 During execution of a build script for a given result, environment variables
@@ -190,7 +190,7 @@ file = {
     location = "<path-to-file>",
     <destiny> = "contents"
   }
-} 
+}
 .fi
 
 <destiny> is one of \fBunpack\fR, \fBpatch\fR or \fBcopy\fR.
@@ -212,7 +212,7 @@ e2source {
 }
 .fi
 
-If the source refers to a version control repository 
+If the source refers to a version control repository
 (\fBgit(7)\fR, \fBsvn(1)\fR, etc.), then
 these properties should be defined:
 
@@ -236,7 +236,7 @@ module = "<module path>"
 .fi
 
 To use cvs pserver mode the server must use "cvspserver://" transport.
-cvs login is not supported. Do cvs login before trying to access the 
+cvs login is not supported. Do cvs login before trying to access the
 cvs server with e2.
 
 Source configuration files must follow \fBlua(1)\fR syntax.
@@ -277,12 +277,12 @@ to denote the head revision of the given branch \fIbranchname\fR.
 
 .SH RESULT\ CONFIGURATION
 
-"config" files for results look similar to source configurations, but 
+"config" files for results look similar to source configurations, but
 use the "e2result" configuration command:
 
 .nf
 e2result {
-  <propertyname> = <value>, 
+  <propertyname> = <value>,
   ...
 }
 .fi

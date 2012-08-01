@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -101,7 +101,7 @@ require("policy")
 -- @field branch string: branch name
 -- @field tag table: table of tag names (strings)
 -- @field file table: table of file records (tables)
--- @field fhash string: hash value for this source, for use in buildid 
+-- @field fhash string: hash value for this source, for use in buildid
 -- 			calculation
 -- @field flist table: array of files
 -- 			(deprecated, replaced by file records)
@@ -121,7 +121,7 @@ require("policy")
 -- @field depends table of strings: list of dependencies
 -- @field chroot table of strings: list of chroot groups to use
 -- @field collect_project bool: collect the project structure into this result?
--- @field collect_project_default_result string: which result shall be 
+-- @field collect_project_default_result string: which result shall be
 -- 				collected, including recursive dependencies?
 -- @field collect_project_results table: sorted list of results to be
 -- 								collected
@@ -363,7 +363,7 @@ function load_user_config2(info, path, types)
   end
 
   local g = {}			-- compose the environment for the config file
-  g.env = info.env			-- env 
+  g.env = info.env			-- env
   g.string = string			-- string
   for _,type in ipairs(types) do
     g[type] = f[type]			-- and some config functions
@@ -487,7 +487,7 @@ function collect_project_info(info, skip_load_config)
   info.root_server = "file://" .. info.root
   info.root_server_name = "."
 
-  -- the proj_storage server is equivalent to 
+  -- the proj_storage server is equivalent to
   --  info.default_repo_server:info.project-locaton
   info.proj_storage_server_name = "proj-storage"
 
@@ -609,7 +609,7 @@ function collect_project_info(info, skip_load_config)
   if not rc then
     return false, e:cat(re)
   end
-  
+
   -- licences
   rc, re = load_user_config(info, info.root .. "/proj/licences",
 					info, "licences", "e2licence")
@@ -625,7 +625,7 @@ function collect_project_info(info, skip_load_config)
   table.sort(info.licences_sorted)
 
   rc, re = load_source_config(info)
-  if not rc then 
+  if not rc then
     return false, e:cat(re)
   end
 
@@ -654,7 +654,7 @@ function collect_project_info(info, skip_load_config)
   end
 
   -- read .e2/proj-location
-  info.project_location_config = string.format("%s/.e2/project-location", 
+  info.project_location_config = string.format("%s/.e2/project-location",
 								info.root)
   local line, re = e2lib.read_line(info.project_location_config)
   if not line then
@@ -1074,7 +1074,7 @@ function projid(info)
 	local hc = hash.hash_start()
 	for f in e2lib.directory(info.root .. "/proj/init") do
 		if not e2lib.is_backup_file(f) then
-			local location = string.format("proj/init/%s", 
+			local location = string.format("proj/init/%s",
 							e2lib.basename(f))
 			local f = {
 				server = info.root_server_name,
@@ -1153,10 +1153,10 @@ end
 --   e2tool.tag_available(info, check_local, check_remote)
 --
 --     Return true if the tags are available, false if not.
---     Choose local and remote checking by setting check_local and 
+--     Choose local and remote checking by setting check_local and
 --     check_remote.
 --
---     TODO: works with the null project. Use and/or write scm specific 
+--     TODO: works with the null project. Use and/or write scm specific
 --     code to make it usable for projects that use non-git scms.
 
 function tag_available(info, check_local, check_remote)
@@ -1172,7 +1172,7 @@ function tag_available(info, check_local, check_remote)
         e2lib.shquote(s.tag))
       rc = e2lib.callcmd_capture(cmd)
       if rc ~= 0 then
-        e2lib.log(1, "Fatal: source " .. s.name 
+        e2lib.log(1, "Fatal: source " .. s.name
 		.. ": local tag not available: " .. s.tag)
 	rc = false
       end
@@ -1184,7 +1184,7 @@ function tag_available(info, check_local, check_remote)
         e2lib.shquote(s.tag))
       rc = e2lib.callcmd_capture(cmd)
       if rc ~= 0 then
-        e2lib.log(1, "Fatal: " .. s.name .. ": remote tag not available: " 
+        e2lib.log(1, "Fatal: " .. s.name .. ": remote tag not available: "
 		.. s.tag)
 	rc = false
       end
@@ -1197,7 +1197,7 @@ end
 --   e2tool.pre_tag_check(info, check_local, check_remote)
 --
 --     Return true if all checks succeed and false if not.
---     For offline usage local and remote checking can be turned on 
+--     For offline usage local and remote checking can be turned on
 --     as needed.
 
 function pre_tag_check(info, tag, check_local, check_remote)
@@ -1214,8 +1214,8 @@ function pre_tag_check(info, tag, check_local, check_remote)
   end
 
   -- return false if any fatal errors occured
-  if not e2_has_fixed_tag_flag or 
-     has_pseudotags_flag or 
+  if not e2_has_fixed_tag_flag or
+     has_pseudotags_flag or
      tag_unavailable_flag or
      e2_tag_exists_flag then
     return false
@@ -1245,7 +1245,7 @@ end
 function hashcache_setup(info)
 	local e = new_error("reading hash cache")
 	local rc, re
-	e2lib.logf(4, "loading hashcache from file: %s", info.hashcache_file) 
+	e2lib.logf(4, "loading hashcache from file: %s", info.hashcache_file)
 	info.hashcache = {}
 	local c, msg = loadfile(info.hashcache_file)
 	if not c then
@@ -1668,7 +1668,7 @@ function chrootgroupid(info, groupname)
 		end
 		hc:hash_line(fileid)
 	end
-	e2lib.log(4, string.format("hash data for chroot group %s\n%s", 
+	e2lib.log(4, string.format("hash data for chroot group %s\n%s",
 							groupname, hc.data))
 	g.groupid = hc:hash_finish()
 	return g.groupid
@@ -1704,7 +1704,7 @@ function envid(info, resultname)
 end
 
 function add_source_result(info, sourcename, source_set)
-	e2lib.log(3, string.format("adding source result for source %s", 
+	e2lib.log(3, string.format("adding source result for source %s",
 								sourcename))
 	local src = info.sources[sourcename]
 	local r = {}
@@ -1875,7 +1875,7 @@ function check_result(info, resultname)
 	end
 	if res.files then
 		e2lib.warnf("WDEPRECATED", "in result %s", resultname)
-		e2lib.warnf("WDEPRECATED", 
+		e2lib.warnf("WDEPRECATED",
 			" files attribute is deprecated and no longer used")
 		res.files = nil
 	end
@@ -2234,7 +2234,7 @@ function buildnumber_mergefromresults(info)
 	for r, res in pairs(info.results) do
 		local bn = info.build_numbers[r]
 		if not bn then
-			e2lib.warnf("WOTHER", 
+			e2lib.warnf("WOTHER",
 			   "creating new build number entry for result: %s", r)
 			-- create a new entry
 			bn = {}
@@ -2419,7 +2419,7 @@ function select_result(info, r, force_rebuild, request_buildno,							keep_chroo
 end
 
 
---- select results based upon a list of results usually given on the 
+--- select results based upon a list of results usually given on the
 -- command line. Parameters are assigned to all selected results.
 -- @param info the info structure
 -- @param results table: list of result names
@@ -2450,7 +2450,7 @@ function print_selection(info, results)
 		if not res then
 			return false, e:append("no such result: %s", r)
 		end
-		local s = res.selected and "[ selected ]" or 
+		local s = res.selected and "[ selected ]" or
 					   "[dependency]"
 		local f = res.force_rebuild and "[force rebuild]" or ""
 		local b = res.request_buildno and "[request buildno]" or ""
@@ -2808,7 +2808,7 @@ function load_result_config(info)
 end
 
 --- set umask to value used for build processes
--- @param info 
+-- @param info
 function set_umask(info)
   e2lib.logf(4, "setting umask to %04o", info.chroot_umask)
   e2util.umask(info.chroot_umask)
@@ -2842,7 +2842,7 @@ local function generatePath(base, str, postfix)
   end
   return base
 end
-    
+
 -- get directory for a result
 -- Returns the path to the resultdir and the optional postfix is appended
 -- with a slash (e.g. res/name/build-script)

@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -59,7 +59,7 @@ function cvs.validate_source(info, sourcename)
   end
   if not src.cvsroot then
     e2lib.warnf("WDEFAULT", "in source %s:", sourcename)
-    e2lib.warnf("WDEFAULT", 
+    e2lib.warnf("WDEFAULT",
 	" source has no `cvsroot' attribute, defaulting to the server path")
     src.cvsroot = "."
   end
@@ -312,12 +312,12 @@ function cvs.sourceid(info, sourcename, source_set)
 	if src.sourceid[source_set] then
 		return true, nil, src.sourceid[source_set]
 	end
-	local e = new_error("calculating sourceid failed for source %s", 
+	local e = new_error("calculating sourceid failed for source %s",
 								sourcename)
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
 	hash.hash_line(hc, src.type)
-	hash.hash_line(hc, src._env:id())	
+	hash.hash_line(hc, src._env:id())
 	for _,l in ipairs(src.licences) do
 		hash.hash_line(hc, l)
 		local licenceid, re = e2tool.licenceid(info, l)
@@ -331,8 +331,8 @@ function cvs.sourceid(info, sourcename, source_set)
 		-- we rely on tags being unique with cvs
 		hc:hash_line(src.tag)
 	else
-		-- the old function took a hash of the CVS/Entries file, but 
-		-- forgot the subdirecties' CVS/Entries files. We might 
+		-- the old function took a hash of the CVS/Entries file, but
+		-- forgot the subdirecties' CVS/Entries files. We might
 		-- reimplement that once...
 		e:append("cannot calculate sourceid for source set %s",
 								source_set)

@@ -15,7 +15,7 @@
 # 			installing software for packaging
 # ./env			files containing environment variables are located here
 # ./init		init scripts are located here
-# ./script		this directory holds the build driver and the build 
+# ./script		this directory holds the build driver and the build
 # 			script
 # ./in			This directory is available but unused
 # ./dep/<dependency>	These directories hold result files from dependency

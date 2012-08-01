@@ -4,23 +4,23 @@
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
-   
+
    For more information have a look at http://www.e2factory.org
 
    e2factory is a registered trademark by emlix GmbH.
 
    This file is part of e2factory, the emlix embedded build system.
-   
+
    e2factory is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
@@ -47,7 +47,7 @@ function git_branch_get(gitdir)
     if not line then
       break
     end
-    local x 
+    local x
     -- search for a line matching '* <branchname>'
     x, branch = line:match("^(\* )(%S*)$")
     if x and branch then
@@ -137,18 +137,18 @@ function source_apply_default_licences(info, sourcename)
   src.licences_default_applied = true
   if not src.licences and src.licence then
     e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
-    e2lib.warnf("WDEPRECATED", 
+    e2lib.warnf("WDEPRECATED",
 		" licence attribute is deprecated. Replace by licences.")
     src.licences = src.licence
   end
   if not src.licences then
     e2lib.warnf("WDEFAULT", "in source %s:", src.name)
-    e2lib.warnf("WDEFAULT", 
+    e2lib.warnf("WDEFAULT",
 		" licences attribute missing. Defaulting to empty list.")
     src.licences = {}
   elseif type(src.licences) == "string" then
     e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
-    e2lib.warnf("WDEPRECATED", 
+    e2lib.warnf("WDEPRECATED",
 		" licences attribute is not in table format. Converting.")
     src.licences = { src.licences }
   end
@@ -383,7 +383,7 @@ function git.fetch_source(info, sourcename)
   e2lib.log(2, string.format("cloning %s:%s [%s]",
 				src.server, src.location, src.branch))
   local skip_checkout = e2lib.globals.git_skip_checkout
-  rc, re = generic_git.git_clone_from_server(info.cache, src.server, 
+  rc, re = generic_git.git_clone_from_server(info.cache, src.server,
 					src.location, wrk, skip_checkout)
   if not rc then
     return false, e:cat(re)
@@ -399,7 +399,7 @@ function git.fetch_source(info, sourcename)
 							start_point)
     if not rc then
       return false, e:cat(re)
-    end 
+    end
     local rc, re = generic_git.git_checkout1(wrk, src.branch)
     if not rc then
       return false, e:cat(re)
@@ -543,8 +543,8 @@ function git.git_url(c, server, location)
 end
 
 function git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
-  e2lib.log(4, string.format("%s, %s, %s, %s, %s, %s", 
-	tostring(c), tostring(lserver), tostring(llocation), 
+  e2lib.log(4, string.format("%s, %s, %s, %s, %s, %s",
+	tostring(c), tostring(lserver), tostring(llocation),
 	tostring(name), tostring(rserver), tostring(rlocation)))
   local rurl, e = cache.remote_url(c, rserver, rlocation)
   if not rurl then
@@ -574,7 +574,7 @@ function git.display(info, sourcename)
   if not rc then
     return nil, e:cat(re)
   end
-  -- try to calculte the sourceid, but do not care if it fails. 
+  -- try to calculte the sourceid, but do not care if it fails.
   -- working copy might be unavailable
   scm.sourceid(info, sourcename, "tag")
   scm.sourceid(info, sourcename, "branch")
