@@ -37,7 +37,7 @@ rm_tool = "@RM_TOOL@"
 compat_2_1 = true   -- be compatible with e2-2.1?
 
 function assert_chroot_environment(path)
-  fname = string.format("%s/emlix-chroot", path)
+  local fname = string.format("%s/emlix-chroot", path)
   local f = io.open(fname, "r")
   if not f then
     print("not a chroot environment")
