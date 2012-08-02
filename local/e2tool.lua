@@ -1005,20 +1005,19 @@ end
 -- @return string the hash value, nil on error
 -- @return nil, an error string on error
 function hash_path(path)
-  local f = io.popen(string.format("sha1sum %s", e2lib.shquote(path)), "r")
-  if not f then
-    return false, "can't calculation checksum"
+  assert(type(path) == "string")
+  assert(string.len(path) > 0)
+
+  local e = new_error("error hashing path")
+
+  local ctx = hash.hash_start()
+
+  local rc, re = ctx:hash_file(path)
+  if not rc then
+	  return nil, e:cat(re)
   end
-  local l = f:read("*l")
-  f:close()
-  if not l then
-    return nil, "can't calculation checksum"
-  end
-  local s, e, cs, b = string.find(l, "^(%S+)%s+(%S+)$")
-  if not cs then
-    return nil, "can't calculation checksum"
-  end
-  return cs
+
+  return ctx:hash_finish()
 end
 
 --- hash a file addressed by server name and location
