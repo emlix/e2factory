@@ -33,10 +33,15 @@ require("sha1")
 -- @return nil, an error string on error
 function hash_start()
 	local hc = {}
+
 	for k,v in pairs(hash) do
 		hc[k] = v
 	end
+
+	hc.ctx = sha1.sha1_init()
 	hc.data = ""
+	hc.datalen = 0
+
 	return hc
 end
 
@@ -44,12 +49,54 @@ end
 -- @param hc the hash context
 -- @param data string: data
 function hash_append(hc, data)
-	-- append the data
+	assert(type(hc) == "table" and type(hc.ctx) == "userdata")
+	assert(type(data) == "string")
+
 	hc.data = hc.data .. data
+	hc.datalen = hc.datalen + string.len(data)
+
+	-- Consume data and update hash whenever 64KB are available
+	if hc.datalen >= 64*1024 then
+		hc.ctx:update(hc.data)
+		hc.data = ""
+		hc.datalen = 0
+	end
 end
 
+--- hash a line
+-- @param hc the hash context
+-- @param data string: data to hash, a newline is appended
 function hash_line(hc, data)
 	hash_append(hc, data .. "\n")
+end
+
+--- hash a file
+-- @param hc the hash context
+-- @param path string: the full path to the file
+-- @return true on success, nil on error
+-- @return nil, error object on failure
+function hash_file(hc, path)
+	assert(type(hc) == "table" and type(hc.ctx) == "userdata")
+	assert(type(path) == "string")
+
+	local fd = io.open(path, "r")
+	if not fd then
+		return nil, new_error("could not open file '%s'", path)
+	end
+
+	local buf = ""
+	while true do
+		buf = fd:read(64*1024)
+		if buf == nil then
+			break
+		end
+
+		hash_append(hc, buf)
+	end
+
+	fd:close()
+
+	return true
 end
 
 --- add hash data
@@ -57,8 +104,17 @@ end
 -- @return the hash value, or nil on error
 -- @return an error string on error
 function hash_finish(hc)
-	local ctx = sha1.sha1_init()
-	ctx:update(hc.data)
-	hc.sha1 = string.lower(ctx:final())
-	return hc.sha1
+	assert(type(hc) == "table" and type(hc.ctx) == "userdata")
+
+	hc.ctx:update(hc.data)
+
+	local cs = string.lower(hc.ctx:final())
+	assert(string.len(cs) == 40)
+
+	-- Destroy the hash context to catch errors
+	for k,_ in pairs(hc) do
+		hc[k] = nil
+	end
+
+	return cs
 end
