@@ -336,8 +336,18 @@ function tracer(event, line)
       if lo > 1 then
         out = out .. ", "
       end
-      out = string.format("%s%s=\"%s\" (%s)", out, name, tostring(value),
-        type(value))
+
+      if type(value) == "string" then
+	      local svalue = string.sub(value, 0, 800)
+	      if string.len(value) > string.len(svalue) then
+		      svalue = svalue .. "..."
+	      end
+
+	      out = string.format("%s%s=\"%s\"", out, name, svalue)
+      else
+	      out = string.format("%s%s=%s", out, name, tostring(value))
+      end
+
     end
     out = out .. ")"
     e2lib.log(4, out)
