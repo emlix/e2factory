@@ -104,7 +104,6 @@ static const luaL_reg sha1_meta[] =
 static int sha1_init(lua_State *L)
 {
 	SHA1_CTX *ctx = (SHA1_CTX *)lua_newuserdata(L, sizeof(SHA1_CTX));
-	memset(ctx, 0, sizeof(ctx)); /* really needed? */
 	SHA1Init(ctx);
 
 	if(luaL_newmetatable(L, LUA_OBJECT_ID)) {
