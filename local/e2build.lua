@@ -1264,7 +1264,7 @@ function deploy(info, r, return_flags)
     local rc, re = info.cache:push_file(sourcefile, server, location1,
 								cache_flags)
     if not rc then
-      return false, e:cat(re)
+      return false, re
     end
   end
   return true
