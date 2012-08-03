@@ -31,6 +31,7 @@
 
 module("files", package.seeall)
 require("scm")
+local hash = require("hash")
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table

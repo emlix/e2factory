@@ -1,6 +1,7 @@
 --[[
    e2factory, the emlix embedded build system
 
+   Copyright (C) 2012 Tobias Ulmer <tu@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
@@ -25,13 +26,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("hash", package.seeall)
+local hash = {}
 require("sha1")
 
 --- create a hash context
 -- @return a hash context object, or nil on error
 -- @return nil, an error string on error
-function hash_start()
+function hash.hash_start()
 	local hc = {}
 
 	for k,v in pairs(hash) do
@@ -48,7 +49,7 @@ end
 --- add hash data
 -- @param hc the hash context
 -- @param data string: data
-function hash_append(hc, data)
+function hash.hash_append(hc, data)
 	assert(type(hc) == "table" and type(hc.ctx) == "userdata")
 	assert(type(data) == "string")
 
@@ -66,8 +67,8 @@ end
 --- hash a line
 -- @param hc the hash context
 -- @param data string: data to hash, a newline is appended
-function hash_line(hc, data)
-	hash_append(hc, data .. "\n")
+function hash.hash_line(hc, data)
+	hash.hash_append(hc, data .. "\n")
 end
 
 --- hash a file
@@ -75,7 +76,7 @@ end
 -- @param path string: the full path to the file
 -- @return true on success, nil on error
 -- @return nil, error object on failure
-function hash_file(hc, path)
+function hash.hash_file(hc, path)
 	assert(type(hc) == "table" and type(hc.ctx) == "userdata")
 	assert(type(path) == "string")
 
@@ -91,7 +92,7 @@ function hash_file(hc, path)
 			break
 		end
 
-		hash_append(hc, buf)
+		hash.hash_append(hc, buf)
 	end
 
 	fd:close()
@@ -103,7 +104,7 @@ end
 -- @param hc the hash context
 -- @return the hash value, or nil on error
 -- @return an error string on error
-function hash_finish(hc)
+function hash.hash_finish(hc)
 	assert(type(hc) == "table" and type(hc.ctx) == "userdata")
 
 	hc.ctx:update(hc.data)
@@ -118,3 +119,5 @@ function hash_finish(hc)
 
 	return cs
 end
+
+return hash

@@ -29,6 +29,7 @@
 
 module("svn", package.seeall)
 require("scm")
+local hash = require("hash")
 
 --- translate url into subversion url
 -- @param u table: url table
