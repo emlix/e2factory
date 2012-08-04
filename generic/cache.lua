@@ -57,20 +57,17 @@ require("url")
 -- @param url base url for this cache, must use file transport
 -- @return a cache table
 function new_cache(name, url)
-	local debug = false
 	local c = {}
 	c.name = name
 	c.url = url
 	c.ce = {}
-	e2lib.log(4, "Cache: " .. c.name)
-	e2lib.log(4, " url: " .. c.url)
-	if debug then
-		for k,v in pairs(c) do
-			print(k,v)
-		end
-	end
+
+	e2lib.logf(4, "Cache: %s", c.name)
+	e2lib.logf(4, " url: %s", c.url)
+
 	local meta = { __index = cache }
 	setmetatable(c, meta)
+
 	return c
 end
 
