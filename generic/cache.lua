@@ -78,7 +78,7 @@ end
 -- @param cache a cache table
 -- @return table: a list of servers
 function servers(cache)
-	l = {}
+	local l = {}
 	for server, ce in pairs(cache.ce) do
 		table.insert(l, server)
 	end
