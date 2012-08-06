@@ -25,7 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("cache", package.seeall)
+local cache = {}
 require("e2lib")
 require("transport")
 require("url")
@@ -56,7 +56,7 @@ require("url")
 -- @param name a cache name
 -- @param url base url for this cache, must use file transport
 -- @return a cache table
-function new_cache(name, url)
+function cache.new_cache(name, url)
 	local c = {}
 	c.name = name
 	c.url = url
@@ -72,11 +72,11 @@ function new_cache(name, url)
 end
 
 --- get a sorted list of servers
--- @param cache a cache table
+-- @param c a cache table
 -- @return table: a list of servers
-function servers(cache)
+function cache.servers(c)
 	local l = {}
-	for server, ce in pairs(cache.ce) do
+	for server, ce in pairs(c.ce) do
 		table.insert(l, server)
 	end
 	table.sort(l)
@@ -84,7 +84,7 @@ function servers(cache)
 end
 
 --- create a new cache entry
--- @param cache a cache table
+-- @param c a cache table
 -- @param server the remote server name
 -- @param remote_url the remote server to cache (server setup)
 -- @param flags (server setup)
@@ -92,7 +92,7 @@ end
 -- @param alias_location location relative to alias server (alias setup)
 -- @return true on success, false on error
 -- @return an error object on failure
-function new_cache_entry(cache, server, remote_url, flags, alias_server,
+function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
 								alias_location)
 	assert(((remote_url and flags) or (alias_server and alias_location))
 		and not
@@ -104,7 +104,7 @@ function new_cache_entry(cache, server, remote_url, flags, alias_server,
 	local cache_url = nil
 	if not remote_url then
 		-- setting up an alias
-		local alias_ce, re = ce_by_server(cache, alias_server)
+		local alias_ce, re = cache.ce_by_server(c, alias_server)
 		if not alias_ce then
 			return false, e:cat(re)
 		end
@@ -116,7 +116,7 @@ function new_cache_entry(cache, server, remote_url, flags, alias_server,
 		end
 		flags = alias_ce.flags
 	else
-		cache_url = string.format("%s/%s", cache.url, server)
+		cache_url = string.format("%s/%s", c.url, server)
 	end
 	ru, re = url.parse(remote_url)
 	if not ru then
@@ -141,11 +141,11 @@ function new_cache_entry(cache, server, remote_url, flags, alias_server,
 	if ce.flags.cache then
 		ce.cache_url = cache_url
 	end
-	if cache.ce[server] then
+	if c.ce[server] then
 		return false, e:append("cache entry for server exists")
 	end
-	cache.ce[server] = ce
-	e2lib.logf(4, "cache entry: %s (%s)", ce.server, cache.name)
+	c.ce[server] = ce
+	e2lib.logf(4, "cache entry: %s (%s)", ce.server, c.name)
 	e2lib.logf(4, " remote url: %s", ce.remote_url)
 	e2lib.logf(4, " cache url:  %s", tostring(ce.cache_url))
 	for k,v in pairs(ce.flags) do
@@ -155,12 +155,12 @@ function new_cache_entry(cache, server, remote_url, flags, alias_server,
 end
 
 --- get cache entry by url
--- @param cache the cache table
+-- @param c the cache table
 -- @param url the server url
 -- @return the cache entry table, nil on error
 -- @return an error object on failure
-function ce_by_url(cache, url)
-	for _,ce in pairs(cache.ce) do
+function cache.ce_by_url(c, url)
+	for _,ce in pairs(c.ce) do
 		if ce.remote_url == url then
 			return ce, nil
 		end
@@ -169,12 +169,12 @@ function ce_by_url(cache, url)
 end
 
 --- get cache entry by server
--- @param cache the cache table
+-- @param c the cache table
 -- @param server the server name
 -- @return the cache entry table, nil on error
 -- @return an error object on failure
-function ce_by_server(cache, server)
-	for _,ce in pairs(cache.ce) do
+function cache.ce_by_server(c, server)
+	for _,ce in pairs(c.ce) do
 		if ce.server == server then
 			return ce, nil
 		end
@@ -182,8 +182,8 @@ function ce_by_server(cache, server)
 	return nil, new_error("no cache entry for server: %s", server)
 end
 
-function valid_server(cache, server)
-	if ce_by_server(cache, server) then
+function cache.valid_server(c, server)
+	if cache.ce_by_server(c, server) then
 		return true
 	else
 		return false, new_error("not a valid server: %s", server)
@@ -192,13 +192,13 @@ end
 
 --- get remote url
 -- for use in scm implementations where urls need to be handled manually
--- @param cache the cache table
+-- @param c the cache table
 -- @param server the server name
 -- @param location the location relative to the server
 -- @return the remote url, nil on error
 -- @return an error object on failure
-function remote_url(cache, server, location)
-  local ce, e = ce_by_server(cache, server)
+function cache.remote_url(c, server, location)
+  local ce, e = cache.ce_by_server(c, server)
   if not ce then
     return nil, e
   end
@@ -207,13 +207,12 @@ function remote_url(cache, server, location)
 end
 
 --- check if a cache is enabled
--- @param cache a cache table
+-- @param c a cache table
 -- @param server the server name
 -- @return bool
 -- @return an error object on failure
-function cache_enabled(c, server)
-	e2lib.logf(4, "cache.cache_enabled(%s,%s)", tostring(c), server)
-	local ce, re = ce_by_server(c, server)
+function cache.cache_enabled(c, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, re
 	end
@@ -221,14 +220,13 @@ function cache_enabled(c, server)
 end
 
 --- check if a file is available in the cache
--- @param cache a cache table
+-- @param c a cache table
 -- @param server the server name
 -- @param location location relative to the server url
 -- @return bool
 -- @return an error object on failure
-function file_in_cache(c, server, location)
-	e2lib.logf(4, "cache.file_in_cache(%s,%s,%s)", tostring(c), server, location)
-	local ce, re = ce_by_server(c, server)
+function cache.file_in_cache(c, server, location)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, re
 	end
@@ -246,14 +244,12 @@ function file_in_cache(c, server, location)
 end
 
 --- check if a file is available locally
--- @param cache a cache table
+-- @param c a cache table
 -- @param server the server name
 -- @param location location relative to the server url
 -- @return bool
 -- @return an error object on failure
-function file_local(c, server, location)
-	e2lib.logf(4, "cache.file_local(%s,%s,%s)", tostring(c), tostring(server),
-							tostring(location))
+function cache.file_local(c, server, location)
 	local rc, re = file_in_cache(c, server, location)
 	if re then
 		return false, re
@@ -261,14 +257,14 @@ function file_local(c, server, location)
 	if rc then
 		return true, nil
 	end
-	local ce, re = ce_by_server(c, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, re
 	end
 	if ce.islocal == false then
 		return false
 	end
-	local path, re = file_path(c, server, location)
+	local path, re = cache.file_path(c, server, location)
 	if re then
 		return false, re
 	end
@@ -283,7 +279,7 @@ function file_local(c, server, location)
 end
 
 --- fetch a file from a server, with caching in place
--- @param cache a cache table
+-- @param c a cache table
 -- @param server the server name
 -- @param location location relative to the server url
 -- @param destdir where to store the file locally
@@ -291,13 +287,10 @@ end
 -- @param flags table of flags
 -- @return bool
 -- @return an error object on failure
-function fetch_file(cache, server, location, destdir, destname, flags)
-	e2lib.log(4, string.format("%s: %s, %s, %s, %s, %s", "fetch_file()",
-		tostring(server), tostring(location), tostring(destdir),
-		tostring(destname), tostring(flags)))
+function cache.fetch_file(c, server, location, destdir, destname, flags)
 	local rc, re
 	local e = new_error("cache: fetching file failed")
-	local ce, re = ce_by_server(cache, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, e:cat(re)
 	end
@@ -308,7 +301,7 @@ function fetch_file(cache, server, location, destdir, destname, flags)
 	if ce.flags.cache and flags.cache ~= false then
 		-- cache is enabled:
 		-- fetch from source to cache and from cache to destination
-		rc, re = cache_file(cache, server, location, flags)
+		rc, re = cache.cache_file(c, server, location, flags)
 		if not rc then
 			return false, e:cat(re)
 		end
@@ -337,19 +330,17 @@ function fetch_file(cache, server, location, destdir, destname, flags)
 end
 
 --- push a file to a server: cache and writeback
--- @param cache a cache table
+-- @param c a cache table
 -- @param sourcefile where to store the file locally
 -- @param server the server name
 -- @param location location relative to the server url
 -- @param flags table of flags
 -- @return bool
 -- @return an error object on failure
-function push_file(cache, sourcefile, server, location, flags)
+function cache.push_file(c, sourcefile, server, location, flags)
 	local rc, re
 	local e = new_error("error pushing file to cache/server")
-	e2lib.log(4, string.format("%s: %s, %s, %s", "push_file()",
-						sourcefile, server, location))
-	local ce, re = ce_by_server(cache, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, e:cat(re)
 	end
@@ -362,7 +353,7 @@ function push_file(cache, sourcefile, server, location, flags)
 		if not rc then
 			return false, e:cat(re)
 		end
-		rc, re = writeback(cache, server, location, flags)
+		rc, re = cache.writeback(c, server, location, flags)
 		if not rc then
 			return false, e:cat(re)
 		end
@@ -380,17 +371,15 @@ function push_file(cache, sourcefile, server, location, flags)
 end
 
 --- writeback a cached file
--- @param cache the cache data structure
+-- @param c the cache data structure
 -- @param server the server to fetch the file from
 -- @param location the location on the server
 -- @return bool
 -- @return an error object on failure
-function writeback(cache, server, location, flags)
-	e2lib.log(4, string.format("writeback(): %s %s %s", cache.name,
-						server, location))
+function cache.writeback(c, server, location, flags)
 	local e = new_error("writeback failed")
 	local rc, re
-	local ce, re = ce_by_server(cache, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, e:cat(re)
 	end
@@ -413,18 +402,15 @@ function writeback(cache, server, location, flags)
 end
 
 --- cache a file
--- @param cache the cache data structure
+-- @param c the cache data structure
 -- @param server the server to fetch the file from
 -- @param location the location on the server
 -- @return bool
 -- @return an error object on failure
-function cache_file(cache, server, location, flags)
-	e2lib.log(4, string.format("cache_file(): %s %s %s %s",
-		tostring(cache), tostring(server), tostring(location),
-		tostring(flags)))
+function cache.cache_file(c, server, location, flags)
 	local e = new_error("caching file failed: %s:%s", server, location)
 	local rc, re
-	local ce, re = ce_by_server(cache, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return false, e:cat(re)
 	end
@@ -435,7 +421,7 @@ function cache_file(cache, server, location, flags)
 	if not ceurl then
 		return false, e:cat(re)
 	end
-	local avail, re = file_in_cache(cache, server, location)
+	local avail, re = cache.file_in_cache(c, server, location)
 	if avail and flags.check_only then
 		-- file is in the cache and just checking was requested
 		return true, nil
@@ -456,18 +442,16 @@ end
 
 --- get path to a cached file or a file on a local server
 -- The user must cache the file first using cache.cache_file()
--- @param cache the cache data structure
+-- @param c the cache data structure
 -- @param server the server where the file is located
 -- @param location the location on the server
 -- @return string the path to the cached file, nil on error
 -- @return an error object on failure
-function file_path(cache, server, location, flags)
-	e2lib.log(4, string.format("file_path(): %s %s %s",
-					cache.name, server, location))
+function cache.file_path(c, server, location, flags)
 	local rc, re
 	local e = new_error("providing file path failed")
 	-- get the cache entry
-	local ce, re = ce_by_server(cache, server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not ce then
 		return nil, e:cat(re)
 	end
@@ -490,26 +474,26 @@ function file_path(cache, server, location, flags)
 end
 
 --- enable/disable writeback for a server
--- @param cache the cache data structure
+-- @param c the cache data structure
 -- @param server the server where the file is located
 -- @param value boolean: the new setting
 -- @return boolean
 -- @return an error object on failure
-function set_writeback(cache, server, value)
-        e2lib.log(4, string.format("set_writeback(): %s %s %s",
-                                        cache.name, server, tostring(value)))
+function cache.set_writeback(c, server, value)
 	if type(value) ~= "boolean" then
 		return false, new_error(
 				"cache.set_writeback(): value is not boolean")
 	end
-	local rc, re = cache:valid_server(server)
+	local rc, re = cache.valid_server(c, server)
 	if not rc then
 		return false, re
 	end
-	local ce, re = cache:ce_by_server(server)
+	local ce, re = cache.ce_by_server(c, server)
 	if not rc then
 		return false, re
 	end
 	ce.flags.writeback = value
 	return true, nil
 end
+
+return cache
