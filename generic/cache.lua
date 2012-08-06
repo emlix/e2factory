@@ -182,6 +182,11 @@ function cache.ce_by_server(c, server)
     return nil, new_error("no cache entry for server: %s", server)
 end
 
+--- check if server is valid
+-- @param c the cache table
+-- @param server the server name
+-- @return true if the server is valid, false otherwise
+-- @return an error object on failure
 function cache.valid_server(c, server)
     if cache.ce_by_server(c, server) then
         return true
