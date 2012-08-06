@@ -29,6 +29,7 @@
 -- take server / location
 
 module("generic_git", package.seeall)
+local cache = require("cache")
 
 --- clone a git repository
 -- @param surl url to the server

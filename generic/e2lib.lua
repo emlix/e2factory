@@ -32,7 +32,7 @@ require("lock")
 require("err")
 require("plugin")
 require("tools")
-require("cache")
+local cache = require("cache")
 require("luafile")
 
 _version = "e2factory, the emlix embedded build system, version " ..

@@ -29,6 +29,7 @@ require("buildconfig")
 require("e2lib")
 require("e2option")
 require("generic_git")
+local cache = require("cache")
 
 e2lib.init()
 

@@ -32,6 +32,7 @@
 module("git", package.seeall)
 require("scm")
 local hash = require("hash")
+local cache = require("cache")
 
 --- git branch wrapper
 -- get the current branch

@@ -30,6 +30,8 @@
 
 require("e2local")
 require("e2tool")
+local cache = require("cache")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "new-source")
 if not info then
