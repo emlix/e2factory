@@ -1028,22 +1028,6 @@ function compute_hash(iter, ...)
   return s
 end
 
--- Iterator functions
---
---   impairs(TABLE)
---
---    iterates on a table, returning only the value for each entry, not the key
---    To be used like: for v in impairs(table) do ... end
-
-function impairs(table)
-  local k = nil
-  local function value(t)
-    k = next(t, k)
-    return k and t[k]
-  end
-  return value, table
-end
-
 -- callcmd: call a command, connecting
 --  stdin, stdout, stderr to luafile objects
 
