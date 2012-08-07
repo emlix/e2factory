@@ -49,7 +49,7 @@ local hash = require("hash")
 require("lock")
 require("e2util")
 require("e2option")
-require("generic_git")
+local generic_git = require("generic_git")
 require("policy")
 
 -- Information gathering and inquiry

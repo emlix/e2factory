@@ -30,6 +30,7 @@
 
 require("e2local")
 require("e2tool")
+local generic_git = require("generic_git")
 local cache = require("cache")
 
 e2lib.init()
