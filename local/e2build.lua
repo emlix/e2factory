@@ -28,6 +28,7 @@
 -- e2build.lua -*- Lua -*-
 
 module("e2build", package.seeall)
+local transport = require("transport")
 
 --- cache a result
 -- @param info

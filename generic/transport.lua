@@ -25,7 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("transport", package.seeall)
+local transport = {}
 local url = require("url")
 
 --- call rsync with appropriate rsh argument according to the tools
@@ -133,7 +133,7 @@ end
 -- @param destname filename of the fetched file
 -- @return true on success, false on error
 -- @return an error object on failure
-function fetch_file(surl, location, destdir, destname)
+function transport.fetch_file(surl, location, destdir, destname)
 	e2lib.log(4, string.format("%s: %s %s %s", "fetch_file()", surl,
 							location, destdir))
 	if not destname then
@@ -223,7 +223,7 @@ end
 -- @param try_hardlink bool: optimize by trying to hardlink instead of copying
 -- @return true on success, false on error
 -- @return nil, an error string on error
-function push_file(sourcefile, durl, location, push_permissions, try_hardlink)
+function transport.push_file(sourcefile, durl, location, push_permissions, try_hardlink)
 	e2lib.log(4, string.format("%s: %s %s %s %s", "transport.push_file()",
 		sourcefile, durl, location, tostring(push_permissions)))
 	local rc, e
@@ -342,7 +342,7 @@ end
 -- @param location location relative to the server url
 -- @return true on success, false on error
 -- @return nil, an error string on error
-function file_path(surl, location)
+function transport.file_path(surl, location)
 	e2lib.log(4, string.format("%s: %s %s", "file_path()", surl,
 							location))
 	local e = new_error("can't get path to file")
@@ -356,3 +356,5 @@ function file_path(surl, location)
 	local path = string.format("/%s/%s", u.path, location)
 	return path
 end
+
+return transport
