@@ -29,112 +29,114 @@ local luafile = {}
 require("luafile_ll")
 
 function luafile.new()
-  local f = {}
-  local meta = { __index = luafile }
-  setmetatable(f, meta)
-  return f
+    local f = {}
+    local meta = { __index = luafile }
+    setmetatable(f, meta)
+    return f
 end
 
 function luafile.open(path, mode)
-  local f = luafile.new()
-  f.file = luafile_ll.fopen(path, mode)
-  if f.file then
-    return f
-  end
-  return nil
+    local f = luafile.new()
+    f.file = luafile_ll.fopen(path, mode)
+    if f.file then
+        return f
+    end
+    return nil
 end
 
 function luafile.fdopen(fd, mode)
-  local f = luafile.new()
-  f.file = luafile_ll.fdopen(fd, mode)
-  if f.file then
-    return f
-  end
-  return nil
+    local f = luafile.new()
+    f.file = luafile_ll.fdopen(fd, mode)
+    if f.file then
+        return f
+    end
+    return nil
 end
 
 function luafile.close(luafile)
-  if luafile and luafile.file then
-    if luafile_ll.fclose(luafile.file) then
-      luafile.file = nil
-      return true
+    if luafile and luafile.file then
+        if luafile_ll.fclose(luafile.file) then
+            luafile.file = nil
+            return true
+        end
     end
-  end
-  return false
+    return false
 end
 
 function luafile.read(luafile)
-  if luafile and luafile.file then
-    return luafile_ll.fread(luafile.file)
-  end
-  return nil
+    if luafile and luafile.file then
+        return luafile_ll.fread(luafile.file)
+    end
+    return nil
 end
 
 function luafile.write(luafile, buffer)
-  if luafile and luafile.file and buffer then
-    return luafile_ll.fwrite(luafile.file, buffer)
-  end
-  return nil
+    if luafile and luafile.file and buffer then
+        return luafile_ll.fwrite(luafile.file, buffer)
+    end
+    return nil
 end
 
 function luafile.readline(luafile)
-  if luafile and luafile.file then
-    return luafile_ll.fgets(luafile.file)
-  end
-  return nil
+    if luafile and luafile.file then
+        return luafile_ll.fgets(luafile.file)
+    end
+    return nil
 end
 
 function luafile.seek(luafile, offset)
-  if luafile and luafile.file and offset then
-    return luafile_ll.fseek(luafile.file, offset)
-  end
-  return nil
+    if luafile and luafile.file and offset then
+        return luafile_ll.fseek(luafile.file, offset)
+    end
+    return nil
 end
 
 function luafile.flush(luafile)
-  if luafile and luafile.file then
-    return luafile_ll.fflush(luafile.file)
-  end
-  return nil
+    if luafile and luafile.file then
+        return luafile_ll.fflush(luafile.file)
+    end
+    return nil
 end
 
 function luafile.fileno(luafile)
-  if luafile and luafile.file then
-    return luafile_ll.fileno(luafile.file)
-  end
-  return nil
+    if luafile and luafile.file then
+        return luafile_ll.fileno(luafile.file)
+    end
+    return nil
 end
 
 function luafile.eof(luafile)
-  if luafile and luafile.file then
-    return luafile_ll.feof(luafile.file)
-  end
-  return nil
+    if luafile and luafile.file then
+        return luafile_ll.feof(luafile.file)
+    end
+    return nil
 end
 
 function luafile.setlinebuf(luafile)
-  if luafile and luafile.file then
-    return luafile_ll.setlinebuf(luafile.file)
-  end
-  return nil
+    if luafile and luafile.file then
+        return luafile_ll.setlinebuf(luafile.file)
+    end
+    return nil
 end
 
 function luafile.pipe()
-  local rc, r, w = luafile_ll.pipe()
-  local fr, fw
-  if not rc then
-    return false, nil, nil
-  end
-  fr = luafile.fdopen(r, "r")
-  fw = luafile.fdopen(w, "w")
-  return rc, fr, fw
+    local rc, r, w = luafile_ll.pipe()
+    local fr, fw
+    if not rc then
+        return false, nil, nil
+    end
+    fr = luafile.fdopen(r, "r")
+    fw = luafile.fdopen(w, "w")
+    return rc, fr, fw
 end
 
 function luafile.dup2(oldfd, newfd)
-  if oldfd and newfd then
-    return luafile_ll.dup2(oldfd, newfd)
-  end
-  return nil
+    if oldfd and newfd then
+        return luafile_ll.dup2(oldfd, newfd)
+    end
+    return nil
 end
 
 return luafile
+
+-- vim:sw=4:sts=4:et:
