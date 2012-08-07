@@ -38,7 +38,7 @@ GLOBALTOOLS = $(GLOBALLUATOOLS) $(GLOBALSHTOOLS)
 CLEAN_FILES = *~ $(GLOBALTOOLS) *.lc e2 $(SCRIPTS) *.lua e2-su *.sh e2.conf
 LUA_LIBS = strict.lua collection.lua plugin.lua e2lib.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
-LUA_LIBS += generic_git.lua luafile.lua lua-version-map.lua err.lua lock.lua
+LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
 LUA_LIBS += buildconfig.lua
 
 .PHONY: all install uninstall clean

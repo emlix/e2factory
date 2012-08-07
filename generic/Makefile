@@ -32,7 +32,7 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ *.lc *.o *.so lua-version-map.lua
+CLEAN_FILES = *~ *.lc *.o *.so
 
 
 .PHONY: all install uninstall local install-local clean
