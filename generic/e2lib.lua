@@ -33,7 +33,7 @@ require("err")
 require("plugin")
 local tools = require("tools")
 local cache = require("cache")
-require("luafile")
+local luafile = require("luafile")
 
 _version = "e2factory, the emlix embedded build system, version " ..
 							buildconfig.VERSION
