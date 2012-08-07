@@ -97,7 +97,7 @@ local function rsync_ssh_mkdir(opts, user, server, dir)
 
   while dir ~= "/" do
     local dest = rsync_quote_remote(user, server, dir .. "/")
-    rc, re = rsync_ssh(argv, emptydir .. "/", dest)
+    local rc, re = rsync_ssh(argv, emptydir .. "/", dest)
     if rc then
       e2lib.logf(4, "created remote directory '%s'", dir)
       -- successfully made a directory
@@ -115,7 +115,7 @@ local function rsync_ssh_mkdir(opts, user, server, dir)
     dir = dir .. "/" .. stack[1]
     table.remove(stack, 1)
     local dest = rsync_quote_remote(user, server, dir .. "/")
-    rc, re = rsync_ssh(argv, emptydir .. "/", dest)
+    local rc, re = rsync_ssh(argv, emptydir .. "/", dest)
     if not rc then
       e2lib.rmtempdir(emptydir)
       local e = new_error("could not create remote directory")
