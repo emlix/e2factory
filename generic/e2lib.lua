@@ -28,7 +28,7 @@
 module("e2lib", package.seeall)
 require("strict")
 require("buildconfig")
-require("lock")
+local lock = require("lock")
 require("err")
 require("plugin")
 require("tools")
