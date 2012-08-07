@@ -25,10 +25,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("tools", package.seeall)
+local tools = {}
 require("buildconfig")
 
-local tools = {
+local toollist = {
 	which = { name = "which", flags = "", optional = false },
 	curl = { name = "curl", flags = "", optional = false },
 	ssh = { name = "ssh", flags = "", optional = false },
@@ -61,26 +61,25 @@ local tools = {
 						flags = "", optional = false },
 }
 
-
 --- get a tool command
 -- @param name string: the tool name
 -- @return string: the tool command, nil on error
-function get_tool(name)
-	if not tools[name] then
+function tools.get_tool(name)
+	if not toollist[name] then
 		e2lib.bomb("looking up invalid tool: " .. tostring(name))
 	end
-	return tools[name].path
+	return toollist[name].path
 end
 
 --- get tool flags
 -- @param name string: the tool name
 -- @return string: the tool flags
-function get_tool_flags(name)
-	if not tools[name] then
+function tools.get_tool_flags(name)
+	if not toollist[name] then
 		e2lib.bomb("looking up flags for invalid tool: " ..
 							tostring(name))
 	end
-	return tools[name].flags or ""
+	return toollist[name].flags or ""
 end
 
 --- set a tool command and flags
@@ -89,18 +88,18 @@ end
 -- @param flags string: the new tool flags. Optional.
 -- @return bool
 -- @return nil, an error string on error
-function set_tool(name, value, flags)
-	if not tools[name] then
+function tools.set_tool(name, value, flags)
+	if not toollist[name] then
 		return false, "invalid tool setting"
 	end
 	if type(value) == "string" then
-		tools[name].name = value
+		toollist[name].name = value
 	end
 	if type(flags) == "string" then
-		tools[name].flags = flags
+		toollist[name].flags = flags
 	end
 	e2lib.log(3, string.format("setting tool: %s=%s flags=%s",
-				name, tools[name].name, tools[name].flags))
+				name, toollist[name].name, toollist[name].flags))
 	return true, nil
 end
 
@@ -111,8 +110,8 @@ end
 -- @param optional bool: wheter the tool is optional or not
 -- @return bool
 -- @return nil, an error string on error
-function add_tool(name, value, flags, optional)
-	if tools[name] then
+function tools.add_tool(name, value, flags, optional)
+	if toollist[name] then
 		e2lib.bomb("trying to add a tool that already exists: " ..
 			tostring(name))
 	end
@@ -124,13 +123,13 @@ function add_tool(name, value, flags, optional)
 		tostring(name))
 	end
 
-	tools[name] = {
+	toollist[name] = {
 		name = value,
 		flags = flags,
 		optional = optional,
 	}
 
-	local t = tools[name]
+	local t = toollist[name]
 	e2lib.log(3, string.format("adding tool: %s=%s flags=%s optional=%s",
 		name, t.name, t.flags, tostring(t.optional)))
 
@@ -141,8 +140,8 @@ end
 -- @param name string a valid tool name
 -- @return bool
 -- @return nil, an error string on error
-function check_tool(name)
-	local tool = tools[name]
+function tools.check_tool(name)
+	local tool = toollist[name]
 	if not tool.path then
 		local which = string.format("which \"%s\"", tool.name)
 		local p = io.popen(which, "r")
@@ -162,10 +161,10 @@ end
 
 --- initialize the library
 -- @return bool
-function init()
+function tools.init()
 	local error = false
-	for tool,t in pairs(tools) do
-		local rc = check_tool(tool)
+	for tool,t in pairs(toollist) do
+		local rc = tools.check_tool(tool)
 		if not rc then
 			local warn = "Warning"
 			if not t.optional then
@@ -182,3 +181,5 @@ function init()
 	end
 	return true, nil
 end
+
+return tools
