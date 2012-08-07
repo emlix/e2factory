@@ -26,6 +26,7 @@
 ]]
 
 module("transport", package.seeall)
+local url = require("url")
 
 --- call rsync with appropriate rsh argument according to the tools
 -- configuration

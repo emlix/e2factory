@@ -30,6 +30,7 @@
 
 local generic_git = {}
 local cache = require("cache")
+local url = require("url")
 
 --- clone a git repository
 -- @param surl url to the server

@@ -28,7 +28,7 @@
 local cache = {}
 require("e2lib")
 require("transport")
-require("url")
+local url = require("url")
 
 --- cache
 -- @class table
