@@ -31,6 +31,7 @@ module("cvs", package.seeall)
 require("scm")
 local hash = require("hash")
 local url = require("url")
+local tools = require("tools")
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table

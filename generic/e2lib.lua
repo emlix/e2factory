@@ -31,7 +31,7 @@ require("buildconfig")
 local lock = require("lock")
 require("err")
 require("plugin")
-require("tools")
+local tools = require("tools")
 local cache = require("cache")
 require("luafile")
 

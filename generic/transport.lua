@@ -27,6 +27,7 @@
 
 local transport = {}
 local url = require("url")
+local tools = require("tools")
 
 --- call rsync with appropriate rsh argument according to the tools
 -- configuration

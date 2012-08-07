@@ -29,6 +29,7 @@
 
 module("e2build", package.seeall)
 local transport = require("transport")
+local tools = require("tools")
 
 --- cache a result
 -- @param info
