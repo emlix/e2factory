@@ -32,9 +32,9 @@ local err =  {}
 -- @param ... list of strings required for the format string
 -- @return table: the error object
 function err.append(e, format, ...)
-	e.count = e.count + 1
-	table.insert(e.msg, string.format(format, ...))
-	return e
+    e.count = e.count + 1
+    table.insert(e.msg, string.format(format, ...))
+    return e
 end
 
 --- insert an error object into another one
@@ -42,36 +42,36 @@ end
 -- @param re table: the error object to insert
 -- @return table: the error object
 function err.cat(e, re)
-	-- auto-convert strings to error objects before inserting
-	if type(re) == "string" then
-		re = err.new("%s", re)
-	end
-	table.insert(e.msg, re)
-	e.count = e.count + 1
-	return e
+    -- auto-convert strings to error objects before inserting
+    if type(re) == "string" then
+        re = err.new("%s", re)
+    end
+    table.insert(e.msg, re)
+    e.count = e.count + 1
+    return e
 end
 
 --- print error messages at log level 1
 -- @param e table: the error object
 -- @param depth number: used internally to count and display nr. of sub errors
 function err.print(e, depth)
-	if not depth then
-		depth = 1
-	else
-		depth = depth + 1
-	end
+    if not depth then
+        depth = 1
+    else
+        depth = depth + 1
+    end
 
-	local prefix = string.format("Error [%d]: ", depth)
+    local prefix = string.format("Error [%d]: ", depth)
 
-	for k,m in ipairs(e.msg) do
-		if type(m) == "string" then
-			e2lib.log(1, string.format("%s%s", prefix, m))
-			prefix = string.format("      [%d]: ", depth)
-		else
-			-- it's a sub error
-			m:print(depth)
-		end
-	end
+    for k,m in ipairs(e.msg) do
+        if type(m) == "string" then
+            e2lib.log(1, string.format("%s%s", prefix, m))
+            prefix = string.format("      [%d]: ", depth)
+        else
+            -- it's a sub error
+            m:print(depth)
+        end
+    end
 end
 
 --- set the error counter
@@ -79,14 +79,14 @@ end
 -- @param n number: new error counter setting
 -- @return nil
 function err.setcount(e, n)
-	e.count = n
+    e.count = n
 end
 
 --- get the error counter
 -- @param e the error object
 -- @return number: the error counter
 function err.getcount(e, n)
-	return e.count
+    return e.count
 end
 
 --- create an error object
@@ -94,23 +94,25 @@ end
 -- @param ... list of arguments required for the format string
 -- @return table: the error object
 function err.new(format, ...)
-	local e = {}
-	e.count = 0
-	e.msg = {}
-	local meta = { __index = err }
-	setmetatable(e, meta)
-	if format then
-		e:append(format, ...)
-	end
-	return e
+    local e = {}
+    e.count = 0
+    e.msg = {}
+    local meta = { __index = err }
+    setmetatable(e, meta)
+    if format then
+        e:append(format, ...)
+    end
+    return e
 end
 
 function err.toerror(x)
-	if type(x) == "table" then
-		return x
-	else
-		return err.new(x)
-	end
+    if type(x) == "table" then
+        return x
+    else
+        return err.new(x)
+    end
 end
 
 return err
+
+-- vim:sw=4:sts=4:et:
