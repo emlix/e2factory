@@ -16,7 +16,7 @@ Error handling
    to customers. (As they should not see the internals.)
  * Example:
    -- the error object from the current layer is usually named 'e'.
-   e = new_error("error copying file for")
+   e = err.new("error copying file for")
    -- a boolean return value is usually called 'rc'.
    -- an error object return value is usually called 're'.
    rc, re = f(...)
