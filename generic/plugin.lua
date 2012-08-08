@@ -78,36 +78,36 @@ plugins = {}
 -- @return bool
 -- @return an error object on failure
 local function load_plugin(dir, p, ctx)
-	local e = err.new("loading plugin failed: %s", p)
-	local plugin_file = string.format("%s/%s", dir, p)
-	local chunk, msg = loadfile(plugin_file)
-	if not chunk then
-		return false, e:append("%s", msg)
-	end
-	chunk()
-	if not plugin_descriptor then
-		return false, e:append("no plugin descriptor in plugin: %s",
-								plugin_file)
-	end
-	local pd = plugin_descriptor
-	if type(pd.description) ~= "string" then
-		e:append("description missing in plugin descriptor")
-	end
-	if type(pd.init) ~= "function" then
-		e:append("init function missing in descriptor")
-	end
-	if type(pd.exit) ~= "function" then
-		e:append("exit function missing in descriptor")
-	end
-	if e:getcount() > 1 then
-		return false, e
-	end
-	pd.file = p
-	pd.ctx = ctx
-	ctx.plugin = pd
-	table.insert(plugins, pd)
-	e2lib.logf(4, "loading plugin: %s (%s)", pd.file, pd.description)
-	return true, nil
+    local e = err.new("loading plugin failed: %s", p)
+    local plugin_file = string.format("%s/%s", dir, p)
+    local chunk, msg = loadfile(plugin_file)
+    if not chunk then
+        return false, e:append("%s", msg)
+    end
+    chunk()
+    if not plugin_descriptor then
+        return false, e:append("no plugin descriptor in plugin: %s",
+        plugin_file)
+    end
+    local pd = plugin_descriptor
+    if type(pd.description) ~= "string" then
+        e:append("description missing in plugin descriptor")
+    end
+    if type(pd.init) ~= "function" then
+        e:append("init function missing in descriptor")
+    end
+    if type(pd.exit) ~= "function" then
+        e:append("exit function missing in descriptor")
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    pd.file = p
+    pd.ctx = ctx
+    ctx.plugin = pd
+    table.insert(plugins, pd)
+    e2lib.logf(4, "loading plugin: %s (%s)", pd.file, pd.description)
+    return true, nil
 end
 
 --- initialize a plugin
@@ -115,14 +115,14 @@ end
 -- @return bool
 -- @return an error object on failure
 local function init_plugin(pd)
-	return pd.init(pd.ctx)
+    return pd.init(pd.ctx)
 end
 
 --- deinitialize a plugin
 -- @param pd table: plugin descriptor
 -- @return bool
 local function exit_plugin(pd)
-	return pd.exit(pd.ctx)
+    return pd.exit(pd.ctx)
 end
 
 --- load plugins from a directory, and apply the plugin context
@@ -131,53 +131,55 @@ end
 -- @return bool
 -- @return an error object on failure
 function plugin.load_plugins(dir, ctx)
-  local e = err.new("loading plugins failed")
-  e2lib.logf(4, "loading plugins from: %s", dir)
-  for p in e2lib.directory(dir) do
-    local rc, re = load_plugin(dir, p, ctx)
-    if not rc then
-      e2lib.logf(1, "loading plugin: %s failed", p)
-      return false, e:cat(re)
+    local e = err.new("loading plugins failed")
+    e2lib.logf(4, "loading plugins from: %s", dir)
+    for p in e2lib.directory(dir) do
+        local rc, re = load_plugin(dir, p, ctx)
+        if not rc then
+            e2lib.logf(1, "loading plugin: %s failed", p)
+            return false, e:cat(re)
+        end
     end
-  end
-  return true
+    return true
 end
 
 --- initialize plugins
 -- @return bool
 -- @return an error object on failure
 function plugin.init_plugins()
-  local e = err.new("initializing plugins failed")
-  for _, pd in ipairs(plugins) do
-    local rc, re = init_plugin(pd)
-    if not rc then
-      return false, e:cat(re)
+    local e = err.new("initializing plugins failed")
+    for _, pd in ipairs(plugins) do
+        local rc, re = init_plugin(pd)
+        if not rc then
+            return false, e:cat(re)
+        end
     end
-  end
-  return true, nil
+    return true, nil
 end
 
 --- deinitialize plugins
 -- @return bool
 -- @return an error object on failure
 function plugin.exit_plugins()
-  local e = err.new("deinitializing plugins failed")
-  for _, pd in ipairs(plugins) do
-    local rc, re = exit_plugin(pd)
-    if not rc then
-      return false, e:cat(re)
+    local e = err.new("deinitializing plugins failed")
+    for _, pd in ipairs(plugins) do
+        local rc, re = exit_plugin(pd)
+        if not rc then
+            return false, e:cat(re)
+        end
     end
-  end
-  return true, nil
+    return true, nil
 end
 
 --- print a description for each plugin. This is for use with the --version
 -- option. This version always succeeds.
 -- @return nil
 function plugin.print_descriptions()
-  for i,pd in ipairs(plugins) do
-    print(pd.description)
-  end
+    for i,pd in ipairs(plugins) do
+        print(pd.description)
+    end
 end
 
 return plugin
+
+-- vim:sw=4:sts=4:et:
