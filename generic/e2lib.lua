@@ -29,7 +29,7 @@ module("e2lib", package.seeall)
 require("strict")
 require("buildconfig")
 local lock = require("lock")
-require("err")
+local err = require("err")
 require("plugin")
 local tools = require("tools")
 local cache = require("cache")
@@ -176,7 +176,7 @@ end
 
 function init2()
   local rc, re
-  local e = new_error("initializing globals (step2)")
+  local e = err.new("initializing globals (step2)")
 
   -- get the global configuration
   local config = get_global_config()
@@ -552,7 +552,7 @@ function log(level, msg)
 end
 
 function rotate_log(file)
-  local e = new_error("rotating logfile: %s", file)
+  local e = err.new("rotating logfile: %s", file)
   local rc, re
   local logdir = dirname(file)
   local logfile = basename(file)
@@ -730,7 +730,7 @@ function tartype_by_suffix(filename)
 	elseif filename:match("tar$") then
 		tartype = "tar"
 	else
-		e = new_error("unknown suffix for filename: %s", filename)
+		e = err.new("unknown suffix for filename: %s", filename)
 		return false, e
 	end
 	return tartype
@@ -765,11 +765,11 @@ end
 function read_line(path)
   local f, msg = io.open(path)
   if not f then
-    return nil, new_error("%s", msg)
+    return nil, err.new("%s", msg)
   end
   local l, msg = f:read("*l")
   if not l then
-    return nil, new_error("%s", msg)
+    return nil, err.new("%s", msg)
   end
   f:close()
   return l
@@ -885,7 +885,7 @@ function read_global_config(e2_config_file)
 end
 
 function write_extension_config(extensions)
-  local e = new_error("writing extensions config: %s", globals.extension_config)
+  local e = err.new("writing extensions config: %s", globals.extension_config)
   local f, re = io.open(globals.extension_config, "w")
   if not f then
     return false, e:cat(re)
@@ -909,7 +909,7 @@ end
 -- @return the extension configuration table
 -- @return an error object on failure
 function read_extension_config()
-  local e = new_error("reading extension config file: %s",
+  local e = err.new("reading extension config file: %s",
 						globals.extension_config)
   local rc = e2util.exists(globals.extension_config)
   if not rc then
@@ -1243,7 +1243,7 @@ function dofile_protected(path, gtable, allownewdefs)
 end
 
 function dofile2(path, gtable)
-  local e = new_error("error loading config file: %s", path)
+  local e = err.new("error loading config file: %s", path)
   local chunk, msg = loadfile(path)
   if not chunk then
     return false, e:cat(msg)
@@ -1265,7 +1265,7 @@ end
 
 function locate_project_root(path)
   local rc, re
-  local e = new_error("checking for project directory failed")
+  local e = err.new("checking for project directory failed")
   local save_path = e2util.cwd()
   if not save_path then
     return nil, e:append("cannot get current working directory")
@@ -1304,7 +1304,7 @@ function locate_project_root(path)
     end
   end
   chdir(save_path)
-  return nil, new_error("not in a project directory")
+  return nil, err.new("not in a project directory")
 end
 
 -- parse version files:
@@ -1570,7 +1570,7 @@ end
 -- @return an error object on failure
 function git(gitdir, subtool, args)
 	local rc, re
-	local e = new_error("calling git failed")
+	local e = err.new("calling git failed")
 	if not gitdir then
 		gitdir = ".git"
 	end
@@ -1745,7 +1745,7 @@ end
 function sha1sum(path)
   assert(type(path) == "string")
 
-  local e = new_error("calculating SHA1 checksum failed")
+  local e = err.new("calculating SHA1 checksum failed")
 
   local sha1sum, re = tools.get_tool("sha1sum")
   if not sha1sum then
@@ -1808,7 +1808,7 @@ end
 -- @return an error object on failure
 function get_sys_arch()
   local rc, re
-  local e = new_error("getting host system architecture failed")
+  local e = err.new("getting host system architecture failed")
   local uname = tools.get_tool("uname")
   local cmd = string.format("%s -m", e2lib.shquote(uname))
   local p, msg = io.popen(cmd, "r")
@@ -1876,11 +1876,11 @@ end
 function read_file(file)
   local f, msg = io.open(file, "r")
   if not f then
-    return nil, new_error("%s", msg)
+    return nil, err.new("%s", msg)
   end
   local s, msg = f:read("*a")
   if not s then
-    return nil, new_error("%s", msg)
+    return nil, err.new("%s", msg)
   end
   f:close()
   return s, nil
@@ -1891,7 +1891,7 @@ end
 -- @return string: the file content
 -- @return an error object on failure
 function read_template(file)
-  local e = new_error("error reading template file")
+  local e = err.new("error reading template file")
   local filename = string.format("%s/%s", globals.template_path, file)
   local template, re = read_file(filename)
   if not template then
@@ -1926,7 +1926,7 @@ end
 -- @return a cache object
 -- @return an error object on failure
 function setup_cache()
-  local e = new_error("setting up cache failed")
+  local e = err.new("setting up cache failed")
   local config = get_global_config()
   if type(config.cache) ~= "table" or type(config.cache.path) ~= "string" then
     return false, e:append("invalid cache configuration: config.cache.path")
@@ -1999,7 +1999,7 @@ function chdir(path)
   local rc, re
   rc, re = e2util.cd(path)
   if not rc then
-    return false, new_error("chdir %s failed: %s", path, re)
+    return false, err.new("chdir %s failed: %s", path, re)
   end
   return true, nil
 end

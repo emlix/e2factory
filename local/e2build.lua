@@ -30,6 +30,7 @@
 module("e2build", package.seeall)
 local transport = require("transport")
 local tools = require("tools")
+local err = require("err")
 
 --- cache a result
 -- @param info
@@ -56,7 +57,7 @@ function result_available(info, r, return_flags)
   local buildid = res.build_mode.buildid(e2tool.buildid(info, r))
   local sbid = e2tool.bid_display(buildid)
   local rc, re
-  local e = new_error("error while checking if result is available: %s", r)
+  local e = err.new("error while checking if result is available: %s", r)
   local columns = tonumber(e2lib.globals.osenv["COLUMNS"])
   if res.playground then
     return_flags.message = e2lib.align(columns,
@@ -153,7 +154,7 @@ end
 function build_config(info, r)
   e2lib.log(4, string.format("build_config(%s, %s)",
 						tostring(info), tostring(r)))
-  local e = new_error("setting up build configuration for result `%s' failed",
+  local e = err.new("setting up build configuration for result `%s' failed",
 									r)
   local res = info.results[r]
   if not res then
@@ -215,7 +216,7 @@ end
 function chroot_lock(info, r, return_flags)
   local res = info.results[r]
   local rc, re
-  local e = new_error("error locking chroot")
+  local e = err.new("error locking chroot")
   rc, re = e2lib.mkdir(res.build_config.c, "-p")
   if not rc then
     return false, e:cat(re)
@@ -230,7 +231,7 @@ end
 function chroot_unlock(info, r, return_flags)
   local res = info.results[r]
   local rc, re
-  local e = new_error("error unlocking chroot")
+  local e = err.new("error unlocking chroot")
   rc, re = e2lib.globals.lock:unlock(res.build_config.chroot_lock)
   if not rc then
     return false, e:cat(re)
@@ -241,7 +242,7 @@ end
 function setup_chroot(info, r, return_flags)
   local res = info.results[r]
   local rc, re
-  local e = new_error("error setting up chroot")
+  local e = err.new("error setting up chroot")
   -- create the chroot path and create the chroot marker file without root
   -- permissions. That makes sure we have write permissions here.
   rc, re = e2lib.mkdir(res.build_config.c, "-p")
@@ -302,7 +303,7 @@ function enter_playground(info, r, chroot_command)
   end
   local res = info.results[r]
   local rc, re
-  local e = new_error("entering playground")
+  local e = err.new("entering playground")
   e2lib.log(4, "entering playground for " .. r .. " ...")
   local term = e2lib.globals.terminal
   local e2_su = tools.get_tool("e2-su-2.2")
@@ -319,7 +320,7 @@ end
 function fix_permissions(info, r, return_flags)
   local res = info.results[r]
   local rc, re
-  local e = new_error("fixing permissions failed")
+  local e = err.new("fixing permissions failed")
   e2lib.log(3, "fix permissions")
   e2tool.set_umask(info)
   local argv = { "chroot_2_3", res.build_config.base, "chown", "-R",
@@ -354,7 +355,7 @@ end
 function runbuild(info, r, return_flags)
   local res = info.results[r]
   local rc, re
-  local e = new_error("build failed")
+  local e = err.new("build failed")
   e2lib.log(3, "building " .. r .. " ...")
   local runbuild = string.format("/bin/bash -e -x %s/%s/%s",
     e2lib.shquote(res.build_config.Tc),
@@ -384,7 +385,7 @@ function runbuild(info, r, return_flags)
   e2tool.reset_umask(info)
   out:close()
   if rc ~= 0 then
-    e = new_error("build script for %s failed with exit status %d", r, rc)
+    e = err.new("build script for %s failed with exit status %d", r, rc)
     e:append("see %s for more information", res.build_config.buildlog)
     return false, e
   end
@@ -402,7 +403,7 @@ end
 
 function chroot_remove(info, r, return_flags)
   local res = info.results[r]
-  local e = new_error("removing chroot failed")
+  local e = err.new("removing chroot failed")
   e2tool.set_umask(info)
   local rc, re = e2lib.e2_su_2_2({"remove_chroot_2_3", res.build_config.base})
   e2tool.reset_umask(info)
@@ -445,7 +446,7 @@ function unpack_result(info, r, dep, destdir)
   local res = info.results[r]
   local rc, re
   local tmpdir = e2lib.mktempdir()
-  local e = new_error("unpacking result failed: %s", dep)
+  local e = err.new("unpacking result failed: %s", dep)
   local d = info.results[dep]
   local buildid = e2tool.buildid(info, dep)
 
@@ -505,7 +506,7 @@ function unpack_result(info, r, dep, destdir)
 end
 
 function sources(info, r, return_flags)
-  local e = new_error("installing sources")
+  local e = err.new("installing sources")
   local i, k, l, source, cp
 
   -- the development build case
@@ -528,7 +529,7 @@ function sources(info, r, return_flags)
   local function install_directory_structure(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("installing directory structure")
+    local e = err.new("installing directory structure")
     local dirs = {"out", "init", "script", "build", "root", "env", "dep"}
     for _, v in pairs(dirs) do
       local d = string.format("%s/%s", res.build_config.T, v)
@@ -543,7 +544,7 @@ function sources(info, r, return_flags)
   local function install_build_script(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("installing build script")
+    local e = err.new("installing build script")
     local location = e2tool.resultbuildscript(info.results[r].directory)
     local destdir = string.format("%s/script", res.build_config.T)
     rc, re = transport.fetch_file(info.root_server, location, destdir, nil)
@@ -556,7 +557,7 @@ function sources(info, r, return_flags)
   local function install_env(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("installing environment files failed")
+    local e = err.new("installing environment files failed")
     -- install builtin environment variables
     local file = string.format("%s/env/builtin", res.build_config.T)
     rc, re = write_environment_script(res.build_config.builtin_env, file)
@@ -579,7 +580,7 @@ function sources(info, r, return_flags)
   local function install_init_files(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("installing init files")
+    local e = err.new("installing init files")
     for x in e2lib.directory(info.root .. "/proj/init") do
       if not e2lib.is_backup_file(x) then
 	local location = string.format("proj/init/%s", x)
@@ -598,7 +599,7 @@ function sources(info, r, return_flags)
   local function install_build_driver(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("writing build driver script failed")
+    local e = err.new("writing build driver script failed")
     local bc = res.build_config
     local destdir = string.format("%s/%s", bc.T, bc.scriptdir)
     rc, re = write_build_driver(info, r, destdir)
@@ -611,7 +612,7 @@ function sources(info, r, return_flags)
   local function install_build_time_dependencies(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("installing build time dependencies")
+    local e = err.new("installing build time dependencies")
     e2lib.log(3, string.format("install_build_time_dependencies"))
     local deps
     deps = e2tool.get_depends(info, r)
@@ -628,10 +629,10 @@ function sources(info, r, return_flags)
   local function install_sources(info, r, return_flags)
     local res = info.results[r]
     local rc, re
-    local e = new_error("installing sources")
+    local e = err.new("installing sources")
     e2lib.log(3, "install sources")
     for i, source in pairs(res.sources) do
-      local e = new_error("installing source failed: %s", source)
+      local e = err.new("installing source failed: %s", source)
       local destdir = string.format("%s/build", res.build_config.T)
       local source_set = res.build_mode.source_set()
       local rc, re = scm.prepare_source(info, source, source_set,
@@ -665,7 +666,7 @@ end
 function linklast(info, r, return_flags)
   local res = info.results[r]
   local rc, re
-  local e = new_error("creating link to last results")
+  local e = err.new("creating link to last results")
   -- calculate the path to the result
   local server, location = res.build_mode.storage(info.project_location,
 							info.release_id)
@@ -710,7 +711,7 @@ function store_result(info, r, return_flags)
     tostring(return_flags))
   local res = info.results[r]
   local rc, re
-  local e = new_error("fetching build results from chroot")
+  local e = err.new("fetching build results from chroot")
   e2lib.log(4, string.format("store_result"))
 
   -- create a temporary directory to build up the result
@@ -808,7 +809,7 @@ end
 function build_results_default(info, results)
   e2lib.logf(3, "building results")
   for _, r in ipairs(results) do
-    local e = new_error("building result failed: %s", r)
+    local e = err.new("building result failed: %s", r)
     local flags = {}
     local t1 = os.time()
     local rc, re = build_result(info, r, flags)
@@ -852,7 +853,7 @@ function register_build_results(func, position, post)
       end
     end
   end
-  return false, new_error("registering build_results function failed")
+  return false, err.new("registering build_results function failed")
 end
 
 --- build a result
@@ -900,7 +901,7 @@ function write_build_driver(info, r, destdir)
   e2lib.log(4, "writing build driver")
   local res = info.results[r]
   local rc, re
-  local e = new_error("generating build driver script failed")
+  local e = err.new("generating build driver script failed")
   local buildrc_file = string.format("%s/%s", destdir,
 						res.build_config.buildrc_file)
   local buildrc_noinit_file = string.format("%s/%s", destdir,
@@ -951,7 +952,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function write_environment_script(env, file)
-	local e = new_error("writing environment script")
+	local e = err.new("writing environment script")
 	local f, msg = io.open(file, "w")
 	if not f then
 		e:append("%s: %s", file, msg)
@@ -981,7 +982,7 @@ function collect_project(info, r, return_flags)
 	end
 	e2lib.log(3, "providing project data to this build")
 	local rc, re
-	local e = new_error("providing project data to this build failed")
+	local e = err.new("providing project data to this build failed")
 	-- project/proj/init/<files>
 	local destdir = string.format("%s/project/proj/init",
 							res.build_config.T)
@@ -1136,7 +1137,7 @@ function collect_project(info, r, return_flags)
 		local config = string.format("%s/config", destdir)
 		local f, msg = io.open(config, "w")
 		if not f then
-			e:cat(new_error("%s: %s", config, msg))
+			e:cat(err.new("%s: %s", config, msg))
 			return false, e
 		end
 		f:write(string.format(
@@ -1281,7 +1282,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function register_build_function(info, name, func, pos)
-  local e = new_error("register build function")
+  local e = err.new("register build function")
   local ipos = nil
   for i=1, #build_process, 1 do
     if build_process[i].name == pos then

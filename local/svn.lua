@@ -32,6 +32,7 @@ require("scm")
 local hash = require("hash")
 local url = require("url")
 local tools = require("tools")
+local err = require("err")
 
 --- translate url into subversion url
 -- @param u table: url table
@@ -39,7 +40,7 @@ local tools = require("tools")
 -- @return an error object on failure
 function mksvnurl(surl)
   local rc, re
-  local e = new_error("cannot translate url into subversion url:")
+  local e = err.new("cannot translate url into subversion url:")
   e:append("%s", surl)
   local u, re = url.parse(surl)
   if not u then
@@ -68,7 +69,7 @@ function svn.fetch_source(info, sourcename)
   if not rc then
     return false, re
   end
-  local e = new_error("fetching source failed: %s", sourcename)
+  local e = err.new("fetching source failed: %s", sourcename)
   local src = info.sources[sourcename]
   local location = src.location
   local server = src.server
@@ -95,7 +96,7 @@ function svn.prepare_source(info, sourcename, source_set, build_path) --OK
   if not rc then
     return false, re
   end
-  local e = new_error("svn.prepare_source failed")
+  local e = err.new("svn.prepare_source failed")
   local src = info.sources[ sourcename ]
   local location = src.location
   local server = src.server
@@ -148,7 +149,7 @@ end
 
 function svn.check_workingcopy(info, sourcename) --OK
 	local rc, re
-	local e = new_error("checking working copy failed")
+	local e = err.new("checking working copy failed")
 	e:append("in source %s (svn configuration):", sourcename)
 	e:setcount(0)
 	rc, re = svn.validate_source(info, sourcename)
@@ -246,7 +247,7 @@ function svn.toresult(info, sourcename, sourceset, directory) --OK
 	-- <directory>/makefile
 	-- <directory>/licences
 	local rc, re
-	local e = new_error("converting result")
+	local e = err.new("converting result")
 	rc, re = git.check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
@@ -307,7 +308,7 @@ function svn.update(info, sourcename)
   if not rc then
     e2lib.abort(re)
   end
-  local e = new_error("updating svn source failed")
+  local e = err.new("updating svn source failed")
   local src = info.sources[ sourcename ]
   local working = string.format("%s/%s", info.root, src.working)
   rc, re = e2lib.chdir(working)
@@ -335,7 +336,7 @@ function svn.validate_source(info, sourcename) --OK
   if not src.sourceid then
     src.sourceid = {}
   end
-  local e = new_error("in source %s:", sourcename)
+  local e = err.new("in source %s:", sourcename)
   rc, re = git.source_apply_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)

@@ -32,6 +32,7 @@
 module("files", package.seeall)
 require("scm")
 local hash = require("hash")
+local err = require("err")
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
@@ -43,7 +44,7 @@ function files.validate_source(info, sourcename)
   if not rc then
     return false, e
   end
-  e = new_error("in source %s:", sourcename)
+  e = err.new("in source %s:", sourcename)
   e:setcount(0)
   local src = info.sources[ sourcename ]
   if not src.file then
@@ -137,7 +138,7 @@ end
 
 function files.fetch_source(info, sourcename)
   local rc, re
-  local e = new_error("fetching source failed: %s", sourcename)
+  local e = err.new("fetching source failed: %s", sourcename)
   rc, re = files.validate_source(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -172,7 +173,7 @@ end
 -- @return nil, maybe an error string on error
 function files.prepare_source(info, sourcename, sourceset, buildpath)
   local rc, re
-  local e = new_error("error preparing source: %s", sourcename)
+  local e = err.new("error preparing source: %s", sourcename)
   rc, re = files.validate_source(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -311,7 +312,7 @@ end
 -- @return an error string on error
 function files.sourceid(info, sourcename, sourceset)
 	local rc, re
-	local e = new_error("error calculating sourceid for source: %s",
+	local e = err.new("error calculating sourceid for source: %s",
 								sourcename)
 	rc, re = files.validate_source(info, sourcename)
 	if not rc then
@@ -355,7 +356,7 @@ end
 -- export the source to a result structure
 function files.toresult(info, sourcename, sourceset, directory)
 	local rc, re
-	local e = new_error("converting result failed")
+	local e = err.new("converting result failed")
 	rc, re = files.validate_source(info, sourcename)
 	if not rc then
 		return false, e:cat(re)

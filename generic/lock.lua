@@ -30,6 +30,7 @@
 -- Remaining lock directories can be removed by calling the cleanup
 -- method.
 local lock = {}
+local err = require("err")
 
 --- create a new lock context
 -- @return table: the lock context
@@ -50,7 +51,7 @@ end
 -- @param dir string: lock directory
 -- @return boolean
 function lock.lock(l, dir)
-    local e = new_error("locking failed")
+    local e = err.new("locking failed")
 
     local rc, re = e2lib.mkdir(dir)
     if not rc then
@@ -66,7 +67,7 @@ end
 -- @param dir string: lock directory
 -- @return boolean
 function lock.unlock(l, dir)
-    local e = new_error("unlocking failed")
+    local e = err.new("unlocking failed")
     local rc, re
 
     for i,x in ipairs(l.locks) do
@@ -94,7 +95,7 @@ end
 local test=false
 if test then
     -- some dummy functions to test without context...
-    function new_error(x)
+    function err.new(x)
         return true
     end
     e2lib = {}

@@ -1,4 +1,5 @@
 module("plugin", package.seeall)
+local err = require("err")
 
 --- plugin descriptor
 -- @class table
@@ -50,7 +51,7 @@ plugins = {}
 -- @return bool
 -- @return an error object on failure
 local function load_plugin(dir, p, ctx)
-	local e = new_error("loading plugin failed: %s", p)
+	local e = err.new("loading plugin failed: %s", p)
 	local plugin_file = string.format("%s/%s", dir, p)
 	local chunk, msg = loadfile(plugin_file)
 	if not chunk then
@@ -103,7 +104,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function load_plugins(dir, ctx)
-  local e = new_error("loading plugins failed")
+  local e = err.new("loading plugins failed")
   e2lib.logf(4, "loading plugins from: %s", dir)
   for p in e2lib.directory(dir) do
     local rc, re = load_plugin(dir, p, ctx)
@@ -119,7 +120,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function init_plugins()
-  local e = new_error("initializing plugins failed")
+  local e = err.new("initializing plugins failed")
   for _, pd in ipairs(plugins) do
     local rc, re = init_plugin(pd)
     if not rc then
@@ -133,7 +134,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function exit_plugins()
-  local e = new_error("deinitializing plugins failed")
+  local e = err.new("deinitializing plugins failed")
   for _, pd in ipairs(plugins) do
     local rc, re = exit_plugin(pd)
     if not rc then

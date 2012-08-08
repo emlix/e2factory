@@ -32,6 +32,7 @@ local generic_git = {}
 local cache = require("cache")
 local url = require("url")
 local tools = require("tools")
+local err = require("err")
 
 --- clone a git repository
 -- @param surl url to the server
@@ -44,7 +45,7 @@ function generic_git.git_clone_url1(surl, location, destdir, skip_checkout)
         e2lib.abort("git_clone_url1(): missing parameter")
     end
     local rc, re
-    local e = new_error("cloning git repository")
+    local e = err.new("cloning git repository")
     local full_url = string.format("%s/%s", surl, location)
     local u, re = url.parse(full_url)
     if not u then
@@ -87,7 +88,7 @@ function generic_git.git_branch_new1(gitwc, track, branch, start_point)
     e2lib.shquote(start_point))
     local rc = e2lib.callcmd_capture(cmd)
     if rc ~= 0 then
-        return false, new_error("creating new branch failed")
+        return false, err.new("creating new branch failed")
     end
     return true, nil
 end
@@ -104,7 +105,7 @@ function generic_git.git_checkout1(gitwc, branch)
     e2lib.shquote(branch))
     local rc = e2lib.callcmd_capture(cmd)
     if rc ~= 0 then
-        return false, new_error("git checkout failed")
+        return false, err.new("git checkout failed")
     end
     return true, nil
 end
@@ -117,7 +118,7 @@ end
 function generic_git.git_rev_list1(gitdir, ref)
     e2lib.log(4, string.format("git_rev_list(): %s %s",
     tostring(gitdir), tostring(ref)))
-    local e = new_error("git rev-list failed")
+    local e = err.new("git rev-list failed")
     local rc, re
     local tmpfile = e2lib.mktempfile()
     local args = string.format("--max-count=1 '%s' -- >'%s'", ref, tmpfile)
@@ -133,7 +134,7 @@ function generic_git.git_rev_list1(gitdir, ref)
     f:close()
     e2lib.rmtempfile(tmpfile)
     if (not rev) or (not rev:match("^%S+$")) then
-        return nil, new_error("can't parse git rev-list output")
+        return nil, err.new("can't parse git rev-list output")
     end
     if rev then
         e2lib.log(4, string.format("git_rev_list: %s", rev))
@@ -151,7 +152,7 @@ function generic_git.git_init_db1(rurl)
     if (not rurl) then
         e2lib.abort("git_init_db1(): missing parameter")
     end
-    local e = new_error("running git_init_db")
+    local e = err.new("running git_init_db")
     local rc, re
     local u, re = url.parse(rurl)
     if not u then
@@ -190,7 +191,7 @@ function generic_git.git_push1(gitdir, rurl, refspec)
         e2lib.abort("git_push1(): missing parameter")
     end
     local rc, re
-    local e = new_error("git push failed")
+    local e = err.new("git push failed")
     local u, re = url.parse(rurl)
     if not u then
         return false, e:cat(re)
@@ -220,7 +221,7 @@ function generic_git.git_remote_add1(lurl, rurl, name)
         e2lib.abort("missing parameter")
     end
     local rc, re
-    local e = new_error("git remote-add failed")
+    local e = err.new("git remote-add failed")
     local lrepo, re = url.parse(lurl)
     if not lrepo then
         return false, e:cat(re)
@@ -256,7 +257,7 @@ function generic_git.git_url1(u)
     elseif u.transport == "file" then
         giturl = string.format("/%s", u.path)
     else
-        return nil, new_error("transport not supported: %s", u.transport)
+        return nil, err.new("transport not supported: %s", u.transport)
     end
     return giturl, nil
 end
@@ -272,7 +273,7 @@ end
 function generic_git.git_clone_from_server(c, server, location, destdir,
     skip_checkout)
     local rc, re
-    local e = new_error("cloning git repository")
+    local e = err.new("cloning git repository")
     local surl, re = cache.remote_url(c, server, location)
     if not surl then
         return false, e:cat(re)
@@ -292,7 +293,7 @@ end
 -- @return an error object on failure
 function generic_git.git_init_db(c, server, location)
     local rc, re
-    local e = new_error("initializing git repository")
+    local e = err.new("initializing git repository")
     local rurl, re = cache.remote_url(c, server, location)
     if not rurl then
         return false, e:cat(re)
@@ -314,7 +315,7 @@ end
 -- @return an error object on failure
 function generic_git.git_push(c, gitdir, server, location, refspec)
     local rc, re
-    local e = new_error("git push failed")
+    local e = err.new("git push failed")
     local rurl, re = cache.remote_url(c, server, location)
     if not rurl then
         return false, e:cat(re)
@@ -329,7 +330,7 @@ end
 -- @return an error object on failure
 function generic_git.git_config(gitdir, query)
     local rc, re
-    local e = new_error("running git config")
+    local e = err.new("running git config")
     local tmpfile = e2lib.mktempfile()
     local cmd = string.format("GIT_DIR=%s git config %s > %s",
     e2lib.shquote(gitdir), e2lib.shquote(query), e2lib.shquote(tmpfile))
@@ -353,7 +354,7 @@ end
 -- @return an error object on failure
 function generic_git.git_add(gitdir, args)
     local rc, re
-    local e = new_error("running git add")
+    local e = err.new("running git add")
     if not gitdir then
         gitdir = ".git"
     end
@@ -373,7 +374,7 @@ end
 -- @return an error object on failure
 function generic_git.git_commit(gitdir, args)
     local rc, re
-    local e = new_error("git commit failed")
+    local e = err.new("git commit failed")
     return e2lib.git("commit", gitdir, args)
 end
 
@@ -385,7 +386,7 @@ end
 function generic_git.verify_remote_tag(gitdir, tag)
     e2lib.logf(4, "generic_git.verify_remote_tag(%s, %s)", tostring(gitdir),
     tostring(tag))
-    local e = new_error("verifying remote tag")
+    local e = err.new("verifying remote tag")
     local rc, re
 
     -- fetch the remote tag
@@ -395,7 +396,7 @@ function generic_git.verify_remote_tag(gitdir, tag)
     tag, rtag)
     rc, re = e2lib.git(gitdir, "fetch", args)
     if not rc then
-        return false, new_error("remote tag is not available: %s", tag)
+        return false, err.new("remote tag is not available: %s", tag)
     end
 
     -- store commit ids for use in the error message, if any
@@ -436,7 +437,7 @@ end
 function generic_git.verify_clean_repository(gitwc)
     e2lib.logf(4, "generic_git.verify_clean_repository(%s)", tostring(gitwc))
     gitwc = gitwc or "."
-    local e = new_error("verifying that repository is clean")
+    local e = err.new("verifying that repository is clean")
     local rc, re
     local tmp = e2lib.mktempfile()
     rc, re = e2lib.chdir(gitwc)
@@ -459,7 +460,7 @@ function generic_git.verify_clean_repository(gitwc)
     if #files > 0 then
         local msg = "the following files are not checked into the repository:\n"
         msg = msg .. files
-        return false, new_error("%s", msg)
+        return false, err.new("%s", msg)
     end
     -- verify that the working copy matches HEAD
     local args = string.format("--name-only HEAD >%s", tmp)
@@ -476,7 +477,7 @@ function generic_git.verify_clean_repository(gitwc)
     if #files > 0 then
         msg = "the following files are modified:\n"
         msg = msg..files
-        return false, new_error("%s", msg)
+        return false, err.new("%s", msg)
     end
     -- verify that the index matches HEAD
     local args = string.format("--name-only --cached HEAD >%s", tmp)
@@ -493,7 +494,7 @@ function generic_git.verify_clean_repository(gitwc)
     if #files > 0 then
         msg = "the following files in index are modified:\n"
         msg = msg..files
-        return false, new_error("%s", msg)
+        return false, err.new("%s", msg)
     end
     return true
 end
@@ -508,7 +509,7 @@ function generic_git.verify_head_match_tag(gitwc, verify_tag)
     tostring(verify_tag))
     assert(verify_tag)
     gitwc = gitwc or "."
-    local e = new_error("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
+    local e = err.new("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
     local rc, re
     local tmp = e2lib.mktempfile()
     local args = string.format("--tags --match '%s' >%s", verify_tag, tmp)
@@ -557,7 +558,7 @@ end
 -- @return nil, or an error string on error
 function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, flags)
     local rc, re
-    local e = new_error("setting up new git repository failed")
+    local e = err.new("setting up new git repository failed")
     local lserver_url, re = cache.remote_url(c, lserver, llocation)
     if not lserver_url then
         return false, e:cat(re)

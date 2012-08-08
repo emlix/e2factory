@@ -26,6 +26,7 @@
 ]]
 
 scm = module("scm", package.seeall)
+local err = require("err")
 
 -- scm modules
 local scms = {}
@@ -39,7 +40,7 @@ local intf = {}
 -- @return bool
 -- @return an error object on failure
 function register(scmname, mod)
-  local e = new_error("error registering scm")
+  local e = err.new("error registering scm")
   if scms[scmname] then
     return false, e:append("scm with that name exists")
   end
@@ -58,7 +59,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function register_interface(name)
-  local e = new_error("registering scm interface failed")
+  local e = err.new("registering scm interface failed")
   if intf[name] then
     return false, e:append(
 		"interface with that name exists: %s", name)
@@ -68,7 +69,7 @@ function register_interface(name)
   local function func(info, sourcename, ...)
     local src = info.sources[sourcename]
     local rc, re, e
-    e = new_error("calling scm operation failed")
+    e = err.new("calling scm operation failed")
     if not scms[src.type] then
       return false, e:append("no such source type: %s", src.type)
     end
@@ -95,7 +96,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function register_function(type, name, func)
-  local e = new_error("registering scm function failed")
+  local e = err.new("registering scm function failed")
   if not scms[type] then
     return false, e:append("no scm type by that name: %s", type)
   end

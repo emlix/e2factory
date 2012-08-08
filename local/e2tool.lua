@@ -33,7 +33,7 @@ module("e2tool", package.seeall)
 require("e2lib")
 require("strict")
 require("collection")
-require("err")
+local err = require("err")
 require("scm")
 require("files")
 require("git")
@@ -184,19 +184,19 @@ require("policy")
 -- @return bool
 local function listofstrings(l, unique, unify)
   if type(l) ~= "table" then
-    return false, new_error("not a table")
+    return false, err.new("not a table")
   end
   local values = {}
   local unified = {}
   for i,s in pairs(l) do
     if type(i) ~= "number" then
-      return false, new_error("found non-numeric index")
+      return false, err.new("found non-numeric index")
     end
     if type(s) ~= "string" then
-      return false, new_error("found non-string value")
+      return false, err.new("found non-string value")
     end
     if unique and values[s] then
-      return false, new_error("found non-unique value: '%s'", s)
+      return false, err.new("found non-unique value: '%s'", s)
     end
     if unify and not values[s] then
       table.insert(unified, s)
@@ -221,7 +221,7 @@ end
 -- @return bool
 -- @return an error object on failure
 local function check_tab(tab, keys, inherit)
-	local e = new_error("checking file configuration")
+	local e = err.new("checking file configuration")
 
 	if type(tab) ~= "table" then
 		return false, e:append("not a table")
@@ -263,14 +263,14 @@ end
 function opendebuglogfile(info)
   local rc, re = e2lib.mkdir(info.root .. "/log", "-p")
   if not rc then
-    local e = new_error("error making log directory")
+    local e = err.new("error making log directory")
     return false, e:cat(re)
   end
   local logfile = info.root .. "/log/debug.log"
   local rc, re = e2lib.rotate_log(logfile)
   local debuglogfile, msg = io.open(logfile, "w")
   if not debuglogfile then
-    local e = new_error("error opening debug logfile")
+    local e = err.new("error opening debug logfile")
     return false, e:append(msg)
   end
   e2lib.globals.debuglogfile = debuglogfile
@@ -287,7 +287,7 @@ end
 -- @return an error object on failure
 function load_user_config(info, path, dest, index, var)
   local rc, re
-  local e = new_error("loading configuration failed")
+  local e = err.new("loading configuration failed")
   e2lib.log(3, "loading " .. path)
   if not e2util.exists(path) then
     return false, e:append("file does not exist: %s", path)
@@ -318,7 +318,7 @@ end
 -- @return list of config items
 -- @return an error object on failure
 function load_user_config2(info, path, types)
-  local e = new_error("loading configuration file failed")
+  local e = err.new("loading configuration file failed")
   local rc, re
   local list = {}
 
@@ -381,7 +381,7 @@ end
 -- @return an error object on failure
 function local_init(path, tool)
   local rc, re
-  local e = new_error("initializing")
+  local e = err.new("initializing")
   local info = {}
 
   -- provide the current tool name to allow conditionals in plugin
@@ -440,7 +440,7 @@ end
 
 function collect_project_info(info, skip_load_config)
   local rc, re
-  local e = new_error("reading project configuration")
+  local e = err.new("reading project configuration")
 
   -- check for configuration compatibility
   info.config_syntax_compat = buildconfig.SYNTAX
@@ -559,7 +559,7 @@ function collect_project_info(info, skip_load_config)
     return false, e:cat(re)
   end
   info.project[".fix"] = nil
-  local e = new_error("in project configuration:")
+  local e = err.new("in project configuration:")
   if not info.project.release_id then
     e:append("key is not set: release_id")
   end
@@ -750,7 +750,7 @@ function collect_project_info(info, skip_load_config)
       e2lib.abort(e:cat(re))
     end
     if not rc then
-      e = new_error("project repository is not clean")
+      e = err.new("project repository is not clean")
       e2lib.abort(e:cat(re))
     end
   end
@@ -783,7 +783,7 @@ end
 
 function check_project_info(info, all, access, verbose)
   local rc, re
-  local e = new_error("error in project configuration")
+  local e = err.new("error in project configuration")
   rc, re = check_chroot_config(info)
   if not rc then
     return false, e:cat(re)
@@ -949,7 +949,7 @@ function dlist_recursive(info, result)
   local t = {}
   local function visit(res)
     if had[res] then
-      return false, new_error("cyclic dependency: %s", table.concat(path, " "))
+      return false, err.new("cyclic dependency: %s", table.concat(path, " "))
     elseif t and not col[res] then
       table.insert(path, res)
       had[res] = true
@@ -981,7 +981,7 @@ function dsort(info)
 end
 
 function read_hash_file(info, server, location)
-  local e = new_error("error reading hash file")
+  local e = err.new("error reading hash file")
   local cs = nil
   local cache_flags = { cache = true }
   local rc, re = info.cache:cache_file(server, location, cache_flags)
@@ -1006,7 +1006,7 @@ function hash_path(path)
   assert(type(path) == "string")
   assert(string.len(path) > 0)
 
-  local e = new_error("error hashing path")
+  local e = err.new("error hashing path")
 
   local ctx = hash.hash_start()
 
@@ -1025,7 +1025,7 @@ end
 -- @return string the hash value, nil on error
 -- @return nil, an error string on error
 function hash_file(info, server, location)
-  local e = new_error("error hashing file")
+  local e = err.new("error hashing file")
   local cache_flags = { cache = true }
   local rc, re = info.cache:cache_file(server, location, cache_flags)
   if not rc then
@@ -1050,13 +1050,13 @@ function verify_hash(info, server, location, sha1)
   e2lib.logf(4, "verify_hash %s %s %s %s", tostring(info), tostring(server),
 					tostring(location), tostring(sha1))
   local rc, re
-  local e = new_error("error verifying checksum")
+  local e = err.new("error verifying checksum")
   local is_sha1, re = hash_file(info, server, location)
   if not is_sha1 then
     return false, e:cat(re)
   end
   if is_sha1 ~= sha1 then
-    e = new_error("checksum mismatch in file:")
+    e = err.new("checksum mismatch in file:")
     return false, e:append("%s:%s", server, location)
   end
   e2lib.logf(4, "checksum matches: %s:%s", server, location)
@@ -1226,7 +1226,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function calc_sourceids(info, sourceset)
-	local e = new_error("calculating sourceids failed")
+	local e = err.new("calculating sourceids failed")
 	for _,src in pairs(info.sources) do
 		local sourceid, re = scm.sourceid(info, src.name, sourceset)
 		if not sourceid then
@@ -1240,7 +1240,7 @@ function calc_sourceids(info, sourceset)
 end
 
 function hashcache_setup(info)
-	local e = new_error("reading hash cache")
+	local e = err.new("reading hash cache")
 	local rc, re
 	e2lib.logf(4, "loading hashcache from file: %s", info.hashcache_file)
 	info.hashcache = {}
@@ -1273,7 +1273,7 @@ function hashcache_setup(info)
 end
 
 function hashcache_write(info)
-	local e = new_error("writing hash cache file")
+	local e = err.new("writing hash cache file")
 	local f, msg = io.open(info.hashcache_file, "w")
 	if not f then
 		return false, e:append(msg)
@@ -1290,7 +1290,7 @@ function hashcache_write(info)
 end
 
 function hashcache(info, file)
-	local e = new_error("getting fileid from hash cache failed")
+	local e = err.new("getting fileid from hash cache failed")
 	local rc, re, fileid
 	local p, re = info.cache:file_path(file.server,	file.location, {})
 	if not p then
@@ -1298,7 +1298,7 @@ function hashcache(info, file)
 	end
 	local s, msg = e2util.stat(p)
 	if not s then
-		return nil, new_error("%s: %s", p, msg)
+		return nil, err.new("%s: %s", p, msg)
 	end
 	local id = string.format("%s:%s", file.server, file.location)
 	local fileid
@@ -1334,7 +1334,7 @@ end
 -- @return an error object on failure
 function verify_remote_fileid(info, file, fileid)
 	local rc, re
-	local e = new_error("error calculating remote file id for file: %s:%s",
+	local e = err.new("error calculating remote file id for file: %s:%s",
 						file.server, file.location)
 	if not info.cache:cache_enabled(file.server) or
 	   not e2option.opts["check-remote"] then
@@ -1386,11 +1386,11 @@ function verify_remote_fileid(info, file, fileid)
                   return false, e:cat(re)
                 end
 	else
-		return false, new_error("transport not supported: %s",
+		return false, err.new("transport not supported: %s",
                   u.transport)
 	end
 	if fileid ~= remote_fileid then
-		return false, new_error(
+		return false, err.new(
 			"checksum for remote file %s:%s (%s) does not match" ..
                         " configured checksum (%s)",
 			file.server, file.location, remote_fileid, fileid)
@@ -1408,7 +1408,7 @@ end
 function fileid(info, file)
 	local fileid
 	local re
-	local e = new_error("error calculating file id for file: %s:%s",
+	local e = err.new("error calculating file id for file: %s:%s",
 						file.server, file.location)
 	if file.sha1 then
 		fileid = file.sha1
@@ -1432,7 +1432,7 @@ end
 -- @return an error object on failure
 function licenceid(info, licence)
 	local rc, re
-	local e = new_error("calculating licence id failed for licence: %s",
+	local e = err.new("calculating licence id failed for licence: %s",
 								licence)
 	local lic = info.licences[licence]
 	if lic.licenceid then
@@ -1461,7 +1461,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function calc_licenceids(info)
-	local e = new_error("calculating licenceids failed")
+	local e = err.new("calculating licenceids failed")
 	for l,_ in pairs(info.licences) do
 		local licenceid, re = licenceid(info, l)
 		if not licenceid then
@@ -1508,7 +1508,7 @@ end
 -- @return the buildid
 function pbuildid(info, resultname)
 	e2lib.log(4, string.format("get pbuildid for %s", resultname))
-	local e = new_error("error calculating result id for result: %s",
+	local e = err.new("error calculating result id for result: %s",
 								resultname)
 	local r = info.results[resultname]
 	if r.pbuildid then
@@ -1648,7 +1648,7 @@ function flush_buildids(info)
 end
 
 function chrootgroupid(info, groupname)
-	local e = new_error("calculating chroot group id failed for group %s",
+	local e = err.new("calculating chroot group id failed for group %s",
 								groupname)
 	local g = info.chroot.groups_byname[groupname]
 	if g.groupid then
@@ -1725,10 +1725,10 @@ function check_source(info, sourcename)
 	local src = info.sources[sourcename]
 	local rc, e, re
 	if not src then
-		e = new_error("no source by that name: %s", sourcename)
+		e = err.new("no source by that name: %s", sourcename)
 		return false, e
 	end
-	local e = new_error("in source: %s", sourcename)
+	local e = err.new("in source: %s", sourcename)
 	if not src.type then
 		e2lib.warnf("WDEFAULT", "in source %s", sourcename)
 		e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
@@ -1742,7 +1742,7 @@ function check_source(info, sourcename)
 end
 
 function check_sources(info)
-	local e = new_error("Error while checking sources")
+	local e = err.new("Error while checking sources")
 	local rc, re
 	for n,s in pairs(info.sources) do
 		rc, re = check_source(info, n)
@@ -1757,7 +1757,7 @@ function check_sources(info)
 end
 
 function check_licence(info, l)
-	local e = new_error("in licence: %s", l)
+	local e = err.new("in licence: %s", l)
 	local lic = info.licences[l]
 	if not lic.server then
 		e:append("no server attribute")
@@ -1805,7 +1805,7 @@ function check_licence(info, l)
 end
 
 function check_licences(info)
-	local e = new_error("Error while checking licences")
+	local e = err.new("Error while checking licences")
 	local rc, re
 	for l, lic in pairs(info.licences) do
 		rc, re = check_licence(info, l)
@@ -1820,7 +1820,7 @@ function check_licences(info)
 end
 
 function check_workingcopies(info)
-	local e = new_error("Error while checking working copies")
+	local e = err.new("Error while checking working copies")
 	local rc, re
 	for n,s in pairs(info.sources) do
 		rc, re = scm.check_workingcopy(info, n)
@@ -1835,7 +1835,7 @@ function check_workingcopies(info)
 end
 
 function check_results(info)
-	local e = new_error("Error while checking results")
+	local e = err.new("Error while checking results")
 	local rc, re
 	for _,f in ipairs(info.ftab.check_result) do
 		for r,_ in pairs(info.results) do
@@ -1865,7 +1865,7 @@ end
 -- @param resultname string: the result to check
 function check_result(info, resultname)
 	local res = info.results[resultname]
-	local e = new_error("in result %s:", resultname)
+	local e = err.new("in result %s:", resultname)
 	if not res then
 		e:append("result does not exist: %s", resultname)
 		return false, e
@@ -2003,7 +2003,7 @@ end
 -- @param resultname string: the result to check
 function check_collect_project(info, resultname)
 	local res = info.results[resultname]
-	local e = new_error("in result %s:", resultname)
+	local e = err.new("in result %s:", resultname)
 	local rc, re
 	if not res.collect_project then
 		-- insert empty tables, to avoid some conditionals in the code
@@ -2088,7 +2088,7 @@ function string2bn(info, s, build_numbers)
 		build_numbers = info.build_numbers
 	end
 	local rc
-	local re = new_error("error parsing build numbers:")
+	local re = err.new("error parsing build numbers:")
 	e2lib.log(3, "parsing build numbers")
 	local line = 0
 	for l in s:gmatch("[^\n]+") do
@@ -2147,7 +2147,7 @@ function buildnumber_write(info, file, build_numbers)
 	if not build_numbers then
 		build_numbers = info.build_numbers
 	end
-	local e = new_error("error writing build number file:")
+	local e = err.new("error writing build number file:")
 	e2lib.logf(3, "writing build numbers to %s", file)
 	local s, re = bn2string(info)
 	if not s then
@@ -2177,7 +2177,7 @@ function buildnumber_read(info, file, build_numbers)
 	if not build_numbers then
 		build_numbers = info.build_numbers
 	end
-	local e = new_error("error reading build number file:")
+	local e = err.new("error reading build number file:")
 	e2lib.logf(3, "reading build-numbers from %s", file)
 	local s, re = e2lib.read_file(file)
 	if not s and e2lib.isfile(file) then
@@ -2201,7 +2201,7 @@ end
 -- @return nil, an error object on failure
 function buildnumber_mergetoresults(info)
 	e2lib.log(3, string.format("merging build numbers to results"))
-	local e = new_error("merging build numbers to results:")
+	local e = err.new("merging build numbers to results:")
 	for r, res in pairs(info.results) do
 		local bn = info.build_numbers[r]
 		if not bn then
@@ -2274,11 +2274,11 @@ function buildnumber_request(info)
 	e2lib.log(3, "requesting build numbers from server")
 
         if e2lib.globals.buildnumber_server_url == nil then
-          return false, new_error("no build number server configured")
+          return false, err.new("no build number server configured")
         end
 
 	local rc, re
-	local e = new_error("error requesting build numbers")
+	local e = err.new("error requesting build numbers")
 	local tmpdir = e2lib.mktempdir()
 	local tmpreq = string.format("%s/build-number.req.tmp", tmpdir)
 	local tmpres = string.format("%s/build-number.res.tmp", tmpdir)
@@ -2323,7 +2323,7 @@ function buildnumber_request_local(info)
 	local req  -- the request
 	local sta  -- the state
 	local res  -- the response
-	local e = new_error("error in local buildnumber request")
+	local e = err.new("error in local buildnumber request")
 	-- compose the request
 	req = info.build_numbers
 	-- compose the state
@@ -2442,7 +2442,7 @@ end
 -- @return an error object on failure
 function print_selection(info, results)
 	for _,r in ipairs(results) do
-		local e = new_error("error printing selected results")
+		local e = err.new("error printing selected results")
 		local res = info.results[r]
 		if not res then
 			return false, e:append("no such result: %s", r)
@@ -2465,7 +2465,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function lcd(info, dir)
-  local e = new_error("chdir failed")
+  local e = err.new("chdir failed")
   local abspath = string.format("%s/%s", info.root, dir)
   local rc, re = e2lib.chdir(abspath)
   if not rc then
@@ -2481,7 +2481,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function check_config_syntax_compat(info)
-  local e = new_error("checking configuration syntax compatibilitly failed")
+  local e = err.new("checking configuration syntax compatibilitly failed")
   local l, re = e2lib.read_line(info.config_syntax_file)
   if not l then
     return false, e:cat(re)
@@ -2511,7 +2511,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function read_chroot_config(info)
-  local e = new_error("reading chroot config failed")
+  local e = err.new("reading chroot config failed")
   local t = {}
   local rc, re = load_user_config(info, info.chroot_config_file,
 						t, "chroot", "e2chroot")
@@ -2564,7 +2564,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function check_chroot_config(info)
-  local e = new_error("error validating chroot configuration")
+  local e = err.new("error validating chroot configuration")
   for g,grp in pairs(info.chroot.groups) do
     if not grp.server then
       e:append("in group: %s", grp.name)
@@ -2675,7 +2675,7 @@ local function checkFilenameInvalidCharacters(str)
   local msg = "only digits, alphabetic characters, and '-_./' " ..
                 "are allowed"
   if not str:match("^[-_0-9a-zA-Z/.]+$") then
-    return false, new_error(msg)
+    return false, err.new(msg)
   else
     return true
   end
@@ -2686,7 +2686,7 @@ local function checkNameInvalidCharacters(str)
   local msg = "only digits, alphabetic characters, and '-_.' " ..
                 "are allowed"
   if not str:match("^[-_0-9a-zA-Z.]+$") then
-    return false, new_error(msg)
+    return false, err.new(msg)
   else
     return true
   end
@@ -2698,7 +2698,7 @@ local function slashToDot(str)
 end
 
 function load_source_config(info)
-  local e = new_error("error loading source configuration")
+  local e = err.new("error loading source configuration")
   info.sources = {}
 
   for _,src in ipairs(gather_source_paths(info)) do
@@ -2751,7 +2751,7 @@ function load_source_config(info)
 end
 
 function load_result_config(info)
-  local e = new_error("error loading result configuration")
+  local e = err.new("error loading result configuration")
   info.results = {}
 
   for _,res in ipairs(gather_result_paths(info)) do
@@ -2883,7 +2883,7 @@ end
 
 function register_collect_project_info(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
-    return false, new_error("register_collect_project_info: invalid argument")
+    return false, err.new("register_collect_project_info: invalid argument")
   end
   table.insert(info.ftab.collect_project_info, func)
   return true, nil
@@ -2891,7 +2891,7 @@ end
 
 function register_check_result(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
-    return false, new_error("register_check_result: invalid argument")
+    return false, err.new("register_check_result: invalid argument")
   end
   table.insert(info.ftab.check_result, func)
   return true, nil
@@ -2899,7 +2899,7 @@ end
 
 function register_resultid(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
-    return false, new_error("register_resultid: invalid argument")
+    return false, err.new("register_resultid: invalid argument")
   end
   table.insert(info.ftab.resultid, func)
   return true, nil
@@ -2907,7 +2907,7 @@ end
 
 function register_pbuildid(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
-    return false, new_error("register_pbuildid: invalid argument")
+    return false, err.new("register_pbuildid: invalid argument")
   end
   table.insert(info.ftab.pbuildid, func)
   return true, nil
@@ -2915,7 +2915,7 @@ end
 
 function register_dlist(info, func)
   if type(info) ~= "table" or type(func) ~= "function" then
-    return false, new_error("register_dlist: invalid argument")
+    return false, err.new("register_dlist: invalid argument")
   end
   table.insert(info.ftab.dlist, func)
   return true, nil
@@ -2923,7 +2923,7 @@ end
 
 function load_env_config(info, file)
   e2lib.logf(4, "loading environment: %s", file)
-  local e = new_error("loading environment: %s", file)
+  local e = err.new("loading environment: %s", file)
   local rc, re
 
   local info = info
@@ -2945,7 +2945,7 @@ function load_env_config(info, file)
       for var, val in pairs(data) do
         if type(var) ~= "string" or
 	  (type(val) ~= "string" and type(val) ~= "table") then
-	  merge_error = new_error("invalid environment entry in %s: %s=%s",
+	  merge_error = err.new("invalid environment entry in %s: %s=%s",
 					file, tostring(var), tostring(val))
 	  return nil
 	end
@@ -2957,7 +2957,7 @@ function load_env_config(info, file)
 	  for var1, val1 in pairs(val) do
             if type(var1) ~= "string" or
 	       (type(val1) ~= "string" and type(val1) ~= "table") then
-	      merge_error = new_error(
+	      merge_error = err.new(
 				"invalid environment entry in %s [%s]: %s=%s",
 				file, var, tostring(var1), tostring(val1))
 	      return nil

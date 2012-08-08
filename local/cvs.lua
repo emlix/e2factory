@@ -32,6 +32,7 @@ require("scm")
 local hash = require("hash")
 local url = require("url")
 local tools = require("tools")
+local err = require("err")
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
@@ -47,7 +48,7 @@ function cvs.validate_source(info, sourcename)
   if not src.sourceid then
     src.sourceid = {}
   end
-  local e = new_error("in source %s:", sourcename)
+  local e = err.new("in source %s:", sourcename)
   rc, re = git.source_apply_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -108,7 +109,7 @@ local function mkcvsroot(u)
   elseif u.transport == "cvspserver" then
     cvsroot = string.format(":pserver:%s:/%s", u.server, u.path)
   else
-    return nil, new_error("cvs: transport not supported")
+    return nil, err.new("cvs: transport not supported")
   end
   return cvsroot, nil
 end
@@ -128,7 +129,7 @@ local function mkrev(src, source_set)
     rev = src.tag
   end
   if not rev then
-    return nil, new_error("source set not allowed")
+    return nil, err.new("source set not allowed")
   end
   return rev, nil
 end
@@ -138,7 +139,7 @@ function cvs.fetch_source(info, sourcename)
   if not rc then
     return false, re
   end
-  local e = new_error("fetching source failed: %s", sourcename)
+  local e = err.new("fetching source failed: %s", sourcename)
   local src = info.sources[ sourcename ]
   local location = src.cvsroot
   local server = src.server
@@ -188,7 +189,7 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
   if not rc then
     return false, re
   end
-  local e = new_error("cvs.prepare_source failed")
+  local e = err.new("cvs.prepare_source failed")
   local src = info.sources[ sourcename ]
   local location = src.cvsroot
   local server = src.server
@@ -236,7 +237,7 @@ function cvs.update(info, sourcename)
   if not rc then
     e2lib.abort(re)
   end
-  local e = new_error("updating cvs source failed")
+  local e = err.new("updating cvs source failed")
   local src = info.sources[ sourcename ]
   local working = string.format("%s/%s", info.root, src.working)
   local rsh = tools.get_tool("ssh")
@@ -315,7 +316,7 @@ function cvs.sourceid(info, sourcename, source_set)
 	if src.sourceid[source_set] then
 		return true, nil, src.sourceid[source_set]
 	end
-	local e = new_error("calculating sourceid failed for source %s",
+	local e = err.new("calculating sourceid failed for source %s",
 								sourcename)
 	local hc = hash.hash_start()
 	hash.hash_line(hc, src.name)
@@ -355,7 +356,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
 	-- <directory>/makefile
 	-- <directory>/licences
 	local rc, re
-	local e = new_error("converting result")
+	local e = err.new("converting result")
 	rc, re = git.check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
@@ -413,7 +414,7 @@ end
 
 function cvs.check_workingcopy(info, sourcename)
 	local rc, re
-	local e = new_error("checking working copy failed")
+	local e = err.new("checking working copy failed")
 	e:append("in source %s (cvs configuration):", sourcename)
 	e:setcount(0)
 	rc, re = cvs.validate_source(info, sourcename)

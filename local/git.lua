@@ -35,6 +35,7 @@ local hash = require("hash")
 local cache = require("cache")
 local generic_git = require("generic_git")
 local url = require("url")
+local err = require("err")
 
 --- git branch wrapper
 -- get the current branch
@@ -75,7 +76,7 @@ end
 function git.get_revision_id(info, source, sourceset, check_remote)
   local sourcename = source
   local rc, re
-  local e = new_error("getting revision id failed for source: %s", source)
+  local e = err.new("getting revision id failed for source: %s", source)
   local s = info.sources[source]
   rc, re = git.validate_source(info, sourcename)
   if not rc then
@@ -133,7 +134,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function source_apply_default_licences(info, sourcename)
-  local e = new_error("applying default licences failed.")
+  local e = err.new("applying default licences failed.")
   local src = info.sources[ sourcename ]
   if src.licences_default_applied then
     return true
@@ -182,9 +183,9 @@ function generic_validate_source(info, sourcename)
   local rc, re
   local e
   if not src then
-    return false, new_error("invalid source: %s", sourcename)
+    return false, err.new("invalid source: %s", sourcename)
   end
-  e = new_error("in source %s:", sourcename)
+  e = err.new("in source %s:", sourcename)
   rc, re = source_apply_default_licences(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -231,7 +232,7 @@ function check(info, sourcename, require_workingcopy)
   end
   rc, re = scm.working_copy_available(info, sourcename)
   if (not rc) and require_workingcopy then
-    return false, new_error("working copy is not available")
+    return false, err.new("working copy is not available")
   end
   rc, re = scm.check_workingcopy(info, sourcename)
   if not rc then
@@ -280,7 +281,7 @@ function git.validate_source(info, sourcename)
     return false, re
   end
   local src = info.sources[ sourcename ]
-  local e = new_error("in source %s:", sourcename)
+  local e = err.new("in source %s:", sourcename)
   rc, re = source_apply_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -325,7 +326,7 @@ end
 function git.update(info, sourcename)
   local src = info.sources[ sourcename ]
   local rc, re
-  local e = new_error("updating source failed")
+  local e = err.new("updating source failed")
   rc, re = scm.working_copy_available(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -378,7 +379,7 @@ end
 function git.fetch_source(info, sourcename)
   local src = info.sources[ sourcename ]
   local rc, re
-  local e = new_error("fetching source failed: %s", sourcename)
+  local e = err.new("fetching source failed: %s", sourcename)
   rc, re = git.validate_source(info, sourcename)
   if not rc then
     return false, e:cat(re)
@@ -420,7 +421,7 @@ end
 function git.prepare_source(info, sourcename, sourceset, buildpath)
   local src = info.sources[ sourcename ]
   local rc, re, e
-  local e = new_error("preparing git sources failed")
+  local e = err.new("preparing git sources failed")
   rc, re = check(info, sourcename, true)
   if not rc then
     return false, e:cat(re)
@@ -492,7 +493,7 @@ end
 function git.working_copy_available(info, sourcename)
   local src = info.sources[sourcename]
   local rc, re
-  local e = new_error("checking if working copy is available for source %s",
+  local e = err.new("checking if working copy is available for source %s",
 								sourcename)
   rc, re = git.validate_source(info, sourcename)
   if not rc then
@@ -530,7 +531,7 @@ end
 -- @return string: the git url, or nil
 -- @return an error object on failure
 function git.git_url(c, server, location)
-  local e = new_error("translating server:location to git url")
+  local e = err.new("translating server:location to git url")
   local rurl, re = cache.remote_url(c, server, location)
   if not rurl then
     return nil, e:cat(re)
@@ -573,7 +574,7 @@ end
 function git.display(info, sourcename)
   local src = info.sources[sourcename]
   local rc, re
-  local e = new_error("display source information failed")
+  local e = err.new("display source information failed")
   rc, re = git.validate_source(info, sourcename)
   if not rc then
     return nil, e:cat(re)
@@ -662,7 +663,7 @@ end
 
 function git.toresult(info, sourcename, sourceset, directory)
 	local rc, re
-	local e = new_error("converting result")
+	local e = err.new("converting result")
 	rc, re = check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
@@ -727,7 +728,7 @@ end
 
 function git.check_workingcopy(info, sourcename)
 	local rc, re
-	local e = new_error("checking working copy failed")
+	local e = err.new("checking working copy failed")
 	e:append("in source %s (git configuration):", sourcename)
 	e:setcount(0)
 	rc, re = git.validate_source(info, sourcename)

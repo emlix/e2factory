@@ -29,6 +29,8 @@
 
 require("e2local")
 require("e2tool")
+local err = require("err")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "cf")
 if not info then
@@ -73,7 +75,7 @@ local editor = e2lib.globals.osenv["EDITOR"]
 local commands = {}
 
 local function newsource(info, ...)
-  local e = new_error("newsource")
+  local e = err.new("newsource")
   local t = ...
   local name = t[2]
   local scm = t[3]
@@ -111,7 +113,7 @@ local function newsource(info, ...)
 end
 
 local function editsource(info, ...)
-  local e = new_error("editsource")
+  local e = err.new("editsource")
   local t = ...
   local name = t[2]
   if not name then
@@ -126,7 +128,7 @@ local function editsource(info, ...)
 end
 
 local function newresult(info, ...)
-  local e = new_error("newresult")
+  local e = err.new("newresult")
   local t = ...
   local name = t[2]
   if not name then
@@ -167,7 +169,7 @@ local function newresult(info, ...)
 end
 
 local function editresult(info, ...)
-  local e = new_error("editresult")
+  local e = err.new("editresult")
   local t = ...
   local name = t[2]
   if not name then
@@ -182,7 +184,7 @@ local function editresult(info, ...)
 end
 
 local function editbuildscript(info, ...)
-  local e = new_error("editbuildscript")
+  local e = err.new("editbuildscript")
   local t = ...
   local name = t[2]
   if not name then

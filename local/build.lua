@@ -30,6 +30,8 @@
 require("e2local")
 require("e2tool")
 require("e2build")
+local err = require("err")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build")
 if not info then
@@ -71,14 +73,14 @@ local function perform_writeback_settings(writeback)
 			e2lib.logf(3, disable_msg, set.server)
 			rc, re = info.cache:set_writeback(set.server, false)
 			if not rc then
-				local e = new_error(disable_msg, set.server)
+				local e = err.new(disable_msg, set.server)
 				e2lib.abort(e:cat(re))
 			end
 		elseif set.set == "enable" then
 			e2lib.logf(3, enable_msg, set.server)
 			rc, re = info.cache:set_writeback(set.server, true)
 			if not rc then
-				local e = new_error(enable_msg, set.server)
+				local e = err.new(enable_msg, set.server)
 				e2lib.abort(e:cat(re))
 			end
 		end
@@ -127,7 +129,7 @@ end
 -- handle command line flags
 local build_mode = nil
 if opts["branch-mode"] and opts["wc-mode"] then
-	e = new_error("--branch-mode and --wc-mode are mutually exclusive")
+	e = err.new("--branch-mode and --wc-mode are mutually exclusive")
 	e2lib.abort(e)
 end
 if opts["branch-mode"] then

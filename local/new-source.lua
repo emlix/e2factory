@@ -32,6 +32,7 @@ require("e2local")
 require("e2tool")
 local generic_git = require("generic_git")
 local cache = require("cache")
+local err = require("err")
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "new-source")
@@ -79,7 +80,7 @@ function read_checksum(checksum_file, filename)
 		return nil, e
 	end
 	local rc = nil
-	local e = new_error("no checksum available")
+	local e = err.new("no checksum available")
 	while true do
 		local line = f:read()
 		if not line then
@@ -136,7 +137,7 @@ function download(f)
           e2lib.shquote(f), e2lib.shquote(name))
 	local rc = e2lib.callcmd_capture(cmd)
 	if rc ~= 0 then
-		return false, new_error("download failed: %s", f)
+		return false, err.new("download failed: %s", f)
 	end
 	return true, nil
 end

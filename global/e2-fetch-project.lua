@@ -30,9 +30,10 @@ require("e2lib")
 require("e2option")
 local generic_git = require("generic_git")
 local cache = require("cache")
+local err = require("err")
 
 e2lib.init()
-local e = new_error("fetching project failed")
+local e = err.new("fetching project failed")
 local doc = [[
 usage: e2-fetch-project [<option> ...] [<server>:]<location> [<destination>]
 
@@ -184,7 +185,7 @@ e2_install_e2 = string.format("%s %s/e2-install-e2",
   e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
 rc, re = e2lib.callcmd_log(e2_install_e2)
 if rc ~= 0 then
-	e2lib.abort(new_error("installing local e2 failed"))
+	e2lib.abort(err.new("installing local e2 failed"))
 end
 e2lib.finish()
 

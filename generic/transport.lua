@@ -28,6 +28,7 @@
 local transport = {}
 local url = require("url")
 local tools = require("tools")
+local err = require("err")
 
 --- call rsync with appropriate rsh argument according to the tools
 -- configuration
@@ -119,7 +120,7 @@ local function rsync_ssh_mkdir(opts, user, server, dir)
         local rc, re = rsync_ssh(argv, emptydir .. "/", dest)
         if not rc then
             e2lib.rmtempdir(emptydir)
-            local e = new_error("could not create remote directory")
+            local e = err.new("could not create remote directory")
             return false, e:cat(re)
         end
     end
@@ -141,7 +142,7 @@ function transport.fetch_file(surl, location, destdir, destname)
         destname = e2lib.basename(location)
     end
     local rc, re
-    local e = new_error("transport: fetching file failed")
+    local e = err.new("transport: fetching file failed")
     local u, re = url.parse(surl)
     if not u then
         return false, e:cat(re)
@@ -228,7 +229,7 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
     e2lib.log(4, string.format("%s: %s %s %s %s", "transport.push_file()",
     sourcefile, durl, location, tostring(push_permissions)))
     local rc, e
-    e = new_error("error pushing file to server")
+    e = err.new("error pushing file to server")
     durl = string.format("%s/%s", durl, location)
     local u, re = url.parse(durl)
     if not u then
@@ -346,7 +347,7 @@ end
 function transport.file_path(surl, location)
     e2lib.log(4, string.format("%s: %s %s", "file_path()", surl,
     location))
-    local e = new_error("can't get path to file")
+    local e = err.new("can't get path to file")
     local u, re = url.parse(surl)
     if not u then
         return nil, e:cat(re)

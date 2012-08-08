@@ -26,6 +26,7 @@
 ]]
 
 module("policy", package.seeall)
+local err = require("err")
 
 function source_set_lazytag()
 	return "lazytag"
@@ -133,7 +134,7 @@ end
 -- @return the buildid
 
 function init(info)
-	local e = new_error("checking policy")
+	local e = err.new("checking policy")
 	-- check if all required servers exist
 	local storage = {
 		storage_release,
@@ -145,7 +146,7 @@ function init(info)
 		local location = "test/test"
 		local release_id = "release-id"
 		local server, location = s(location, release_id)
-		local se = new_error("checking server configuration for '%s'",
+		local se = err.new("checking server configuration for '%s'",
 									server)
 		local ce, re = info.cache:ce_by_server(server)
 		if not ce then

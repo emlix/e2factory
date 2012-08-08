@@ -29,6 +29,7 @@ local cache = {}
 require("e2lib")
 local transport = require("transport")
 local url = require("url")
+local err = require("err")
 
 --- cache
 -- @class table
@@ -99,7 +100,7 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     ((remote_url and flags) and (alias_server and alias_location)))
     local ru, cu
     local rc, re
-    local e = new_error("error setting up cache entry")
+    local e = err.new("error setting up cache entry")
     local ce = {}
     local cache_url = nil
     if not remote_url then
@@ -165,7 +166,7 @@ function cache.ce_by_url(c, url)
             return ce, nil
         end
     end
-    return nil, new_error("no cache entry for url: %s", url)
+    return nil, err.new("no cache entry for url: %s", url)
 end
 
 --- get cache entry by server
@@ -179,7 +180,7 @@ function cache.ce_by_server(c, server)
             return ce, nil
         end
     end
-    return nil, new_error("no cache entry for server: %s", server)
+    return nil, err.new("no cache entry for server: %s", server)
 end
 
 --- check if server is valid
@@ -191,7 +192,7 @@ function cache.valid_server(c, server)
     if cache.ce_by_server(c, server) then
         return true
     else
-        return false, new_error("not a valid server: %s", server)
+        return false, err.new("not a valid server: %s", server)
     end
 end
 
@@ -294,7 +295,7 @@ end
 -- @return an error object on failure
 function cache.fetch_file(c, server, location, destdir, destname, flags)
     local rc, re
-    local e = new_error("cache: fetching file failed")
+    local e = err.new("cache: fetching file failed")
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
@@ -344,7 +345,7 @@ end
 -- @return an error object on failure
 function cache.push_file(c, sourcefile, server, location, flags)
     local rc, re
-    local e = new_error("error pushing file to cache/server")
+    local e = err.new("error pushing file to cache/server")
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
@@ -382,7 +383,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function cache.writeback(c, server, location, flags)
-    local e = new_error("writeback failed")
+    local e = err.new("writeback failed")
     local rc, re
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -413,7 +414,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function cache.cache_file(c, server, location, flags)
-    local e = new_error("caching file failed: %s:%s", server, location)
+    local e = err.new("caching file failed: %s:%s", server, location)
     local rc, re
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -454,7 +455,7 @@ end
 -- @return an error object on failure
 function cache.file_path(c, server, location, flags)
     local rc, re
-    local e = new_error("providing file path failed")
+    local e = err.new("providing file path failed")
     -- get the cache entry
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -486,7 +487,7 @@ end
 -- @return an error object on failure
 function cache.set_writeback(c, server, value)
     if type(value) ~= "boolean" then
-        return false, new_error(
+        return false, err.new(
         "cache.set_writeback(): value is not boolean")
     end
     local rc, re = cache.valid_server(c, server)

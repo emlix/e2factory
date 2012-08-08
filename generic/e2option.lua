@@ -30,6 +30,7 @@ require("e2lib")
 require("e2util")
 require("collection")
 require("plugin")
+local err = require("err")
 
 -- Parsing of command-line options
 
@@ -73,7 +74,7 @@ aliases = {}
 -- @return nil
 function flag(name, doc, func, category)
   if options[ name ] then
-    return false, new_error("option exists: %s", name)
+    return false, err.new("option exists: %s", name)
   end
   options[ name ] = {type = "flag", documentation = doc or "", name = name,
     proc=func, default = true,
@@ -90,7 +91,7 @@ end
 -- @return nil
 function option(name, doc, default, func, argname)
   if options[ name ] then
-    return false, new_error("option exists: %s", name)
+    return false, err.new("option exists: %s", name)
   end
   options[ name ] = {type = "option", documentation = doc or "", name = name,
     proc=func, default=default or true,

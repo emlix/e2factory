@@ -30,6 +30,8 @@
 require("e2local")
 require("e2tool")
 require("e2build")
+local err = require("err")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "fetch-sources")
 if not info then
@@ -56,7 +58,7 @@ up-to-dateness is not checked for sources which are already fetched.
 -- --fetch, --cache  fetch selected sources
 -- --update          update selected sources
 
-local e = new_error()
+local e = err.new()
 
 e2option.flag("all", "select all sources, even files sources")
 e2option.flag("chroot", "select chroot files")
@@ -139,7 +141,7 @@ end
 function fetch_sources(info, opts, sel)
   local rc1 = true    -- global return code
   local nfail = 0     -- failure counter
-  local e = new_error()  -- no message yet, append the summary later on
+  local e = err.new()  -- no message yet, append the summary later on
 
   -- fetch
   for _, s in pairs(info.sources) do

@@ -30,13 +30,15 @@
 require("e2local")
 require("e2tool")
 require("e2build")
+local err = require("err")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "playground")
 if not info then
   e2lib.abort(re)
 end
 
-local e = new_error("entering playground failed")
+local e = err.new("entering playground failed")
 local rc, re
 
 e2option.documentation = [[

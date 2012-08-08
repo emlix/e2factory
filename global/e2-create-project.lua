@@ -30,6 +30,7 @@ require("e2lib")
 require("e2option")
 local cache = require("cache")
 local generic_git = require("generic_git")
+local err = require("err")
 
 e2lib.init()
 
@@ -48,7 +49,7 @@ if not rc then
   e2lib.abort(e)
 end
 e2lib.init2()
-local e = new_error("creating project failed")
+local e = err.new("creating project failed")
 
 local config, re = e2lib.get_global_config()
 if not config then

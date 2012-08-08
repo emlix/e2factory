@@ -29,6 +29,7 @@ require("buildconfig")
 require("e2lib")
 require("e2option")
 local generic_git = require("generic_git")
+local err = require("err")
 
 e2lib.init()
 
@@ -55,7 +56,7 @@ if not rc then
   e2lib.abort(e)
 end
 e2lib.init2()
-local e = new_error("e2-install-e2 failed")
+local e = err.new("e2-install-e2 failed")
 
 local config = e2lib.get_global_config()
 local servers = config.servers

@@ -29,6 +29,8 @@
 
 require("e2local")
 require("e2tool")
+local err = require("err")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "ls-project")
 if not info then
@@ -68,7 +70,7 @@ elseif #opts.arguments > 0 then
     if info.results[r] then
       table.insert(results, r)
     else
-      e2lib.abort(new_error("not a result: %s", r))
+      e2lib.abort(err.new("not a result: %s", r))
     end
   end
 end

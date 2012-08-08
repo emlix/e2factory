@@ -28,6 +28,7 @@
 
 local hash = {}
 require("sha1")
+local err = require("err")
 
 --- create a hash context
 -- @return a hash context object, or nil on error
@@ -82,7 +83,7 @@ function hash.hash_file(hc, path)
 
     local fd = io.open(path, "r")
     if not fd then
-        return nil, new_error("could not open file '%s'", path)
+        return nil, err.new("could not open file '%s'", path)
     end
 
     local buf = ""
