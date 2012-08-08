@@ -25,7 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("plugin", package.seeall)
+local plugin = {}
 local err = require("err")
 
 --- plugin descriptor
@@ -130,7 +130,7 @@ end
 -- @param ctx table: plugin context
 -- @return bool
 -- @return an error object on failure
-function load_plugins(dir, ctx)
+function plugin.load_plugins(dir, ctx)
   local e = err.new("loading plugins failed")
   e2lib.logf(4, "loading plugins from: %s", dir)
   for p in e2lib.directory(dir) do
@@ -146,7 +146,7 @@ end
 --- initialize plugins
 -- @return bool
 -- @return an error object on failure
-function init_plugins()
+function plugin.init_plugins()
   local e = err.new("initializing plugins failed")
   for _, pd in ipairs(plugins) do
     local rc, re = init_plugin(pd)
@@ -160,7 +160,7 @@ end
 --- deinitialize plugins
 -- @return bool
 -- @return an error object on failure
-function exit_plugins()
+function plugin.exit_plugins()
   local e = err.new("deinitializing plugins failed")
   for _, pd in ipairs(plugins) do
     local rc, re = exit_plugin(pd)
@@ -174,8 +174,10 @@ end
 --- print a description for each plugin. This is for use with the --version
 -- option. This version always succeeds.
 -- @return nil
-function print_descriptions()
+function plugin.print_descriptions()
   for i,pd in ipairs(plugins) do
     print(pd.description)
   end
 end
+
+return plugin
