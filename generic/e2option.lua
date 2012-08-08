@@ -29,7 +29,7 @@ module("e2option", package.seeall)
 require("e2lib")
 require("e2util")
 require("collection")
-require("plugin")
+local plugin = require("plugin")
 local err = require("err")
 
 -- Parsing of command-line options
