@@ -1341,7 +1341,6 @@ function parse_e2versionfile(filename)
 				    filename)
   v.tag = match() or abort("invalid tag name `", l, "' in e2 version file ",
 			       filename)
-  --table.print(v)
   log(3, "using e2 branch " .. v.branch .. " tag " .. v.tag)
   return v
 end

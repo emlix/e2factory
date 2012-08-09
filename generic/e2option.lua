@@ -28,7 +28,6 @@
 module("e2option", package.seeall)
 require("e2lib")
 require("e2util")
-require("collection")
 local plugin = require("plugin")
 local err = require("err")
 
@@ -322,7 +321,11 @@ function parse(args)
 	    end
 	  end
 	else
-	  local set = string.explode(opt)
+	  local set = {}
+	  for i = 1, string.len(opt) do
+		  table.insert(set, string.sub(opt, i, i))
+	  end
+
 	  for k, v in pairs(set) do
 	    if not options[ v ] then
 	      e2lib.abort(string.format("invalid option: %s\n"..

@@ -32,7 +32,6 @@
 module("e2tool", package.seeall)
 require("e2lib")
 require("strict")
-require("collection")
 local err = require("err")
 require("scm")
 require("files")
