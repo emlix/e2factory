@@ -50,19 +50,12 @@ LUA_LIBS += policy.lua strict.lua e2build.lua
 LUA_LIBS += e2lib.lua buildconfig.lua
 LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
 
-SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
-	git-to-tar required-files buildid
-
 .PHONY: all install uninstall install install-local doc install-doc
 
 
 all: linux32 sha1.so luafile_ll.so e2util.so
 
 install:
-	# install symlinks for e2-2.1 compatibility
-	for i in $(SYMLINKS_2_1); do \
-		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
-	done
 	for i in $(LOCALTOOLS); do \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
@@ -103,9 +96,6 @@ install-doc:
 	done
 
 uninstall:
-	for i in $(SYMLINKS_2_1); do \
-		rm -f $(DESTDIR)$(BINDIR)/e2-$$i ; \
-	done
 	for i in $(LOCALTOOLS); do \
 		rm -f $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done

@@ -295,10 +295,7 @@ elseif opts.files then
   local rc = new_files_source(info.cache, server, location, source_file,
 			checksum_file, checksum_file_format, no_checksum)
 else
-  e2lib.log(1,
-	"Creating repositories other than git is not supported yet.\n"..
- 	"You might nevertheless use 'e2-use-source' to use existing\n"..
-	"sources in your project")
+  e2lib.log(1, "Creating repositories other than git is not supported yet.")
 end
 
 e2lib.finish(0)
