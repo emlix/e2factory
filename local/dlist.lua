@@ -27,7 +27,7 @@
 
 -- dlist - list sorted dependencies -*- Lua -*-
 
-require("e2local")
+require("e2lib")
 require("e2tool")
 require("e2build")
 e2lib.init()

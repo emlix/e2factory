@@ -25,7 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-package.path  = "@LIBDIR@/?.lc;@LIBDIR@/?.lua"
+package.path  = "@LIBDIR@/?.lua"
 package.cpath = "@LIBDIR@/?.so"
 
 env_tool = "@ENV_TOOL@"

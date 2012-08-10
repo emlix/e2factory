@@ -35,7 +35,7 @@ SCRIPTS =
 GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2 e2-root
 GLOBALSHTOOLS = e2-locate-project-root e2ssh
 GLOBALTOOLS = $(GLOBALLUATOOLS) $(GLOBALSHTOOLS)
-CLEAN_FILES = *~ $(GLOBALTOOLS) *.lc e2 $(SCRIPTS) *.lua e2-su *.sh e2.conf
+CLEAN_FILES = *~ $(GLOBALTOOLS) e2 $(SCRIPTS) *.lua e2-su *.sh e2.conf
 LUA_LIBS = strict.lua plugin.lua e2lib.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
 LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
@@ -43,7 +43,7 @@ LUA_LIBS += buildconfig.lua
 
 .PHONY: all install uninstall clean
 
-all: e2 e2-root $(SCRIPTS) e2-su $(GLOBALLUATOOLS:=.lc) \
+all: e2 e2-root $(SCRIPTS) e2-su \
 	$(GLOBALSHTOOLS:=.sh) e2.conf sha1.so e2-su-2.2 \
 	luafile_ll.so e2util.so
 
@@ -62,7 +62,7 @@ install-lua: $(LUA_LIBS)
 
 install: all install-dirs install-lua
 	for i in $(GLOBALLUATOOLS) ; do \
-		install -m 755 $$i.lc $(DESTDIR)$(TOOLDIR)/$$i ; \
+		install -m 755 $$i.lua $(DESTDIR)$(TOOLDIR)/$$i ; \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	for i in $(GLOBALSHTOOLS) ; do \
@@ -112,20 +112,17 @@ clean:
 %.lua: %.lua.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
 
-%.lc: %.lua
-	$(BUILD_LUAC) -o $@ $<
-
 e2-su: e2-su.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 %.sh: %.sh.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
 
-e2: e2.lc
+e2: e2.lua
 	echo "#!$(LIBEXECDIR)/e2-lua-$(LUA_VERSION)" >$@
 	cat $< >>$@
 
-e2-root: e2-root.lc
+e2-root: e2-root.lua
 	echo "#!$(LIBEXECDIR)/e2-lua-$(LUA_VERSION)" >$@
 	cat $< >>$@
 

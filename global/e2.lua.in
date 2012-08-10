@@ -25,7 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-package.path  = "@LIBDIR@/?.lc;@LIBDIR@/?.lua"
+package.path  = "@LIBDIR@/?.lua"
 package.cpath = "@LIBDIR@/?.so"
 
 require("buildconfig")
@@ -82,9 +82,8 @@ end
 
 if e2util.stat(e2call.globaltool) then
   e2call.tool = e2call.globaltool
-  env = string.format("LUA_PATH='%s/?.lc;%s/?.lua' " ..
-        "LUA_CPATH='%s/?.so'", buildconfig.LIBDIR, buildconfig.LIBDIR,
-	buildconfig.LIBDIR)
+  env = string.format("LUA_PATH='%s/?.lua' LUA_CPATH='%s/?.so'",
+  	buildconfig.LIBDIR, buildconfig.LIBDIR)
   lua = buildconfig.LUA
   cmd = string.format("%s %s %s %s", env, lua, e2call.tool, e2call.arg_string)
 elseif not root then
@@ -92,6 +91,7 @@ elseif not root then
 	" is not a global tool and we're not in a project environment")
 elseif root and e2util.stat(e2call.localtool) then
   e2call.tool = e2call.localtool
+  -- Search for .lc files, the local e2 may be of an older version
   env = "LUA_PATH='" .. root .. "/.e2/lib/e2/?.lc;" ..
                         root .. "/.e2/lib/e2/?.lua' " ..
         "LUA_CPATH=" .. root .. "/.e2/lib/e2/?.so"

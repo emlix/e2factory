@@ -32,7 +32,7 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ *.lc *.o *.so
+CLEAN_FILES = *~ *.o *.so
 
 
 .PHONY: all install uninstall local install-local clean

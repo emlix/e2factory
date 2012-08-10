@@ -27,7 +27,7 @@
 
 -- e2-buildnumbers -*- Lua -*-
 
-require("e2local")
+require("e2lib")
 require("e2tool")
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build-numbers")

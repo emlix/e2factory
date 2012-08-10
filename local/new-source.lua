@@ -28,7 +28,7 @@
 -- e2-new-source - add new source onto an existing server -*- Lua -*-
 
 
-require("e2local")
+require("e2lib")
 require("e2tool")
 local generic_git = require("generic_git")
 local cache = require("cache")

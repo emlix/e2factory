@@ -27,7 +27,7 @@
 
 -- e2-cf -*- Lua -*-
 
-require("e2local")
+require("e2lib")
 require("e2tool")
 local err = require("err")
 

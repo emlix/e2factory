@@ -29,7 +29,7 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ *.lc *.so
+CLEAN_FILES = *~ *.so
 
 DOWNLOAD = http://www.e2factory.org/source/example
 E2FACTORY_GIT = http://git.e2factory.org/git/e2factory/e2factory.git

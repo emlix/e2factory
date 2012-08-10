@@ -34,7 +34,7 @@ include $(TOPLEVEL)/make.vars
 
 VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
 
-CLEAN_FILES = *~ *.so linux32 *.lc *.o
+CLEAN_FILES = *~ *.so linux32 *.o
 CFLAGS += -I. -I$(DESTDIR)$(INCDIR) -I$(DESTDIR)$(INCDIR)/lua-$(LUA_VERSION) \
 	-I../lua/lua-$(LUA_VERSION)/src -fPIC
 LDFLAGS += -L. -L../lua/lua-$(LUA_VERSION)/src -Wl,-R$(LIBDIR)
@@ -56,7 +56,7 @@ SYMLINKS_2_1 = lookup-server use-source prepare-cargo sync-results cleanup \
 .PHONY: all install uninstall install install-local doc install-doc
 
 
-all: linux32 e2local.lc $(LOCALLUATOOLS:=.lc) sha1.so luafile_ll.so e2util.so
+all: linux32 sha1.so luafile_ll.so e2util.so
 
 install:
 	# install symlinks for e2-2.1 compatibility
@@ -76,9 +76,8 @@ install-local-lua: $(LUA_LIBS)
 install-local: all install-local-dirs install-local-lua install-local-sourcefiles
 	test -n "$(PROJECTDIR)"
 	install -m 755 -d $(LOCALPLUGINDIR)
-	install -m644 e2local.lc $(LOCALLIBDIR)/
 	for i in $(LOCALLUATOOLS); do \
-		install -m 755 $$i.lc $(LOCALBINDIR)/e2-$$i; \
+		install -m 755 $$i.lua $(LOCALBINDIR)/e2-$$i; \
 	done
 	for i in $(LOCALSHTOOLS); do \
 		install -m 755 $$i $(LOCALBINDIR)/e2-$$i; \
@@ -116,13 +115,6 @@ clean:
 
 %: %.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
-
-%.lc: %.lua
-	$(LUAC) -o $@ $<
-
-e2local.lc: \
-		e2lib.lua
-	$(LUAC) -o $@ $^
 
 linux32: linux32.c
 
