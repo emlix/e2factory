@@ -45,7 +45,7 @@ local plugin = require("plugin")
 local url = require("url")
 local hash = require("hash")
 require("e2util")
-require("e2option")
+local e2option = require("e2option")
 local generic_git = require("generic_git")
 require("policy")
 

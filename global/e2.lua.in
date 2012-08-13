@@ -30,7 +30,7 @@ package.cpath = "@LIBDIR@/?.so"
 
 require("buildconfig")
 require("e2lib")
-require("e2option")
+local e2option = require("e2option")
 require("e2util")
 
 e2lib.init()

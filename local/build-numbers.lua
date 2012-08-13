@@ -29,6 +29,8 @@
 
 require("e2lib")
 require("e2tool")
+local e2option = require("e2option")
+
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build-numbers")
 if not info then

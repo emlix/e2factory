@@ -27,6 +27,7 @@
 
 module("policy", package.seeall)
 local err = require("err")
+local e2option = require("e2option")
 
 function source_set_lazytag()
 	return "lazytag"

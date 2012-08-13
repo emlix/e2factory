@@ -33,6 +33,7 @@ require("e2tool")
 local generic_git = require("generic_git")
 local cache = require("cache")
 local err = require("err")
+local e2option = require("e2option")
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "new-source")

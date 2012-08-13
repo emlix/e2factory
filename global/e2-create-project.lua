@@ -27,10 +27,10 @@
 
 require("buildconfig")
 require("e2lib")
-require("e2option")
 local cache = require("cache")
 local generic_git = require("generic_git")
 local err = require("err")
+local e2option = require("e2option")
 
 e2lib.init()
 
