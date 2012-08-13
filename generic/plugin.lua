@@ -59,7 +59,7 @@ local err = require("err")
 -- @return an error object on failure
 
 -- list of plugin descriptors
-plugins = {}
+local plugins = {}
 
 --[[ example plugin descriptor:
 -- plugin = {
@@ -110,21 +110,6 @@ local function load_plugin(dir, p, ctx)
     return true, nil
 end
 
---- initialize a plugin
--- @param pd table: plugin descriptor
--- @return bool
--- @return an error object on failure
-local function init_plugin(pd)
-    return pd.init(pd.ctx)
-end
-
---- deinitialize a plugin
--- @param pd table: plugin descriptor
--- @return bool
-local function exit_plugin(pd)
-    return pd.exit(pd.ctx)
-end
-
 --- load plugins from a directory, and apply the plugin context
 -- @param dir string: directory
 -- @param ctx table: plugin context
@@ -149,7 +134,7 @@ end
 function plugin.init_plugins()
     local e = err.new("initializing plugins failed")
     for _, pd in ipairs(plugins) do
-        local rc, re = init_plugin(pd)
+        local rc, re = pd.init(pd.ctx)
         if not rc then
             return false, e:cat(re)
         end
@@ -163,7 +148,7 @@ end
 function plugin.exit_plugins()
     local e = err.new("deinitializing plugins failed")
     for _, pd in ipairs(plugins) do
-        local rc, re = exit_plugin(pd)
+        local rc, re = pd.exit(pd.ctx)
         if not rc then
             return false, e:cat(re)
         end
