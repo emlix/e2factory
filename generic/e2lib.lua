@@ -837,11 +837,13 @@ end
 -- @return bool
 -- @return error string on error
 function e2lib.read_global_config(e2_config_file)
-    e2lib.log(4, "read_global_config()")
-    local cf = e2lib.get_first_val({
-        e2lib.globals.cmdline["e2-config"],   -- command line
-        e2lib.globals.osenv["E2_CONFIG"],     -- environment
-    })
+    local cf
+    if type(e2lib.globals.cmdline["e2-config"]) == "string" then
+        cf = e2lib.globals.cmdline["e2-config"]
+    elseif type(e2lib.globals.osenv["E2_CONFIG"]) == "string" then
+        cf = e2lib.globals.osenv["E2_CONFIG"]
+    end
+    
     local cf_path
     if cf then
         cf_path = { cf }
@@ -1982,18 +1984,6 @@ function e2lib.format_replace(s, t)
         start = start + 1
     end
     return s
-end
-
---- take a table of values, with integer keys and return the first string
--- value
--- @param a table of values
-function e2lib.get_first_val(t)
-    for k, v in pairs(t) do
-        if type(v) == "string" then
-            return v
-        end
-    end
-    return nil
 end
 
 --- change directory
