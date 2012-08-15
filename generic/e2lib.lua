@@ -1730,8 +1730,12 @@ end
 -- @param dir string: path
 -- @return bool
 function e2lib.isdir(dir)
-    local args = string.format("-d '%s'", dir)
-    return e2lib.call_tool("test", args)
+    local t = e2util.stat(dir, true)
+    if t and t.type == "directory" then
+        return true
+    end
+
+    return false
 end
 
 --- check if path is a file
@@ -1739,10 +1743,10 @@ end
 -- @return bool
 function e2lib.isfile(path)
     local t = e2util.stat(path, true)
-    if not t or t.type ~= "regular" then
-        return false
+    if t and t.type == "regular" then
+        return true
     end
-    return true
+    return false
 end
 
 --- calculate SHA1 sum for a file
