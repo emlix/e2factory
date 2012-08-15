@@ -36,7 +36,7 @@ local err = require("err")
 local options = {}
 local optionlist = {}
 local commands = {}
-local program_name = arg[ 0 ]
+local program_name = arg[0]
 
 
 -- Option declaration
@@ -75,10 +75,10 @@ local aliases = {}
 -- @param category string: category name
 -- @return nil
 function e2option.flag(name, doc, func, category)
-    if options[ name ] then
+    if options[name] then
         return false, err.new("option exists: %s", name)
     end
-    options[ name ] = {type = "flag", documentation = doc or "", name = name,
+    options[name] = {type = "flag", documentation = doc or "", name = name,
     proc=func, default = true,
     category = category}
     table.insert(optionlist, name)
@@ -92,10 +92,10 @@ end
 -- @param argname string: argument name used in documentation (optional)
 -- @return nil
 function e2option.option(name, doc, default, func, argname)
-    if options[ name ] then
+    if options[name] then
         return false, err.new("option exists: %s", name)
     end
-    options[ name ] = {type = "option", documentation = doc or "", name = name,
+    options[name] = {type = "option", documentation = doc or "", name = name,
     proc=func, default=default or true,
     argumentname=argname or "ARGUMENT"}
     table.insert(optionlist, name)
@@ -103,7 +103,7 @@ end
 
 --- XXX command(): undocumented, never called. Remove?
 function e2option.command(name, doc, func)
-    commands[ name ] = {documentation=doc, command=func, name=name}
+    commands[name] = {documentation=doc, command=func, name=name}
 end
 
 --- register an alias for an option
@@ -111,10 +111,10 @@ end
 -- @param option string: name of the option to register the alias for
 -- @return nil
 function e2option.alias(alias, option)
-    if aliases[ alias ] then
+    if aliases[alias] then
         e2lib.warn("alias `", alias, "' for option `", option, "' already exists")
     end
-    aliases[ alias ] = option
+    aliases[alias] = option
 end
 
 
@@ -290,37 +290,37 @@ function e2option.parse(args)
     local opts={ arguments=vals }
     local i = 1
     while i <= #args do		-- we may modify args
-        local v = args[ i ]
+        local v = args[i]
         local s, e, opt, val = string.find(v, "^%-%-?([^= ]+)=(.*)$")
         if s then
-            opt = aliases[ opt ] or opt
-            if options[ opt ] then
-                local proc = options[ opt ].proc
+            opt = aliases[opt] or opt
+            if options[opt] then
+                local proc = options[opt].proc
                 if proc then val = proc(val) end
-                opts[ opt ] = val
+                opts[opt] = val
             else e2option.usage(1)
             end
         else
             s, e, opt = string.find(v, "^%-%-?(.*)$")
             if s then
-                opt = aliases[ opt ] or opt
-                if options[ opt ] then
-                    local proc = options[ opt ].proc
-                    if options[ opt ].type == "option" then
+                opt = aliases[opt] or opt
+                if options[opt] then
+                    local proc = options[opt].proc
+                    if options[opt].type == "option" then
                         if i == #args then
                             e2lib.abort("argument missing for option: " .. opt)
                         end
                         if proc then
-                            opts[ opt ] = proc(args[ i + 1 ])
+                            opts[opt] = proc(args[i + 1])
                         else
-                            opts[ opt ] = args[ i + 1 ]
+                            opts[opt] = args[i + 1]
                         end
                         i = i + 1
                     else
                         if proc then
-                            opts[ opt ] = proc()
+                            opts[opt] = proc()
                         else
-                            opts[ opt ] = options[ opt ].default
+                            opts[opt] = options[opt].default
                         end
                     end
                 else
@@ -330,7 +330,7 @@ function e2option.parse(args)
                     end
 
                     for k, v in pairs(set) do
-                        if not options[ v ] then
+                        if not options[v] then
                             e2lib.abort(string.format("invalid option: %s\n"..
                             "Try the --help option for usage information.", opt))
                         else
