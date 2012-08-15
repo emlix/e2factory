@@ -27,6 +27,7 @@
 
 local plugin = {}
 local err = require("err")
+local e2lib = require("e2lib")
 
 --- plugin descriptor
 -- @class table

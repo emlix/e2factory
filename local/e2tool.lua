@@ -30,7 +30,7 @@
 -- High-level tools used by the build process and basic build operations.
 
 module("e2tool", package.seeall)
-require("e2lib")
+local e2lib = require("e2lib")
 require("strict")
 local err = require("err")
 require("scm")

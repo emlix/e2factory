@@ -31,6 +31,7 @@
 -- method.
 local lock = {}
 local err = require("err")
+local e2lib = require("e2lib")
 
 --- create a new lock context
 -- @return table: the lock context

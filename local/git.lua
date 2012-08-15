@@ -37,6 +37,7 @@ local generic_git = require("generic_git")
 local url = require("url")
 local err = require("err")
 local e2option = require("e2option")
+local e2lib = require("e2lib")
 
 --- git branch wrapper
 -- get the current branch

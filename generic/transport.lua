@@ -29,6 +29,7 @@ local transport = {}
 local url = require("url")
 local tools = require("tools")
 local err = require("err")
+local e2lib = require("e2lib")
 
 --- call rsync with appropriate rsh argument according to the tools
 -- configuration

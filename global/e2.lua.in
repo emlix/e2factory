@@ -29,7 +29,7 @@ package.path  = "@LIBDIR@/?.lua"
 package.cpath = "@LIBDIR@/?.so"
 
 require("buildconfig")
-require("e2lib")
+local e2lib = require("e2lib")
 local e2option = require("e2option")
 require("e2util")
 

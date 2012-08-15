@@ -26,7 +26,7 @@
 ]]
 
 require("buildconfig")
-require("e2lib")
+local e2lib = require("e2lib")
 local e2option = require("e2option")
 local generic_git = require("generic_git")
 local err = require("err")

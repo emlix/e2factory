@@ -26,6 +26,7 @@
 ]]
 
 local err =  {}
+local e2lib = require("e2lib")
 
 --- append a string to an error object
 -- @param format string: format string

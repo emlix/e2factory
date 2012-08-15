@@ -26,6 +26,7 @@
 ]]
 
 local tools = {}
+local e2lib = require("e2lib")
 require("buildconfig")
 
 local toollist = {

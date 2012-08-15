@@ -26,7 +26,7 @@
 ]]
 
 local cache = {}
-require("e2lib")
+local e2lib = require("e2lib")
 local transport = require("transport")
 local url = require("url")
 local err = require("err")

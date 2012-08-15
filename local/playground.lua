@@ -27,7 +27,7 @@
 
 -- playground - enter existing chroot(1) environment -*- Lua -*-
 
-require("e2lib")
+local e2lib = require("e2lib")
 require("e2tool")
 require("e2build")
 local err = require("err")

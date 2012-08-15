@@ -33,6 +33,7 @@ local hash = require("hash")
 local url = require("url")
 local tools = require("tools")
 local err = require("err")
+local e2lib = require("e2lib")
 
 --- translate url into subversion url
 -- @param u table: url table

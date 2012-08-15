@@ -27,7 +27,7 @@
 
 -- e2-buildnumbers -*- Lua -*-
 
-require("e2lib")
+local e2lib = require("e2lib")
 require("e2tool")
 local e2option = require("e2option")
 

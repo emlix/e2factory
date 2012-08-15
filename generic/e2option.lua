@@ -26,7 +26,7 @@
 ]]
 
 local e2option = {}
-require("e2lib")
+local e2lib = require("e2lib")
 require("e2util")
 local plugin = require("plugin")
 local err = require("err")

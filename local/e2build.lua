@@ -31,6 +31,7 @@ module("e2build", package.seeall)
 local transport = require("transport")
 local tools = require("tools")
 local err = require("err")
+local e2lib = require("e2lib")
 
 --- cache a result
 -- @param info

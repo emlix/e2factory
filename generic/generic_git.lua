@@ -33,6 +33,7 @@ local cache = require("cache")
 local url = require("url")
 local tools = require("tools")
 local err = require("err")
+local e2lib = require("e2lib")
 
 --- clone a git repository
 -- @param surl url to the server
