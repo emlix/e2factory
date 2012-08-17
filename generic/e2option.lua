@@ -254,40 +254,76 @@ function e2option.parse(args)
         category)
     end
 
-    local function userdefaultoptions()
+    local function userdefaultoptions(opts)
         local home = e2lib.globals.homedir
-        if not home then return end
+
+        if not home then
+            return
+        end
+
         local file = home .. "/.e2/e2rc"
         if not e2util.exists(file) then
             return
         end
+
         local e2rc = {}
-        local rc, e = e2lib.dofile_protected(file,
-        { e2rc = function(t) e2rc = t end })
+        local rc, e = e2lib.dofile_protected(file, { e2rc = function(t) e2rc = t end })
         if not rc then
             e2lib.abort(e)
         end
-        for _,p in pairs(e2rc) do
-            local n=p[1]
-            local v=p[2]
-            if options[n] then
-                if options[n].type == "flag" and v then
-                    e2lib.abort("argument given for flag: " .. n)
-                elseif options[n].type == "option" and not v then
-                    e2lib.abort("argument missing for option: " .. n)
+
+        for _,tbl in pairs(e2rc) do
+            if type(tbl) ~= "table" then
+                e2lib.abort(string.format("could not parse user defaults.\n"..
+                    "'%s' is not in the expected format.", file))
+            end
+
+            local opt=tbl[1]
+            local val=tbl[2]
+
+            if type(opt) ~= "string" or string.len(opt) == 0 then
+                e2lib.abort(string.format("could not parse user defaults.\n"..
+                    "'%s' has a malformed option", file))
+            end
+
+            opt = aliases[opt] or opt
+
+            if not options[opt] then
+                e2lib.abort("unknown option in user defaults: " .. opt)
+            end
+
+            if options[opt].type == "flag" and val then
+                e2lib.abort(string.format(
+                    "user default option '%s' does not take an argument ",
+                    opt))
+            elseif options[opt].type == "option" and not val then
+                e2lib.abort(
+                    "argument missing for user default option: " .. opt)
+            end
+
+            if options[opt].proc then
+                if  options[opt].type == "flag" then
+                    opts[opt] = options[opt].proc()
+                else
+                    opts[opt] = options[opt].proc(val)
                 end
-                local proc = options[n].proc
-                proc(v)
+            elseif options[opt].default then
+                opts[opt] = options[opt].default
             else
-                e2lib.abort("unknown option in user defaults: " .. n)
+                e2lib.bomb("user default option has no effect")
             end
         end
     end
 
     defaultoptions()
-    userdefaultoptions()
+    local opts = {}
     local vals = {}
-    local opts={ arguments=vals }
+    -- arguments is a special option containing all additional arguments that
+    -- are not parsed. XXX: Remove this if possible.
+    opts["arguments"] = vals
+
+    userdefaultoptions(opts)
+
     local i = 1
     while i <= #args do		-- we may modify args
         local v = args[i]
