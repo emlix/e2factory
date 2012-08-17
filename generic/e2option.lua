@@ -295,10 +295,21 @@ function e2option.parse(args)
         if s then
             opt = aliases[opt] or opt
             if options[opt] then
+                if options[opt].type == "flag" then
+                    e2lib.abort(string.format(
+                    "option '%s' does not take an argument\n"..
+                    "Try the --help option for usage information.", opt))
+                end
+
                 local proc = options[opt].proc
-                if proc then val = proc(val) end
+                if proc then
+                    val = proc(val)
+                end
+
                 opts[opt] = val
-            else e2option.usage(1)
+            else
+                e2lib.abort(string.format("unknown option: %s\n"..
+                "Try the --help option for usage information.", opt))
             end
         else
             s, e, opt = string.find(v, "^%-%-?(.*)$")
@@ -331,7 +342,7 @@ function e2option.parse(args)
 
                     for k, v in pairs(set) do
                         if not options[v] then
-                            e2lib.abort(string.format("invalid option: %s\n"..
+                            e2lib.abort(string.format("unknown option: %s\n"..
                             "Try the --help option for usage information.", opt))
                         else
                             table.insert(args, "-" .. v)
