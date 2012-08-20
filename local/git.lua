@@ -30,7 +30,7 @@
 -- See e2scm.lua for more information about these operations.
 
 module("git", package.seeall)
-require("scm")
+local scm = require("scm")
 local hash = require("hash")
 local cache = require("cache")
 local generic_git = require("generic_git")

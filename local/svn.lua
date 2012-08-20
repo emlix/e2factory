@@ -28,7 +28,7 @@
 -- svn.lua - Subversion-specific SCM operations -*- Lua -*-
 
 module("svn", package.seeall)
-require("scm")
+local scm = require("scm")
 local hash = require("hash")
 local url = require("url")
 local tools = require("tools")

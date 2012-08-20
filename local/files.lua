@@ -30,7 +30,7 @@
 -- See e2scm.lua for more information about these operations.
 
 module("files", package.seeall)
-require("scm")
+local scm = require("scm")
 local hash = require("hash")
 local err = require("err")
 local e2lib = require("e2lib")

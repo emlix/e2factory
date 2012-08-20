@@ -32,6 +32,7 @@ local transport = require("transport")
 local tools = require("tools")
 local err = require("err")
 local e2lib = require("e2lib")
+local scm = require("scm")
 
 --- cache a result
 -- @param info

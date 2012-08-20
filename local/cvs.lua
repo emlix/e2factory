@@ -28,7 +28,7 @@
 -- cvs.lua - CVS-specific SCM operations -*- Lua -*-
 --
 module("cvs", package.seeall)
-require("scm")
+local scm = require("scm")
 local hash = require("hash")
 local url = require("url")
 local tools = require("tools")
