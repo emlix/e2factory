@@ -318,9 +318,6 @@ function e2option.parse(args)
     defaultoptions()
     local opts = {}
     local vals = {}
-    -- arguments is a special option containing all additional arguments that
-    -- are not parsed. XXX: Remove this if possible.
-    opts["arguments"] = vals
 
     userdefaultoptions(opts)
 

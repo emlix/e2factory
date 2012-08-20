@@ -66,7 +66,7 @@ e2option.flag("git", "create a git repository")
 e2option.flag("files", "create a new file on a files server")
 e2option.option("server", "specify server")
 e2option.flag("no-checksum", "don't verify checksum")
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 
 -- read a checksum from a file
 -- @param checksum_file string: the file containing the checksums
@@ -257,7 +257,7 @@ if not info then
 end
 
 if opts.git then
-  if #opts.arguments ~= 1 then
+  if #arguments ~= 1 then
     e2lib.abort("<name> argument required")
   end
   -- remote
@@ -265,7 +265,7 @@ if opts.git then
   if opts["server"] then
     rserver = opts["server"]
   end
-  local name = opts.arguments[1]
+  local name = arguments[1]
   local rlocation = string.format("%s/git/%s.git", info.project_location, name)
   -- local
   local lserver = info.root_server_name
@@ -279,15 +279,15 @@ if opts.git then
   e2lib.log(1,
     "See e2-new-source(1) to see how to go on")
 elseif opts.files then
-  local location = opts.arguments[1]
+  local location = arguments[1]
   local sl, e = e2lib.parse_server_location(location, info.default_files_server)
   if not sl then
     e2lib.abort(e)
   end
   local server = sl.server
   local location = sl.location
-  local source_file = opts.arguments[2]
-  local checksum_file = opts.arguments[3]
+  local source_file = arguments[2]
+  local checksum_file = arguments[3]
   local checksum_file_format = opts["checksum-file"]
   local no_checksum = opts["no-checksum"]
   if not no_checksum and not checksum_file then

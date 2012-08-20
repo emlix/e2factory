@@ -57,7 +57,7 @@ e.g.: eb <name> is equivalent to editbuildscript <name>
 modify and create configuration files
 ]]
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 
 -- initialize some basics in the info structure without actually loading
 -- the project configuration.
@@ -212,8 +212,8 @@ commands.esource = editsource
 
 local i = 1
 local match = {}
-local cmd = opts.arguments[1]
-if #opts.arguments < 1 then
+local cmd = arguments[1]
+if #arguments < 1 then
 	e2option.usage()
 	e2lib.finish(1)
 end
@@ -224,7 +224,7 @@ for c,f in pairs(commands) do
 end
 if #match == 1 then
 	local a = {}
-	for _,o in ipairs(opts.arguments) do
+	for _,o in ipairs(arguments) do
 		table.insert(a, o)
 	end
 	local f = commands[match[1]]

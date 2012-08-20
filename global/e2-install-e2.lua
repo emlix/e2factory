@@ -39,7 +39,7 @@ usage: e2-install-e2 [OPTION ...]
 Installs local tools in project environment.
 ]]
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 
 local root = e2lib.locate_project_root()
 if not root then
@@ -71,7 +71,7 @@ end
 
 -- standard global tool setup finished
 
-if #opts.arguments > 0 then
+if #arguments > 0 then
   e2option.usage(1)
 end
 

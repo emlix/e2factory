@@ -92,7 +92,7 @@ e2option.option("disable-writeback", "disable writeback for server", nil,
 e2option.option("enable-writeback", "enable writeback for server", nil,
 						enable_writeback, "SERVER")
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 
 -- get build mode from the command line
 local build_mode = policy.handle_commandline_options(opts, true)
@@ -121,8 +121,8 @@ if opts["all"] then
 	for r,_ in pairs(info.results) do
 		table.insert(results, r)
 	end
-elseif #opts.arguments > 0 then
-	for i,r in ipairs(opts.arguments) do
+elseif #arguments > 0 then
+	for i,r in ipairs(arguments) do
 		table.insert(results, r)
 	end
 end
@@ -148,7 +148,7 @@ if playground then
   if opts.all then
     e2lib.abort("--all and --playground are mutually exclusive")
   end
-  if #opts.arguments ~= 1 then
+  if #arguments ~= 1 then
     e2lib.abort("please select one single result for the playground")
   end
 end

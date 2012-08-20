@@ -50,7 +50,7 @@ e2option.flag("dot-sources", "generate dot(1) graph with sources included")
 e2option.flag("swap", "swap arrow directions in dot graph")
 e2option.flag("all", "show unused results and sources, too")
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 
 info, re = e2tool.collect_project_info(info)
 if not info then
@@ -66,8 +66,8 @@ if opts.all then
   for r, _ in pairs(info.results) do
     table.insert(results, r)
   end
-elseif #opts.arguments > 0 then
-  for _, r in ipairs(opts.arguments) do
+elseif #arguments > 0 then
+  for _, r in ipairs(arguments) do
     if info.results[r] then
       table.insert(results, r)
     else

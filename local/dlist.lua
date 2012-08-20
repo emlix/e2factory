@@ -45,13 +45,13 @@ for the given result show those results which it depends on
 ]]
 
 e2option.flag("recursive", "show indirect dependencies, too")
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 
-if #opts.arguments == 0 then
+if #arguments == 0 then
   e2lib.abort("no result given - enter `e2-dlist --help' for usage information")
-elseif #opts.arguments ~= 1 then e2option.usage(1) end
+elseif #arguments ~= 1 then e2option.usage(1) end
 
-local result = opts.arguments[1]
+local result = arguments[1]
 info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)

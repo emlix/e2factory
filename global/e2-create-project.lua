@@ -43,7 +43,7 @@ Create a new project and store it on <server> in <location>.
 e2option.documentation = string.format(doc,
 				e2lib.globals.default_projects_server)
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 local rc, e = e2lib.read_global_config()
 if not rc then
   e2lib.abort(e)
@@ -76,11 +76,11 @@ else
   e2lib.globals.local_e2_tag =  config.site.e2_tag
 end
 
-if #opts.arguments ~= 1 then
+if #arguments ~= 1 then
   e2option.usage(1)
 end
 
-local sl, re = e2lib.parse_server_location(opts.arguments[1],
+local sl, re = e2lib.parse_server_location(arguments[1],
 					e2lib.globals.default_projects_server)
 if not sl then
   e2lib.abort(e:cat(re))

@@ -73,7 +73,7 @@ e2option.flag("update", "update selected source")
 e2option.flag("source", "select sources by source names (default)")
 e2option.flag("result", "select sources by result names")
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 info, re = e2tool.collect_project_info(info)
 if not info then
   e2lib.abort(re)
@@ -90,7 +90,7 @@ end
 if opts.all then
   e2lib.warn("WOTHER", "--all selects all sources, even files sources")
 end
-if #opts.arguments > 0 then
+if #arguments > 0 then
   opts.selection = true
 end
 if not (opts.scm or opts.files or opts.chroot or opts.selection
@@ -192,8 +192,8 @@ end
 
 local sel = {} -- selected sources
 
-if #opts.arguments > 0 then
-  for _, x in pairs(opts.arguments) do
+if #arguments > 0 then
+  for _, x in pairs(arguments) do
     if info.sources[x] and not opts.result then
       e2lib.log(3, "is regarded as source: " .. x)
       sel[x] = x

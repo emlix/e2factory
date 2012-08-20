@@ -47,7 +47,7 @@ e2option.documentation = string.format(doc,
 e2option.option("branch", "retrieve a specific project branch")
 e2option.option("tag", "retrieve a specific project tag")
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 local rc, re = e2lib.read_global_config()
 if not rc then
   e2lib.abort(e:cat(re))
@@ -65,14 +65,14 @@ end
 
 -- standard global tool setup finished
 
-if #opts.arguments < 1 then
+if #arguments < 1 then
   e2lib.abort("specify path to a project to fetch")
 end
-if #opts.arguments > 2 then
+if #arguments > 2 then
   e2lib.abort("too many arguments")
 end
 
-local sl, re = e2lib.parse_server_location(opts.arguments[1],
+local sl, re = e2lib.parse_server_location(arguments[1],
 					e2lib.globals.default_projects_server)
 if not sl then
   e2lib.abort(e:cat(re))
@@ -82,8 +82,8 @@ local p = {}
 p.server = sl.server
 p.location = sl.location
 p.name = e2lib.basename(p.location)
-if opts.arguments[2] then
-	p.destdir = opts.arguments[2]
+if arguments[2] then
+	p.destdir = arguments[2]
 else
 	p.destdir = p.name
 end

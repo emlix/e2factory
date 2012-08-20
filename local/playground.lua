@@ -51,7 +51,7 @@ e2option.option("command","execute command in chroot")
 e2option.flag("runinit","run init files automatically")
 e2option.flag("showpath", "prints the path of the build directory inside the chroot to stdout" )
 
-local opts = e2option.parse(arg)
+local opts, arguments = e2option.parse(arg)
 -- get build mode from the command line
 local build_mode = policy.handle_commandline_options(opts, true)
 if not build_mode then
@@ -66,11 +66,11 @@ if not rc then
   e2lib.abort(re)
 end
 
-if #opts.arguments ~= 1 then
+if #arguments ~= 1 then
   e2option.usage(1)
 end
 
-r = opts.arguments[1]
+r = arguments[1]
 
 -- apply the standard build mode to all results
 for _,res in pairs(info.results) do
