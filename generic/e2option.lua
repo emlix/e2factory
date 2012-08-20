@@ -35,7 +35,6 @@ local err = require("err")
 
 local options = {}
 local optionlist = {}
-local commands = {}
 
 -- Option declaration
 --
@@ -97,11 +96,6 @@ function e2option.option(name, doc, default, func, argname)
     proc=func, default=default or true,
     argumentname=argname or "ARGUMENT"}
     table.insert(optionlist, name)
-end
-
---- XXX command(): undocumented, never called. Remove?
-function e2option.command(name, doc, func)
-    commands[name] = {documentation=doc, command=func, name=name}
 end
 
 --- register an alias for an option
@@ -440,10 +434,6 @@ Type e2 --licence for more information.
         print("\t" .. opt.documentation)
     end
     print()
-    for k, v in pairs(commands) do
-        io.write(" ", k, command.documentation)
-        print()
-    end
     e2lib.finish(rc)
 end
 
