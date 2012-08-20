@@ -36,8 +36,6 @@ local err = require("err")
 local options = {}
 local optionlist = {}
 local commands = {}
-local program_name = arg[0]
-
 
 -- Option declaration
 --
