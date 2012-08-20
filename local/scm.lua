@@ -40,18 +40,18 @@ local intf = {}
 -- @return bool
 -- @return an error object on failure
 function scm.register(scmname, mod)
-  local e = err.new("error registering scm")
-  if scms[scmname] then
-    return false, e:append("scm with that name exists")
-  end
-  scms[scmname] = {}
-  for name,func in pairs(intf) do
-    local rc, re = scm.register_function(scmname, name, mod[name])
-    if not rc then
-      return false, e:cat(re)
+    local e = err.new("error registering scm")
+    if scms[scmname] then
+        return false, e:append("scm with that name exists")
     end
-  end
-  return true, nil
+    scms[scmname] = {}
+    for name,func in pairs(intf) do
+        local rc, re = scm.register_function(scmname, name, mod[name])
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+    return true, nil
 end
 
 --- register a new scm interface
@@ -59,34 +59,34 @@ end
 -- @return bool
 -- @return an error object on failure
 function scm.register_interface(name)
-  local e = err.new("registering scm interface failed")
-  if intf[name] then
-    return false, e:append(
-		"interface with that name exists: %s", name)
-  end
-
-  -- closure: name
-  local function func(info, sourcename, ...)
-    local src = info.sources[sourcename]
-    local rc, re, e
-    e = err.new("calling scm operation failed")
-    if not scms[src.type] then
-      return false, e:append("no such source type: %s", src.type)
+    local e = err.new("registering scm interface failed")
+    if intf[name] then
+        return false, e:append(
+        "interface with that name exists: %s", name)
     end
-    local f = scms[src.type][name]
-    if not f then
-      e:append("%s is not implemented for source type: %s", src.type)
-      return false, e
+
+    -- closure: name
+    local function func(info, sourcename, ...)
+        local src = info.sources[sourcename]
+        local rc, re, e
+        e = err.new("calling scm operation failed")
+        if not scms[src.type] then
+            return false, e:append("no such source type: %s", src.type)
+        end
+        local f = scms[src.type][name]
+        if not f then
+            e:append("%s is not implemented for source type: %s", src.type)
+            return false, e
+        end
+        return f(info, sourcename, ...)
     end
-    return f(info, sourcename, ...)
-  end
 
-  intf[name] = func
+    intf[name] = func
 
-  -- we have lots of calls like scm.<function>(...). Register the interface
-  -- function in the scm module to support those calls.
-  scm[name] = func
-  return true, nil
+    -- we have lots of calls like scm.<function>(...). Register the interface
+    -- function in the scm module to support those calls.
+    scm[name] = func
+    return true, nil
 end
 
 --- register a new scm function (accessible through a scm interface)
@@ -96,18 +96,18 @@ end
 -- @return bool
 -- @return an error object on failure
 function scm.register_function(type, name, func)
-  local e = err.new("registering scm function failed")
-  if not scms[type] then
-    return false, e:append("no scm type by that name: %s", type)
-  end
-  if not intf[name] then
-    return false, e:append("no scm interface by that name: %s", name)
-  end
-  if scms[type][name] then
-    return false, e:append("scm function exists: %s.%s", type, name)
-  end
-  scms[type][name] = func
-  return true, nil
+    local e = err.new("registering scm function failed")
+    if not scms[type] then
+        return false, e:append("no scm type by that name: %s", type)
+    end
+    if not intf[name] then
+        return false, e:append("no scm interface by that name: %s", name)
+    end
+    if scms[type][name] then
+        return false, e:append("scm function exists: %s.%s", type, name)
+    end
+    scms[type][name] = func
+    return true, nil
 end
 
 scm.register_interface("sourceid")
@@ -122,3 +122,5 @@ scm.register_interface("display")
 scm.register_interface("has_working_copy")
 
 return scm
+
+-- vim:sw=4:sts=4:et:
