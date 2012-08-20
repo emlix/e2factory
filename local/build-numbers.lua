@@ -25,8 +25,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- e2-buildnumbers -*- Lua -*-
-
 local e2lib = require("e2lib")
 require("e2tool")
 local e2option = require("e2option")
@@ -34,7 +32,7 @@ local e2option = require("e2option")
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build-numbers")
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 e2option.documentation = [[
@@ -49,20 +47,20 @@ local opts = e2option.parse(arg)
 -- get build mode from the command line
 local build_mode = policy.handle_commandline_options(opts, true)
 if not build_mode then
-	e2lib.abort("no build mode given")
+    e2lib.abort("no build mode given")
 end
 info, re = e2tool.collect_project_info(info)
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 local rc, re = e2tool.check_project_info(info)
 if not rc then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 -- apply the standard build mode to all results
 for _,res in pairs(info.results) do
-	res.build_mode = build_mode
+    res.build_mode = build_mode
 end
 
 -- read build numbers,
@@ -76,30 +74,32 @@ end
 local rc, re
 rc, re = e2tool.buildnumber_read(info)
 if not rc then
-	e2lib.abort(re)
+    e2lib.abort(re)
 end
 rc, re = e2tool.buildnumber_mergetoresults(info)
 if not rc then
-	e2lib.abort(re)
+    e2lib.abort(re)
 end
 -- recalculate build ids ids
 e2tool.flush_buildids(info)
 e2tool.calc_buildids(info)
 rc, re = e2tool.buildnumber_mergefromresults(info)
 if not rc then
-	e2lib.abort(re)
+    e2lib.abort(re)
 end
 if opts["no-sync"] then
-	rc, re = e2tool.buildnumber_request_local(info)
+    rc, re = e2tool.buildnumber_request_local(info)
 else
-	rc, re = e2tool.buildnumber_request(info)
+    rc, re = e2tool.buildnumber_request(info)
 end
 if not rc then
-	e2lib.abort(re)
+    e2lib.abort(re)
 end
 rc, re = e2tool.buildnumber_write(info)
 if not rc then
-	e2lib.abort(re)
+    e2lib.abort(re)
 end
 e2tool.buildnumber_display(info.build_numbers, 1)
 e2lib.finish()
+
+-- vim:sw=4:sts=4:et:

@@ -38,7 +38,7 @@ local e2option = require("e2option")
 e2lib.init()
 local info, re = e2tool.local_init(nil, "new-source")
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 e2option.documentation = [[
@@ -74,45 +74,45 @@ local opts, arguments = e2option.parse(arg)
 -- @return a table with fields checksum and checksum_type ("sha1", "md5")
 -- @return nil, or an error string on error
 function read_checksum(checksum_file, filename)
-	e2lib.log(4, string.format("read_checksum(%s, %s)", checksum_file,
-								filename))
-	local f, e = io.open(checksum_file, "r")
-	if not f then
-		return nil, e
-	end
-	local rc = nil
-	local e = err.new("no checksum available")
-	while true do
-		local line = f:read()
-		if not line then
-			break
-		end
-		local c, f = line:match("(%S+)  (%S+)")
-		if (not c) or (not f) then
-			e:append("Checksum file has wrong format. ")
-			e:append("The standard sha1sum or md5sum format is "..
-								"required.")
-			return nil, e
-		end
-		if c and f and f == filename then
-			local cs = {}
-			cs.checksum = c
-			if c:len() == 40 then
-				cs.checksum_type = "sha1"
-			elseif c:len() == 32 then
-				cs.checksum_type = "md5"
-			else
-				rc = nil
-				e = "can't guess checksum type"
-				break
-			end
-			rc = cs
-			e = nil
-			break
-		end
-	end
-	f:close()
-	return rc, e
+    e2lib.log(4, string.format("read_checksum(%s, %s)", checksum_file,
+    filename))
+    local f, e = io.open(checksum_file, "r")
+    if not f then
+        return nil, e
+    end
+    local rc = nil
+    local e = err.new("no checksum available")
+    while true do
+        local line = f:read()
+        if not line then
+            break
+        end
+        local c, f = line:match("(%S+)  (%S+)")
+        if (not c) or (not f) then
+            e:append("Checksum file has wrong format. ")
+            e:append("The standard sha1sum or md5sum format is "..
+            "required.")
+            return nil, e
+        end
+        if c and f and f == filename then
+            local cs = {}
+            cs.checksum = c
+            if c:len() == 40 then
+                cs.checksum_type = "sha1"
+            elseif c:len() == 32 then
+                cs.checksum_type = "md5"
+            else
+                rc = nil
+                e = "can't guess checksum type"
+                break
+            end
+            rc = cs
+            e = nil
+            break
+        end
+    end
+    f:close()
+    return rc, e
 end
 
 --- generate a sha1 checksum file
@@ -121,36 +121,36 @@ end
 -- @return bool
 -- @return nil, an error string on error
 function write_checksum_file_sha1(source_file, checksum_file)
-	e2lib.log(4, string.format("write_checksum_file_sha1(%s, %s)",
-					source_file, checksum_file))
-	local cmd = string.format("sha1sum %s > %s",
-          e2lib.shquote(source_file), e2lib.shquote(checksum_file))
-	local rc = e2lib.callcmd_capture(cmd)
-	if rc ~= 0 then
-		return false, "error writing checksum file"
-	end
-	return true, nil
+    e2lib.log(4, string.format("write_checksum_file_sha1(%s, %s)",
+    source_file, checksum_file))
+    local cmd = string.format("sha1sum %s > %s",
+    e2lib.shquote(source_file), e2lib.shquote(checksum_file))
+    local rc = e2lib.callcmd_capture(cmd)
+    if rc ~= 0 then
+        return false, "error writing checksum file"
+    end
+    return true, nil
 end
 
 function download(f)
-	local name = e2lib.basename(f)
-	local cmd = string.format("curl --silent --fail %s > %s",
-          e2lib.shquote(f), e2lib.shquote(name))
-	local rc = e2lib.callcmd_capture(cmd)
-	if rc ~= 0 then
-		return false, err.new("download failed: %s", f)
-	end
-	return true, nil
+    local name = e2lib.basename(f)
+    local cmd = string.format("curl --silent --fail %s > %s",
+    e2lib.shquote(f), e2lib.shquote(name))
+    local rc = e2lib.callcmd_capture(cmd)
+    if rc ~= 0 then
+        return false, err.new("download failed: %s", f)
+    end
+    return true, nil
 end
 
 function mv(s, d)
-	local cmd = string.format("mv %s %s", e2lib.shquote(s),
-          e2lib.shquote(d))
-	local rc = e2lib.callcmd_capture(cmd)
-	if rc ~= 0 then
-		return false, "mv failed"
-	end
-	return true, nil
+    local cmd = string.format("mv %s %s", e2lib.shquote(s),
+    e2lib.shquote(d))
+    local rc = e2lib.callcmd_capture(cmd)
+    if rc ~= 0 then
+        return false, "mv failed"
+    end
+    return true, nil
 end
 
 --- new files source
@@ -161,142 +161,144 @@ end
 -- @return bool
 -- @return nil, an error string on error
 function new_files_source(c, server, location, source_file, checksum_file,
-					checksum_file_format, no_checksum)
-	local source_file_base = e2lib.basename(source_file)
-	local do_checksum = (not no_checksum)
-	local checksum_type = "sha1"
-	local checksum_file_base
-	local checksum_file1
-	local checksum_file2 = string.format("%s.%s", source_file_base,
-								checksum_type)
-	local cs1, cs2
-	local rc, e
-	if not do_checksum then
-		e2lib.warn("WOTHER", "Checksum verifying is disabled!")
-	end
+    checksum_file_format, no_checksum)
+    local source_file_base = e2lib.basename(source_file)
+    local do_checksum = (not no_checksum)
+    local checksum_type = "sha1"
+    local checksum_file_base
+    local checksum_file1
+    local checksum_file2 = string.format("%s.%s", source_file_base,
+    checksum_type)
+    local cs1, cs2
+    local rc, e
+    if not do_checksum then
+        e2lib.warn("WOTHER", "Checksum verifying is disabled!")
+    end
 
-	-- change to a temporary directory
-	local tmpdir, e = e2lib.mktempdir()
-	if not e2lib.chdir(tmpdir) then
-		e2lib.abort("can't chdir")
-	end
+    -- change to a temporary directory
+    local tmpdir, e = e2lib.mktempdir()
+    if not e2lib.chdir(tmpdir) then
+        e2lib.abort("can't chdir")
+    end
 
-	-- download
-	e2lib.log(1, string.format("fetching %s ...", source_file))
-	local rc, re = download(source_file)
-	if not rc then
-		e2lib.abort(re)
-	end
+    -- download
+    e2lib.log(1, string.format("fetching %s ...", source_file))
+    local rc, re = download(source_file)
+    if not rc then
+        e2lib.abort(re)
+    end
 
-	-- checksum checking
-	if do_checksum then
-		e2lib.log(1, string.format("fetching %s ...", checksum_file))
-		local rc, re = download(checksum_file)
-		if not rc then
-			e2lib.abort(re)
-		end
-		checksum_file_base = e2lib.basename(checksum_file)
-		checksum_file1 = string.format("%s.orig",
-							checksum_file_base)
-		rc = mv(checksum_file_base, checksum_file1)
-		if not rc then
-			e2lib.abort(e)
-		end
-		cs1, e = read_checksum(checksum_file1, source_file_base)
-		if not cs1 then
-			e2lib.abort(e)
-		end
-		checksum_type = cs1.checksum_type
-	end
+    -- checksum checking
+    if do_checksum then
+        e2lib.log(1, string.format("fetching %s ...", checksum_file))
+        local rc, re = download(checksum_file)
+        if not rc then
+            e2lib.abort(re)
+        end
+        checksum_file_base = e2lib.basename(checksum_file)
+        checksum_file1 = string.format("%s.orig",
+        checksum_file_base)
+        rc = mv(checksum_file_base, checksum_file1)
+        if not rc then
+            e2lib.abort(e)
+        end
+        cs1, e = read_checksum(checksum_file1, source_file_base)
+        if not cs1 then
+            e2lib.abort(e)
+        end
+        checksum_type = cs1.checksum_type
+    end
 
-	-- write the checksum file to store on the server
-	rc = write_checksum_file_sha1(source_file_base, checksum_file2)
-	cs2, e = read_checksum(checksum_file2, source_file_base)
-	if not cs2 then
-		e2lib.abort(e)
-	end
+    -- write the checksum file to store on the server
+    rc = write_checksum_file_sha1(source_file_base, checksum_file2)
+    cs2, e = read_checksum(checksum_file2, source_file_base)
+    if not cs2 then
+        e2lib.abort(e)
+    end
 
-	-- compare checksums
-	if do_checksum then
-		if cs1.checksum == cs2.checksum then
-			e2lib.log(2, string.format(
-					"checksum matches (%s): %s",
-					cs1.checksum_type, cs1.checksum))
-		else
-			e2lib.abort("checksum mismatch")
-		end
-	end
+    -- compare checksums
+    if do_checksum then
+        if cs1.checksum == cs2.checksum then
+            e2lib.log(2, string.format(
+            "checksum matches (%s): %s",
+            cs1.checksum_type, cs1.checksum))
+        else
+            e2lib.abort("checksum mismatch")
+        end
+    end
 
-	-- store
-	local flags = {}
-	local rlocation = string.format("%s/%s", location, source_file_base)
-	e2lib.log(1, string.format("storing file %s to %s:%s",
-					source_file_base, server, rlocation))
-	local rc, e = cache.push_file(c, source_file_base, server,
-							rlocation, flags)
-	if not rc then
-		e2lib.abort(e)
-	end
-	local rlocation = string.format("%s/%s", location, checksum_file2)
-	e2lib.log(1, string.format("storing file %s to %s:%s",
-					checksum_file2, server, rlocation))
-	local rc, e = cache.push_file(c, checksum_file2, server,
-							rlocation, flags)
-	if not rc then
-		e2lib.abort(e)
-	end
-	if not e2lib.chdir("/") then
-		e2lib.abort("can't chdir")
-	end
-	return true, nil
+    -- store
+    local flags = {}
+    local rlocation = string.format("%s/%s", location, source_file_base)
+    e2lib.log(1, string.format("storing file %s to %s:%s",
+    source_file_base, server, rlocation))
+    local rc, e = cache.push_file(c, source_file_base, server,
+    rlocation, flags)
+    if not rc then
+        e2lib.abort(e)
+    end
+    local rlocation = string.format("%s/%s", location, checksum_file2)
+    e2lib.log(1, string.format("storing file %s to %s:%s",
+    checksum_file2, server, rlocation))
+    local rc, e = cache.push_file(c, checksum_file2, server,
+    rlocation, flags)
+    if not rc then
+        e2lib.abort(e)
+    end
+    if not e2lib.chdir("/") then
+        e2lib.abort("can't chdir")
+    end
+    return true, nil
 end
 
 info, re = e2tool.collect_project_info(info)
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 if opts.git then
-  if #arguments ~= 1 then
-    e2lib.abort("<name> argument required")
-  end
-  -- remote
-  local rserver = info.default_repo_server
-  if opts["server"] then
-    rserver = opts["server"]
-  end
-  local name = arguments[1]
-  local rlocation = string.format("%s/git/%s.git", info.project_location, name)
-  -- local
-  local lserver = info.root_server_name
-  local llocation = string.format("in/%s/.git", name)
-  local flags = {}
-  local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
-						rserver, rlocation, flags)
-  if not rc then
-    e2lib.abort(re)
-  end
-  e2lib.log(1,
+    if #arguments ~= 1 then
+        e2lib.abort("<name> argument required")
+    end
+    -- remote
+    local rserver = info.default_repo_server
+    if opts["server"] then
+        rserver = opts["server"]
+    end
+    local name = arguments[1]
+    local rlocation = string.format("%s/git/%s.git", info.project_location, name)
+    -- local
+    local lserver = info.root_server_name
+    local llocation = string.format("in/%s/.git", name)
+    local flags = {}
+    local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
+    rserver, rlocation, flags)
+    if not rc then
+        e2lib.abort(re)
+    end
+    e2lib.log(1,
     "See e2-new-source(1) to see how to go on")
 elseif opts.files then
-  local location = arguments[1]
-  local sl, e = e2lib.parse_server_location(location, info.default_files_server)
-  if not sl then
-    e2lib.abort(e)
-  end
-  local server = sl.server
-  local location = sl.location
-  local source_file = arguments[2]
-  local checksum_file = arguments[3]
-  local checksum_file_format = opts["checksum-file"]
-  local no_checksum = opts["no-checksum"]
-  if not no_checksum and not checksum_file then
-    e2lib.abort("checksum file not given")
-  end
-  local rc = new_files_source(info.cache, server, location, source_file,
-			checksum_file, checksum_file_format, no_checksum)
+    local location = arguments[1]
+    local sl, e = e2lib.parse_server_location(location, info.default_files_server)
+    if not sl then
+        e2lib.abort(e)
+    end
+    local server = sl.server
+    local location = sl.location
+    local source_file = arguments[2]
+    local checksum_file = arguments[3]
+    local checksum_file_format = opts["checksum-file"]
+    local no_checksum = opts["no-checksum"]
+    if not no_checksum and not checksum_file then
+        e2lib.abort("checksum file not given")
+    end
+    local rc = new_files_source(info.cache, server, location, source_file,
+    checksum_file, checksum_file_format, no_checksum)
 else
-  e2lib.log(1, "Creating repositories other than git is not supported yet.")
+    e2lib.log(1, "Creating repositories other than git is not supported yet.")
 end
 
 e2lib.finish(0)
+
+-- vim:sw=4:sts=4:et:

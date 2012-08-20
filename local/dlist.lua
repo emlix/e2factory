@@ -25,8 +25,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- dlist - list sorted dependencies -*- Lua -*-
-
 local e2lib = require("e2lib")
 require("e2tool")
 require("e2build")
@@ -35,7 +33,7 @@ local e2option = require("e2option")
 e2lib.init()
 local info, re = e2tool.local_init(nil, "dlist")
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 e2option.documentation = [[
@@ -48,30 +46,31 @@ e2option.flag("recursive", "show indirect dependencies, too")
 local opts, arguments = e2option.parse(arg)
 
 if #arguments == 0 then
-  e2lib.abort("no result given - enter `e2-dlist --help' for usage information")
+    e2lib.abort("no result given - enter `e2-dlist --help' for usage information")
 elseif #arguments ~= 1 then e2option.usage(1) end
 
 local result = arguments[1]
 info, re = e2tool.collect_project_info(info)
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 if not info.results[ result ] then
-  e2lib.abort("no such result: ", result)
+    e2lib.abort("no such result: ", result)
 end
 
 local dep, re
 if opts.recursive then
-  dep, re = e2tool.dlist_recursive(info, result)
+    dep, re = e2tool.dlist_recursive(info, result)
 else
-  dep, re = e2tool.dlist(info, result)
+    dep, re = e2tool.dlist(info, result)
 end
 if not dep then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 for i = 1, #dep do print(dep[i]) end
 
 e2lib.finish()
 
+-- vim:sw=4:sts=4:et:

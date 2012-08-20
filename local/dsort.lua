@@ -25,8 +25,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- dsort -*- Lua -*-
-
 local e2lib = require("e2lib")
 require("e2tool")
 require("e2build")
@@ -35,7 +33,7 @@ local e2option = require("e2option")
 e2lib.init()
 local info, re = e2tool.local_init(nil, "dsort")
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 e2option.documentation = [[
@@ -48,13 +46,14 @@ e2option.parse(arg)
 
 info, re = e2tool.collect_project_info(info)
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 local d = e2tool.dsort(info)
 if d then
-  for i = 1, #d do print(d[i]) end
+    for i = 1, #d do print(d[i]) end
 end
 
 e2lib.finish()
 
+-- vim:sw=4:sts=4:et:

@@ -25,8 +25,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- e2-cf -*- Lua -*-
-
 local e2lib = require("e2lib")
 require("e2tool")
 local err = require("err")
@@ -35,18 +33,18 @@ local e2option = require("e2option")
 e2lib.init()
 local info, re = e2tool.local_init(nil, "cf")
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 e2option.documentation = [[
 usage: e2 cf <command> ...
 
 commands:
- newresult       <name>
- newsource       <name> <scm>
- editresult      <name>
- editbuildscript <name>
- editsource      <name>
+newresult       <name>
+newsource       <name> <scm>
+editresult      <name>
+editbuildscript <name>
+editsource      <name>
 
 Commands starting with 'edit' can be abbreviated by using e...
 Commands starting with 'new' can be abbreviated by using n...
@@ -63,12 +61,12 @@ local opts, arguments = e2option.parse(arg)
 -- the project configuration.
 info, re = e2tool.collect_project_info(info, true)
 if not info then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 rc, re = e2lib.chdir(info.root)
 if not rc then
-  e2lib.abort(re)
+    e2lib.abort(re)
 end
 
 local editor = e2lib.globals.osenv["EDITOR"]
@@ -76,127 +74,127 @@ local editor = e2lib.globals.osenv["EDITOR"]
 local commands = {}
 
 local function newsource(info, ...)
-  local e = err.new("newsource")
-  local t = ...
-  local name = t[2]
-  local scm = t[3]
-  if not name then
-    e:append("missing parameter: name")
-  end
-  if not scm then
-    e:append("missing parameter: scm")
-  end
-  if e:getcount() > 1 then
-    return false, e
-  end
-  local cfdir = e2tool.sourcedir(name)
-  local cf = e2tool.sourceconfig(name)
-  local cftemplate = string.format("%s/source.%s", info.local_template_path,
-									scm)
-  if not e2lib.isfile(cftemplate) then
-    return false, e:append("template not available:", cftemplate)
-  end
-  if not e2lib.isfile(cf) and e2lib.isfile(cftemplate) then
-     local rc, re = e2lib.mkdir(cfdir)
-     if not rc then
-       return false, e:cat(re)
-     end
-     local rc, re = e2lib.cp(cftemplate, cf)
-     if not rc then
-       return false, e:cat(re)
-     end
-  end
-  rc, re = commands.editsource(info, ...)
-  if not rc then
-    return false, e:cat(re)
-  end
-  return true, nil
+    local e = err.new("newsource")
+    local t = ...
+    local name = t[2]
+    local scm = t[3]
+    if not name then
+        e:append("missing parameter: name")
+    end
+    if not scm then
+        e:append("missing parameter: scm")
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    local cfdir = e2tool.sourcedir(name)
+    local cf = e2tool.sourceconfig(name)
+    local cftemplate = string.format("%s/source.%s", info.local_template_path,
+    scm)
+    if not e2lib.isfile(cftemplate) then
+        return false, e:append("template not available:", cftemplate)
+    end
+    if not e2lib.isfile(cf) and e2lib.isfile(cftemplate) then
+        local rc, re = e2lib.mkdir(cfdir)
+        if not rc then
+            return false, e:cat(re)
+        end
+        local rc, re = e2lib.cp(cftemplate, cf)
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+    rc, re = commands.editsource(info, ...)
+    if not rc then
+        return false, e:cat(re)
+    end
+    return true, nil
 end
 
 local function editsource(info, ...)
-  local e = err.new("editsource")
-  local t = ...
-  local name = t[2]
-  if not name then
-    e:append("missing parameter: name")
-  end
-  if e:getcount() > 1 then
-    return false, e
-  end
-  local cf = e2tool.sourceconfig(name)
-  rc = os.execute(string.format("%s %s", editor, cf))
-  return true, nil
+    local e = err.new("editsource")
+    local t = ...
+    local name = t[2]
+    if not name then
+        e:append("missing parameter: name")
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    local cf = e2tool.sourceconfig(name)
+    rc = os.execute(string.format("%s %s", editor, cf))
+    return true, nil
 end
 
 local function newresult(info, ...)
-  local e = err.new("newresult")
-  local t = ...
-  local name = t[2]
-  if not name then
-    e:append("missing parameter: name")
-  end
-  if e:getcount() > 1 then
-    return false, e
-  end
-  local cfdir = e2tool.resultdir(name)
-  local cf = e2tool.resultconfig(name)
-  local bs = e2tool.resultbuildscript(name)
-  local cftemplate = string.format("%s/result", info.local_template_path)
-  local bstemplate = string.format("%s/build-script", info.local_template_path)
-  if not e2lib.isfile(cf) and not e2lib.isfile(bs) and
-     e2lib.isfile(cftemplate) and e2lib.isfile(bstemplate) then
-     local rc, re = e2lib.mkdir(cfdir)
-     if not rc then
-       return false, e:cat(re)
-     end
-     local rc, re = e2lib.cp(cftemplate, cf)
-     if not rc then
-       return false, e:cat(re)
-     end
-     local rc, re = e2lib.cp(bstemplate, bs)
-     if not rc then
-       return false, e:cat(re)
-     end
-  end
-  rc, re = commands.editresult(info, ...)
-  if not rc then
-    return false, e:cat(re)
-  end
-  rc, re = commands.editbuildscript(info, ...)
-  if not rc then
-    return false, e:cat(re)
-  end
-  return true, nil
+    local e = err.new("newresult")
+    local t = ...
+    local name = t[2]
+    if not name then
+        e:append("missing parameter: name")
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    local cfdir = e2tool.resultdir(name)
+    local cf = e2tool.resultconfig(name)
+    local bs = e2tool.resultbuildscript(name)
+    local cftemplate = string.format("%s/result", info.local_template_path)
+    local bstemplate = string.format("%s/build-script", info.local_template_path)
+    if not e2lib.isfile(cf) and not e2lib.isfile(bs) and
+        e2lib.isfile(cftemplate) and e2lib.isfile(bstemplate) then
+        local rc, re = e2lib.mkdir(cfdir)
+        if not rc then
+            return false, e:cat(re)
+        end
+        local rc, re = e2lib.cp(cftemplate, cf)
+        if not rc then
+            return false, e:cat(re)
+        end
+        local rc, re = e2lib.cp(bstemplate, bs)
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+    rc, re = commands.editresult(info, ...)
+    if not rc then
+        return false, e:cat(re)
+    end
+    rc, re = commands.editbuildscript(info, ...)
+    if not rc then
+        return false, e:cat(re)
+    end
+    return true, nil
 end
 
 local function editresult(info, ...)
-  local e = err.new("editresult")
-  local t = ...
-  local name = t[2]
-  if not name then
-    e:append("missing parameter: name")
-  end
-  if e:getcount() > 1 then
-    return false, e
-  end
-  local cf = e2tool.resultconfig(name)
-  os.execute(string.format("%s %s", editor, cf))
-  return true, nil
+    local e = err.new("editresult")
+    local t = ...
+    local name = t[2]
+    if not name then
+        e:append("missing parameter: name")
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    local cf = e2tool.resultconfig(name)
+    os.execute(string.format("%s %s", editor, cf))
+    return true, nil
 end
 
 local function editbuildscript(info, ...)
-  local e = err.new("editbuildscript")
-  local t = ...
-  local name = t[2]
-  if not name then
-    e:append("missing parameter: name")
-  end
-  if e:getcount() > 1 then
-    return false, e
-  end
-  local cf = e2tool.resultbuildscript(name)
-  os.execute(string.format("%s %s", editor, cf))
-  return true, nil
+    local e = err.new("editbuildscript")
+    local t = ...
+    local name = t[2]
+    if not name then
+        e:append("missing parameter: name")
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    local cf = e2tool.resultbuildscript(name)
+    os.execute(string.format("%s %s", editor, cf))
+    return true, nil
 end
 
 commands.editbuildscript = editbuildscript
@@ -214,32 +212,34 @@ local i = 1
 local match = {}
 local cmd = arguments[1]
 if #arguments < 1 then
-	e2option.usage()
-	e2lib.finish(1)
+    e2option.usage()
+    e2lib.finish(1)
 end
 for c,f in pairs(commands) do
-	if c:match(string.format("^%s", cmd)) then
-		table.insert(match, c)
-	end
+    if c:match(string.format("^%s", cmd)) then
+        table.insert(match, c)
+    end
 end
 if #match == 1 then
-	local a = {}
-	for _,o in ipairs(arguments) do
-		table.insert(a, o)
-	end
-	local f = commands[match[1]]
-	rc, re = f(info, a)
-	if not rc then
-		e2lib.abort(re)
-	end
+    local a = {}
+    for _,o in ipairs(arguments) do
+        table.insert(a, o)
+    end
+    local f = commands[match[1]]
+    rc, re = f(info, a)
+    if not rc then
+        e2lib.abort(re)
+    end
 else
-	if #match > 1 then
-		print(string.format("Ambiguous command: %s", cmd))
-	end
-	print("Available commands:")
-	for c,f in pairs(commands) do
-		print(c)
-	end
-	e2lib.finish(1)
+    if #match > 1 then
+        print(string.format("Ambiguous command: %s", cmd))
+    end
+    print("Available commands:")
+    for c,f in pairs(commands) do
+        print(c)
+    end
+    e2lib.finish(1)
 end
 e2lib.finish(0)
+
+-- vim:sw=4:sts=4:et:
