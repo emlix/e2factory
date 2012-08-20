@@ -25,45 +25,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+-- Parsing of command-line options
+
 local e2option = {}
 local e2lib = require("e2lib")
 require("e2util")
 local plugin = require("plugin")
 local err = require("err")
 
--- Parsing of command-line options
-
 local options = {}
-local optionlist = {}
-
--- Option declaration
---
---   documentation -> STRING
---
---     Holds a general description string of the currently executing
---     tool.
---
---   flag(NAME, [DOC, [FUNCTION]])
---
---     Declares a "flag" option (an option without argument) with the given
---     name (a string), documentation string (defaults to "") and a function
---     that will be called when the option is given on the command line.
---
---   option(NAME, [DOC, [DEFAULT, [FUNCTION, [ARGUMENTNAME]]]])
---
---     Declares an option with argument. DEFAULT defaults to "true".
---     ARGUMENTNAME will be used in the generated usage information
---     (see "usage()").
---
---   alias(NAME, OPTION)
---
---     Declares an alias for another option.
-
--- TODO: Remove from the e2option table, should only be setable through a
--- function
-e2option.documentation = "<no documentation available>"
-
 local aliases = {}
+local optionlist = {} -- ordered list of option names
+
+e2option.documentation = "<no documentation available>"
 
 --- register a flag option
 -- @param name string: option name
@@ -109,33 +83,10 @@ function e2option.alias(alias, option)
     aliases[alias] = option
 end
 
-
--- Option parsing
---
---   parse(ARGUMENTS) -> TABLE
---
---     Parses the arguments given in ARGUMENTS (usually obtained via "arg")
---     and returns a table with an entry for each option. The entry is stored
---     under the optionname with the value given by the FUNCTION or DEFAULT
---     arguments from the associated option declaration call ("flag()"
---     or "option()"). The result table with additionally contain
---     and entry named "arguments" holding an array of all non-option arguments.
---
---   usage([CODE])
---
---     Prints usage information on io.stdout and either signals an error
---     (if interactive) or exits with status code CODE (defaults to 0).
-
---- option_table holding options keyed by option name.
--- The special key "arguments" holds a list of non-option command line
--- arguments
--- @class table
--- @name option_table
--- @field arguments list of additional arguments
-
---- parse options
+--- fill in defaults, parse user defauls and parse normal options
 -- @param args table: command line arguments (usually the arg global variable)
 -- @return table: option_table
+-- @return table of unparsed arguments (everything not identified as an option)
 function e2option.parse(args)
     local function defaultoptions()
         local category = "Verbosity Control Options"
@@ -401,7 +352,6 @@ end
 
 --- display builtin option documentation and exit
 -- @param rc number: return code, passed to e2lib.finish()
--- @return nil
 function e2option.usage(rc)
     print(e2lib.globals._version)
     print([[
