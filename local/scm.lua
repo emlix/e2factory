@@ -25,7 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-scm = module("scm", package.seeall)
+local scm = {}
 local err = require("err")
 
 -- scm modules
@@ -39,14 +39,14 @@ local intf = {}
 -- @param mod the module
 -- @return bool
 -- @return an error object on failure
-function register(scmname, mod)
+function scm.register(scmname, mod)
   local e = err.new("error registering scm")
   if scms[scmname] then
     return false, e:append("scm with that name exists")
   end
   scms[scmname] = {}
   for name,func in pairs(intf) do
-    rc, re = register_function(scmname, name, mod[name])
+    local rc, re = scm.register_function(scmname, name, mod[name])
     if not rc then
       return false, e:cat(re)
     end
@@ -58,7 +58,7 @@ end
 -- @param name string: interface name
 -- @return bool
 -- @return an error object on failure
-function register_interface(name)
+function scm.register_interface(name)
   local e = err.new("registering scm interface failed")
   if intf[name] then
     return false, e:append(
@@ -95,7 +95,7 @@ end
 -- @param func function: interface function
 -- @return bool
 -- @return an error object on failure
-function register_function(type, name, func)
+function scm.register_function(type, name, func)
   local e = err.new("registering scm function failed")
   if not scms[type] then
     return false, e:append("no scm type by that name: %s", type)
@@ -110,13 +110,15 @@ function register_function(type, name, func)
   return true, nil
 end
 
-register_interface("sourceid")
-register_interface("validate_source")
-register_interface("toresult")
-register_interface("prepare_source")
-register_interface("fetch_source")
-register_interface("update")
-register_interface("check_workingcopy")
-register_interface("working_copy_available")
-register_interface("display")
-register_interface("has_working_copy")
+scm.register_interface("sourceid")
+scm.register_interface("validate_source")
+scm.register_interface("toresult")
+scm.register_interface("prepare_source")
+scm.register_interface("fetch_source")
+scm.register_interface("update")
+scm.register_interface("check_workingcopy")
+scm.register_interface("working_copy_available")
+scm.register_interface("display")
+scm.register_interface("has_working_copy")
+
+return scm
