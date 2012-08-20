@@ -139,9 +139,7 @@ if p.branch then
   local e = e:append("checking out branch failed: %s", p.branch)
   local args = string.format("-n1 refs/heads/%s", p.branch)
   local rc, re = e2lib.git(nil, "rev-list", args)
-  if rc then
-    e2lib.warnf("WOTHER", "Branch exists: %s No need to check out.", p.branch)
-  else
+  if not rc then
     local args = string.format(
 			"--track -b '%s' 'origin/%s'", p.branch, p.branch)
     local rc, re = e2lib.git(nil, "checkout", args)
