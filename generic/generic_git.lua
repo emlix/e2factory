@@ -245,6 +245,25 @@ function generic_git.git_remote_add1(lurl, rurl, name)
     return true, nil
 end
 
+function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
+    e2lib.log(4, string.format("%s, %s, %s, %s, %s, %s",
+    tostring(c), tostring(lserver), tostring(llocation),
+    tostring(name), tostring(rserver), tostring(rlocation)))
+    local rurl, e = cache.remote_url(c, rserver, rlocation)
+    if not rurl then
+        e2lib.abort(e)
+    end
+    local lurl, e = cache.remote_url(c, lserver, llocation)
+    if not lurl then
+        e2lib.abort(e)
+    end
+    local rc, e = generic_git.git_remote_add1(lurl, rurl, name)
+    if not rc then
+        e2lib.abort(e)
+    end
+    return true, nil
+end
+
 --- translate a url to a git url
 -- @param u url table
 -- @return string: the git url
@@ -576,7 +595,7 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, f
     if not rc then
         return false, e:cat("can't initialize local git repository")
     end
-    rc = git.git_remote_add(c, lserver, llocation, "origin",
+    rc = generic_git.git_remote_add(c, lserver, llocation, "origin",
     rserver, rlocation)
     if not rc then
         return false, e:cat("git remote add failed")
