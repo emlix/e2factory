@@ -1,6 +1,7 @@
 --[[
    e2factory, the emlix embedded build system
 
+   Copyright (C) 2012 Tobias Ulmer <tu@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
@@ -100,6 +101,21 @@ local function load_plugin(dir, p, ctx)
     if type(pd.exit) ~= "function" then
         e:append("exit function missing in descriptor")
     end
+
+    if pd.depends then
+        for _,dep in ipairs(pd.depends) do
+            if type(dep) ~= "string" then
+                e:append("a dependency of plugin %s is not a string", p)
+            end
+
+            if not e2util.exists(string.format("%s/%s", dir, dep)) then
+                e:append("dependency %s of plugin %s is not installed", dep, p)
+            end
+        end
+    else
+        pd.depends = {}
+    end
+
     if e:getcount() > 1 then
         return false, e
     end
@@ -119,7 +135,16 @@ end
 function plugin.load_plugins(dir, ctx)
     local e = err.new("loading plugins failed")
     e2lib.logf(4, "loading plugins from: %s", dir)
-    for p in e2lib.directory(dir) do
+
+    local pfn = {}
+    for fn in e2lib.directory(dir) do
+        table.insert(pfn, fn)
+    end
+
+    -- create a stable base
+    table.sort(pfn)
+
+    for _,p in ipairs(pfn) do
         local rc, re = load_plugin(dir, p, ctx)
         if not rc then
             e2lib.logf(1, "loading plugin: %s failed", p)
@@ -129,12 +154,62 @@ function plugin.load_plugins(dir, ctx)
     return true
 end
 
+local function plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted,
+    cycledetect)
+    if pluginsvisited[plugin] then
+        return
+    end
+
+    pluginsvisited[plugin] = true
+    cycledetect[plugin] = true
+
+    for _,pluginm in ipairs(plugins) do
+        for _,mdep in ipairs(pluginm.depends) do
+            if mdep == plugin.file then
+                if cycledetect[pluginm] then
+                    local e = err.new("plugin dependency cycle detected.")
+                    local c
+                    for p,_ in pairs(cycledetect) do
+                        c = " " .. p.file
+                    end
+                    e:append("somewhere in this branch:" .. c)
+                    e2lib.abort(e)
+                end
+                plugin_dfs_visit(pluginm, plugins, pluginsvisited,
+                    pluginssorted, cycledetect)
+            end
+        end
+    end
+
+    table.insert(pluginssorted, 1,  plugin)
+end
+
+--- topological sort for plugins according to their dependencies
+-- When cycles are encountered, it aborts.
+-- @return a sorted plugin table
+local function plugin_tsort(plugins)
+    local pluginsvisited = {}
+    local pluginssorted = {}
+
+    for _, plugin in ipairs(plugins) do
+        if not pluginsvisited[plugin] then
+            plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted, {})
+        end
+    end
+
+    return pluginssorted
+end
+
 --- initialize plugins
 -- @return bool
 -- @return an error object on failure
 function plugin.init_plugins()
     local e = err.new("initializing plugins failed")
+
+    plugins = plugin_tsort(plugins)
+
     for _, pd in ipairs(plugins) do
+        e2lib.logf(4, "init plugin %s", pd.file)
         local rc, re = pd.init(pd.ctx)
         if not rc then
             return false, e:cat(re)
