@@ -25,11 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
---- git.lua - Git-specific SCM operations -*- Lua -*-
---
--- See e2scm.lua for more information about these operations.
-
-module("git", package.seeall)
+local git = {}
 local scm = require("scm")
 local hash = require("hash")
 local cache = require("cache")
@@ -39,12 +35,18 @@ local err = require("err")
 local e2option = require("e2option")
 local e2lib = require("e2lib")
 
+plugin_descriptor = {
+	description = "Git SCM Plugin",
+	init = function (ctx) scm.register("git", git) return true end,
+	exit = function (ctx) return true end,
+}
+
 --- git branch wrapper
 -- get the current branch
 -- @param gitdir
 -- @return string: the branch name, nil on error
 -- @return string: nil, or an error string on error
-function git_branch_get(gitdir)
+local function git_branch_get(gitdir)
   -- git branch
   local cmd = string.format("GIT_DIR=\"%s\" git branch", gitdir)
   local p = io.popen(cmd, "r")
@@ -75,7 +77,7 @@ end
 -- @param check_remote bool: in tag mode: make sure the tag is available remote
 -- @return string: the commit id, nil on error
 -- @return nil on success, an error string on error
-function git.get_revision_id(info, source, sourceset, check_remote)
+local function get_revision_id(info, source, sourceset, check_remote)
   local sourcename = source
   local rc, re
   local e = err.new("getting revision id failed for source: %s", source)
@@ -124,167 +126,20 @@ function git.get_revision_id(info, source, sourceset, check_remote)
   return id, not id and fr
 end
 
-function git.cache_source(info, sourcename)
-  -- noop, return success
-  return true, nil
-end
-
---- apply default values where possible and a source configuration is
--- incomplete
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on failure
-function source_apply_default_licences(info, sourcename)
-  local e = err.new("applying default licences failed.")
-  local src = info.sources[ sourcename ]
-  if src.licences_default_applied then
-    return true
-  end
-  src.licences_default_applied = true
-  if not src.licences and src.licence then
-    e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
-    e2lib.warnf("WDEPRECATED",
-		" licence attribute is deprecated. Replace by licences.")
-    src.licences = src.licence
-  end
-  if not src.licences then
-    e2lib.warnf("WDEFAULT", "in source %s:", src.name)
-    e2lib.warnf("WDEFAULT",
-		" licences attribute missing. Defaulting to empty list.")
-    src.licences = {}
-  elseif type(src.licences) == "string" then
-    e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
-    e2lib.warnf("WDEPRECATED",
-		" licences attribute is not in table format. Converting.")
-    src.licences = { src.licences }
-  end
-  for i, s in pairs(src.licences) do
-    if type(i) ~= "number" or type(s) ~= "string" then
-      e:append("licences attribute is not a list of strings")
-      return false, e
-    end
-  end
-  for _,l in ipairs(src.licences) do
-    if not info.licences[l] then
-      e:append("unknown licence: %s", l)
-      return false, e
-    end
-  end
-  return true
-end
-
--- XXX generics: Move to some other place
---- validate source configuration
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on failure
-function generic_validate_source(info, sourcename)
-  local src = info.sources[ sourcename ]
-  local rc, re
-  local e
-  if not src then
-    return false, err.new("invalid source: %s", sourcename)
-  end
-  e = err.new("in source %s:", sourcename)
-  rc, re = source_apply_default_licences(info, sourcename)
-  if not rc then
-    return false, e:cat(re)
-  end
-  if not src.type then
-    e:append("source has no `type' attribute")
-  end
-  if src.env and type(src.env) ~= "table" then
-    e:append("source has invalid `env' attribute")
-  else
-    if not src.env then
-      e2lib.warnf("WDEFAULT",
-	    "source has no `env' attribute. Defaulting to empty dictionary")
-      src.env = {}
-    end
-    src._env = environment.new()
-    for k,v in pairs(src.env) do
-      if type(k) ~= "string" then
-        e:append("in `env' dictionary: key is not a string: %s", tostring(k))
-      elseif type(v) ~= "string" then
-        e:append("in `env' dictionary: value is not a string: %s", tostring(v))
-      else
-        src._env:set(k, v)
-      end
-    end
-  end
-  if e:getcount() > 1 then
-    return false, e
-  end
-  return true, nil
-end
-
---- do some consistency checks required before using sources
--- @param info
--- @param sourcename string: source name
--- @param require_workingcopy bool: return error if the workingcopy is missing
--- @return bool
--- @return an error object on failure
-function check(info, sourcename, require_workingcopy)
-  local rc, re
-  rc, re = scm.validate_source(info, sourcename)
-  if not rc then
-    return false, re
-  end
-  rc, re = scm.working_copy_available(info, sourcename)
-  if (not rc) and require_workingcopy then
-    return false, err.new("working copy is not available")
-  end
-  rc, re = scm.check_workingcopy(info, sourcename)
-  if not rc then
-    return false, re
-  end
-  return true, nil
-end
-
---- apply default values where possible and a git source configuration is
--- incomplete
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on failure
-function source_apply_default_working(info, sourcename)
-  local src = info.sources[ sourcename ]
-  if src.working_default_applied then
-    return true
-  end
-  src.working_default_applied = true
-  local src_working_default = string.format("in/%s", sourcename)
-  if src.working and src.working ~= src_working_default then
-    e2lib.warnf("WPOLICY", "in source %s:", src.name)
-    e2lib.warnf("WPOLICY", " configuring non standard working direcory")
-  elseif src.working then
-    e2lib.warnf("WHINT", "in source %s:", src.name)
-    e2lib.warnf("WHINT", " no need to configure working directory")
-  else
-    src.working = string.format("in/%s", sourcename)
-    e2lib.warnf("WDEFAULT", "in source %s:", src.name)
-    e2lib.warnf("WDEFAULT",
-	     " `working' attribute missing. Defaulting to '%s'.", src.working)
-  end
-  return true
-end
-
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
 -- @param sourcename the source name
 -- @return bool
 -- @return an error object on error
 function git.validate_source(info, sourcename)
-  local rc, re = generic_validate_source(info, sourcename)
+  local rc, re = scm.generic_source_validate(info, sourcename)
   if not rc then
     -- error in generic configuration. Don't try to go on.
     return false, re
   end
   local src = info.sources[ sourcename ]
   local e = err.new("in source %s:", sourcename)
-  rc, re = source_apply_default_working(info, sourcename)
+  rc, re = scm.generic_source_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
   end
@@ -424,14 +279,14 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
   local src = info.sources[ sourcename ]
   local rc, re, e
   local e = err.new("preparing git sources failed")
-  rc, re = check(info, sourcename, true)
+  rc, re = scm.generic_source_check(info, sourcename, true)
   if not rc then
     return false, e:cat(re)
   end
   local gitdir = info.root .. "/" .. src.working .. "/.git/"
   if sourceset == "branch" or
      (sourceset == "lazytag" and src.tag == "^") then
-    local rev, re = git.get_revision_id(info, sourcename, sourceset)
+    local rev, re = get_revision_id(info, sourcename, sourceset)
     if not rev then
       return false, e:cat(re)
     end
@@ -447,7 +302,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     end
   elseif sourceset == "tag" or
 	 (sourceset == "lazytag" and src.tag ~= "^") then
-    local rev, re = git.get_revision_id(info, sourcename, sourceset)
+    local rev, re = get_revision_id(info, sourcename, sourceset)
     if not rev then
       return false, e:cat(re)
     end
@@ -510,29 +365,13 @@ function git.has_working_copy(info, sname)
   return true
 end
 
-function git.tag_available(info, sourcename, tag)
-  local src = info.sources[sourcename]
-  local rc, e
-  rc, e = check(info, sourcename, true)
-  if not rc then
-    return false, e
-  end
-  local gitdir = string.format("%s/%s/.git", info.root, src.working)
-  local ref = string.format("refs/tags/%s", tag)
-  local id, e = generic_git.git_rev_list1(gitdir, ref)
-  if not id then
-    return false
-  end
-  return true
-end
-
 --- turn server:location into a git-style url
 -- @param c table: a cache
 -- @param server string: server name
 -- @param location string: location
 -- @return string: the git url, or nil
 -- @return an error object on failure
-function git.git_url(c, server, location)
+local function git_url(c, server, location)
   local e = err.new("translating server:location to git url")
   local rurl, re = cache.remote_url(c, server, location)
   if not rurl then
@@ -547,25 +386,6 @@ function git.git_url(c, server, location)
     return nil, e:cat(re)
   end
   return g, nil
-end
-
-function git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
-  e2lib.log(4, string.format("%s, %s, %s, %s, %s, %s",
-	tostring(c), tostring(lserver), tostring(llocation),
-	tostring(name), tostring(rserver), tostring(rlocation)))
-  local rurl, e = cache.remote_url(c, rserver, rlocation)
-  if not rurl then
-    e2lib.abort(e)
-  end
-  local lurl, e = cache.remote_url(c, lserver, llocation)
-  if not lurl then
-    e2lib.abort(e)
-  end
-  local rc, e = generic_git.git_remote_add1(lurl, rurl, name)
-  if not rc then
-    e2lib.abort(e)
-  end
-  return true, nil
 end
 
 --- create a table of lines for display
@@ -633,7 +453,7 @@ function git.sourceid(info, sourcename, sourceset)
 	if src.sourceid[sourceset] then
 		return true, nil, src.sourceid[sourceset]
 	end
-	src.commitid[sourceset], e = git.get_revision_id(info, sourcename,
+	src.commitid[sourceset], e = get_revision_id(info, sourcename,
 				sourceset, e2option.opts["check-remote"])
 	if not src.commitid[sourceset] then
 		return false, e
@@ -666,7 +486,7 @@ end
 function git.toresult(info, sourcename, sourceset, directory)
 	local rc, re
 	local e = err.new("converting result")
-	rc, re = check(info, sourcename, true)
+	rc, re = scm.generic_source_check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -768,7 +588,7 @@ function git.check_workingcopy(info, sourcename)
 	end
 	-- git config remote.origin.url == server:location
 	query = string.format("remote.origin.url")
-	expect, re = git.git_url(info.cache, src.server, src.location)
+	expect, re = git_url(info.cache, src.server, src.location)
 	if not expect then
 		return false, e:cat(re)
 	end
@@ -792,5 +612,3 @@ function git.check_workingcopy(info, sourcename)
 	end
 	return true, nil
 end
-
-scm.register("git", git)

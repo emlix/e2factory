@@ -25,9 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- cvs.lua - CVS-specific SCM operations -*- Lua -*-
---
-module("cvs", package.seeall)
+local cvs = {}
 local scm = require("scm")
 local hash = require("hash")
 local url = require("url")
@@ -35,12 +33,18 @@ local tools = require("tools")
 local err = require("err")
 local e2lib = require("e2lib")
 
+plugin_descriptor = {
+	description = "CVS SCM Plugin",
+	init = function (ctx) scm.register("cvs", cvs) return true end,
+	exit = function (ctx) return true end,
+}
+
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
 -- @param sourcename the source name
 -- @return bool
 function cvs.validate_source(info, sourcename)
-  local rc, re = git.generic_validate_source(info, sourcename)
+  local rc, re = scm.generic_source_validate(info, sourcename)
   if not rc then
     -- error in generic configuration. Don't try to go on.
     return false, re
@@ -50,7 +54,7 @@ function cvs.validate_source(info, sourcename)
     src.sourceid = {}
   end
   local e = err.new("in source %s:", sourcename)
-  rc, re = git.source_apply_default_working(info, sourcename)
+  rc, re = scm.generic_source_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
   end
@@ -358,7 +362,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
 	-- <directory>/licences
 	local rc, re
 	local e = err.new("converting result")
-	rc, re = git.check(info, sourcename, true)
+	rc, re = scm.generic_source_check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -428,5 +432,3 @@ function cvs.check_workingcopy(info, sourcename)
 	end
 	return true, nil
 end
-
-scm.register("cvs", cvs)

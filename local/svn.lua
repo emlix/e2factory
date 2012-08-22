@@ -25,9 +25,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- svn.lua - Subversion-specific SCM operations -*- Lua -*-
-
-module("svn", package.seeall)
+local svn = {}
 local scm = require("scm")
 local hash = require("hash")
 local url = require("url")
@@ -35,11 +33,17 @@ local tools = require("tools")
 local err = require("err")
 local e2lib = require("e2lib")
 
+plugin_descriptor = {
+	description = "SVN SCM Plugin",
+	init = function (ctx) scm.register("svn", svn) return true end,
+	exit = function (ctx) return true end,
+}
+
 --- translate url into subversion url
 -- @param u table: url table
 -- @return string: subversion style url
 -- @return an error object on failure
-function mksvnurl(surl)
+local function mksvnurl(surl)
   local rc, re
   local e = err.new("cannot translate url into subversion url:")
   e:append("%s", surl)
@@ -60,10 +64,6 @@ function mksvnurl(surl)
   end
   return string.format("%s://%s/%s", transport, u.server, u.path)
 end
-
--- the scm interface
-
-local svn = {}
 
 function svn.fetch_source(info, sourcename)
   local rc, re = svn.validate_source(info, sourcename)
@@ -249,7 +249,7 @@ function svn.toresult(info, sourcename, sourceset, directory) --OK
 	-- <directory>/licences
 	local rc, re
 	local e = err.new("converting result")
-	rc, re = git.check(info, sourcename, true)
+	rc, re = git.generic_source_check(info, sourcename, true)
 	if not rc then
 		return false, e:cat(re)
 	end
@@ -328,7 +328,7 @@ end
 -- @param sourcename the source name
 -- @return bool
 function svn.validate_source(info, sourcename) --OK
-  local rc, re = git.generic_validate_source(info, sourcename)
+  local rc, re = scm.generic_source_validate(info, sourcename)
   if not rc then
     -- error in generic configuration. Don't try to go on.
     return false, re
@@ -338,7 +338,7 @@ function svn.validate_source(info, sourcename) --OK
     src.sourceid = {}
   end
   local e = err.new("in source %s:", sourcename)
-  rc, re = git.source_apply_default_working(info, sourcename)
+  rc, re = scm.generic_source_default_working(info, sourcename)
   if not rc then
     return false, e:cat(re)
   end
@@ -379,5 +379,3 @@ function svn.validate_source(info, sourcename) --OK
   end
   return true, nil
 end
-
-scm.register("svn", svn)

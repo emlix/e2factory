@@ -25,15 +25,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- files.lua - non-SCM operations -*- Lua -*-
---
--- See e2scm.lua for more information about these operations.
-
-module("files", package.seeall)
+local files = {}
 local scm = require("scm")
 local hash = require("hash")
 local err = require("err")
 local e2lib = require("e2lib")
+
+plugin_descriptor = {
+	description = "Files SCM Plugin",
+	init = function (ctx) scm.register("files", files) return true end,
+	exit = function (ctx) return true end,
+}
 
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
@@ -41,7 +43,7 @@ local e2lib = require("e2lib")
 -- @return bool
 function files.validate_source(info, sourcename)
   local rc1 = true   -- the return value
-  local rc, e = git.generic_validate_source(info, sourcename)
+  local rc, e = scm.generic_source_validate(info, sourcename)
   if not rc then
     return false, e
   end
@@ -457,5 +459,3 @@ end
 function files.update(info, sourcename)
 	return true, nil
 end
-
-scm.register("files", files)
