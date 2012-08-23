@@ -92,7 +92,7 @@ function svn.fetch_source(info, sourcename)
     return true, nil
 end
 
-function svn.prepare_source(info, sourcename, source_set, build_path) --OK
+function svn.prepare_source(info, sourcename, source_set, build_path)
     local rc, re = svn.validate_source(info, sourcename)
     if not rc then
         return false, re
@@ -137,7 +137,7 @@ function svn.prepare_source(info, sourcename, source_set, build_path) --OK
     return true, nil
 end
 
-function svn.working_copy_available(info, sourcename) --OK
+function svn.working_copy_available(info, sourcename)
     local rc, re
     rc, re = svn.validate_source(info, sourcename)
     if not rc then
@@ -148,7 +148,7 @@ function svn.working_copy_available(info, sourcename) --OK
     return e2lib.isdir(dir)
 end
 
-function svn.check_workingcopy(info, sourcename) --OK
+function svn.check_workingcopy(info, sourcename)
     local rc, re
     local e = err.new("checking working copy failed")
     e:append("in source %s (svn configuration):", sourcename)
@@ -177,7 +177,7 @@ function svn.check_workingcopy(info, sourcename) --OK
     return true, nil
 end
 
-function svn.has_working_copy(info, sname) --OK
+function svn.has_working_copy(info, sname)
     return true
 end
 
@@ -186,7 +186,7 @@ end
 -- @param sourcename string
 -- @return a table, nil on error
 -- @return an error string on failure
-function svn.display(info, sourcename) --OK
+function svn.display(info, sourcename)
     local src = info.sources[sourcename]
     local rc, e
     rc, e = svn.validate_source(info, sourcename)
@@ -211,7 +211,7 @@ end
 --- calculate an id for a source
 -- @param info
 -- @param sourcename
-function svn.sourceid(info, sourcename, source_set) --OK
+function svn.sourceid(info, sourcename, source_set)
     local src = info.sources[sourcename]
     local rc, e
     rc, e = svn.validate_source(info, sourcename)
@@ -243,7 +243,7 @@ function svn.sourceid(info, sourcename, source_set) --OK
     return true, nil, src.sourceid[source_set]
 end
 
-function svn.toresult(info, sourcename, sourceset, directory) --OK
+function svn.toresult(info, sourcename, sourceset, directory)
     -- <directory>/source/<sourcename>.tar.gz
     -- <directory>/makefile
     -- <directory>/licences
@@ -327,7 +327,7 @@ end
 -- @param info the info table
 -- @param sourcename the source name
 -- @return bool
-function svn.validate_source(info, sourcename) --OK
+function svn.validate_source(info, sourcename)
     local rc, re = scm.generic_source_validate(info, sourcename)
     if not rc then
         -- error in generic configuration. Don't try to go on.
