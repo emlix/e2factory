@@ -28,6 +28,7 @@
 local e2lib = require("e2lib")
 require("e2tool")
 local e2option = require("e2option")
+local policy = require("policy")
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build-numbers")

@@ -32,6 +32,7 @@ require("e2tool")
 local e2build = require("e2build")
 local err = require("err")
 local e2option = require("e2option")
+local policy = require("policy")
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "playground")

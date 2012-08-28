@@ -31,6 +31,7 @@ local e2build = require("e2build")
 local err = require("err")
 local e2option = require("e2option")
 local scm = require("scm")
+local policy = require("policy")
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build")
@@ -134,10 +135,10 @@ if opts["branch-mode"] and opts["wc-mode"] then
 end
 if opts["branch-mode"] then
     -- selected results get a special build mode
-    build_mode = policy.default_build_mode["branch"]
+    build_mode = policy.default_build_mode("branch")
 end
 if opts["wc-mode"] then
-    build_mode = policy.default_build_mode["working-copy"]
+    build_mode = policy.default_build_mode("working-copy")
 end
 local playground = opts["playground"]
 if playground then
