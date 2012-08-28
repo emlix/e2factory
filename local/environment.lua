@@ -26,7 +26,7 @@
 ]]
 
 module("environment", package.seeall)
-require("sha1")
+local hash = require("hash")
 
 --- create new environment
 -- @return environment
@@ -54,11 +54,12 @@ end
 --- return a hash representing the environment
 -- @param env environment
 function id(env)
-    local sha1 = sha1.sha1_init()
+    local hc = hash.hash_start()
     for var, val in env:iter() do
-        sha1:update(string.format("%s=%s", var, val))
+        hc:hash_append(string.format("%s=%s", var, val))
     end
-    return sha1:final()
+    -- XXX: get rid string.upper one day, causes a build-id change
+    return string.upper(hc:hash_finish())
 end
 
 --- merge environment from merge into env.
@@ -111,6 +112,7 @@ function unittest(env)
     e1:set("var1.1", "val1.1")
     e1:set("var1.2", "val1.2")
     e1:set("var1.4", "val1.4")
+    print(e1:id())
     assert(e1:id() == "84C3CB1BFF877D12F500C05D7B133DA2B8BC0A4A")
 
     e2 = new()
