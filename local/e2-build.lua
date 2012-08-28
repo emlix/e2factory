@@ -27,7 +27,7 @@
 
 local e2lib = require("e2lib")
 require("e2tool")
-require("e2build")
+local e2build = require("e2build")
 local err = require("err")
 local e2option = require("e2option")
 local scm = require("scm")

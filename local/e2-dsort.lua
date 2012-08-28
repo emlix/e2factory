@@ -27,7 +27,6 @@
 
 local e2lib = require("e2lib")
 require("e2tool")
-require("e2build")
 local e2option = require("e2option")
 
 e2lib.init()
