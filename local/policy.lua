@@ -31,51 +31,51 @@ local e2option = require("e2option")
 local e2lib = require("e2lib")
 
 function source_set_lazytag()
-	return "lazytag"
+    return "lazytag"
 end
 function source_set_tag()
-	return "tag"
+    return "tag"
 end
 function source_set_branch()
-	return "branch"
+    return "branch"
 end
 function source_set_working_copy()
-	return "working-copy"
+    return "working-copy"
 end
 
 
 local results_server = "results"
 local local_server = "."
 function storage_release(location, release_id)
-	return results_server, string.format("%s/release/%s", location,
-								release_id)
+    return results_server, string.format("%s/release/%s", location,
+    release_id)
 end
 function storage_default(location, release_id)
-	return results_server, string.format("%s/shared", location)
+    return results_server, string.format("%s/shared", location)
 end
 function storage_local(location, release_id)
-	return local_server, string.format("out")
+    return local_server, string.format("out")
 end
 
 local releases_server = "releases"
 function deploy_storage_default(location, release_id)
-	return releases_server, string.format("%s/archive/%s", location,
-								release_id)
+    return releases_server, string.format("%s/archive/%s", location,
+    release_id)
 end
 
 function dep_set_buildid(buildid)
-	return buildid
+    return buildid
 end
 function dep_set_last(buildid)
-	return "last"
+    return "last"
 end
 
 
 function buildid_buildid(buildid)
-	return buildid
+    return buildid
 end
 function buildid_scratch(buildid)
-	return "scratch"
+    return "scratch"
 end
 
 --- set a policy mode to a value
@@ -86,13 +86,13 @@ end
 -- @param val the function to use : storage_*, source_set_*, etc.
 -- @return nil
 function set(mode, id, val)
-	if not id or not val then
-		print(id)
-		print(val)
-		e2lib.abort("trying to set nil value in policy.set()")
-	end
-	mode[id] = val
-	return nil
+    if not id or not val then
+        print(id)
+        print(val)
+        e2lib.abort("trying to set nil value in policy.set()")
+    end
+    mode[id] = val
+    return nil
 end
 
 --- get a policy function
@@ -102,11 +102,11 @@ end
 -- 			buildid
 -- @return function: the policy function
 function get(mode, id)
-	if type(mode) ~= "table" then
-		print(mode, id)
-		e2lib.abort("policy.get() mode is not a table")
-	end
-	return mode[id]
+    if type(mode) ~= "table" then
+        print(mode, id)
+        e2lib.abort("policy.get() mode is not a table")
+    end
+    return mode[id]
 end
 
 --- source_set_* get the source set identifier
@@ -136,147 +136,149 @@ end
 -- @return the buildid
 
 function init(info)
-	local e = err.new("checking policy")
-	-- check if all required servers exist
-	local storage = {
-		storage_release,
-		storage_default,
-		storage_local,
-		deploy_storage_default,
-	}
-	for i,s in ipairs(storage) do
-		local location = "test/test"
-		local release_id = "release-id"
-		local server, location = s(location, release_id)
-		local se = err.new("checking server configuration for '%s'",
-									server)
-		local ce, re = info.cache:ce_by_server(server)
-		if not ce then
-			se:cat(re)
-		elseif not ce.flags.writeback then
-			e2lib.warnf("WPOLICY",
-				"Results will not be pushed to server: '%s'"..
-				" (Writeback disabled)", server)
-		end
-		if ce and not (ce.flags.cache or ce.flags.islocal) then
-			se:append(
-			     "Building needs local access to build results. "..
-			     "Enable cache.")
-		elseif ce and not (ce.flags.writeback or ce.flags.cache) then
-			se:append(
-			     "Cannot store results. "..
-			     "Enable cache or writeback.")
-		end
-		if se:getcount() > 1 then
-			e:cat(se)
-		end
-	end
-	if e:getcount() > 1 then
-		return false, e
-	end
-	return true, nil
+    local e = err.new("checking policy")
+    -- check if all required servers exist
+    local storage = {
+        storage_release,
+        storage_default,
+        storage_local,
+        deploy_storage_default,
+    }
+    for i,s in ipairs(storage) do
+        local location = "test/test"
+        local release_id = "release-id"
+        local server, location = s(location, release_id)
+        local se = err.new("checking server configuration for '%s'",
+        server)
+        local ce, re = info.cache:ce_by_server(server)
+        if not ce then
+            se:cat(re)
+        elseif not ce.flags.writeback then
+            e2lib.warnf("WPOLICY",
+            "Results will not be pushed to server: '%s'"..
+            " (Writeback disabled)", server)
+        end
+        if ce and not (ce.flags.cache or ce.flags.islocal) then
+            se:append(
+            "Building needs local access to build results. "..
+            "Enable cache.")
+        elseif ce and not (ce.flags.writeback or ce.flags.cache) then
+            se:append(
+            "Cannot store results. "..
+            "Enable cache or writeback.")
+        end
+        if se:getcount() > 1 then
+            e:cat(se)
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true, nil
 end
 
 function register_commandline_options()
-	e2option.option("build-mode", "set build mode to calculate buildids")
-	e2option.flag("tag", "set build mode to 'tag' (default)")
-	e2option.flag("branch", "set build mode to 'branch'")
-	e2option.flag("working-copy", "set build mode to 'working-copy'")
-	e2option.flag("release", "set build mode to 'release'")
-	e2option.flag("check-remote",[[
-Verify that remote resources are available
-                Enabled by default in 'release' mode]])
-	e2option.flag("check",[[
-Perform all checks to make sure that a build is
-                reproducible except checking for remote resources
-                Enabled by default in 'release' mode.]])
+    e2option.option("build-mode", "set build mode to calculate buildids")
+    e2option.flag("tag", "set build mode to 'tag' (default)")
+    e2option.flag("branch", "set build mode to 'branch'")
+    e2option.flag("working-copy", "set build mode to 'working-copy'")
+    e2option.flag("release", "set build mode to 'release'")
+    e2option.flag("check-remote",[[
+    Verify that remote resources are available
+    Enabled by default in 'release' mode]])
+    e2option.flag("check",[[
+    Perform all checks to make sure that a build is
+    reproducible except checking for remote resources
+    Enabled by default in 'release' mode.]])
 end
 
 function handle_commandline_options(opts, use_default)
-	local nmodes = 0
-	local mode = nil
-	if opts["build-mode"] then
-		nmodes = nmodes + 1
-	end
-	if opts["tag"] then
-		opts["build-mode"] = "tag"
-		nmodes = nmodes + 1
-	end
-	if opts["release"] then
-		opts["build-mode"] = "release"
-		nmodes = nmodes + 1
-	end
-	if opts["branch"] then
-		opts["build-mode"] = "branch"
-		nmodes = nmodes + 1
-	end
-	if opts["working-copy"] then
-		opts["build-mode"] = "working-copy"
-		nmodes = nmodes + 1
-	end
-	if nmodes > 1 then
-		e2lib.abort("Error: Multiple build modes are not supported")
-	end
-	if not opts["build-mode"] and use_default then
-		e2lib.warn("WDEFAULT", string.format(
-					"build-mode defaults to '%s'",
-					policy.default_build_mode_name))
-		opts["build-mode"] = policy.default_build_mode_name
-	end
-	if opts["build-mode"] then
-		if policy.default_build_mode[opts["build-mode"]] then
-			mode = policy.default_build_mode[opts["build-mode"]]
-		else
-			e2lib.abort("invalid build mode")
-		end
-		if opts["build-mode"] == "release" then
-			opts["check-remote"] = true
-			opts["check"] = true
-		end
-	end
-	return mode
+    local nmodes = 0
+    local mode = nil
+    if opts["build-mode"] then
+        nmodes = nmodes + 1
+    end
+    if opts["tag"] then
+        opts["build-mode"] = "tag"
+        nmodes = nmodes + 1
+    end
+    if opts["release"] then
+        opts["build-mode"] = "release"
+        nmodes = nmodes + 1
+    end
+    if opts["branch"] then
+        opts["build-mode"] = "branch"
+        nmodes = nmodes + 1
+    end
+    if opts["working-copy"] then
+        opts["build-mode"] = "working-copy"
+        nmodes = nmodes + 1
+    end
+    if nmodes > 1 then
+        e2lib.abort("Error: Multiple build modes are not supported")
+    end
+    if not opts["build-mode"] and use_default then
+        e2lib.warn("WDEFAULT", string.format(
+        "build-mode defaults to '%s'",
+        policy.default_build_mode_name))
+        opts["build-mode"] = policy.default_build_mode_name
+    end
+    if opts["build-mode"] then
+        if policy.default_build_mode[opts["build-mode"]] then
+            mode = policy.default_build_mode[opts["build-mode"]]
+        else
+            e2lib.abort("invalid build mode")
+        end
+        if opts["build-mode"] == "release" then
+            opts["check-remote"] = true
+            opts["check"] = true
+        end
+    end
+    return mode
 end
 
 policy.default_build_mode_name = "tag"
 
 policy.default_build_mode = {}
 policy.default_build_mode["lazytag"] = {
-	source_set = policy.source_set_lazytag,
-	dep_set = policy.dep_set_buildid,
-	buildid = policy.buildid_buildid,
-	storage = policy.storage_default,
-	deploy = false,
+    source_set = policy.source_set_lazytag,
+    dep_set = policy.dep_set_buildid,
+    buildid = policy.buildid_buildid,
+    storage = policy.storage_default,
+    deploy = false,
 }
 
 policy.default_build_mode["tag"] = {
-	source_set = policy.source_set_tag,
-	dep_set = policy.dep_set_buildid,
-	buildid = policy.buildid_buildid,
-	storage = policy.storage_default,
-	deploy = false,
+    source_set = policy.source_set_tag,
+    dep_set = policy.dep_set_buildid,
+    buildid = policy.buildid_buildid,
+    storage = policy.storage_default,
+    deploy = false,
 }
 
 policy.default_build_mode["release"] = {
-	source_set = policy.source_set_tag,
-	dep_set = policy.dep_set_buildid,
-	buildid = policy.buildid_buildid,
-	storage = policy.storage_release,
-	deploy = true,
-	deploy_storage = policy.deploy_storage_default,
+    source_set = policy.source_set_tag,
+    dep_set = policy.dep_set_buildid,
+    buildid = policy.buildid_buildid,
+    storage = policy.storage_release,
+    deploy = true,
+    deploy_storage = policy.deploy_storage_default,
 }
 
 policy.default_build_mode["branch"] = {
-	source_set = policy.source_set_branch,
-	dep_set = policy.dep_set_buildid,
-	buildid = policy.buildid_buildid,
-	storage = policy.storage_default,
-	deploy = false,
+    source_set = policy.source_set_branch,
+    dep_set = policy.dep_set_buildid,
+    buildid = policy.buildid_buildid,
+    storage = policy.storage_default,
+    deploy = false,
 }
 
 policy.default_build_mode["working-copy"] = {
-	source_set = policy.source_set_working_copy,
-	dep_set = policy.dep_set_last,
-	buildid = policy.buildid_scratch,
-	storage = policy.storage_local,
-	deploy = false,
+    source_set = policy.source_set_working_copy,
+    dep_set = policy.dep_set_last,
+    buildid = policy.buildid_scratch,
+    storage = policy.storage_local,
+    deploy = false,
 }
+
+-- vim:sw=4:sts=4:et:
