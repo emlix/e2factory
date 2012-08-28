@@ -25,95 +25,31 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("policy", package.seeall)
+local policy = {}
 local err = require("err")
 local e2option = require("e2option")
 local e2lib = require("e2lib")
-
-function source_set_lazytag()
-    return "lazytag"
-end
-function source_set_tag()
-    return "tag"
-end
-function source_set_branch()
-    return "branch"
-end
-function source_set_working_copy()
-    return "working-copy"
-end
-
-
-local results_server = "results"
-local local_server = "."
-function storage_release(location, release_id)
-    return results_server, string.format("%s/release/%s", location,
-    release_id)
-end
-function storage_default(location, release_id)
-    return results_server, string.format("%s/shared", location)
-end
-function storage_local(location, release_id)
-    return local_server, string.format("out")
-end
-
-local releases_server = "releases"
-function deploy_storage_default(location, release_id)
-    return releases_server, string.format("%s/archive/%s", location,
-    release_id)
-end
-
-function dep_set_buildid(buildid)
-    return buildid
-end
-function dep_set_last(buildid)
-    return "last"
-end
-
-
-function buildid_buildid(buildid)
-    return buildid
-end
-function buildid_scratch(buildid)
-    return "scratch"
-end
-
---- set a policy mode to a value
--- @class function
--- @name policy.set
--- @param id string: the policy identifier: storage, source_set, dep_set,
--- 			buildid
--- @param val the function to use : storage_*, source_set_*, etc.
--- @return nil
-function set(mode, id, val)
-    if not id or not val then
-        print(id)
-        print(val)
-        e2lib.abort("trying to set nil value in policy.set()")
-    end
-    mode[id] = val
-    return nil
-end
-
---- get a policy function
--- @class function
--- @name policy.get
--- @param id string: the policy identifier: storage, source_set, dep_set,
--- 			buildid
--- @return function: the policy function
-function get(mode, id)
-    if type(mode) ~= "table" then
-        print(mode, id)
-        e2lib.abort("policy.get() mode is not a table")
-    end
-    return mode[id]
-end
 
 --- source_set_* get the source set identifier
 -- @class function
 -- @name policy.source_set_*
 -- @param none
 -- @return string: the source set identifier
+local function source_set_lazytag()
+    return "lazytag"
+end
+
+local function source_set_tag()
+    return "tag"
+end
+
+local function source_set_branch()
+    return "branch"
+end
+
+local function source_set_working_copy()
+    return "working-copy"
+end
 
 --- storage_*
 -- @class function
@@ -122,20 +58,54 @@ end
 -- @param release_id string: the release id
 -- @return the server to store the result on
 -- @return the location to store the result in
+local results_server = "results"
+function storage_release(location, release_id)
+    return results_server, string.format("%s/release/%s", location,
+    release_id)
+end
+
+local function storage_default(location, release_id)
+    return results_server, string.format("%s/shared", location)
+end
+
+local function storage_local(location, release_id)
+    local local_server = "."
+    return local_server , string.format("out")
+end
+
+-- deploy function
+local function deploy_storage_default(location, release_id)
+    local releases_server = "releases"
+    return releases_server, string.format("%s/archive/%s", location, release_id)
+end
 
 --- dep_set_*
 -- @class function
 -- @name policy.dep_set_*
 -- @param buildid the buildid
 -- @return the buildid
+local function dep_set_buildid(buildid)
+    return buildid
+end
+
+local function dep_set_last(buildid)
+    return "last"
+end
 
 --- buildid_* get the buildid for a build
 -- @class function
 -- @name policy.buildid_*
 -- @param buildid the buildid
 -- @return the buildid
+local function buildid_buildid(buildid)
+    return buildid
+end
 
-function init(info)
+local function buildid_scratch(buildid)
+    return "scratch"
+end
+
+function policy.init(info)
     local e = err.new("checking policy")
     -- check if all required servers exist
     local storage = {
@@ -177,7 +147,7 @@ function init(info)
     return true, nil
 end
 
-function register_commandline_options()
+function policy.register_commandline_options()
     e2option.option("build-mode", "set build mode to calculate buildids")
     e2option.flag("tag", "set build mode to 'tag' (default)")
     e2option.flag("branch", "set build mode to 'branch'")
@@ -192,7 +162,8 @@ function register_commandline_options()
     Enabled by default in 'release' mode.]])
 end
 
-function handle_commandline_options(opts, use_default)
+function policy.handle_commandline_options(opts, use_default)
+    local default_build_mode_name = "tag"
     local nmodes = 0
     local mode = nil
     if opts["build-mode"] then
@@ -218,14 +189,13 @@ function handle_commandline_options(opts, use_default)
         e2lib.abort("Error: Multiple build modes are not supported")
     end
     if not opts["build-mode"] and use_default then
-        e2lib.warn("WDEFAULT", string.format(
-        "build-mode defaults to '%s'",
-        policy.default_build_mode_name))
-        opts["build-mode"] = policy.default_build_mode_name
+        e2lib.warnf("WDEFAULT", "build-mode defaults to '%s'",
+            default_build_mode_name)
+        opts["build-mode"] = default_build_mode_name
     end
     if opts["build-mode"] then
-        if policy.default_build_mode[opts["build-mode"]] then
-            mode = policy.default_build_mode[opts["build-mode"]]
+        if policy.default_build_mode(opts["build-mode"]) then
+            mode = policy.default_build_mode(opts["build-mode"])
         else
             e2lib.abort("invalid build mode")
         end
@@ -237,48 +207,54 @@ function handle_commandline_options(opts, use_default)
     return mode
 end
 
-policy.default_build_mode_name = "tag"
+function policy.default_build_mode(mode)
+    if mode == "lazytag" then
+        return {
+            source_set = source_set_lazytag,
+            dep_set = dep_set_buildid,
+            buildid = buildid_buildid,
+            storage = storage_default,
+            deploy = false,
+        }
+    elseif mode == "tag" then
+        return {
+            source_set = source_set_tag,
+            dep_set = dep_set_buildid,
+            buildid = buildid_buildid,
+            storage = storage_default,
+            deploy = false,
+        }
+    elseif mode == "release" then
+        return {
+            source_set = source_set_tag,
+            dep_set = dep_set_buildid,
+            buildid = buildid_buildid,
+            storage = storage_release,
+            deploy = true,
+            deploy_storage = deploy_storage_default,
+        }
+    elseif mode == "branch" then
+        return {
+            source_set = source_set_branch,
+            dep_set = dep_set_buildid,
+            buildid = buildid_buildid,
+            storage = storage_default,
+            deploy = false,
+        }
+    elseif mode == "working-copy" then
+        return {
+            source_set = source_set_working_copy,
+            dep_set = dep_set_last,
+            buildid = buildid_scratch,
+            storage = storage_local,
+            deploy = false,
+        }
+    else
+        -- e2lib.abort("unknown default_build_mode mode=%s", tostring(mode))
+        return nil
+    end
+end
 
-policy.default_build_mode = {}
-policy.default_build_mode["lazytag"] = {
-    source_set = policy.source_set_lazytag,
-    dep_set = policy.dep_set_buildid,
-    buildid = policy.buildid_buildid,
-    storage = policy.storage_default,
-    deploy = false,
-}
-
-policy.default_build_mode["tag"] = {
-    source_set = policy.source_set_tag,
-    dep_set = policy.dep_set_buildid,
-    buildid = policy.buildid_buildid,
-    storage = policy.storage_default,
-    deploy = false,
-}
-
-policy.default_build_mode["release"] = {
-    source_set = policy.source_set_tag,
-    dep_set = policy.dep_set_buildid,
-    buildid = policy.buildid_buildid,
-    storage = policy.storage_release,
-    deploy = true,
-    deploy_storage = policy.deploy_storage_default,
-}
-
-policy.default_build_mode["branch"] = {
-    source_set = policy.source_set_branch,
-    dep_set = policy.dep_set_buildid,
-    buildid = policy.buildid_buildid,
-    storage = policy.storage_default,
-    deploy = false,
-}
-
-policy.default_build_mode["working-copy"] = {
-    source_set = policy.source_set_working_copy,
-    dep_set = policy.dep_set_last,
-    buildid = policy.buildid_scratch,
-    storage = policy.storage_local,
-    deploy = false,
-}
+return policy
 
 -- vim:sw=4:sts=4:et:
