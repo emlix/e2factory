@@ -36,16 +36,6 @@ local scm = require("scm")
 -- forward declaration, filled at the end of file
 local build_process = {}
 
---- cache a result
--- @param info
--- @param server
--- @param location
--- @return bool
--- @return an error object on failure
---function build.cache_result(info, server, location)
---  return result.fetch(info.cache, server, location)
---end
-
 local function linklast(info, r, return_flags)
     local res = info.results[r]
     local rc, re
@@ -157,17 +147,6 @@ local function result_available(info, r, return_flags)
     return_flags.stop = true
     return true, nil
 end
-
---function build.update_result_timestamp(info, server, location)
---  -- update the timestamp
---  sr:update_timestamp()
---  local rc, re = sr:write(rp)
---  if not rc then
---    -- can't write back metadata, do not continue.
---    return false, e:cat(re)
---  end
---  return true, nil
---end
 
 --- build config
 -- @class table
@@ -1017,22 +996,6 @@ function e2build.build_results(info, results)
     end
     return true, nil
 end
-
---function build.register_build_results(func, position, post)
---  for i,f in ipairs(build_results_ftab) do
---    if f == position then
---      if post then
---        table.insert(build_results_ftab, i + 1 ,func)
---	return true, nil
---      else
---	table.insert(build_results_ftab, i, func)
---	return true, nil
---      end
---    end
---  end
---  return false, err.new("registering build_results function failed")
---end
-
 
 --- collect all data required to build the project.
 -- skip results that depend on this result
