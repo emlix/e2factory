@@ -31,10 +31,8 @@
 
 module("e2tool", package.seeall)
 local e2lib = require("e2lib")
-require("strict")
 local err = require("err")
 local scm = require("scm")
-require("cache")
 local tools = require("tools")
 local environment = require("environment")
 local plugin = require("plugin")
