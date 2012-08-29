@@ -28,6 +28,7 @@
 local scm = {}
 local err = require("err")
 local e2lib = require("e2lib")
+local environment = require("environment")
 
 -- scm modules
 local scms = {}
