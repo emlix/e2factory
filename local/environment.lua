@@ -25,12 +25,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-module("environment", package.seeall)
+local environment = {}
 local hash = require("hash")
 
 --- create new environment
 -- @return environment
-function new()
+function environment.new()
     local env = {}
     local meta = { __index = environment }
     setmetatable(env, meta)
@@ -44,7 +44,7 @@ end
 -- @param var key
 -- @param val value
 -- @return env as passed in the first parameter
-function set(env, var, val)
+function environment.set(env, var, val)
     env.dict[var] = val
     table.insert(env.sorted, var)
     table.sort(env.sorted)
@@ -53,7 +53,7 @@ end
 
 --- return a hash representing the environment
 -- @param env environment
-function id(env)
+function environment.id(env)
     local hc = hash.hash_start()
     for var, val in env:iter() do
         hc:hash_append(string.format("%s=%s", var, val))
@@ -67,7 +67,7 @@ end
 -- @param merge environment
 -- @param override bool: shall vars from merge override vars from env?
 -- @return environment as merged from env and merge
-function merge(env, merge, override)
+function environment.merge(env, merge, override)
     for i, var in ipairs(merge.sorted) do
         if not env.dict[var] then
             table.insert(env.sorted, var)
@@ -81,7 +81,7 @@ end
 
 --- iterate over the environment, in alphabetical order
 -- @param env environment
-function iter(env)
+function environment.iter(env)
     local index = nil
     local function _iter(t)
         local var
@@ -94,7 +94,7 @@ end
 --- return a (copy of the) dictionary
 -- @param env environment
 -- @return a copy of the dictionary representing the environment
-function get_dict(env)
+function environment.get_dict(env)
     local dict = {}
     for k,v in env:iter() do
         dict[k] = v
@@ -102,12 +102,12 @@ function get_dict(env)
     return dict
 end
 
-function unittest(env)
+local function unittest()
     local function p(...)
         --print(...)
     end
 
-    e1 = new()
+    local e1 = environment.new()
     e1:set("var1.3", "val1.3")
     e1:set("var1.1", "val1.1")
     e1:set("var1.2", "val1.2")
@@ -115,7 +115,7 @@ function unittest(env)
     print(e1:id())
     assert(e1:id() == "84C3CB1BFF877D12F500C05D7B133DA2B8BC0A4A")
 
-    e2 = new()
+    local e2 = environment.new()
     e2:set("var2.3", "val2.3")
     e2:set("var2.1", "val2.1")
     e2:set("var2.2", "val2.2")
@@ -138,9 +138,9 @@ function unittest(env)
     end
 
     -- check merge without / with override
-    e3 = new()
+    local e3 = environment.new()
     e3:set("var", "val3")
-    e4 = new()
+    local e4 = environment.new()
     e4:set("var", "val4")
     e3:merge(e4, false)
     for var, val in e3:iter() do
@@ -148,7 +148,7 @@ function unittest(env)
     end
     assert(e3:id() == "0728A49396F211F911E69FB929F7FEE715F4F981")
 
-    e5 = new()
+    local e5 = environment.new()
     e5:set("var", "val5")
     e5:merge(e4, true)
     for var, val in e5:iter() do
@@ -159,5 +159,9 @@ function unittest(env)
     local dict = e5:get_dict()
     assert(dict['var'] == "val4")
 end
+
+-- unittest()
+
+return environment
 
 -- vim:sw=4:sts=4:et:
