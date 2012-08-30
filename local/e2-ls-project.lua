@@ -28,7 +28,7 @@
 -- ls-project - show project information -*- Lua -*-
 
 local e2lib = require("e2lib")
-require("e2tool")
+local e2tool = require("e2tool")
 local err = require("err")
 local e2option = require("e2option")
 local scm = require("scm")

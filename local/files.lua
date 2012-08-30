@@ -30,6 +30,7 @@ local scm = require("scm")
 local hash = require("hash")
 local err = require("err")
 local e2lib = require("e2lib")
+local e2tool = require("e2tool")
 
 plugin_descriptor = {
     description = "Files SCM Plugin",

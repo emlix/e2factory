@@ -26,7 +26,7 @@
 ]]
 
 local e2lib = require("e2lib")
-require("e2tool")
+local e2tool = require("e2tool")
 local e2option = require("e2option")
 local policy = require("policy")
 

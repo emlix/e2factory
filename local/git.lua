@@ -34,6 +34,7 @@ local url = require("url")
 local err = require("err")
 local e2option = require("e2option")
 local e2lib = require("e2lib")
+local e2tool = require("e2tool")
 
 plugin_descriptor = {
     description = "Git SCM Plugin",

@@ -29,7 +29,7 @@
 
 
 local e2lib = require("e2lib")
-require("e2tool")
+local e2tool = require("e2tool")
 local generic_git = require("generic_git")
 local cache = require("cache")
 local err = require("err")

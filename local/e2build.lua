@@ -32,6 +32,7 @@ local err = require("err")
 local e2lib = require("e2lib")
 local scm = require("scm")
 local environment = require("environment")
+local e2tool = require("e2tool")
 
 -- table of functions to drive the build process
 -- forward declaration, filled at the end of file
