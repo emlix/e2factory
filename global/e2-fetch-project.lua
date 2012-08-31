@@ -115,7 +115,7 @@ if not line then
 end
 e2lib.rmtempdir()
 
-v = tonumber(line:match("[0-9]+"))
+local v = tonumber(line:match("[0-9]+"))
 if not v or v < 1 or v > 2 then
     e2lib.abort(e:append("unhandled project version"))
 end
@@ -179,8 +179,8 @@ local rc, re = e2lib.write_file(e2lib.globals.global_interface_version_file,
 string.format("%d\n", v))
 
 -- call e2-install-e2
-e2_install_e2 = string.format("%s %s/e2-install-e2",
-e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
+local e2_install_e2 = string.format("%s %s/e2-install-e2",
+    e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
 rc, re = e2lib.callcmd_log(e2_install_e2)
 if rc ~= 0 then
     e2lib.abort(err.new("installing local e2 failed"))

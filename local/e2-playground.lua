@@ -71,7 +71,7 @@ if #arguments ~= 1 then
     e2option.usage(1)
 end
 
-r = arguments[1]
+local r = arguments[1]
 
 -- apply the standard build mode to all results
 for _,res in pairs(info.results) do

@@ -251,9 +251,9 @@ for _, s in pairs(sources) do
 end
 
 --------------------- results
-s1 = "|"
-s2 = " "
-s3 = " "
+local s1 = "|"
+local s2 = " "
+local s3 = " "
 pempty(s1, s2, s3)
 s2 = " "
 p1(s1, s2, "res")
@@ -277,13 +277,13 @@ for _, r in pairs(results) do
 end
 
 --------------------- licences
-s1 = "|"
-s2 = " "
-s3 = " "
+local s1 = "|"
+local s2 = " "
+local s3 = " "
 pempty(s1, s2, s3)
 s2 = "|"
 p1(s1, s2, "licences")
-llen = #info.licences_sorted
+local llen = #info.licences_sorted
 for _,l in pairs(info.licences_sorted) do
     local lic = info.licences[l]
     llen = llen - 1

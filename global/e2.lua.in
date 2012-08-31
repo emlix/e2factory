@@ -28,9 +28,9 @@
 package.path  = "@LIBDIR@/?.lua"
 package.cpath = "@LIBDIR@/?.so"
 
-require("buildconfig")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
+require("buildconfig")
 require("e2util")
 
 e2lib.init()
@@ -52,7 +52,7 @@ end)
 
 local root = e2lib.locate_project_root()
 
-e2call = {}
+local e2call = {}
 e2call.basename = e2lib.basename(arg[0])
 
 local function quoteargs(argstr) -- probably has to do escaping?
@@ -80,12 +80,13 @@ if root then
     e2call.localtool = root .. "/.e2/bin/" .. e2call.toolname
 end
 
+local env, cmd
 if e2util.stat(e2call.globaltool) then
     e2call.tool = e2call.globaltool
     env = string.format("LUA_PATH='%s/?.lua' LUA_CPATH='%s/?.so'",
     buildconfig.LIBDIR, buildconfig.LIBDIR)
-    lua = buildconfig.LUA
-    cmd = string.format("%s %s %s %s", env, lua, e2call.tool, e2call.arg_string)
+    cmd = string.format("%s %s %s %s", env, buildconfig.LUA, e2call.tool,
+        e2call.arg_string)
 elseif not root then
     e2lib.abort(e2call.toolname ..
     " is not a global tool and we're not in a project environment")
@@ -102,7 +103,7 @@ else
     e2lib.abort(e2call.toolname .. " is neither local nor global tool")
 end
 
-function table_log(loglevel, t)
+local function table_log(loglevel, t)
     e2lib.log(loglevel, tostring(t))
     for k,v in pairs(t) do
         e2lib.log(loglevel, k .. "\t->\t" .. v)

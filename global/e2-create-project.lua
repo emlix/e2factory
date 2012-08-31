@@ -101,7 +101,7 @@ e2lib.chdir(tmpdir)
 
 local version = string.format("%d\n", p.version)
 local empty = ""
-files = {
+local files = {
     { filename = "version", content=version },
     { filename = "proj/.keep", content=empty },
     { filename = "git/.keep", content=empty },
@@ -178,7 +178,7 @@ local version = string.format("%s\n", p.version)
 local e2version = string.format("%s\n", p.e2version)
 local syntax = string.format("%s\n", buildconfig.SYNTAX[1])
 local empty = ""
-files = {
+local files = {
     { filename = ".e2/.keep", content=empty },
     { filename = "in/.keep", content=empty },
     { filename = "log/.keep", content=empty },

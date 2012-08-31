@@ -89,7 +89,7 @@ if not line then
     e2lib.abort(e:cat(re))
 end
 
-v = tonumber(line:match("[0-9]+"))
+local v = tonumber(line:match("[0-9]+"))
 if not v or v < 1 or v > 2 then
     e2lib.abort(e:append("unhandled project version"))
 end

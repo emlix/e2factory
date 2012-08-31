@@ -121,7 +121,7 @@ end
 -- @param info the info table
 -- @return bool
 -- @return nil, an error string on error
-function cache_chroot(info)
+local function cache_chroot(info)
     for _,c in ipairs(info.chroot.groups_sorted) do
         for _,file in ipairs(info.chroot.groups_byname[c].files) do
             local rc, e = info.cache:cache_file(file.server, file.location, {})
@@ -139,7 +139,7 @@ end
 -- @param sel table of selected results
 -- @return bool
 -- @return nil, an error string on error
-function fetch_sources(info, opts, sel)
+local function fetch_sources(info, opts, sel)
     local rc1 = true    -- global return code
     local nfail = 0     -- failure counter
     local e = err.new()  -- no message yet, append the summary later on

@@ -59,7 +59,7 @@ end
 -- @return the server to store the result on
 -- @return the location to store the result in
 local results_server = "results"
-function storage_release(location, release_id)
+local function storage_release(location, release_id)
     return results_server, string.format("%s/release/%s", location,
     release_id)
 end

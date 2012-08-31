@@ -73,7 +73,7 @@ local opts, arguments = e2option.parse(arg)
 -- @param filename string: the filename
 -- @return a table with fields checksum and checksum_type ("sha1", "md5")
 -- @return nil, or an error string on error
-function read_checksum(checksum_file, filename)
+local function read_checksum(checksum_file, filename)
     e2lib.log(4, string.format("read_checksum(%s, %s)", checksum_file,
     filename))
     local f, e = io.open(checksum_file, "r")
@@ -120,7 +120,7 @@ end
 -- @param checksum_file: checksum file name
 -- @return bool
 -- @return nil, an error string on error
-function write_checksum_file_sha1(source_file, checksum_file)
+local function write_checksum_file_sha1(source_file, checksum_file)
     e2lib.log(4, string.format("write_checksum_file_sha1(%s, %s)",
     source_file, checksum_file))
     local cmd = string.format("sha1sum %s > %s",
@@ -132,7 +132,7 @@ function write_checksum_file_sha1(source_file, checksum_file)
     return true, nil
 end
 
-function download(f)
+local function download(f)
     local name = e2lib.basename(f)
     local cmd = string.format("curl --silent --fail %s > %s",
     e2lib.shquote(f), e2lib.shquote(name))
@@ -143,7 +143,7 @@ function download(f)
     return true, nil
 end
 
-function mv(s, d)
+local function mv(s, d)
     local cmd = string.format("mv %s %s", e2lib.shquote(s),
     e2lib.shquote(d))
     local rc = e2lib.callcmd_capture(cmd)
@@ -160,7 +160,7 @@ end
 -- @param flags table: flags
 -- @return bool
 -- @return nil, an error string on error
-function new_files_source(c, server, location, source_file, checksum_file,
+local function new_files_source(c, server, location, source_file, checksum_file,
     checksum_file_format, no_checksum)
     local source_file_base = e2lib.basename(source_file)
     local do_checksum = (not no_checksum)
