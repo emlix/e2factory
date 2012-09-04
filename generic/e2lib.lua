@@ -413,7 +413,7 @@ end
 function e2lib.abort(...)
     local t = { ... }
     local e = t[1]
-    if e and e.print then
+    if type(e) == "table" and e.print then
         e:print()
     else
         local msg = table.concat(t)
