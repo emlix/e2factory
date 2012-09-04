@@ -25,6 +25,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+-- Before we do anything else, lock the global environment and default
+-- packages to catch bugs
+local strict = require("strict")
+strict.lock(_G)
+for k,_ in pairs(_G) do
+    if type(_G[k]) == "table" and _G[k] ~= _G then
+        strict.lock(_G[k])
+    end
+end
+
 local e2lib = {}
 
 -- Multiple modules below require e2lib themselves. This leads to a module
@@ -32,12 +42,8 @@ local e2lib = {}
 --
 -- We solve this problem by registering e2lib as loaded, and supply the empty
 -- table that we are going to fill later (after the require block below).
---
--- The modules may not use e2lib functions during loading, but that would be
--- bad practise anyway.
 package.loaded["e2lib"] = e2lib
 
-require("strict")
 require("buildconfig")
 local lock = require("lock")
 local err = require("err")
@@ -2030,6 +2036,6 @@ function e2lib.align(columns, align1, string1, align2, string2)
     return s
 end
 
-return e2lib
+return strict.lock(e2lib)
 
 -- vim:sw=4:sts=4:et:
