@@ -26,9 +26,10 @@
 ]]
 
 local scm = {}
-local err = require("err")
 local e2lib = require("e2lib")
+local err = require("err")
 local environment = require("environment")
+local strict = require("strict")
 
 -- scm modules
 local scms = {}
@@ -87,7 +88,12 @@ function scm.register_interface(name)
 
     -- we have lots of calls like scm.<function>(...). Register the interface
     -- function in the scm module to support those calls.
-    scm[name] = func
+    if strict.islocked(scm) then
+        strict.declare(scm, {[name]=func})
+    else
+        scm[name] = func
+    end
+
     return true, nil
 end
 
@@ -263,6 +269,6 @@ scm.register_interface("working_copy_available")
 scm.register_interface("display")
 scm.register_interface("has_working_copy")
 
-return scm
+return strict.lock(scm)
 
 -- vim:sw=4:sts=4:et:
