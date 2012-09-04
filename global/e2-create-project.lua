@@ -25,12 +25,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-require("buildconfig")
 local e2lib = require("e2lib")
 local cache = require("cache")
 local generic_git = require("generic_git")
 local err = require("err")
 local e2option = require("e2option")
+require("buildconfig")
 
 e2lib.init()
 

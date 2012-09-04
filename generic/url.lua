@@ -26,6 +26,7 @@
 ]]
 
 local url = {}
+local strict = require("strict")
 
 --- parse
 -- @param url the url to parse
@@ -75,6 +76,6 @@ function url.parse(url)
     return u, nil
 end
 
-return url
+return strict.lock(url)
 
 -- vim:sw=4:sts=4:et:

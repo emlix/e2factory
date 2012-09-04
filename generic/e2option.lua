@@ -32,12 +32,15 @@ local e2lib = require("e2lib")
 require("e2util")
 local plugin = require("plugin")
 local err = require("err")
+local strict = require("strict")
 
 local options = {}
 local aliases = {}
 local optionlist = {} -- ordered list of option names
 
 e2option.documentation = "<no documentation available>"
+
+e2option.opts = {}
 
 --- register a flag option
 -- @param name string: option name
@@ -387,6 +390,6 @@ Type e2 --licence for more information.
     e2lib.finish(rc)
 end
 
-return e2option
+return strict.lock(e2option)
 
 -- vim:sw=4:sts=4:et:

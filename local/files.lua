@@ -31,6 +31,7 @@ local hash = require("hash")
 local err = require("err")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
+local strict = require("strict")
 
 plugin_descriptor = {
     description = "Files SCM Plugin",
@@ -460,5 +461,7 @@ end
 function files.update(info, sourcename)
     return true, nil
 end
+
+strict.lock(files)
 
 -- vim:sw=4:sts=4:et:

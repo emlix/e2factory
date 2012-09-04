@@ -27,6 +27,7 @@
 
 local tools = {}
 local e2lib = require("e2lib")
+local strict = require("strict")
 require("buildconfig")
 
 local toollist = {
@@ -183,6 +184,6 @@ function tools.init()
     return true, nil
 end
 
-return tools
+return strict.lock(tools)
 
 -- vim:sw=4:sts=4:et:

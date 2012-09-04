@@ -27,8 +27,9 @@
 ]]
 
 local hash = {}
-require("sha1")
 local err = require("err")
+local strict = require("strict")
+require("sha1")
 
 --- create a hash context
 -- @return a hash context object, or nil on error
@@ -121,6 +122,6 @@ function hash.hash_finish(hc)
     return cs
 end
 
-return hash
+return strict.lock(hash)
 
 -- vim:sw=4:sts=4:et:

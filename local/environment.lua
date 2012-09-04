@@ -27,6 +27,7 @@
 
 local environment = {}
 local hash = require("hash")
+local strict = require("strict")
 
 --- create new environment
 -- @return environment
@@ -162,6 +163,6 @@ end
 
 -- unittest()
 
-return environment
+return strict.lock(environment)
 
 -- vim:sw=4:sts=4:et:

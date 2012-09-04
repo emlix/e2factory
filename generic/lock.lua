@@ -32,6 +32,7 @@
 local lock = {}
 local err = require("err")
 local e2lib = require("e2lib")
+local strict = require("strict")
 
 --- create a new lock context
 -- @return table: the lock context
@@ -119,6 +120,6 @@ if test then
 end
 ]]
 
-return lock
+return strict.lock(lock)
 
 -- vim:sw=4:sts=4:et:

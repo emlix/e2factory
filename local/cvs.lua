@@ -26,12 +26,13 @@
 ]]
 
 local cvs = {}
+local e2lib = require("e2lib")
 local scm = require("scm")
 local hash = require("hash")
 local url = require("url")
 local tools = require("tools")
 local err = require("err")
-local e2lib = require("e2lib")
+local strict = require("strict")
 
 plugin_descriptor = {
     description = "CVS SCM Plugin",
@@ -432,5 +433,7 @@ function cvs.check_workingcopy(info, sourcename)
     end
     return true, nil
 end
+
+strict.lock(cvs)
 
 -- vim:sw=4:sts=4:et:

@@ -30,6 +30,7 @@ local e2lib = require("e2lib")
 local transport = require("transport")
 local url = require("url")
 local err = require("err")
+local strict = require("strict")
 
 --- cache
 -- @class table
@@ -502,6 +503,6 @@ function cache.set_writeback(c, server, value)
     return true, nil
 end
 
-return cache
+return strict.lock(cache)
 
 -- vim:sw=4:sts=4:et:

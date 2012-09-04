@@ -26,6 +26,7 @@
 ]]
 
 local luafile = {}
+local strict = require("strict")
 require("luafile_ll")
 
 function luafile.new()
@@ -137,6 +138,6 @@ function luafile.dup2(oldfd, newfd)
     return nil
 end
 
-return luafile
+return strict.lock(luafile)
 
 -- vim:sw=4:sts=4:et:

@@ -26,10 +26,11 @@
 ]]
 
 local transport = {}
+local e2lib = require("e2lib")
 local url = require("url")
 local tools = require("tools")
 local err = require("err")
-local e2lib = require("e2lib")
+local strict = require("strict")
 
 --- call rsync with appropriate rsh argument according to the tools
 -- configuration
@@ -360,6 +361,6 @@ function transport.file_path(surl, location)
     return path
 end
 
-return transport
+return strict.lock(transport)
 
 -- vim:sw=4:sts=4:et:

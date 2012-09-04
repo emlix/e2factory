@@ -33,6 +33,7 @@ local e2lib = require("e2lib")
 local scm = require("scm")
 local environment = require("environment")
 local e2tool = require("e2tool")
+local strict = require("strict")
 
 -- table of functions to drive the build process
 -- forward declaration, filled at the end of file
@@ -1289,6 +1290,6 @@ build_process = {
     { prio=1400, name="chroot_unlock", func=chroot_unlock },
 }
 
-return e2build
+return strict.lock(e2build)
 
 -- vim:sw=4:sts=4:et:

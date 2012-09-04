@@ -42,6 +42,7 @@ require("e2util")
 local e2option = require("e2option")
 local generic_git = require("generic_git")
 local policy = require("policy")
+local strict = require("strict")
 
 -- Information gathering and inquiry
 --
@@ -2985,6 +2986,6 @@ function e2tool.register_dlist(info, func)
     return true, nil
 end
 
-return e2tool
+return strict.lock(e2tool)
 
 -- vim:sw=4:sts=4:et:

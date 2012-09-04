@@ -27,6 +27,7 @@
 
 local err =  {}
 local e2lib = require("e2lib")
+local strict = require("strict")
 
 --- append a string to an error object
 -- @param format string: format string
@@ -114,6 +115,6 @@ function err.toerror(x)
     end
 end
 
-return err
+return strict.lock(err)
 
 -- vim:sw=4:sts=4:et:

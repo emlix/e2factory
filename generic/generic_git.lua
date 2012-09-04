@@ -29,11 +29,12 @@
 -- take server / location
 
 local generic_git = {}
+local e2lib = require("e2lib")
 local cache = require("cache")
 local url = require("url")
 local tools = require("tools")
 local err = require("err")
-local e2lib = require("e2lib")
+local strict = require("strict")
 
 --- clone a git repository
 -- @param surl url to the server
@@ -621,6 +622,6 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, f
     return true, nil
 end
 
-return generic_git
+return strict.lock(generic_git)
 
 -- vim:sw=4:sts=4:et:

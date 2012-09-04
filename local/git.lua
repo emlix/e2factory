@@ -35,6 +35,7 @@ local err = require("err")
 local e2option = require("e2option")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
+local strict = require("strict")
 
 plugin_descriptor = {
     description = "Git SCM Plugin",
@@ -613,5 +614,7 @@ function git.check_workingcopy(info, sourcename)
     end
     return true, nil
 end
+
+strict.lock(git)
 
 -- vim:sw=4:sts=4:et:

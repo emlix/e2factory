@@ -26,9 +26,10 @@
 ]]
 
 local policy = {}
+local e2lib = require("e2lib")
 local err = require("err")
 local e2option = require("e2option")
-local e2lib = require("e2lib")
+local strict = require("strict")
 
 --- source_set_* get the source set identifier
 -- @class function
@@ -255,6 +256,6 @@ function policy.default_build_mode(mode)
     end
 end
 
-return policy
+return strict.lock(policy)
 
 -- vim:sw=4:sts=4:et:
