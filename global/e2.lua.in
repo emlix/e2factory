@@ -25,9 +25,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-package.path  = "@LIBDIR@/?.lua"
-package.cpath = "@LIBDIR@/?.so"
-
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 require("buildconfig")
