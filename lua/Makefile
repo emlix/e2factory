@@ -31,32 +31,31 @@ include $(TOPLEVEL)/make.vars
 
 .PHONY: clean all install
 
-#
-# if they change the way Lua is built, we have a problem.
-#
-
 LUA_HEADER = lua.h lauxlib.h lualib.h luaconf.h
 
+.PHONY: lua-5.1.3
 lua-5.1.3:
-	tar -xzf $(LUA_SOURCE_PATH)/lua-5.1.3.tar.gz -C $(LUA_UNPACK_PATH); \
-	$(MAKE) -C $(LUA_UNPACK_PATH)/lua-5.1.3/src all \
-	    MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN" MYLIBS="-Wl,-E -ldl"; \
+	$(MAKE) -C lua-5.1.3/src all MYCFLAGS="\
+		-DLUA_USE_POSIX -DLUA_USE_DLOPEN \
+		-DLUA_PATH_DEFAULT='\"$(LIBDIR)/?.lua\"' \
+		-DLUA_CPATH_DEFAULT='\"$(LIBDIR)/?.so\"'" \
+		MYLIBS="-Wl,-E -ldl"
 
 all: lua-5.1.3
 
 install: all
-	mkdir -p $(DESTDIR)$(INCDIR)/lua-5.1.3; \
-	install -m755 $(LUA_UNPACK_PATH)/lua-5.1.3/src/lua $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3; \
-	install -m755 $(LUA_UNPACK_PATH)/lua-5.1.3/src/luac $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3; \
-	install -m644 $(LUA_UNPACK_PATH)/lua-5.1.3/src/lua.h $(DESTDIR)$(INCDIR)/lua-5.1.3; \
-	install -m644 $(LUA_UNPACK_PATH)/lua-5.1.3/src/lauxlib.h $(DESTDIR)$(INCDIR)/lua-5.1.3; \
-	install -m644 $(LUA_UNPACK_PATH)/lua-5.1.3/src/lualib.h $(DESTDIR)$(INCDIR)/lua-5.1.3; \
-	install -m644 $(LUA_UNPACK_PATH)/lua-5.1.3/src/luaconf.h $(DESTDIR)$(INCDIR)/lua-5.1.3; \
+	mkdir -p $(DESTDIR)$(INCDIR)/lua-5.1.3
+	install -m755 lua-5.1.3/src/lua $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3
+	install -m755 lua-5.1.3/src/luac $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3
+	install -m644 lua-5.1.3/src/lua.h $(DESTDIR)$(INCDIR)/lua-5.1.3
+	install -m644 lua-5.1.3/src/lauxlib.h $(DESTDIR)$(INCDIR)/lua-5.1.3
+	install -m644 lua-5.1.3/src/lualib.h $(DESTDIR)$(INCDIR)/lua-5.1.3
+	install -m644 lua-5.1.3/src/luaconf.h $(DESTDIR)$(INCDIR)/lua-5.1.3
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3; \
-	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3; \
-	rm -fr $(DESTDIR)$(LIBEXECDIR)/lua-5.1.3; \
+	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3
+	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3
+	rm -fr $(DESTDIR)$(LIBEXECDIR)/lua-5.1.3
 	for x in $(LUA_HEADER) ; do \
 		rm -f $(DESTDIR)$(INCDIR)/lua-5.1.3/$$x ; \
 	done
