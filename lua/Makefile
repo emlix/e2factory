@@ -72,4 +72,4 @@ install-doc:
 	done
 
 clean:
-	rm -fr $(LUA_ALL_VERSIONS:%=lua-%)
+	$(MAKE) -C lua-5.1.3/src clean
