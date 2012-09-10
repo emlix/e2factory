@@ -32,10 +32,10 @@ include $(TOPLEVEL)/make.vars
 VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
 
 SCRIPTS =
-GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2 e2-root
-GLOBALSHTOOLS = e2-locate-project-root e2ssh
+GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2
+GLOBALSHTOOLS = e2-locate-project-root e2ssh e2-su
 GLOBALTOOLS = $(GLOBALLUATOOLS) $(GLOBALSHTOOLS)
-CLEAN_FILES = e2 e2-su e2.conf
+CLEAN_FILES = e2 e2.conf
 LUA_LIBS = strict.lua plugin.lua e2lib.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
 LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
@@ -43,7 +43,7 @@ LUA_LIBS += buildconfig.lua
 
 .PHONY: all install uninstall clean
 
-all: e2 $(SCRIPTS) e2-su \
+all: e2 $(SCRIPTS) \
 	$(GLOBALSHTOOLS:=.sh) e2.conf sha1.so e2-su-2.2 \
 	luafile_ll.so e2util.so
 
@@ -68,7 +68,6 @@ install: all install-dirs install-lua
 	for i in $(GLOBALSHTOOLS) ; do \
 		install -m 755 $$i.sh $(DESTDIR)$(BINDIR)/$$i ; \
 	done
-	$(SUDO) install -m 4754 -o root -g $(E2_GROUP) e2-su $(DESTDIR)$(BINDIR)/
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
 	if [ ! -f "$(DESTDIR)$(SYSCONFDIR)/e2.conf" ] ; then \
 		install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf ; \
@@ -91,8 +90,6 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
 	rm -f $(DESTDIR)$(LIBDIR)/luafile_ll.so
 	rm -f $(DESTDIR)$(LIBDIR)/e2util.so
-	rm -f $(DESTDIR)$(TOOLDIR)/e2-root
-	rm -f $(DESTDIR)$(BINDIR)/e2-su
 	rm -f $(DESTDIR)$(BINDIR)/e2
 
 doc:
@@ -110,9 +107,6 @@ clean:
 
 %.lua: %.lua.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
-
-e2-su: e2-su.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 %.sh: %.sh.in
 	$(TOPLEVEL)/scripts/genscript.sh $< $@
