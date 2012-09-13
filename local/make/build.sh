@@ -59,7 +59,9 @@ for d in $DEPEND ; do
 done
 # install result stuff
 mkdir -p $chroot_path/tmp/e2/{script,init,env,dep,build,out,root}
-cp -v proj/init/* $chroot_path/tmp/e2/init
+if [ ! proj/init/* = 'proj/init/*' ]; then
+	cp -v proj/init/* $chroot_path/tmp/e2/init
+fi
 cp -v res/$RESULT/{build-driver,buildrc,build-script} \
 				$chroot_path/tmp/e2/script/
 cp -v res/$RESULT/{builtin,env} $chroot_path/tmp/e2/env/
