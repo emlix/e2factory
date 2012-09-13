@@ -996,7 +996,7 @@ end
 -- @param result name optional
 -- @param optional postfix for the direcory
 -- @return path of the result
-local function resultdir(name, postfix)
+function e2tool.resultdir(name, postfix)
     return generatePath("res",name,postfix)
 end
 
@@ -1014,14 +1014,14 @@ end
 -- @param resultname
 -- @return path to the resultconfig
 function e2tool.resultconfig(name)
-    return resultdir(name,"config")
+    return e2tool.resultdir(name,"config")
 end
 
 -- get path to the result build-script
 -- @param resultname
 -- @return path to the result build-script
 function e2tool.resultbuildscript(name)
-    return resultdir(name,"build-script")
+    return e2tool.resultdir(name,"build-script")
 end
 
 --- get path to the source config
@@ -1033,14 +1033,14 @@ end
 
 local function gather_result_paths(info, basedir, results)
     results = results or {}
-    for dir in e2lib.directory(info.root .. "/" .. resultdir(basedir)) do
+    for dir in e2lib.directory(info.root .. "/" .. e2tool.resultdir(basedir)) do
         local tmp
         if basedir then
             tmp = basedir .. "/" .. dir
         else
             tmp = dir
         end
-        local s = e2util.stat(info.root .. "/" .. resultdir(tmp), false)
+        local s = e2util.stat(info.root .. "/" .. e2tool.resultdir(tmp), false)
         if s.type == "directory" then
             if e2util.exists(e2tool.resultconfig(tmp)) then
                 table.insert(results, tmp)
