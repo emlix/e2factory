@@ -160,11 +160,20 @@ function transport.fetch_file(surl, location, destdir, destname)
     -- fetch the file to the temporary directory
     if u.transport == "http" or
         u.transport == "https" then
+        local curl_argv = {}
+        local url_loc =  string.format("%s/%s",  u.url, location)
+        local dest_tmp = string.format("%s/%s",  destdir, tmpfile)
         -- use special flags here
-        local curlflags = "--create-dirs --silent --show-error --fail"
-        local args = string.format("%s '%s/%s' -o '%s/%s'",
-        curlflags, u.url, location, destdir, tmpfile)
-        rc, re = e2lib.curl(args)
+        table.insert(curl_argv, "--create-dirs")
+        table.insert(curl_argv, "--silent")
+        table.insert(curl_argv, "--show-error")
+        table.insert(curl_argv, "--fail")
+
+        table.insert(curl_argv, url_loc)
+        table.insert(curl_argv, "-o")
+        table.insert(curl_argv, dest_tmp)
+
+        rc, re = e2lib.curl(curl_argv)
         if not rc then
             return false, e:cat(re)
         end
