@@ -1129,7 +1129,7 @@ local function collect_project(info, r, return_flags)
     for _,n in ipairs(res.collect_project_results) do
         e2lib.log(3, string.format("result: %s", n))
         local rn = info.results[n]
-        rc, re = build_config(info, n)
+        rc, re = e2build.build_config(info, n)
         if not rc then
             return false, e:cat(re)
         end
