@@ -134,7 +134,7 @@ end
 
 local function download(f)
     local name = e2lib.basename(f)
-    local cmd = string.format("curl --silent --fail %s > %s",
+    local cmd = string.format("curl --silent --fail %s --output %s",
     e2lib.shquote(f), e2lib.shquote(name))
     local rc = e2lib.callcmd_capture(cmd)
     if rc ~= 0 then
