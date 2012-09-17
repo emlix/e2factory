@@ -56,6 +56,7 @@ local toollist = {
     uname = { name = "uname", flags = "", optional = false },
     patch = { name = "patch", flags = "", optional = false },
     gzip = { name = "gzip", flags = "", optional = false },
+    bzip2 = { name = "bzip2", flags = "", optional = false },
     unzip = { name = "unzip", flags = "", optional = false },
     ["e2-su-2.2"] = { name = buildconfig.PREFIX .. "/bin/e2-su-2.2",
     flags = "", optional = false },
