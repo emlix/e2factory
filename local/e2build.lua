@@ -1273,21 +1273,21 @@ function e2build.register_build_function(info, name, func, pos)
 end
 
 build_process = {
-    { prio=0100, name="build_config", func=e2build.build_config },
-    { prio=0200, name="result_available", func=result_available },
-    { prio=0300, name="chroot_lock", func=chroot_lock },
-    { prio=0400, name="chroot_cleanup_if_exists",
+    { name="build_config", func=e2build.build_config },
+    { name="result_available", func=result_available },
+    { name="chroot_lock", func=chroot_lock },
+    { name="chroot_cleanup_if_exists",
         func=chroot_cleanup_if_exists },
-    { prio=0500, name="setup_chroot", func=setup_chroot },
-    { prio=0600, name="sources", func=sources },
-    { prio=0700, name="collect_project", func=collect_project },
-    { prio=0800, name="fix_permissions", func=fix_permissions},
-    { prio=0900, name="playground", func=playground },
-    { prio=1000, name="runbuild", func=runbuild },
-    { prio=1100, name="store_result", func=store_result },
-    { prio=1200, name="linklast", func=linklast },
-    { prio=1300, name="chroot_cleanup", func=chroot_cleanup },
-    { prio=1400, name="chroot_unlock", func=chroot_unlock },
+    { name="setup_chroot", func=setup_chroot },
+    { name="sources", func=sources },
+    { name="collect_project", func=collect_project },
+    { name="fix_permissions", func=fix_permissions},
+    { name="playground", func=playground },
+    { name="runbuild", func=runbuild },
+    { name="store_result", func=store_result },
+    { name="linklast", func=linklast },
+    { name="chroot_cleanup", func=chroot_cleanup },
+    { name="chroot_unlock", func=chroot_unlock },
 }
 
 return strict.lock(e2build)
