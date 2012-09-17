@@ -997,14 +997,17 @@ end
 function e2lib.directory(p, dotfiles, noerror)
     local dir = e2util.directory(p, dotfiles)
     if not dir then
-        if noerror then dir = {}
-        else e2lib.abort("directory `", p, "' does not exist")
+        if noerror then
+            dir = {}
+        else
+            e2lib.abort("directory `", p, "' does not exist")
         end
     end
     table.sort(dir)
     local i = 1
     local function nextfile(s)
-        if i > #s then return nil
+        if i > #s then
+            return nil
         else
             local j = i
             i = i + 1
