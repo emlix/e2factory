@@ -219,11 +219,21 @@ local function new_files_source(c, server, location, source_file, checksum_file,
         end
     end
 
-    -- store
+    -- store preparation
     local flags = {}
     local rlocation = string.format("%s/%s", location, source_file_base)
     e2lib.log(1, string.format("storing file %s to %s:%s",
     source_file_base, server, rlocation))
+
+    -- check if file with similar name is already on the server
+    local rc, e = cache.fetch_file(c, server, rlocation, tmpdir,
+    source_file_base .. ".tmp", flags)
+    if rc then
+        e2lib.abort("'" .. source_file_base .. "' already exists on '" .. server ..
+        ":" .. rlocation .. "' - can not overwrite")
+    end
+
+    -- store
     local rc, e = cache.push_file(c, source_file_base, server,
     rlocation, flags)
     if not rc then
