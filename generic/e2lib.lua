@@ -1017,34 +1017,6 @@ function e2lib.directory(p, dotfiles, noerror)
     return nextfile, dir
 end
 
-
--- Hash value computation
---
---   Computes some hash value from data, which is fed into it
---   using an iterator function to be provided. The iterator
---   function is expected to accept one parameter value.
---
---     compute_hash(ITER, [VALUE...])
-
-function e2lib.compute_hash(iter, ...)
-    local n, f, s
-    local i, o, e, p = e2util.pipe("sha1sum")
-    if not i then bomb("cannot calculate hash sum: " .. o) end
-    for x in iter(...) do
-        n, f = e2util.write(i, x)
-        if not n then bomb(f) end
-    end
-    n, f = e2util.close(i)
-    if not n then bomb(f) end
-    s, f = e2util.read(o, 40)
-    if not s then bomb(f) end
-    n, f = e2util.close(o)
-    if not n then bomb(f) end
-    n, f = e2util.wait(p)
-    if not n then bomb(f) end
-    return s
-end
-
 -- callcmd: call a command, connecting
 --  stdin, stdout, stderr to luafile objects
 
