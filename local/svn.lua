@@ -250,7 +250,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     -- <directory>/licences
     local rc, re
     local e = err.new("converting result")
-    rc, re = git.generic_source_check(info, sourcename, true)
+    rc, re = scm.generic_source_check(info, sourcename, true)
     if not rc then
         return false, e:cat(re)
     end
