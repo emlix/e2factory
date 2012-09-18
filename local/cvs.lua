@@ -397,9 +397,8 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     end
     -- create a tarball in the final location
     local archive = string.format("%s.tar.gz", src.name)
-    local tar_args = string.format("-C '%s' -czf '%s/%s' '%s'",
-    tmpdir,	sourcedir, archive, sourcename)
-    rc, re = e2lib.tar(tar_args)
+    rc, re = e2lib.tar({ "-C", tmpdir ,"-czf", sourcedir .. "/" .. archive,
+    sourcename })
     if not rc then
         return false, e:cat(re)
     end
