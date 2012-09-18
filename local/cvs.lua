@@ -177,13 +177,13 @@ function cvs.fetch_source(info, sourcename)
         -- HEAD is a special case in cvs: do not pass -r 'HEAD' to cvs checkout
         rev = ""
     else
-        rev = string.format("-r '%s'", rev)
+        rev = string.format("-r %s", e2lib.shquote(rev))
     end
     cmd = string.format("cd %s/%s && CVS_RSH=%s " ..
     "%s %s -d %s checkout -R %s -d %s %s",
     e2lib.shquote(info.root), e2lib.shquote(dir), e2lib.shquote(rsh),
     e2lib.shquote(cvstool), cvsflags, e2lib.shquote(cvsroot),
-    e2lib.shquote(rev), e2lib.shquote(base), e2lib.shquote(src.module))
+    rev, e2lib.shquote(base), e2lib.shquote(src.module))
     local rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
         return false, e:cat(re)
