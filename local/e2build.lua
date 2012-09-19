@@ -681,7 +681,14 @@ local function sources(info, r, return_flags)
         for x in e2lib.directory(info.root .. "/proj/init") do
             if not e2lib.is_backup_file(x) then
                 local location = string.format("proj/init/%s", x)
+                local abslocation = string.format("%s/%s", info.root, location)
                 local destdir = string.format("%s/init", res.build_config.T)
+
+                if not e2lib.isfile(abslocation) then
+                    return false, e:append("'%s' is not a regular file",
+                        abslocation)
+                end
+
                 rc, re = transport.fetch_file(info.root_server, location, destdir)
                 if not rc then
                     return false, e:cat(re)
