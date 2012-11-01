@@ -1615,8 +1615,10 @@ end
 -- @return bool
 -- @return the last line ouf captured output
 function e2lib.mv(src, dst)
-    local args = string.format("'%s' '%s'", src, dst)
-    return e2lib.call_tool("mv", args)
+    assert(type(src) == "string" and type(dst) == "string")
+    assert(string.len(src) > 0 and string.len(dst) > 0)
+
+    return e2lib.call_tool_argv("mv", { src, dst })
 end
 
 --- call the cp command
