@@ -143,16 +143,6 @@ local function download(f)
     return true, nil
 end
 
-local function mv(s, d)
-    local cmd = string.format("mv %s %s", e2lib.shquote(s),
-    e2lib.shquote(d))
-    local rc = e2lib.callcmd_capture(cmd)
-    if rc ~= 0 then
-        return false, "mv failed"
-    end
-    return true, nil
-end
-
 --- new files source
 -- @param location string: server/location string
 -- @param source_file string: source file url
@@ -198,7 +188,7 @@ local function new_files_source(c, server, location, source_file, checksum_file,
         checksum_file_base = e2lib.basename(checksum_file)
         checksum_file1 = string.format("%s.orig",
         checksum_file_base)
-        rc = mv(checksum_file_base, checksum_file1)
+        rc, e = e2lib.mv(checksum_file_base, checksum_file1)
         if not rc then
             e2lib.abort(e)
         end
