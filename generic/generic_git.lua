@@ -173,7 +173,7 @@ function generic_git.git_init_db1(rurl)
     elseif u.transport == "file" then
         cmd = gitcmd
     else
-        return false, e:append("transport not supported: %s", u.transport)
+        return false, e:append("git_init_db1: transport not supported: %s", u.transport)
     end
     rc = e2lib.callcmd_capture(cmd)
     if rc ~= 0 then
@@ -277,8 +277,12 @@ function generic_git.git_url1(u)
         giturl = string.format("git+ssh://%s/%s", u.server, u.path)
     elseif u.transport == "file" then
         giturl = string.format("/%s", u.path)
+    elseif u.transport == "http" then
+        giturl = string.format("http://%s/%s", u.server, u.path)
+    elseif u.transport == "https" then
+        giturl = string.format("https://%s/%s", u.server, u.path)
     else
-        return nil, err.new("transport not supported: %s", u.transport)
+        return nil, err.new("git_url1: transport not supported: %s", u.transport)
     end
     return giturl, nil
 end
