@@ -43,6 +43,8 @@ local e2option = require("e2option")
 local generic_git = require("generic_git")
 local policy = require("policy")
 local strict = require("strict")
+local transport = require("transport")
+local cache = require("cache")
 
 -- Information gathering and inquiry
 --
@@ -1927,9 +1929,28 @@ local function verify_remote_fileid(info, file, fileid)
         if not remote_fileid then
             return false, e:cat(re)
         end
+    elseif u.transport == "http" or u.transport == "https" then
+        local ce, re = cache.ce_by_server(info.cache, file.server)
+        if not ce then
+            return false, e:cat(re)
+        end
+
+        local tmpfile = e2lib.mktempfile()
+        rc, re = transport.fetch_file(ce.remote_url, file.location,
+            e2lib.dirname(tmpfile), e2lib.basename(tmpfile))
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        remote_fileid, re = e2lib.sha1sum(tmpfile)
+        if not remote_fileid then
+            return false, e:cat(re)
+        end
+
+        e2lib.rmtempfile(tmpfile)
     else
-        return false, err.new("transport not supported: %s",
-        u.transport)
+        return false, err.new("verify remote fileid: transport not supported: %s",
+            u.transport)
     end
     if fileid ~= remote_fileid then
         return false, err.new(
