@@ -110,12 +110,13 @@ local function mkcvsroot(u)
     if u.transport == "file" then
         cvsroot = string.format("/%s", u.path)
     elseif (u.transport == "ssh") or
-        (u.transport == "rsync+ssh") then
+        (u.transport == "rsync+ssh") or
+        u.transport == "scp" then
         cvsroot = string.format("%s:/%s", u.server, u.path)
     elseif u.transport == "cvspserver" then
         cvsroot = string.format(":pserver:%s:/%s", u.server, u.path)
     else
-        return nil, err.new("cvs: transport not supported")
+        return nil, err.new("cvs: unhandled transport: %s", u.transport)
     end
     return cvsroot, nil
 end
