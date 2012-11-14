@@ -212,7 +212,7 @@ function transport.fetch_file(surl, location, destdir, destname)
             return false, e:cat(re)
         end
     else
-        e:append("unknown transport method: %s", u.transport)
+        e:append("fetch file: unhandled transport: %s", u.transport)
         return false, e
     end
     -- move the file into place atomically
@@ -237,8 +237,6 @@ end
 -- @return true on success, false on error
 -- @return nil, an error string on error
 function transport.push_file(sourcefile, durl, location, push_permissions, try_hardlink)
-    e2lib.log(4, string.format("%s: %s %s %s %s", "transport.push_file()",
-    sourcefile, durl, location, tostring(push_permissions)))
     local rc, e
     e = err.new("error pushing file to server")
     durl = string.format("%s/%s", durl, location)
