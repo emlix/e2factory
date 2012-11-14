@@ -154,7 +154,7 @@ function generic_git.git_init_db1(rurl)
     if (not rurl) then
         e2lib.abort("git_init_db1(): missing parameter")
     end
-    local e = err.new("running git_init_db")
+    local e = err.new("git_init_db failed")
     local rc, re
     local u, re = url.parse(rurl)
     if not u then
@@ -173,7 +173,8 @@ function generic_git.git_init_db1(rurl)
     elseif u.transport == "file" then
         cmd = gitcmd
     else
-        return false, e:append("git_init_db1: transport not supported: %s", u.transport)
+        return false, err.new("git_init_db: can not initialize git repository"..
+            " on this transport: %s", u.transport)
     end
     rc = e2lib.callcmd_capture(cmd)
     if rc ~= 0 then
@@ -619,9 +620,9 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, f
             return false, e:cat(re)
         end
     end
-    rc = generic_git.git_init_db(c, rserver, rlocation)
+    rc, re = generic_git.git_init_db(c, rserver, rlocation)
     if not rc then
-        return false, e:cat("can't initialize remote git repository")
+        return false, e:cat(re)
     end
     return true, nil
 end
