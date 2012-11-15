@@ -242,7 +242,7 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
     durl = string.format("%s/%s", durl, location)
     local u, re = url.parse(durl)
     if not u then
-        return e:cat(re)
+        return false, e:cat(re)
     end
     if u.transport == "file" then
         local destdir = string.format("/%s", e2lib.dirname(u.path))
