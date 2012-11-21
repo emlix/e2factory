@@ -144,14 +144,16 @@ local function download(f)
 end
 
 --- new files source
--- @param location string: server/location string
+-- @param c table: cache
+-- @param server string: e2 server
+-- @param location string: location on server
 -- @param source_file string: source file url
 -- @param checksum_file string: checksum file url
--- @param flags table: flags
+-- @param no_checksum boolean|nil: don't verify checksum
 -- @return bool
 -- @return nil, an error string on error
 local function new_files_source(c, server, location, source_file, checksum_file,
-    checksum_file_format, no_checksum)
+    no_checksum)
     local source_file_base = e2lib.basename(source_file)
     local do_checksum = (not no_checksum)
     local checksum_type = "sha1"
@@ -278,13 +280,12 @@ elseif opts.files then
     local location = sl.location
     local source_file = arguments[2]
     local checksum_file = arguments[3]
-    local checksum_file_format = opts["checksum-file"]
     local no_checksum = opts["no-checksum"]
     if not no_checksum and not checksum_file then
         e2lib.abort("checksum file not given")
     end
     local rc = new_files_source(info.cache, server, location, source_file,
-    checksum_file, checksum_file_format, no_checksum)
+    checksum_file, no_checksum)
 else
     e2lib.log(1, "Creating repositories other than git is not supported yet.")
 end
