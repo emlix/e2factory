@@ -33,7 +33,9 @@ local strict = require("strict")
 -- @return a table holding all parsed parts of the url, or nil on error
 -- @return nil, or an error string on error
 function url.parse(url)
-    local u = {}
+    assert(type(url) == "string" and string.len(url) > 0)
+
+    local u = strict.lock({})
     --- url
     -- @class table
     -- @name url
@@ -45,35 +47,50 @@ function url.parse(url)
     -- @field user the user name from the server part (optional)
     -- @field pass the password from the server part (optional)
     -- @field port given server port (optional)
-    if not url then
-        return nil, "missing parameter: url"
-    end
+    local url_members = {
+        "url",
+        "transport",
+        "server",
+        "path",
+        "servername",
+        "user",
+        "pass",
+        "port"
+    }
+
+    strict.declare(u, url_members)
+
     u.url = url
+
     -- parse: transport://server/path
-    u.transport, u.server, u.path =
-    u.url:match("(%S+)://([^/]*)(.*)")
+    u.transport, u.server, u.path = u.url:match("(%S+)://([^/]*)(.*)")
     if not u.transport then
         return nil, string.format("can't parse url: %s", url)
     end
+
     -- remove leading slashes from the path
     u.path = u.path:match("^[/]*(.*)")
+
     -- parse the server part
     if u.server:match("(%S+):(%S+)@(%S+)") then
         -- user:pass@host
-        u.user, u.pass, u.servername =
-        u.server:match("(%S+):(%S+)@(%S+)")
+        u.user, u.pass, u.servername = u.server:match("(%S+):(%S+)@(%S+)")
     elseif u.server:match("(%S+)@(%S+)") then
         -- user@host
         u.user, u.servername = u.server:match("(%S+)@(%S+)")
     else
         u.servername = u.server
     end
+
     if u.server:match(":(%d+)$") then
         u.port = u.server:match(":(%d+)$")
-        u.server = string.gsub(u.server, ":%d+$","") -- Remove port from server string.
-        u.servername = string.gsub(u.servername, ":%d+$","") -- Remove port from server string.
+        -- Remove port from server string.
+        u.server = string.gsub(u.server, ":%d+$","")
+        -- Remove port from server string.
+        u.servername = string.gsub(u.servername, ":%d+$","")
     end
-    return u, nil
+
+    return u
 end
 
 return strict.lock(url)
