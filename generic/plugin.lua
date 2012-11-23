@@ -84,7 +84,7 @@ local function load_plugin(dir, p, ctx)
     local e = err.new("loading plugin failed: %s", p)
     local plugin_file = string.format("%s/%s", dir, p)
 
-    strict.declare(_G, {plugin_descriptor = {}})
+    strict.declare(_G, {"plugin_descriptor"})
 
     local chunk, msg = loadfile(plugin_file)
     if not chunk then
@@ -92,12 +92,13 @@ local function load_plugin(dir, p, ctx)
     end
     chunk()
     if not plugin_descriptor then
+        strict.undeclare(_G, {"plugin_descriptor"})
         return false, e:append("no plugin descriptor in plugin: %s",
         plugin_file)
     end
     local pd = plugin_descriptor
 
-    strict.undeclare(_G, {plugin_descriptor = {}})
+    strict.undeclare(_G, {"plugin_descriptor"})
 
     if type(pd.description) ~= "string" then
         e:append("description missing in plugin descriptor")

@@ -89,10 +89,9 @@ function scm.register_interface(name)
     -- we have lots of calls like scm.<function>(...). Register the interface
     -- function in the scm module to support those calls.
     if strict.islocked(scm) then
-        strict.declare(scm, {[name]=func})
-    else
-        scm[name] = func
+        strict.declare(scm, {name})
     end
+    scm[name] = func
 
     return true, nil
 end

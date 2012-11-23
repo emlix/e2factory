@@ -33,7 +33,7 @@ local function what()
     return d and d.what or "C"
 end
 
---- Lock a table against adding members explicitly or by implicit assignment.
+--- Lock a table against adding fields explicitly or by implicit assignment.
 -- @param t table to lock
 function strict.lock(t)
     assert(type(t) == "table")
@@ -48,7 +48,7 @@ function strict.lock(t)
         local mt = getmetatable(t)
         if not mt.__declared[k] and what() ~= "C" then
             error("assignment in "..tostring(t)..
-                " to undeclared variable '"..tostring(k).."'")
+                " to undeclared field '"..tostring(k).."'")
         end
 
         -- error("assignment to "..tostring(t).."["..
@@ -70,15 +70,24 @@ function strict.lock(t)
     return t
 end
 
---- Unlock a table that was protected against adding and assigning to members.
--- Not implemented yet.
--- @param t table to unlock
+--- Unlock a table that was protected against adding and assigning to fields.
+-- @param t table to unlock.
+-- @return the unlocked table.
 function strict.unlock(t)
     assert(type(t) == "table")
-    error("strict.unlock() is not implemented yet")
+
+    if not strict.islocked(t) then
+        error("table is not locked")
+    end
+
+    setmetatable(t, nil)
+
+    return t
 end
 
 --- Test whether a table is locked.
+-- The implementation determines this by looking at certain keys, it's therefore
+-- not 100% accurate.
 -- @param t table to check
 -- @return true if it's locked, false if not
 function strict.islocked(t)
@@ -92,45 +101,47 @@ function strict.islocked(t)
     return false
 end
 
---- Declare new members of a table and assign them a value.
--- Note that declaring already declared members causes an error message to be
--- raised.
--- @param t table to declare members in
--- @param values table of member (key) / value pairs.
-function strict.declare(t, values)
+--- Declare new fields of a table.
+-- Note that declaring existing fields raise a fatal error.
+-- @param t table to declare fields in
+-- @param fields array of field strings to declare.
+-- @return the modified table
+function strict.declare(t, fields)
     assert(type(t) == "table")
-    assert(type(values) == "table")
+    assert(type(fields) == "table")
     local mt = getmetatable(t)
 
-    for k, v in pairs(values) do
-        if mt.__declared[k] then
-            error("variable '"..k.."' is already declared")
+    for _,f in ipairs(fields) do
+        assert(type(f) == "string")
+
+        if mt.__declared[f] then
+            error("field '"..f.."' is already declared")
         end
-        mt.__declared[k] = true
-        rawset(t, k, v)
+        mt.__declared[f] = true
     end
 
     return t
 end
 
---- Remove members from a table.
--- Note that the members must be declared, otherwise a fatal error is raised.
--- Also note that values in the values table are ignored, only keys are
--- considered.
--- @param t table to remove members from
--- @param values table of members to delete. Must be in key/value form.
-function strict.undeclare(t, values)
+--- Remove fields from a table.
+-- Note that the fields must be declared, otherwise a fatal error is raised.
+-- @param t table to remove fields from
+-- @param fields array of field strings to remove.
+-- @return the modified table
+function strict.undeclare(t, fields)
     assert(type(t) == "table")
-    assert(type(values) == "table")
+    assert(type(fields) == "table")
     local mt = getmetatable(t)
 
-    for k, v in pairs(values) do
-        if not mt.__declared[k] then
-            error("variable '"..k.."' was not declared in the first place")
+    for _,f in ipairs(fields) do
+        assert(type(f) == "string")
+
+        if not mt.__declared[f] then
+            error("field '"..f.."' was not declared")
         end
 
-        mt.__declared[k] = nil
-        rawset(t, k, nil)
+        mt.__declared[f] = nil
+        rawset(t, f, nil)
     end
 
     return t
