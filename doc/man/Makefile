@@ -42,7 +42,6 @@ e2-install-e2.1 \
 e2-ls-project.1 \
 e2-new-source.1 \
 e2-playground.1 \
-e2ssh.1 \
 e2.conf.5 \
 e2-build-numbers.1
 

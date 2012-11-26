@@ -33,7 +33,7 @@ VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
 
 SCRIPTS =
 GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2
-GLOBALSHTOOLS = e2-locate-project-root e2ssh e2-su
+GLOBALSHTOOLS = e2-locate-project-root e2-su
 GLOBALTOOLS = $(GLOBALLUATOOLS) $(GLOBALSHTOOLS)
 CLEAN_FILES = e2 e2.conf
 LUA_LIBS = strict.lua plugin.lua e2lib.lua
