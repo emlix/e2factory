@@ -636,54 +636,33 @@ function e2lib.finish(returncode)
     os.exit(returncode)
 end
 
-
--- Pathname operations
---
---   dirname(PATH) -> STRING
---
---     Returns the directory part of the string PATH.
---
---   basename(PATH, [EXTENSION]) -> STRING
---
---     Returns the filename part of PATH by stripping the directory part.
---     if EXTENSION is given and if it matches the file-extension of PATH,
---     then the extension part is also removed.
---
---   splitpath(PATH) -> DIR, BASE, TYPE
---
---     Checks PATH for trailing "/" for a directory,
---     splits up the real path into dir and base to ensure that
---     DIR .. BASE will address the file, as DIR always ends in "/"
---     TYPE is set to stat.type. return nil for non existing file
---
-
+--- Returns the "directory" part of a path
+-- @param path string: a path with components seperated by slashes.
+-- @return all but the last component of the path, or "." if none could be found.
 function e2lib.dirname(path)
+    assert(type(path) == "string")
+
     local s, e, dir = string.find(path, "^(.*)/[^/]*$")
-    if dir == "" then return "/"
-    else return dir or "." end
+    if dir == "" then
+        return "/"
+    end
+
+    return dir or "."
 end
 
-function e2lib.basename(path, ext)
+--- Returns the "filename" part of a path.
+-- @param path string: a path with components seperated by slashes.
+-- @return returns the last (right-most) component of a path, or the path
+-- itself if no component could be found.
+function e2lib.basename(path)
+    assert(type(path) == "string")
+
     local s, e, base = string.find(path, "^.*/([^/]+)[/]?$")
-    if not base then base = path end
-    if ext then
-        if string.sub(base, -#ext) == ext then
-            return string.sub(base, 1, -#ext - 1)
-        end
+    if not base then
+        base = path
     end
-    return base
-end
 
-function e2lib.splitpath(path)
-    local p = e2util.realpath(path)
-    if not p then return nil, "path does not exist" end
-    local st = e2util.stat(p)
-    local sf = string.sub(path, -1) ~= "/"
-    if (st.type == "directory") == sf then
-        return nil, "is " .. (sf and "" or "not ") .. "a directory"
-    end
-    local s, e, d, b = string.find(p, "^(.*/)([^/]*)$")
-    return d, b == "" and "." or b, st.type
+    return base
 end
 
 function e2lib.is_backup_file(path)
