@@ -1,3 +1,6 @@
+--- Policy
+-- @module local.policy
+
 --[[
    e2factory, the emlix embedded build system
 

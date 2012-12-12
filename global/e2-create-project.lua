@@ -1,3 +1,6 @@
+--- e2-create-project command
+-- @module global.e2-create-project
+
 --[[
    e2factory, the emlix embedded build system
 

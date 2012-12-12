@@ -1,3 +1,11 @@
+--- Locking module.
+--
+-- This module maintains lock directories within a lock context.
+-- Remaining lock directories can be removed by calling the cleanup
+-- method.
+--
+-- @module generic.lock
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -26,9 +34,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
---- This module maintains lock directories within a lock context.
--- Remaining lock directories can be removed by calling the cleanup
--- method.
 local lock = {}
 local err = require("err")
 local e2lib = require("e2lib")

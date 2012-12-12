@@ -1,3 +1,6 @@
+--- Core data structure manipulation
+-- @module local.e2tool
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -296,8 +299,9 @@ end
 -- @field filename string: config file name
 
 --- load config file and return a list of config item tables
+-- @param info info table
 -- @param path string: file to load
--- @param type list of strings: allowed config types
+-- @param types list of strings: allowed config types
 -- @return list of config items
 -- @return an error object on failure
 local function load_user_config2(info, path, types)
@@ -1965,6 +1969,7 @@ end
 
 --- calculate a representation for file content. The name and location
 -- attributes are not included.
+-- @param info info table
 -- @param file table: file table from configuration
 -- @return fileid string: hash value, or nil
 -- @return an error object on failure
@@ -2030,7 +2035,6 @@ end
 -- XXX this function always succeeds or aborts
 -- @param info
 -- @param resultname
--- @param mode
 -- @return the buildid
 function e2tool.buildid(info, resultname)
     e2lib.log(4, string.format("get buildid for %s", resultname))
@@ -2330,7 +2334,7 @@ local function check_workingcopies(info)
 end
 
 --- parse build numbers from a string and store to the build number table
--- @param info: the info table
+-- @param info the info table
 -- @param s string: the string to parse
 -- @param build_numbers table: build number table (optional)
 -- @return bool
@@ -2366,7 +2370,7 @@ end
 
 --- serialize the build number table suitable for storage or network
 -- transport
--- @param info: the info table
+-- @param info info table
 -- @param build_numbers table: build number table (optional)
 -- @return s string: serialized build numbers, or nil
 -- @return nil, an error object on error

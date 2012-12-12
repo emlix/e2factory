@@ -1,3 +1,6 @@
+--- File handling.
+-- @module generic.luafile
+
 --[[
    e2factory, the emlix embedded build system
 

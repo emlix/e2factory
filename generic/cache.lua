@@ -1,3 +1,6 @@
+--- Cache
+-- @module generic.cache
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -381,6 +384,7 @@ end
 -- @param c the cache data structure
 -- @param server the server to fetch the file from
 -- @param location the location on the server
+-- @param flags
 -- @return bool
 -- @return an error object on failure
 function cache.writeback(c, server, location, flags)
@@ -412,6 +416,7 @@ end
 -- @param c the cache data structure
 -- @param server the server to fetch the file from
 -- @param location the location on the server
+-- @param flags
 -- @return bool
 -- @return an error object on failure
 function cache.cache_file(c, server, location, flags)
@@ -452,6 +457,7 @@ end
 -- @param c the cache data structure
 -- @param server the server where the file is located
 -- @param location the location on the server
+-- @param flags unused parameter
 -- @return string the path to the cached file, nil on error
 -- @return an error object on failure
 function cache.file_path(c, server, location, flags)

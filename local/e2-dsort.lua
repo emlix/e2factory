@@ -1,3 +1,6 @@
+--- e2-dlist command
+-- @module local.e2-dlist
+
 --[[
    e2factory, the emlix embedded build system
 

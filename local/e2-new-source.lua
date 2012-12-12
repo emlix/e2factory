@@ -1,3 +1,6 @@
+--- e2-new-source command
+-- @module local.e2-new-source
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -117,7 +120,7 @@ end
 
 --- generate a sha1 checksum file
 -- @param source_file string: source file name
--- @param checksum_file: checksum file name
+-- @param checksum_file checksum file name
 -- @return bool
 -- @return nil, an error string on error
 local function write_checksum_file_sha1(source_file, checksum_file)

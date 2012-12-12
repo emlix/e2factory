@@ -1,3 +1,6 @@
+--- Hash
+-- @module generic.hash
+
 --[[
    e2factory, the emlix embedded build system
 

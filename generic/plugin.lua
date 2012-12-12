@@ -1,3 +1,6 @@
+--- Plugin Loader.
+-- @module generic.plugin
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -76,7 +79,7 @@ local plugins = {}
 
 --- load a plugin
 -- @param dir string: plugin directory
--- @param plugin_file string: filename
+-- @param p string: plugin filename
 -- @param ctx table: plugin context
 -- @return bool
 -- @return an error object on failure

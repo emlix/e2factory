@@ -1,3 +1,6 @@
+--- Transport Backend
+-- @module generic.transport
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -83,7 +86,7 @@ end
 -- @param opts table: options vector to pass to rsync
 -- @param user string: optional username or nil
 -- @param server string: the server part of the directory to create
--- @param directory string: the directory to create on the server
+-- @param dir string: the directory to create on the server
 -- @return bool
 -- @return an error object on failure
 local function rsync_ssh_mkdir(opts, user, server, dir)

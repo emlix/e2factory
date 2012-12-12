@@ -1,3 +1,6 @@
+--- Subversion Plugin
+-- @module local.svn
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -212,6 +215,7 @@ end
 --- calculate an id for a source
 -- @param info
 -- @param sourcename
+-- @param source_set
 function svn.sourceid(info, sourcename, source_set)
     local src = info.sources[sourcename]
     local rc, e

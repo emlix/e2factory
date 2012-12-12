@@ -1,3 +1,6 @@
+--- Environment Manipulation
+-- @module local.environment
+
 --[[
    e2factory, the emlix embedded build system
 

@@ -1,3 +1,6 @@
+--- Error Object
+-- @module generic.err
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -86,6 +89,7 @@ end
 
 --- get the error counter
 -- @param e the error object
+-- @param n unused
 -- @return number: the error counter
 function err.getcount(e, n)
     return e.count

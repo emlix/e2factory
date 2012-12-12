@@ -1,3 +1,6 @@
+--- Git Plugin
+-- @module local.git
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -275,6 +278,8 @@ end
 --- prepare a git source
 -- @param info the info structure
 -- @param sourcename string
+-- @param sourceset
+-- @param buildpath
 -- @return bool
 -- @return nil on success, an error string on error
 function git.prepare_source(info, sourcename, sourceset, buildpath)
@@ -442,6 +447,7 @@ end
 --- calculate an id for a source
 -- @param info
 -- @param sourcename
+-- @param sourceset
 -- @return string: the sourceid, or nil
 -- @return an error string
 function git.sourceid(info, sourcename, sourceset)

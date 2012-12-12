@@ -1,3 +1,6 @@
+--- e2-cf command
+-- @module local.e2-cf
+
 --[[
    e2factory, the emlix embedded build system
 

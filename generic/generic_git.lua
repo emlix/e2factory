@@ -1,3 +1,6 @@
+--- Git
+-- @module generic.generic_git
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -39,6 +42,7 @@ local strict = require("strict")
 --- clone a git repository
 -- @param surl url to the server
 -- @param location location relative to the server url
+-- @param destdir
 -- @param skip_checkout bool: pass -n to git clone?
 -- @return true on success, false on error
 -- @return nil, an error object on failure
@@ -289,7 +293,7 @@ function generic_git.git_url1(u)
 end
 
 --- clone a git repository by server and location
--- @param cache
+-- @param c
 -- @param server
 -- @param location
 -- @param destdir string: destination directory
@@ -526,8 +530,8 @@ function generic_git.verify_clean_repository(gitwc)
 end
 
 --- verify that HEAD matches the given tag
--- @param gitdir string: gitdir (optional, default: .git)
--- @param tag string: tag name
+-- @param gitwc string: gitdir (optional, default: .git)
+-- @param verify_tag string: tag name
 -- @return bool, or nil on error
 -- @return an error object on failure
 function generic_git.verify_head_match_tag(gitwc, verify_tag)
@@ -579,7 +583,7 @@ end
 -- @param llocation string: working copy location on local server
 -- @param rserver string: remote server
 -- @param rlocation string: repository location on remote server
--- @param flags: table of flags
+-- @param flags table of flags
 -- @return bool
 -- @return nil, or an error string on error
 function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, flags)

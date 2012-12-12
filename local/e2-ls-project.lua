@@ -1,3 +1,6 @@
+--- e2-ls-project command
+-- @module local.e2-ls-project
+
 --[[
    e2factory, the emlix embedded build system
 

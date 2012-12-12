@@ -1,3 +1,6 @@
+--- e2-fetch-source command
+-- @module local.e2-fetch-source
+
 --[[
    e2factory, the emlix embedded build system
 

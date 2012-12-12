@@ -1,3 +1,6 @@
+--- Strict table handling.
+-- @module generic.strict
+
 --[[
    e2factory, the emlix embedded build system
 

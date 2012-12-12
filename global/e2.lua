@@ -1,3 +1,6 @@
+--- e2 command
+-- @module global.e2
+
 --[[
    e2factory, the emlix embedded build system
 

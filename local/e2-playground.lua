@@ -1,3 +1,6 @@
+--- e2-playground command
+-- @module local.e2-playground
+
 --[[
    e2factory, the emlix embedded build system
 

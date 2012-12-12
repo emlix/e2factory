@@ -1,3 +1,6 @@
+--- External Tools Support.
+-- @module generic.tools
+
 --[[
    e2factory, the emlix embedded build system
 

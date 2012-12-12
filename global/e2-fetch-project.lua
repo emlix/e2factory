@@ -1,3 +1,6 @@
+--- e2-fetch-project command
+-- @module global.e2-fetch-project
+
 --[[
    e2factory, the emlix embedded build system
 

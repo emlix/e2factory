@@ -1,3 +1,6 @@
+--- Utility and Helper Library
+-- @module generic.e2lib
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -526,8 +529,6 @@ end
 -- is true
 -- @param level number: loglevel
 -- @param msg string: log message
--- @param ... strings: arguments required for the format string
--- @return nil
 function e2lib.log(level, msg)
     if level < 1 or level > 4 then
         bomb("invalid log level")
@@ -560,7 +561,6 @@ function e2lib.log(level, msg)
         end
         io.stderr:write(msg .. "\n")
     end
-    return nil
 end
 
 function e2lib.rotate_log(file)
@@ -709,7 +709,7 @@ function e2lib.tartype(path)
 end
 
 --- translate filename suffixes to valid tartypes for e2-su-2.2
--- @filename string: filename
+-- @param filename string: filename
 -- @return string: tartype, or nil on failure
 -- @return an error object on failure
 function e2lib.tartype_by_suffix(filename)
@@ -898,7 +898,6 @@ end
 
 --- read the local extension configuration
 -- This function must run while being located in the projects root directory
--- @param root string: path to project
 -- @return the extension configuration table
 -- @return an error object on failure
 function e2lib.read_extension_config()
@@ -1430,7 +1429,7 @@ end
 --- call the touch tool with flags and filename
 -- @param file string: the file parameter
 -- @param flags string: flags to pass to touch (optional)
--- @returns bool
+-- @return bool
 function e2lib.touch(file, flags)
     if not flags then
         flags = ""
@@ -1569,7 +1568,7 @@ function e2lib.svn(argv)
 end
 
 --- call the ln command
--- @param destination string: destination name
+-- @param dst string: destination name
 -- @param link string: link name
 -- @return bool
 -- @return the last line of captured output
@@ -1875,7 +1874,7 @@ end
 
 --- parse a server:location string, taking a default server into account
 -- @param arg string: the string to parse
--- @param dafault server string: the default server name
+-- @param default_server string: the default server name
 -- @return a table with fields server and location, nil on error
 -- @return nil, an error string on error
 function e2lib.parse_server_location(arg, default_server)

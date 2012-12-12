@@ -1,3 +1,6 @@
+--- Core build logic
+-- @module local.e2build
+
 --[[
    e2factory, the emlix embedded build system
 
@@ -935,6 +938,7 @@ end
 --- build a result
 -- @param info
 -- @param result string: result name
+-- @param return_flags
 -- @return bool
 -- @return an error object on failure
 local function build_result(info, result, return_flags)
@@ -1013,7 +1017,9 @@ end
 -- sources being the result collecting the project:
 -- the results sources and iso won't be included, as that would lead to
 -- an impossibility to calculate buildids (infinite recursion)
--- @param c table: build context
+-- @param info info table
+-- @param r
+-- @param return_flags
 -- @return bool
 -- @return an error object on failure
 local function collect_project(info, r, return_flags)

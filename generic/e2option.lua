@@ -1,3 +1,6 @@
+--- Option Parser
+-- @module generic.e2option
+
 --[[
    e2factory, the emlix embedded build system
 

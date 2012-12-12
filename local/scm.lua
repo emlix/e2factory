@@ -1,3 +1,6 @@
+--- SCM Interface
+-- @module local.scm
+
 --[[
    e2factory, the emlix embedded build system
 
