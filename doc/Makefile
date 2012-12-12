@@ -25,12 +25,12 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-SUBDIRS    = luadoc man manual
+SUBDIRS    = ldoc developer man manual
 TOPLEVEL   = ..
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ documentation.tar.gz
+CLEAN_FILES = documentation.tar.gz
 
 .PHONY: all e2commit install install-local clean local localdist uninstall \
 	doc
@@ -66,11 +66,11 @@ doc:
 	done
 	$(MAKE) documentation.tar.gz
 
-documentation.tar.gz: luadoc/luadoc.tar.gz \
+documentation.tar.gz: developer/e2factory.tar.gz \
 					man/man.tar.gz manual/manual.tar.gz
 	rm -fr documentation
-	mkdir documentation
-	tar -C documentation -xzf luadoc/luadoc.tar.gz
+	mkdir -p documentation/developer
+	tar -C documentation/developer -xzf developer/e2factory.tar.gz
 	tar -C documentation -xzf man/man.tar.gz
 	tar -C documentation -xzf manual/manual.tar.gz
 	cp $(TOPLEVEL)/Changelog documentation

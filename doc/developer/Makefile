@@ -28,11 +28,11 @@
 SUBDIRS    =
 TOPLEVEL   = ../..
 
-DIR        = $(shell pwd)
+LDOC	= $(TOPLEVEL)/doc/ldoc/ldoc
 
 include $(TOPLEVEL)/make.vars
 
-CLEAN_FILES = *~ luadoc.tar.gz
+CLEAN_FILES = e2factory.tar.gz
 
 .PHONY: all e2commit install install-local clean local localdist uninstall \
 	doc
@@ -62,31 +62,21 @@ install-local:
 		$(MAKE) -C $$s $@ ;\
 	done
 
-doc: luadoc.tar.gz
+doc: gen-doc
 	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
-install-doc: doc
-	tar -C $(DOCDIR) -xzf luadoc.tar.gz
+install-doc:
 	for s in $(SUBDIRS) ; do \
-		$(MAKE) -C $$s $@ ; \
+		$(MAKE) -C $$s $@ ;\
 	done
 
-luadoc.tar.gz: $(TOPLEVEL)/local/*.lua $(TOPLEVEL)/generic/*.lua
-	rm -fr luadoc
-	mkdir luadoc
-	(cd $(TOPLEVEL) ; luadoc -d $(DIR)/luadoc \
-		local/*.lua \
-		generic/*.lua)
-	tar -czf luadoc.tar.gz luadoc
-
-clean:
+clean: clean-doc
 	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(CLEAN_FILES)
-	rm -fr luadoc
 
 check:
 	for s in $(SUBDIRS) do ;\
@@ -98,3 +88,14 @@ localdist:
 		$(MAKE) -C $$s $@ ;\
 	done
 
+$(LDOC):
+	$(MAKE) -C $(TOPLEVEL)/doc/ldoc
+
+.PHONY: gen-doc
+gen-doc: $(LDOC)
+	$(LDOC) .
+	tar -czf e2factory.tar.gz e2factory
+
+.PHONY: clean-doc
+clean-doc:
+	rm -rf e2factory

@@ -1,0 +1,16 @@
+project = "e2factory"
+title = "e2factory Developer Documentation"
+dir = "e2factory"
+file = { "../../generic",
+	"../../local",
+	"../../global",
+	exclude = {
+		"../../generic/test_sha1.lua",
+		"../../generic/luafile_ll.c",
+		"../../generic/sha1.c",
+		"../../generic/e2-su-2.2.c",
+		"../../generic/e2util.c",
+		"../../generic/lsha1.c",
+		"../../local/linux32.c",
+	}
+}
