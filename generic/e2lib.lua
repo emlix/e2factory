@@ -665,6 +665,55 @@ function e2lib.basename(path)
     return base
 end
 
+--- Return a file path joined from the supplied components.
+-- This function is modelled after Python's os.path.join, but missing some
+-- features and handles edge cases slightly different. It only knows about
+-- UNIX-style forward slash separators. Joining an empty string at the end will
+-- result in a trailing separator to be added, following Python's behaviour.
+-- The function does not fail under normal circumstances.
+--
+-- @param p1 A potentially empty path component (string). This argument is
+--           mandatory.
+-- @param p2 A potentially empty, optional path component (string).
+-- @param ... Further path components, following the same rule as "p2".
+-- @return A joined path (string), which may be empty.
+function e2lib.join(p1, p2, ...)
+	assert(type(p1) == "string")
+	assert(p2 == nil or type(p2) == "string")
+
+	local sep = "/"
+	local args = {p1, p2, ...}
+	local buildpath = ""
+	local sepnext = false
+
+	for _,component in ipairs(args) do
+		assert(type(component) == "string")
+
+		if sepnext then
+			-- If the previous or next component already
+			-- has a separator in the right place, we don't
+			-- need to add one. We do however not go to the
+			-- trouble removing multiple separators.
+			if buildpath:sub(-1) == sep or
+				component:sub(1) == sep then
+				-- do nothing
+			else
+				buildpath = buildpath .. sep
+			end
+		end
+
+		buildpath = buildpath .. component
+
+		if component:len() > 0 then
+			sepnext = true
+		else
+			sepnext = false
+		end
+	end
+
+	return buildpath
+end
+
 function e2lib.is_backup_file(path)
     return string.find(path, "~$") or string.find(path, "^#.*#$")
 end
