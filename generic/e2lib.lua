@@ -637,7 +637,7 @@ function e2lib.finish(returncode)
 end
 
 --- Returns the "directory" part of a path
--- @param path string: a path with components seperated by slashes.
+-- @param path string: a path with components separated by slashes.
 -- @return all but the last component of the path, or "." if none could be found.
 function e2lib.dirname(path)
     assert(type(path) == "string")
@@ -651,7 +651,7 @@ function e2lib.dirname(path)
 end
 
 --- Returns the "filename" part of a path.
--- @param path string: a path with components seperated by slashes.
+-- @param path string: a path with components separated by slashes.
 -- @return returns the last (right-most) component of a path, or the path
 -- itself if no component could be found.
 function e2lib.basename(path)
