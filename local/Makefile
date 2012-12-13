@@ -43,7 +43,7 @@ LOCALLUATOOLS = e2-build e2-dlist e2-dsort e2-fetch-sources \
 	e2-build-numbers e2-cf
 LOCALSHTOOLS =
 LUA_LIBS = e2option.lua luafile.lua generic_git.lua err.lua
-LUA_LIBS += e2tool.lua scm.lua
+LUA_LIBS += e2tool.lua scm.lua digest.lua
 LUA_LIBS += tools.lua transport.lua cache.lua
 LUA_LIBS += environment.lua plugin.lua url.lua hash.lua lock.lua
 LUA_LIBS += policy.lua strict.lua e2build.lua
