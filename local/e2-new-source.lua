@@ -1,9 +1,11 @@
---- e2-new-source command
+--- e2-new-source command.
+-- Upload a new source to an existing server.
 -- @module local.e2-new-source
 
 --[[
    e2factory, the emlix embedded build system
 
+   Copyright (C) 2012 Tobias Ulmer <tu@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
    Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
    Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
@@ -28,15 +30,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- e2-new-source - add new source onto an existing server -*- Lua -*-
-
-
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local generic_git = require("generic_git")
-local cache = require("cache")
 local err = require("err")
 local e2option = require("e2option")
+local transport = require("transport")
+local cache = require("cache")
+local digest = require("digest")
+local url = require("url")
+
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "new-source")
@@ -60,200 +63,183 @@ usage: e2-new-source --git [--server <server>] <name>
  --files
  Put a new file onto the server.
  Server defaults to 'upstream'
-
- Note that URLs must be passed as the <source_file_url> and
- <checksum_file_url> arguments, not filesystem paths.
 ]]
 
 e2option.flag("git", "create a git repository")
 e2option.flag("files", "create a new file on a files server")
 e2option.option("server", "specify server")
-e2option.flag("no-checksum", "don't verify checksum")
+e2option.flag("no-checksum", "do not verify checksum file")
 local opts, arguments = e2option.parse(arg)
 
--- read a checksum from a file
--- @param checksum_file string: the file containing the checksums
--- @param filename string: the filename
--- @return a table with fields checksum and checksum_type ("sha1", "md5")
--- @return nil, or an error string on error
-local function read_checksum(checksum_file, filename)
-    e2lib.log(4, string.format("read_checksum(%s, %s)", checksum_file,
-    filename))
-    local f, e = io.open(checksum_file, "r")
-    if not f then
-        return nil, e
-    end
-    local rc = nil
-    local e = err.new("no checksum available")
-    while true do
-        local line = f:read()
-        if not line then
-            break
-        end
-        local c, f = line:match("(%S+)  (%S+)")
-        if (not c) or (not f) then
-            e:append("Checksum file has wrong format. ")
-            e:append("The standard sha1sum or md5sum format is "..
-            "required.")
-            return nil, e
-        end
-        if c and f and f == filename then
-            local cs = {}
-            cs.checksum = c
-            if c:len() == 40 then
-                cs.checksum_type = "sha1"
-            elseif c:len() == 32 then
-                cs.checksum_type = "md5"
-            else
-                rc = nil
-                e = "can't guess checksum type"
-                break
-            end
-            rc = cs
-            e = nil
-            break
-        end
-    end
-    f:close()
-    return rc, e
-end
-
---- generate a sha1 checksum file
--- @param source_file string: source file name
--- @param checksum_file checksum file name
--- @return bool
--- @return nil, an error string on error
-local function write_checksum_file_sha1(source_file, checksum_file)
-    e2lib.log(4, string.format("write_checksum_file_sha1(%s, %s)",
-    source_file, checksum_file))
-    local cmd = string.format("sha1sum %s > %s",
-    e2lib.shquote(source_file), e2lib.shquote(checksum_file))
-    local rc = e2lib.callcmd_capture(cmd)
-    if rc ~= 0 then
-        return false, "error writing checksum file"
-    end
-    return true, nil
-end
-
+--- Download a file.
+-- @param f string: url or path to file.
+-- @return temporary filename or false.
+-- @return an error object on failure.
 local function download(f)
-    local name = e2lib.basename(f)
-    local cmd = string.format("curl --silent --fail %s --output %s",
-    e2lib.shquote(f), e2lib.shquote(name))
-    local rc = e2lib.callcmd_capture(cmd)
-    if rc ~= 0 then
-        return false, err.new("download failed: %s", f)
+    local path = e2lib.dirname(f)
+    local fn = e2lib.basename(f)
+
+    local tfile = e2lib.mktempfile()
+    local tpath = e2lib.dirname(tfile)
+    local tfn = e2lib.basename(tfile)
+
+    local rc, re = transport.fetch_file(path, fn, tpath, tfn)
+    if not rc then
+        return rc, re
     end
-    return true, nil
+
+    return tfile
 end
 
---- new files source
+--- Attempt converting relative or absolute file path to url.
+-- @param path A relative or absolute path, or url (string).
+-- @return A fixed absolute path starting with file://, or the unmodified input.
+local function path_to_url(path)
+    -- nil is a valid argument, be very careful
+    if type(path) == "string" and path:len() > 0 then
+        if path:sub(1) == "/" then
+            return "file://" .. path
+        end
+
+        local u = url.parse(path)
+        local cwd = e2util.cwd()
+        if not u and cwd then
+            return "file://" .. e2lib.join(cwd, path)
+        end
+    end
+    return path
+end
+
+--- Upload and checksum a new file source.
 -- @param c table: cache
 -- @param server string: e2 server
 -- @param location string: location on server
 -- @param source_file string: source file url
 -- @param checksum_file string: checksum file url
--- @param no_checksum boolean|nil: don't verify checksum
+-- @param verify True for checksum verification, otherwise false (boolean).
 -- @return bool
 -- @return nil, an error string on error
 local function new_files_source(c, server, location, source_file, checksum_file,
-    no_checksum)
-    local source_file_base = e2lib.basename(source_file)
-    local do_checksum = (not no_checksum)
-    local checksum_type = "sha1"
-    local checksum_file_base
-    local checksum_file1
-    local checksum_file2 = string.format("%s.%s", source_file_base,
-    checksum_type)
-    local cs1, cs2
-    local rc, e
-    if not do_checksum then
-        e2lib.warn("WOTHER", "Checksum verifying is disabled!")
+    verify)
+    local e = err.new("preparing new source for upload failed")
+    local rc, re
+
+    source_file = path_to_url(source_file)
+    checksum_file = path_to_url(checksum_file)
+
+    -- Collect the variables used in the following code into groups.
+    local source = {}
+    source.url = source_file
+    source.basename = e2lib.basename(source.url)
+    source.rlocation = e2lib.join(location, source.basename)
+    source.rlocation_digest = source.rlocation .. ".sha1"
+    source.localfn = nil
+    source.localfn_digest = nil
+    source.dt = nil
+    source.dtentry = nil
+
+    local checksum = {
+        url = checksum_file,
+        localfn = nil,
+        dt = nil,
+        dtentry = nil,
+    }
+
+    if not verify then
+        e2lib.warn("WOTHER", "Checksum verification disabled")
     end
 
-    -- change to a temporary directory
-    local tmpdir, e = e2lib.mktempdir()
-    if not e2lib.chdir(tmpdir) then
-        e2lib.abort("can't chdir")
-    end
+    -- check for file with identical name on the server
+    local tmpfile = {}
+    tmpfile.file = e2lib.mktempfile()
+    tmpfile.base = e2lib.basename(tmpfile.file)
+    tmpfile.dir = e2lib.dirname(tmpfile.file)
 
-    -- download
-    e2lib.log(1, string.format("fetching %s ...", source_file))
-    local rc, re = download(source_file)
-    if not rc then
-        e2lib.abort(re)
-    end
-
-    -- checksum checking
-    if do_checksum then
-        e2lib.log(1, string.format("fetching %s ...", checksum_file))
-        local rc, re = download(checksum_file)
-        if not rc then
-            e2lib.abort(re)
-        end
-        checksum_file_base = e2lib.basename(checksum_file)
-        checksum_file1 = string.format("%s.orig",
-        checksum_file_base)
-        rc, e = e2lib.mv(checksum_file_base, checksum_file1)
-        if not rc then
-            e2lib.abort(e)
-        end
-        cs1, e = read_checksum(checksum_file1, source_file_base)
-        if not cs1 then
-            e2lib.abort(e)
-        end
-        checksum_type = cs1.checksum_type
-    end
-
-    -- write the checksum file to store on the server
-    rc = write_checksum_file_sha1(source_file_base, checksum_file2)
-    cs2, e = read_checksum(checksum_file2, source_file_base)
-    if not cs2 then
-        e2lib.abort(e)
-    end
-
-    -- compare checksums
-    if do_checksum then
-        if cs1.checksum == cs2.checksum then
-            e2lib.log(2, string.format(
-            "checksum matches (%s): %s",
-            cs1.checksum_type, cs1.checksum))
-        else
-            e2lib.abort("checksum mismatch")
-        end
-    end
-
-    -- store preparation
-    local flags = {}
-    local rlocation = string.format("%s/%s", location, source_file_base)
-    e2lib.log(1, string.format("storing file %s to %s:%s",
-    source_file_base, server, rlocation))
-
-    -- check if file with similar name is already on the server
-    local rc, e = cache.fetch_file(c, server, rlocation, tmpdir,
-    source_file_base .. ".tmp", flags)
+    rc, re = cache.fetch_file(c, server, source.rlocation,
+        tmpfile.dir, tmpfile.base, {})
     if rc then
-        e2lib.abort("'" .. source_file_base .. "' already exists on '" .. server ..
-        ":" .. rlocation .. "' - can not overwrite")
+        return false, e:append("file already exists on %s:%s", server,
+            source.rlocation)
     end
 
-    -- store
-    local rc, e = cache.push_file(c, source_file_base, server,
-    rlocation, flags)
+    -- download the source from a external server
+    e2lib.logf(1, "fetching %s ...", source.url)
+    local rc, re = download(source.url)
     if not rc then
-        e2lib.abort(e)
+        return false, e:cat(re)
     end
-    local rlocation = string.format("%s/%s", location, checksum_file2)
-    e2lib.log(1, string.format("storing file %s to %s:%s",
-    checksum_file2, server, rlocation))
-    local rc, e = cache.push_file(c, checksum_file2, server,
-    rlocation, flags)
+    source.localfn = rc
+
+    -- compute a message digest over the downloaded source
+    source.dt = digest.new()
+    source.dtentry = digest.new_entry(source.dt, digest.SHA1, nil,
+        source.basename, source.localfn)
+
+    rc, re = digest.checksum(source.dt, false)
     if not rc then
-        e2lib.abort(e)
+        return false, e:cat(re)
     end
-    if not e2lib.chdir("/") then
-        e2lib.abort("can't chdir")
+
+    -- write message digest, this one we're going to upload
+    source.localfn_digest = source.localfn .. ".sha1"
+    rc, re = digest.write(source.dt, source.localfn_digest)
+    if not rc then
+        return false, e:cat(re)
     end
-    return true, nil
+
+    -- verify the provided checksum file
+    if verify then
+        e2lib.logf(1, "fetching %s ...", checksum.url)
+        rc, re = download(checksum.url)
+        if not rc then
+            return false, e:cat(re)
+        end
+        checksum.localfn = rc
+
+        checksum.dt, re = digest.parse(checksum.localfn)
+        if not checksum.dt then
+            return false, e:cat(re)
+        end
+
+        if digest.count(checksum.dt) ~= 1 then
+            -- XXX: We could find the matching entry and shorten the digest
+            return false, e:append("can not handle checksum file %s: "..
+                "more than one (1) entry", checksum.url)
+        end
+
+        checksum.dtentry = checksum.dt[1]
+        if checksum.dtentry.name ~= source.basename then
+            return false, e:append("file name in checksum file does not match")
+        end
+
+        checksum.dtentry.name2check = source.localfn
+
+        -- Since we verify against the same file as the source.dt above, a
+        -- comparison of source.dtentry.checksum and checksum.dtentry.checksum
+        -- is not necessary (and not always possible).
+        rc, re = digest.verify(checksum.dt, false)
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+
+    local flags = { writeback = true } -- !!
+
+    -- upload checksum to cache (maybe) and server (always)
+    local rc, re = cache.push_file(c, source.localfn_digest, server,
+        source.rlocation_digest, flags)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- upload source file, see above.
+    local rc, re = cache.push_file(c, source.localfn, server,
+        source.rlocation, flags)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
 info, re = e2tool.collect_project_info(info)
@@ -281,8 +267,7 @@ if opts.git then
     if not rc then
         e2lib.abort(re)
     end
-    e2lib.log(1,
-    "See e2-new-source(1) to see how to go on")
+    e2lib.log(1, "Read e2-new-source(1) for the next step")
 elseif opts.files then
     local location = arguments[1]
     local sl, e = e2lib.parse_server_location(location, info.default_files_server)
@@ -293,14 +278,18 @@ elseif opts.files then
     local location = sl.location
     local source_file = arguments[2]
     local checksum_file = arguments[3]
-    local no_checksum = opts["no-checksum"]
-    if not no_checksum and not checksum_file then
-        e2lib.abort("checksum file not given")
+    local verify = not opts["no-checksum"]
+    if verify and not checksum_file then
+        e2lib.abort("checksum file argument missing")
     end
-    local rc = new_files_source(info.cache, server, location, source_file,
-    checksum_file, no_checksum)
+
+    local rc, re = new_files_source(info.cache, server, location, source_file,
+    checksum_file, verify)
+    if not rc then
+        e2lib.abort(re)
+    end
 else
-    e2lib.log(1, "Creating repositories other than git is not supported yet.")
+    e2lib.abort(err.new("Please specify either --files are --git"))
 end
 
 e2lib.finish(0)
