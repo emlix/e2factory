@@ -398,10 +398,10 @@ end
 -- @return nil
 function e2lib.warnf(category, format, ...)
     if (format:len() == 0) or (not format) then
-        bomb("calling warnf() with zero length format")
+        e2lib.bomb("calling warnf() with zero length format")
     end
     if type(e2lib.globals.warn_category[category]) ~= "boolean" then
-        bomb("calling warnf() with invalid warning category")
+        e2lib.bomb("calling warnf() with invalid warning category")
     end
     if e2lib.globals.warn_category[category] == true then
         local prefix = "Warning: "
@@ -427,7 +427,7 @@ function e2lib.abort(...)
     else
         local msg = table.concat(t)
         if msg:len() == 0 then
-            bomb("calling abort() with zero length message")
+            e2lib.bomb("calling abort() with zero length message")
         end
         e2lib.log(1, "Error: " .. msg)
     end
@@ -519,7 +519,7 @@ end
 -- @return nil
 function e2lib.logf(level, format, ...)
     if not format then
-        bomb("calling log() without format string")
+        e2lib.bomb("calling log() without format string")
     end
     local msg = string.format(format, ...)
     return e2lib.log(level, msg)
@@ -531,10 +531,10 @@ end
 -- @param msg string: log message
 function e2lib.log(level, msg)
     if level < 1 or level > 4 then
-        bomb("invalid log level")
+        e2lib.bomb("invalid log level")
     end
     if not msg then
-        bomb("calling log() without log message")
+        e2lib.bomb("calling log() without log message")
     end
     local log_prefix = "[" .. level .. "] "
     -- remove end of line if it exists
@@ -820,7 +820,7 @@ function e2lib.read_all(fd, blocksize)
     local blocksize = blocksize or 1024
     while true do
         local s, msg = e2util.read(fd, blocksize)
-        if not s then bomb("read error: ", msg)
+        if not s then e2lib.bomb("read error: ", msg)
         elseif #s == 0 then break
         else table.insert(input, s) end
     end
@@ -1533,11 +1533,11 @@ end
 function e2lib.call_tool(tool, args)
     local cmd = tools.get_tool(tool)
     if not cmd then
-        bomb("trying to call invalid tool: " .. tostring(tool))
+        e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
     end
     local flags = tools.get_tool_flags(tool)
     if not flags then
-        bomb("invalid tool flags for tool: " .. tostring(tool))
+        e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
     end
     local call = string.format("%s %s %s", cmd, flags, args)
     local rc, e = e2lib.callcmd_log(call)
@@ -1555,11 +1555,11 @@ end
 function e2lib.call_tool_argv(tool, argv)
     local cmd = tools.get_tool(tool)
     if not cmd then
-        bomb("trying to call invalid tool: " .. tostring(tool))
+        e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
     end
     local flags = tools.get_tool_flags(tool)
     if not flags then
-        bomb("invalid tool flags for tool: " .. tostring(tool))
+        e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
     end
 
     -- TODO: flags should be quoted as well, requires config changes
