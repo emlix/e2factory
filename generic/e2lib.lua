@@ -48,6 +48,7 @@ local e2lib = {}
 package.loaded["e2lib"] = e2lib
 
 require("buildconfig")
+require("e2util")
 local lock = require("lock")
 local err = require("err")
 local plugin = require("plugin")
