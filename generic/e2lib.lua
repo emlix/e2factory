@@ -93,7 +93,6 @@ e2lib.globals = {
     -- @name cmdline
     cmdline = {},
     git_skip_checkout = true,
-    buildnumber_server_url = nil,
     template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
     extension_config = ".e2/extensions",
     e2config = ".e2/e2config",
@@ -996,11 +995,6 @@ function e2lib.use_global_config()
             assert_type(config.log.logrotate, "config.log.logrotate", "number")
             e2lib.globals.logrotate = config.log.logrotate
         end
-    end
-    if config.site and config.site.buildnumber_server_url ~= nil then
-        e2lib.globals.buildnumber_server_url = config.site.buildnumber_server_url
-        e2lib.log(3, string.format("e2lib.globals.buildnumber_server_url=%s",
-        tostring(config.site.buildnumber_server_url)))
     end
     assert_type(config.site, "config.site", "table")
     assert_type(config.site.e2_branch, "config.site.e2_branch", "string")

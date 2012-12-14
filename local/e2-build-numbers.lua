@@ -1,9 +1,11 @@
+--- e2-build-numbers command.
+-- This command was removed in e2factory 2.3.13.
+-- @module local.e2-build-numbers
+
 --[[
    e2factory, the emlix embedded build system
 
-   Copyright (C) 2007-2009 Gordon Hecker <gh@emlix.com>, emlix GmbH
-   Copyright (C) 2007-2009 Oskar Schirmer <os@emlix.com>, emlix GmbH
-   Copyright (C) 2007-2008 Felix Winkelmann, emlix GmbH
+   Copyright (C) Tobias Ulmer <tu@emlix.com>, emlix GmbH
 
    For more information have a look at http://www.e2factory.org
 
@@ -27,8 +29,7 @@
 
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
-local e2option = require("e2option")
-local policy = require("policy")
+local err = require("err")
 
 e2lib.init()
 local info, re = e2tool.local_init(nil, "build-numbers")
@@ -36,71 +37,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage:
-e2-buildnumbers [--no-sync]
-]]
-
-policy.register_commandline_options()
-e2option.flag("no-sync", "do not synchronize with the server")
-
-local opts = e2option.parse(arg)
--- get build mode from the command line
-local build_mode = policy.handle_commandline_options(opts, true)
-if not build_mode then
-    e2lib.abort("no build mode given")
-end
-info, re = e2tool.collect_project_info(info)
-if not info then
-    e2lib.abort(re)
-end
-local rc, re = e2tool.check_project_info(info)
-if not rc then
-    e2lib.abort(re)
-end
-
--- apply the standard build mode to all results
-for _,res in pairs(info.results) do
-    res.build_mode = build_mode
-end
-
--- read build numbers,
--- merge to results,
--- flush buildids,
--- calculate buildids,
--- merge back,
--- request new build numbers,
--- write new build numbers
-
-local rc, re
-rc, re = e2tool.buildnumber_read(info)
-if not rc then
-    e2lib.abort(re)
-end
-rc, re = e2tool.buildnumber_mergetoresults(info)
-if not rc then
-    e2lib.abort(re)
-end
--- recalculate build ids ids
-e2tool.flush_buildids(info)
-e2tool.calc_buildids(info)
-rc, re = e2tool.buildnumber_mergefromresults(info)
-if not rc then
-    e2lib.abort(re)
-end
-if opts["no-sync"] then
-    rc, re = e2tool.buildnumber_request_local(info)
-else
-    rc, re = e2tool.buildnumber_request(info)
-end
-if not rc then
-    e2lib.abort(re)
-end
-rc, re = e2tool.buildnumber_write(info)
-if not rc then
-    e2lib.abort(re)
-end
-e2tool.buildnumber_display(info.build_numbers, 1)
-e2lib.finish()
+e2lib.abort(err.new("e2-build-numbers is deprecated and has been removed"))
 
 -- vim:sw=4:sts=4:et:

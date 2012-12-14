@@ -55,7 +55,6 @@ e2option.flag("wc-mode", "build selected results in working-copy mode")
 e2option.flag("force-rebuild", "force rebuilding even if a result exists [broken]")
 e2option.flag("playground", "prepare environment but do not build")
 e2option.flag("keep", "do not remove chroot environment after build")
-e2option.flag("buildnumber", "use real build numbers")
 e2option.flag("buildid", "display buildids and exit")
 -- cache is not yet initialized when parsing command line options, so
 -- remember settings in order of appearance, and perform settings as soon
@@ -189,19 +188,6 @@ end
 
 if opts.release and not e2tool.e2_has_fixed_tag(info) then
     e2lib.abort("Failure: e2 is on pseudo tag while building in release mode.")
-end
-
-if opts["buildnumber"] then
-    e2lib.logf(1, "setting up build numbers")
-    local rc, re
-    rc, re = e2tool.buildnumber_read(info)
-    if not rc then
-        e2lib.abort(re)
-    end
-    rc, re = e2tool.buildnumber_mergetoresults(info)
-    if not rc then
-        e2lib.abort(re)
-    end
 end
 
 -- calculate buildids for selected results
