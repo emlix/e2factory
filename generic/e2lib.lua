@@ -565,7 +565,7 @@ end
 function e2lib.dirname(path)
     assert(type(path) == "string")
 
-    local s, e, dir = string.find(path, "^(.*)/[^/]*$")
+    local s, e, dir = string.find(path, "^(.*)/[^/]+[/]*$")
     if dir == "" then
         return "/"
     end
@@ -580,7 +580,7 @@ end
 function e2lib.basename(path)
     assert(type(path) == "string")
 
-    local s, e, base = string.find(path, "^.*/([^/]+)[/]?$")
+    local s, e, base = string.find(path, "^.*/([^/]+)[/]*$")
     if not base then
         base = path
     end
