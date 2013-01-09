@@ -1,0 +1,72 @@
+.\" Man page for e2-cf
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2-cf 1 "Oct 16, 2012" "@VERSION@"
+
+.SH NAME
+e2-cf \- modify and create configuration files of an e2factory project
+
+.SH SYNOPSIS
+e2-cf <command> <arguments> ...
+
+.SH DESCRIPTION
+\fBe2-cf\fR is part of the e2factory commandline tools.
+.br
+\fBe2-cf\fR starts an editor and opens appropriate configuration files for
+further modification. Templates are used as initial config files.
+.br
+Commands are:
+ newresult       <name>
+ newsource       <name> <scm>
+ editresult      <name>
+ editbuildscript <name>
+ editsource      <name>
+
+Commands can be shortened as long as they remain unambiguous.
+.br
+e.g.: "eb <name>" is equivalent to "editbuildscript <name>".
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+For options, see global options in \fBe2factory\fR(1).
+
+.SH EXAMPLES
+Create a new source configuration, named "bar", see also \fBe2-new-source\fR(1):
+.IP
+.nf
+e2-cf ns bar
+.fi
+.PP
+Create a new result configuration for a result named "foo":
+.IP
+.nf
+e2-cf nr foo
+.fi
+.PP
+Adopt the configuration:
+.IP
+.nf
+e2-cf er foo
+.fi
+.PP
+Adopt the build-script:
+.IP
+.nf
+e2-cf eb foo
+.fi
+
+.SH ENVIRONMENT
+Following environment variables are evaluated:
+.TP
+.BR EDITOR
+Defines the editor to be started. The default editor is "vi".
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

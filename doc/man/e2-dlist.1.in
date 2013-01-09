@@ -1,0 +1,34 @@
+.\" Man page for e2-dlist
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2-dlist 1 "Oct 16, 2012" "@VERSION@"
+
+.SH NAME
+e2-dlist \- list dependencies of a particular result of an e2factory project
+
+.SH SYNOPSIS
+e2-dlist [option] <result>...
+
+.SH DESCRIPTION
+\fBe2-dlist\fR is part of the e2factory commandline tools.
+.br
+\fBe2-dlist\fR shows the direct dependencies of a result, i.e. the
+results that are required to be built before the <result> can
+be build.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+.BR \-\-recursive
+Show indirect dependencies as well.
+.TP
+For further global options, see \fBe2factory\fR(1).
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

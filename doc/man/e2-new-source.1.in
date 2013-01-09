@@ -1,0 +1,94 @@
+.\" Man page for e2-new-source
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2-new-source 1 "Oct 16, 2012" "@VERSION@"
+
+.SH NAME
+e2-new-source \- create a new source at a shared server location to be used in an e2factory project
+
+.SH SYNOPSIS
+e2-new-source --git [--server <server>] <name>
+
+e2-new-source --files [--no-checksum] [<server>:]<location> <source_file_url> [<checksum_file_url>]
+
+.SH DESCRIPTION
+\fBe2-new-source\fR is part of the e2factory commandline tools.
+.br
+\fBe2-new-source\fR creates a new source repository or stores a file plus
+checksum file in a location on a server.
+
+The type of the new source must be given, either --files or --git.
+cvs and subversion are not supported.
+
+When creating a git repository a server side repository is created and
+a local repository is created and set up to be related to the server side
+repository.
+
+No commits are initially created. The user must create the initial commit
+and push it to the server. See examples below.
+
+\fBe2-new-source\fR does not create any configuration files. Use \fBe2-cf\fR(1) to
+create a source configuration.
+
+Note that URLs must be passed as the <source_file_url> and
+ <checksum_file_url> arguments, not file system paths. See examples below.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+.BR \-\-git
+Put a repository named <name> into the project's "git/" directory on 
+the server, i.e. <server>/<project>/git/<name>.git
+The server defaults to "projects" as configured e2.conf(5).
+.TP
+.BR \-\-server=<server>
+Specify server for git repository defaults to "projects" as configured e2.conf(5).
+.TP
+.BR \-\-files
+ Put a new file onto the server.
+ Server defaults to "upstream" as configured e2.conf(5).
+.TP
+.BR \-\-no-checksum
+Do not verify checksum, <checksum_file_url> could be omitted.
+.TP
+For further global options and environment variables, see \fBe2factory\fR(1).
+
+.SH EXAMPLES
+To place an external source file on the default server:
+.IP
+.nf
+e2-new-source --files a/anything/0.1 file:///tmp/download/anything-0.1.tar.bz2 file:///tmp/download/anything-0.1.tar.bz2.sha1
+.fi
+.PP
+To create a new, empty git repository on server and client side:
+.IP
+.nf
+e2-new-source --git test
+.fi
+.PP
+To populate the empty repository from an existing repository:
+.IP
+.nf
+cd in/test
+git fetch /path/to/original/repo <branch>:refs/heads/master
+git push origin master
+.fi
+.PP
+To populate the empty repositories with new sources:
+.IP
+.nf
+cd in/test
+# create source files, e.g. main.c
+git add .
+git commit -m 'initial commit'
+git push origin master
+.fi
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

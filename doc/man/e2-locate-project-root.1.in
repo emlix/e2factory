@@ -1,0 +1,28 @@
+.\" Man page for e2-locate-project-root
+.\"
+.\" (c)2007, 2008, 2012 emlix GmbH
+.\"
+.TH e2-locate-project-root 1 "Oct 26, 2012" "@VERSION@"
+
+.SH NAME
+e2-locate-project-root \- print out the project root of an e2factory project
+
+.SH SYNOPSIS
+e2-locate-project-root
+
+.SH DESCRIPTION
+\fBe2-locate-project-root\fR is part of the e2factory commandline tools.
+.br
+\fBe2-locate-project-root\fR displays the root directory of the current project.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+\fBe2-locate-project-root\fR does not receive any options.
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

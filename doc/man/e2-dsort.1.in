@@ -1,0 +1,29 @@
+.\" Man page for e2-dsort
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2-dsort 1 "Oct 16, 2012" "@VERSION@"
+
+.SH NAME
+e2-dsort \- sort result dependencies of an e2factory project
+
+.SH SYNOPSIS
+e2-dsort [<option>]
+
+.SH DESCRIPTION
+\fBe2-dsort\fR is part of the e2factory commandline tools.
+.br
+\fBe2-dsort\fR lists the results of the current project, sorted in the
+order in which they must be built.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+\fBe2-dsort\fR does only receive global options, see \fBe2factory\fR(1).
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

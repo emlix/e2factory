@@ -1,0 +1,85 @@
+.\" Man page for e2-fetch-sources
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2-fetch-sources 1 "Oct 16, 2012" "@VERSION@"
+
+.SH NAME
+e2-fetch-sources \- retrieve sources of an e2factory project
+
+.SH SYNOPSIS
+e2-fetch-sources [<option> ... | <source> ... | <result> ...]
+
+.SH DESCRIPTION
+\fBe2-fetch-sources\fR is part of the e2factory commandline tools.
+\fBe2-fetch-sources\fR can operate in two modes, fetch and update.
+
+The \fBfetch\fR mode retrieves sources. Sources can be
+either specified through the source- or result names. Sources stored
+in SCM repositories will be cloned and a project-local working copy
+will be created. Already fetched source are not updated in the
+\fBfetch\fR mode. See below.
+
+The \fBupdate\fR mode is currently limited to the git SCM and updates
+remote branches without touching the working-copy. That way additional
+tags from the server side repository become available while users work is preserved.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+.BR \-\-fetch
+\fBe2-fetch-sources\fR works in fetch mode. This is default.
+.TP
+.BR \-\-update
+\fBe2-fetch-sources\fR works in update mode.
+.TP
+.BR \-\-all
+Fetch all sources referred to in the whole project.
+.TP
+.BR \-\-scm
+Fetch all sources referred by a SCM. This excludes file sources.
+.TP
+.BR \-\-files
+Select files sources. Not selected by default.
+.TP
+.BR \-\-git
+Fetch sources from a git repository.
+.TP
+.BR \-\-svn
+Fetch sources from a svn repository.
+.TP
+.BR \-\-cvs
+Fetch sources from a cvs repository.
+.TP
+.BR \-\-source
+Fetch sources by source name.
+.TP
+.BR \-\-result
+Fetch sources by result name.
+.TP
+.BR \-\-chroot
+Select chroot files.
+.TP
+For further global options, see \fBe2factory\fR(1).
+
+.SH EXAMPLES
+Download all sources and other needed files of an e2factory project.
+.IP
+.nf
+e2-fetch-sources --all
+.fi
+.PP
+Update all sources.
+.IP
+.nf
+e2-fetch-sources --update
+.fi
+
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

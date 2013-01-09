@@ -1,0 +1,51 @@
+.\" Man page for e2-fetch-project
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2-fetch-project 1 "Oct 16, 2012" "@VERSION@"
+
+.SH NAME
+e2-fetch-project \- retrieve an e2factory project
+
+.SH SYNOPSIS
+e2-fetch-project [<option> ...] [<server>:]<location> [destination]
+
+.SH DESCRIPTION
+\fBe2-build\fR is part of the e2factory commandline tools.
+.br
+\fBe2-fetch-project\fR fetches the e2factory project located in
+[<server>]:<location> to a directory given in <destination>.
+.br
+<server> defaults to "projects". As configured in e2.conf(5).
+.br
+<destination> defaults to ".".
+.br
+The projects main git repository is cloned and the configured version of e2factory is locally
+installed.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+.BR \-\-branch=<branch>
+Checks out a specific project branch.
+.TP
+.BR \-\-tag=<tag>
+Checks out a specific project tag.
+.TP
+For further global options, see \fBe2factory\fR(1).
+
+.SH EXAMPLES
+Retrieve a project.
+.IP
+.nf
+e2-fetch-project foo/bar
+.fi
+
+
+.SH SEE ALSO
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

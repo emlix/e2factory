@@ -1,0 +1,95 @@
+.\" Man page for e2-build
+.\"
+.\" (c)2007, 2008, 2012 emlix GmbH
+.\"
+.TH e2-build 1 "Oct 26, 2012" "@VERSION@"
+
+.SH NAME
+e2-build \- build results of an e2factory project
+
+.SH SYNOPSIS
+e2-build [<option>] [<result> ...]
+
+.SH DESCRIPTION
+\fBe2-build\fR is part of the e2factory commandline tools.
+.br
+\fBe2-build\fR builds one or more results as defined in the build-script in a chroot and stores the resulting files.
+If no result is given, all results listed in "default\_results" in proj/config are built, see
+\fBe2project\fR(5).
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero. Consult the log-files in the log/ directory of the
+e2factory project for further information.
+
+.SH OPTIONS
+.TP
+.BR \-\-all
+Build all results configured in the project.
+.TP
+.BR "\-\-build-mode=release", " \-\-release"
+ Build selected results in "release" build-mode.
+.TP
+.BR "\-\-build-mode=tag", " \-\-tag"
+ Build selected results in "tag" build-mode. Default.
+.TP
+.BR "\-\-build-mode=branch", " \-\-branch"
+ Build selected results in "branch" build-mode.
+.TP
+.BR "\-\-build-mode=working-copy", " \-\-working-copy"
+ Build selected results in "working-copy" build-mode.
+.TP
+.BR \-\-check
+Performs all checks that can be done without server access.
+This option works only with results which are built in "tag" build-mode.
+.TP
+.BR \-\-check-remote
+This will perform all check that can be done with server access.
+This option works only results which are build in tag mode.
+.TP
+.BR "\-\-branch-mode <result> ..."
+Build all selected results in "branch" build-mode.
+.TP
+.BR "\-\-wc-mode <result> ..."
+Build all selected results in "working-copy" build mode.
+.TP
+.BR \-\-playground
+Prepare build environment but do not start the build script. The build
+environment can later be entered using the \fBe2-playground\fR tool.
+.TP
+.BR \-\-keep
+Do not remove the \fBchroot\fR(1) environment after a build (regardless of whether it is successful or not).
+.TP
+.BR \-\-force-rebuild
+Forces e2factory to rebuild a result even if a result with the same buildID already exists.
+It is recommend to not use it.
+.TP
+.BR \-\-buildid
+Display all buildIDs without actually building any results.
+.TP
+.BR \-\-enable-writeback
+This option overrides the writeback option from server configuration and set it to enable.
+.TP
+.BR \-\-disable-writeback
+This option overrides the writeback option from server configuration and set it to disable.
+.TP
+For further global options and environment variables, see \fBe2factory\fR(1).
+
+.SH EXAMPLES
+Just build all default results and all results they depend on, in case not already built:
+.IP
+.nf
+e2-build
+.fi
+.PP
+Display buildID of result "foo" and all results it depends on:
+.IP
+.nf
+e2-build --buildid foo
+.nf
+
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH
