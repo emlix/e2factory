@@ -1,0 +1,73 @@
+.\" Man page for e2result
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2result 5 "Oct 29, 2012" "@VERSION@"
+
+.SH NAME
+res/*/config \- result configuration files of an e2factory project
+
+.SH DESCRIPTION
+The mandatory files \fBres/<dir>/config\fR configure results to be built. The name of
+the directory \fB<dir>\fR defines the result-name.
+In case of sub-directories, all directories below \fBres/\fR do form the
+result-name separated by dots.
+.br
+e.g.:
+\fBres/<name1>/<name2>/config\fR leads to result name: \fB<name1>.<name2>\fR.
+
+.SH STRUCTURE
+The file has following structure:
+.nf
+
+e2result {
+  chroot = {
+    "<string>",
+    ...
+  },
+  depends = {
+    "<string>",
+    ...
+  },
+  env = {
+    ["<variable name>"] = "<variable value>",
+    ...
+  },
+  sources = {
+    "<string>",
+    ...
+  },
+}
+.fi
+
+.SH KEYS
+
+.TP
+.BR chroot
+Type: Table of strings
+.br
+chroot(s) that should be used during build process.
+
+.TP
+.BR depends
+Type: Table of strings
+.br
+Result(s) that should be available during build process.
+
+.TP
+.BR env
+Type: Table
+.br
+List of environment variables and values separated by \fB=\fR. The variables are available during the build process.
+
+.TP
+.BR sources
+Type: Table of strings
+.br
+Source(s) that should be available during build process.
+
+.SH "SEE ALSO"
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

@@ -1,0 +1,196 @@
+.\" General man page for e2
+.\"
+.\" (c)20012 emlix GmbH
+.\"
+.TH e2factory 1 "2012" "@VERSION@"
+
+.SH NAME
+e2factory \- the emlix embedded build system
+
+.SH DESCRIPTION
+\fBe2factory\fR is a system for automated and reproducible builds of
+software from sources. For details consult the reference documentation.
+It can be found on the website of e2factory \fBwww.e2factory.org\fR.
+
+.SH TOOLS
+e2factory provides the following tools to
+configure a project and run the build process. Each tool has its own man-page.
+Please consult it for further information by typing \fBman <toolname>\fR.
+
+.TP
+.BR e2-create-project(1)
+Create a new project.
+.TP
+.BR e2-fetch-project(1)
+Retrieves a project.
+.TP
+.BR e2-install-e2(1)
+Install the local e2 tools into a project environment.
+.TP
+.BR e2-build(1)
+Build results.
+.TP
+.BR e2-cf(1)
+Create and modify configuration files.
+.TP
+.BR e2-dlist(1)
+Show a list of the dependencies.
+.TP 
+.BR e2-dsort(1)
+Show the sorted list of results.
+.TP
+.BR e2-fetch-sources(1)
+Retrieve the sources for the current project.
+.TP
+.BR e2-ls-project(1)
+Display a schematic view of the current project.
+.TP
+.BR e2-new-source(1)
+Create a new source.
+.TP
+.BR e2-playground(1)
+Enter chroot environment.
+.TP
+.BR e2-locate-project-root(1)
+Display the project root.
+
+.SH OPTIONS
+All tools support the following common set of options:
+.TP
+.BR \-\-e2\-config=<file>
+Specify an e2factory configuration file.
+.TP
+.BR \-\-help
+Show usage information.
+.TP
+.BR \-\-version
+Show e2factory version number and exit.
+.TP
+.BR \-\-licence
+Show licence information and exit.
+.TP
+.BR \-\-quiet
+Disable all log levels.
+.TP
+.BR \-\-verbose
+Enable log levels 1-2.
+.TP
+.BR \-\-debug
+Enable log levels 1-3.
+.TP
+.BR \-\-tooldebug
+Enable log levels 1-4.
+.TP
+.BR \-\-vall
+Enable all log levels.
+.TP
+.BR \-\-v1
+Enable log level 1 (minimal).
+.TP
+.BR \-\-v2
+Enable log level 2 (verbose).
+.TP
+.BR \-\-v3
+Enable log level 3 (show user debug information).
+.TP
+.BR \-\-v4
+Enable log level 4 (show tool debug information).
+.TP
+.BR \-\-log-debug
+Enable logging of debugging output.
+.TP
+.BR \-\-Wall
+Enable all warnings
+.TP
+.BR \-\-Wdefault
+Warn when default values are applied.
+.TP
+.BR \-\-Wdeprecated
+Warn if deprecated options are used.
+.TP
+.BR \-\-Wither
+Disable all warnings not mentioned (enabled by default).
+.TP
+.BR \-\-Pols
+Warn when hurting policies.
+.TP
+.BR \-\-Whint
+Enable hints to the user.
+
+.SH FILES
+e2factory reads the following files to
+configure a project and run the build process. Each file has its own man-page.
+Please consult it for further information by typing \fBman <name>\fR.
+.TP
+.BR e2.conf(5)
+Global configuration file of e2factory.
+.br
+Filename: \fBe2.conf\fR
+.TP
+.BR e2rc(5)
+Per user default argument settings.
+.br
+Filename: \fB$HOME/.e2/e2rc\fR
+.TP
+.BR e2project(5)
+Central configuration file for an e2factory project.
+.br
+Filename: \fBproj/config\fR
+.TP
+.BR e2chroot(5)
+chroot configuration file of an e2factory project.
+.br
+Filename: \fBproj/chroot\fR
+.TP
+.BR e2licence(5)
+Licence configuration file of an e2factory project.
+.br
+Filename: \fBproj/licence\fR 
+.TP
+.BR e2env(5)
+Optional configuration file for environment variable of build processes.
+.br
+Filename: \fBproj/env\fR
+.TP
+.BR e2source(5)
+Source configuration files of an e2factory project.
+.br
+Filename: \fBsrc/<dir>/config\fR
+.TP
+.BR e2result(5)
+Result configuration files of an e2factory project.
+.br
+Filename: \fBres/<dir>/config\fR
+
+.SH ENVIRONMENT
+All tools evaluate the following environment variables:
+.TP
+.BR COLUMNS
+Number of columns of terminal for formatted output.
+.TP
+.BR EDITOR
+Name of editor to be used.
+.TP
+.BR HOME
+Users home directory.
+.TP
+.BR TERM
+The terminal
+.TP
+.BR TMPDIR
+Temporary directory to be used. Overwritten by \fBE2TMPDIR\fR.
+.TP
+.BR USER
+Name of the user.
+.TP
+.BR E2TMPDIR
+Temporary directory to be used. Overwrites \fBTMPDIR\fR.
+.TP
+.BR E2_CONFIG
+Path to the config file.
+.TP
+.BR E2_SSH
+ssh-tool to be use instead of \fBssh\fR(1).
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

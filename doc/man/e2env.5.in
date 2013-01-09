@@ -1,0 +1,46 @@
+.\" Man page for e2env
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2env 5 "Oct 26, 2012" "@VERSION@"
+
+.SH NAME
+proj/env \- optional configuration file for environment variable of build processes
+
+.SH DESCRIPTION
+The optional file \fBproj/env\fR defines tables of global and result-specific
+environment variables that will be available during build processes. 
+
+.SH STRUCTURE
+\fBGlobal environment variables:\fR
+
+.nf
+env {
+  <variable1> = "<value1>",
+  <variable2> = "<value2>",
+  :
+}
+.fi
+
+\fBResult specific environment variables:\fR
+
+.nf
+env {
+  :
+  ["<resultname>"] = { <variable1 = "<value1>", ... }
+  :
+}
+.fi
+
+\fBInclude a file:\fR
+
+env("<file>")
+
+<file> needs to be relative from project root. Syntax is the same as above.
+
+
+.SH "SEE ALSO"
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

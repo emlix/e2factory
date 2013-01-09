@@ -1,0 +1,253 @@
+.\" Man page for e2.conf
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2.conf 5 "Oct 29, 2012" "@VERSION@"
+
+.SH NAME
+e2.conf \- global configuration file of e2factory
+
+.SH DESCRIPTION
+The mandatory and global file \fBe2.conf\fR configures following aspects:
+.PP 
+.IP o 
+Logging
+.IP o 
+Available versions of e2factory
+.IP o 
+Configuration of external tools
+.IP o 
+Cache directory
+.IP o 
+Servers
+
+.PP
+This file is not part of any e2factory project but needs to be on each machine running e2factory.
+It needs to be adopted to that machine and it network environment.
+
+.SH PLACES
+
+This file is searched in the following places. The first match is taken:
+.PP 
+.IP 1. 
+Argument: \-\-e2\-config=FILE
+.IP 2.
+Environment variable: E2_CONFIG=<FILE>
+.IP 3.
+$HOME/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
+.IP 4.
+$HOME/.e2/e2.conf-<MAJOR>.<MINOR>
+.IP 5.
+$HOME/.e2/e2.conf
+.IP 6.
+/etc/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
+.IP 7.
+/etc/.e2/e2.conf-<MAJOR>.<MINOR>
+.IP 8.
+/etc/.e2/e2.conf
+
+
+
+.SH STRUCTURE
+The file has following structure:
+.nf
+
+config {
+  log = {
+    logrotate = <integer>;
+  },
+  site = {
+    e2_server = "<string>",
+    e2_location = "<string>",
+    e2_base = "<string>",
+    e2_branch = "<string>",
+    e2_tag = "<string>",
+    default_extensions = {
+	{
+		name = "<string>",
+		ref = "<string>",
+	},
+	...
+    }
+  },
+  tools = {
+    ["<tool-name>"] = { name="<string>", flags="<string>" },
+    ...
+  },
+  cache = {
+    path = "<string>",
+  },
+  servers = {
+    ["server-name"] = {
+      url = "<string>",
+      cachable = <bool>,
+      cache = <bool>,
+      islocal = <bool>,
+      writeback = <bool>,
+      push_permissions = "<string>",
+    },
+    ...
+  },
+}
+.nf
+
+.SH KEYS
+
+.TP
+.BR log
+Type: Table
+.br
+Logging relevant configurations.
+
+.TP
+.BR logrotate
+Type: Integer
+.br
+Number of old log-files to keep. Others are deleted.
+
+.TP
+.BR site
+Type: Table
+.br
+Access to the e2factory repository.
+
+.TP
+.BR e2_server
+Type: String
+.br
+Name of the server where the e2factory repository is stored.
+
+.TP
+.BR e2_location
+Type: String
+.br
+Path of the e2factory repository on the server.
+
+.TP
+.BR e2_base
+Type: String
+.br
+Path of extensions repositories on the server.
+
+.TP
+.BR e2_branch
+Type: String
+.br
+Name of the git branch of the e2factory version to use, when using \fBe2-create-project\fR(1).
+
+.TP
+.BR e2_tag
+Type: String
+.br
+Name of the git tag of the e2factory version to use, when using \fBe2-create-project\fR(1).
+
+.TP
+.BR default_extensions
+Type: Table
+.br
+List of extension to select, when creating a new project with \fBe2-create-project\fR(1).
+
+.TP
+.BR name
+(on level site, default_extensions)
+Type: String
+.br
+Name of extension.
+
+.TP
+.BR ref
+(on level site, default_extensions)
+Type: String
+.br
+git reference of version of extension.
+
+.TP
+.BR tools
+Type: Table
+.br
+List of tools used with specific arguments.
+
+.TP
+.BR <tool-name>
+Type: String
+.br
+Name of the tool.
+
+.TP
+.BR name
+Type: String
+.br
+Command to call the tool.
+
+.TP
+.BR flags
+Type: String
+.br
+Flags/arguments to be passed to the tool.
+
+.TP
+.BR cache
+Type: Table
+.br
+Caching relevant configurations.
+
+.TP
+.BR path
+Type: String
+.br
+Path of the e2factory cache directory.
+
+.TP
+.BR servers
+Type: Table
+.br
+List of servers that could be used in e2factory projects.
+
+.TP
+.BR <server-name>
+Type: String
+.br
+Name of the server.
+
+.TP
+.BR url
+Type: String
+.br
+URL of the server.
+
+.TP
+.BR cachable
+Type: Boolean (true, false)
+.br
+Defines weather the content of the server could be cached.
+
+.TP
+.BR cache
+(on server level)
+Type: Boolean (true, false)
+.br
+Defines weather the content of the server should be cached.
+
+.TP
+.BR islocal
+Type: Boolean (true, false)
+.br
+True if the server is local.
+
+.TP
+.BR writeback
+Type: Boolean (true, false)
+.br
+True if data should be pushed back to the server.
+
+.TP
+.BR push_permissions
+Type: String
+.br
+Permissions to be set when pushing back to server.
+
+.SH "SEE ALSO"
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

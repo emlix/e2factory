@@ -1,0 +1,94 @@
+.\" Man page for e2chroot
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2chroot 5 "Oct 26, 2012" "@VERSION@"
+
+.SH NAME
+proj/chroot \- chroot configuration file of an e2factory project
+
+.SH DESCRIPTION
+The mandatory file \fBproj/chroot\fR defines the chroots that could be configured
+for a build processes.
+
+
+.SH STRUCTURE
+The file has following structure:
+.nf
+
+e2chroot {
+  default_groups = { "<string>", ... },
+  groups = {
+
+    {
+    name = "<string>",
+    server = "<string>",
+    files = {
+            { server = "<string>",
+              location = "<string>",
+              sha1 = "<string>", },
+            ...
+            },
+    },
+    ...
+  }
+
+}
+.fi
+
+.SH KEYS
+
+.TP
+.BR default_groups
+Type: Table of strings.
+.br
+List of chroot groups to be installed in any build process by default.
+
+.TP
+.BR groups
+Type: Table
+.br
+Table of groups.
+
+.TP
+.BR name
+Type: String
+.br
+Name of this chroot group.
+
+.TP
+.BR server
+(on group level)
+.br
+Type: String
+.br
+Default server for this chroot group.
+
+.TP
+.BR files
+Type: Table
+.br
+List of files belonging to the chroot group.
+
+.TP
+.BR server 
+(on file level)
+.br
+Type: String
+.br
+Server that stores the file. If not given, server on chroot group level is used.
+
+.TP
+.BR location
+Type: String
+.br
+Path to the file on the server.
+
+.TP
+.BR sha1
+Type: String
+.br
+sha1 check-sum of the file.
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

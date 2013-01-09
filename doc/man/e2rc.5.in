@@ -1,0 +1,53 @@
+.\" Man page for e2rc
+.\"
+.\" (c)2007 emlix GmbH
+.\"
+.TH e2rc 5 "Dec 12, 2012" "@VERSION@"
+
+.SH NAME
+e2rc \- per user default argument settings
+
+.SH DESCRIPTION
+The optional file \fB$HOME/.e2/e2rc\fR allows setting of 
+command-line arguments to each call of a e2factory tool.
+Arguments given on the command line override arguments specified in
+\fBe2rc\fR.
+
+.SH STRUCTURE
+The file has following structure:
+.nf
+
+ e2rc {
+   { "<argument>", "<value>" },
+   { "<argument>" },
+   ...
+ }
+.fi
+
+.SH KEYS
+
+.TP
+.BR argument
+Type: String
+.br
+Name of the command-line argument to be set in each call to a e2factory command.
+
+.TP
+.BR value
+Type: String
+.br
+Value of the argument, if omitted \fBtrue\fR is assumed.
+
+.SH EXAMPLE
+.nf
+
+ e2rc {
+   { "debug" }
+ }
+.fi
+
+.SH "SEE ALSO"
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

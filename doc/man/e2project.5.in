@@ -1,0 +1,66 @@
+.\" Man page for e2project
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2project 1 "Oct 26, 2012" "@VERSION@"
+
+.SH NAME
+proj/config \- central configuration file for an e2factory project
+
+.SH DESCRIPTION
+The mandatory file \fBproj/config\fR sets most imported configuration options for
+an e2factory project.
+
+
+.SH STRUCTURE
+The file has following structure:
+.nf
+
+e2project {
+  name = "<string>",
+  release_id = "<string>",
+  default_results = { "<string>", ...},
+  chroot_arch = "<string>",
+  deploy_results = { "<string>", ...},
+
+}
+.fi
+
+.SH KEYS
+
+.TP
+.BR name
+Type: String
+.br
+Name of the project.
+
+.TP
+.BR release_id
+Type: String
+.br
+Identifier of the current release.
+
+.TP
+.BR default_results
+Type: Table of strings
+.br
+Results to be build if none is given.
+
+.TP
+.BR chroot_arch
+Type: String
+.br
+Architecture of chroot. Use "x86_32".
+
+.TP
+.BR deploy_results
+Type: Table of strings
+.br
+Results to be archived during building in release-mode.
+
+
+.SH "SEE ALSO"
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH

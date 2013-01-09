@@ -1,0 +1,79 @@
+.\" Man page for e2licence
+.\"
+.\" (c)2007, 2012 emlix GmbH
+.\"
+.TH e2licence 5 "Oct 26, 2012" "@VERSION@"
+
+.SH NAME
+proj/licence \- licence configuration file of an e2factory project
+
+.SH DESCRIPTION
+The mandatory file  \fBproj/licence\fR defines the licences that could be used in
+source configurations.
+
+
+.SH STRUCTURE
+The file has following structure:
+.nf
+
+e2licence {
+  ["<licence>"] = {
+    server = "<string>",
+    files = {
+            { server = "<string>",
+              location = "<string>",
+              sha1 = "<string>", },
+            ...
+            },
+  },
+  ...
+}
+.fi
+
+.SH KEYS
+
+.TP
+.BR <licence>
+Type: String
+.br
+Name of the licence.
+
+.TP
+.BR server
+(on licence level)
+.br
+Type: String
+.br
+Name of the server the licence file is stored.
+
+.TP
+.BR files
+Type: Table
+.br
+List of files belonging to the licence.
+
+.TP
+.BR server 
+(on file level)
+.br
+Type: String
+.br
+Server that stores the file. If not given, server on licence level is used.
+
+.TP
+.BR location
+Type: String
+.br
+Path to the licence file on server.
+
+.TP
+.BR sha1
+Type: String
+.br
+SHA-1 check-sum of the file.
+
+.SH "SEE ALSO"
+.BR e2factory(1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH
