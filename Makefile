@@ -108,12 +108,14 @@ install-local:
 	rm -rf $(LOCALBINDIR)
 	rm -rf $(LOCALLIBDIR)
 	rm -rf $(LOCALMAKDIR)
+	rm -rf $(LOCALDOCDIR)
 	@echo removing old plugins...
 	rm -rf $(LOCALPLUGINDIR)
 	$(MAKE) -C generic install-local
 	$(MAKE) -C local install-local
 	$(MAKE) -C templates install-local
 	$(MAKE) -C extensions install-local
+	$(MAKE) -C doc install-local
 
 doc:
 	for s in $(SUBDIRS) ; do \

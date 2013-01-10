@@ -29,8 +29,8 @@ TOPLEVEL = ../..
 
 include $(TOPLEVEL)/make.vars
 
-MANPAGES1    = \
-e2.1 \
+MANPAGES1 = \
+e2factory.1 \
 e2-build.1 \
 e2-cf.1 \
 e2-create-project.1 \
@@ -39,58 +39,48 @@ e2-dsort.1 \
 e2-fetch-project.1 \
 e2-fetch-sources.1 \
 e2-install-e2.1 \
+e2-locate-project-root.1 \
 e2-ls-project.1 \
 e2-new-source.1 \
-e2-playground.1 \
-e2.conf.5
+e2-playground.1 
 
-MANPAGES5 = e2rc.5 e2config.5
-MANPAGES7 = e2global.7 e2intro.7 e2workflow.7
-MANPAGES = $(MANPAGES1) $(MANPAGES5) $(MANPAGES7)
+MANPAGES5 = \
+e2.conf.5 \
+e2chroot.5 \
+e2env.5 \
+e2licence.5 \
+e2project.5 \
+e2rc.5 \
+e2result.5 \
+e2source.5
 
-MANPAGES_HTML = $(MANPAGES:=.html)
+MANPAGES = $(MANPAGES1) $(MANPAGES5)
 
-CLEAN_FILES = *~ man.tar.gz $(MANPAGES_HTML)
+CLEAN_FILES = *~ $(MANPAGES)
 
-.PHONY: html man doc install-doc
+.PHONY: all install install-local uninstall clean
 
 all:
 
-install:
-	mkdir -p $(DESTDIR)$(MANDIR)/man1 $(DESTDIR)$(MANDIR)/man5 $(DESTDIR)$(MANDIR)/man7
+install: $(MANPAGES)
+	mkdir -p $(DESTDIR)$(MANDIR)/man1 $(DESTDIR)$(MANDIR)/man5
 	install -m644 $(MANPAGES1) $(DESTDIR)$(MANDIR)/man1
 	install -m644 $(MANPAGES5) $(DESTDIR)$(MANDIR)/man5
-	install -m644 $(MANPAGES7) $(DESTDIR)$(MANDIR)/man7
+
+install-local: $(MANPAGES)
+	mkdir -p $(LOCALDOCDIR)/man/man1 $(LOCALDOCDIR)/man/man5
+	install -m644 $(MANPAGES1) $(LOCALDOCDIR)/man/man1
+	install -m644 $(MANPAGES5) $(LOCALDOCDIR)/man/man5
 
 uninstall:
 	for x in $(MANPAGES1) ; do rm -f $(DESTDIR)$(MANDIR)/man1/$$x ; done
 	for x in $(MANPAGES5) ; do rm -f $(DESTDIR)$(MANDIR)/man5/$$x ; done
-	for x in $(MANPAGES7) ; do rm -f $(DESTDIR)$(MANDIR)/man7/$$x ; done
 	rmdir $(DESTDIR)$(MANDIR)/man1 || :
 	rmdir $(DESTDIR)$(MANDIR)/man5 || :
-	rmdir $(DESTDIR)$(MANDIR)/man7 || :
 
-doc: man.tar.gz
-	for s in $(SUBDIRS) ; do \
-		$(MAKE) -C $$s $@ ;\
-	done
-
-install-doc: doc
-	for s in $(SUBDIRS) ; do \
-		$(MAKE) -C $$s $@ ;\
-	done
-	tar -C $(DOCDIR) -xzf man.tar.gz
+%: %.in
+	sed s/@VERSION@/$(VERSION)/g $< > $@
 
 clean:
 	rm -f $(CLEAN_FILES)
 	rm -fr html man
-
-%.html: %
-	man2html -r $< >$@
-
-man.tar.gz: $(MANPAGES_HTML)
-	mkdir -p html man/man1 man/man5 man/man7
-	cp *.1.html man/man1/
-	cp *.5.html man/man5/
-	cp *.7.html man/man7/
-	tar -czf man.tar.gz man
