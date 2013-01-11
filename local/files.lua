@@ -176,7 +176,67 @@ function files.has_working_copy(info, sourcename)
     return false
 end
 
---- prepare a files source
+--- Handle file.copy in a way that appears intuitive to the user. Returns
+-- a directory and filename that can be passed to eg. mkdir -p and cp.
+-- @param buildpath Base build path (string).
+-- @param sourcename Name of the source (string).
+-- @param copypath Directory or file name where the source file should be
+-- copied to (string).
+-- @param location Soure file location (string).
+-- @param dircheck Check for destination (copypath) being an existing directory.
+-- "yes" enables checking (default), "no" disables the check, and "isdir"
+-- pretends destination is a directory. This flag is useful for collect_project,
+-- where we don't build the source, but just look at its config.
+-- @return Destination directory (string).
+-- @return Destination file name (string).
+local function gen_dest_dir_name(buildpath, sourcename, copypath, location,
+    dircheck)
+
+    dircheck = dircheck or "yes"
+    local destdir, destname
+    local destination = e2lib.join(buildpath, sourcename, copypath)
+
+    -- It may look like ending in a file name ("/foo/bar") - but if
+    -- bar is a directory, we have to copy the file into the
+    -- directory. It's not always possible to check for the destination
+    -- directory. dircheck therefore allows to skip the isdir check, so the
+    -- reults can still be used for code generation.
+
+    if dircheck == "isdir" or
+        (dircheck == "yes" and e2lib.isdir(destination)) then
+        destdir = destination
+        destname = e2lib.basename(location)
+    else
+        -- '.' and '..' or not path components as such, but refer
+        -- to the current and previous directory instead.
+        -- Fixup path by appending a harmless slash, to simplify
+        -- the logic below.
+        local last = e2lib.basename(destination)
+        if last == "." or last == ".." then
+            destination = e2lib.join(destination, "")
+        end
+
+        if string.sub(destination, -1) == "/" then
+            -- destination refers to a directory, indicated by the / at the end
+            -- use destname from location.
+            destdir = destination
+            destname = e2lib.basename(location)
+        else
+            -- destination (potentially) ends with a file name
+            destdir = e2lib.dirname(destination)
+            destname = e2lib.basename(destination)
+        end
+    end
+
+    return destdir, destname
+end
+
+--- Prepare a files source.
+-- @param info The info table.
+-- @param sourcename The source name (string)
+-- @param sourceset Unused.
+-- @param buildpath Base path of the build directory ($T/build) (string).
+-- @see toresult
 -- @return bool
 -- @return nil, maybe an error string on error
 function files.prepare_source(info, sourcename, sourceset, buildpath)
@@ -249,27 +309,18 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:cat(re)
                 end
             elseif file.copy then
-                local fcdirname = e2lib.dirname(file.copy)
-                local fcbasename = e2lib.basename(file.copy)
-                local destination = string.format("%s/%s/%s", buildpath, sourcename,
-                file.copy)
                 local destdir, destname
-                -- emulate the cp behaviour to feed the cache.fetch_file interface
-                -- correctly, that does not allow ambiguities
-                if e2lib.isdir(destination) then
-                    destdir = destination
-                    destname = nil
-                else
-                    destdir = string.format("%s/%s/%s", buildpath, sourcename,
-                    fcdirname)
-                    destname = fcbasename
-                    if not e2lib.mkdir(destdir, "-p") then
-                        e2lib.abort(string.format(
-                        "can't create destination directory: %s", destdir))
-                    end
+                destdir, destname = gen_dest_dir_name(buildpath, sourcename,
+                    file.copy, file.location)
+
+                rc, re = e2lib.mkdir(destdir, "-p")
+                if not rc then
+                    re = err.new("creating directory failed: %s", re)
+                    return false, e:cat(re)
                 end
+
                 local rc, re = info.cache:fetch_file(file.server, file.location,
-                destdir, destname, {})
+                    destdir, destname, {})
                 if not rc then
                     return false, e:cat(re)
                 end
@@ -361,7 +412,16 @@ function files.sourceid(info, sourcename, sourceset)
     return true, nil, src.sourceid
 end
 
--- export the source to a result structure
+--- Create a source result containing the generated Makefile and files
+-- belonging to the source, for use with collect_project.
+-- Result refers to a collection of files to recreate an e2source for
+-- collect_project in this context.
+-- @param info The info table.
+-- @param sourcename Source name (string).
+-- @param sourceset Unused.
+-- @param directory Name of the source directory (string).
+-- @return Boolean, true on success.
+-- @return An error object on failure.
 function files.toresult(info, sourcename, sourceset, directory)
     local rc, re
     local e = err.new("converting result failed")
@@ -377,9 +437,8 @@ function files.toresult(info, sourcename, sourceset, directory)
     if not f then
         return false, e:cat(msg)
     end
-    f:write(string.format(
-    ".PHONY:\tplace\n\n"..
-    "place:\n"))
+
+    f:write(string.format(".PHONY: place\n\nplace:\n"))
     for _,file in ipairs(s.file) do
         e2lib.log(4, string.format("export file: %s", file.location))
         local destdir = string.format("%s/%s", directory, source)
@@ -423,12 +482,35 @@ function files.toresult(info, sourcename, sourceset, directory)
             end
         end
         if file.copy then
-            f:write(string.format(
-            "\tmkdir -p \"$(BUILD)/%s\"\n"..
-            "\tcp \"%s/%s\" \"$(BUILD)/%s/%s\"\n",
-            sourcename,
-            source, e2lib.basename(file.location), sourcename,
-            file.copy))
+            local to, from
+            from = e2lib.shquote(
+                e2lib.join(source, e2lib.basename(file.location)))
+
+            local destdir, destname = gen_dest_dir_name("/", sourcename,
+                file.copy, file.location, "isdir")
+            --
+            -- is a directory?
+            --
+            to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
+            f:write(string.format('\tif [ test -d %s ]; then \\\n', to))
+
+            to = string.format('"$(BUILD)"%s',
+                e2lib.shquote(e2lib.join(destdir, destname)))
+            f:write(string.format('\t\tcp %s %s; \\\n', from, to))
+            f:write(string.format('\telse \\\n'))
+            --
+            -- not a directory
+            --
+            destdir, destname = gen_dest_dir_name("/", sourcename, file.copy,
+                file.location, "no")
+
+            to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
+            f:write(string.format('\t\tmkdir -p %s; \\\n', to))
+
+            to = string.format('"$(BUILD)"%s',
+                e2lib.shquote(e2lib.join(destdir, destname)))
+            f:write(string.format('\t\tcp %s %s; \\\n', from, to))
+            f:write('\tfi\n')
         end
         if file.patch then
             f:write(string.format(
@@ -457,10 +539,20 @@ function files.toresult(info, sourcename, sourceset, directory)
     return true, nil
 end
 
+--- Check for working copy availability.
+-- @param info The info table.
+-- @param sourcename The name of the source (string).
+-- @return Boolean, true on success.
+-- @return An error object on failure.
 function files.check_workingcopy(info, sourcename)
     return true, nil
 end
 
+--- Update the source.
+-- @param info The info table.
+-- @param sourcename The name of the source (string).
+-- @return Boolean, true on success.
+-- @return An error object on failure.
 function files.update(info, sourcename)
     return true, nil
 end
