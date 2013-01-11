@@ -1,6 +1,7 @@
 project = "e2factory"
 title = "e2factory Developer Documentation"
 dir = "e2factory"
+all = true
 file = { "../../generic",
 	"../../local",
 	"../../global",
