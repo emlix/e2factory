@@ -116,8 +116,14 @@ SHA-1 check-sum of the file.
 .BR copy
 Type: String
 .br
-The file is copied to directory defined in string during build preparation. Mutual exclusive to 
-\fBpatch\fR and \fBunpack\fR.
+In case string is a directory (ends on "/" or equals "." or ".."), the file is copied to that directory.
+The name is left unchanged.
+.br
+In all other cases the string is used as new name for the file. The file is renamed.
+.br
+Directories are allowed in both cases and created on demand.
+.br
+Mutual exclusive to \fBpatch\fR and \fBunpack\fR.
 
 .TP
 .BR patch
