@@ -247,7 +247,7 @@ function cvs.update(info, sourcename)
     if not rc then
         e2lib.abort(re)
     end
-    local e = err.new("updating cvs source failed")
+    local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
     local working = string.format("%s/%s", info.root, src.working)
     local rsh = tools.get_tool("ssh")

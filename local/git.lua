@@ -188,7 +188,7 @@ end
 function git.update(info, sourcename)
     local src = info.sources[ sourcename ]
     local rc, re
-    local e = err.new("updating source failed")
+    local e = err.new("updating source '%s' failed", sourcename)
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then
         return false, e:cat(re)

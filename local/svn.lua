@@ -313,7 +313,7 @@ function svn.update(info, sourcename)
     if not rc then
         e2lib.abort(re)
     end
-    local e = err.new("updating svn source failed")
+    local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
     local working = string.format("%s/%s", info.root, src.working)
     rc, re = e2lib.chdir(working)
