@@ -56,7 +56,7 @@ e2source.5
 
 MANPAGES = $(MANPAGES1) $(MANPAGES5)
 
-CLEAN_FILES = *~ $(MANPAGES)
+CLEAN_FILES = *~ $(MANPAGES) man.tar.gz
 
 .PHONY: all install install-local uninstall clean
 
@@ -67,20 +67,32 @@ install: $(MANPAGES)
 	install -m644 $(MANPAGES1) $(DESTDIR)$(MANDIR)/man1
 	install -m644 $(MANPAGES5) $(DESTDIR)$(MANDIR)/man5
 
-install-local: $(MANPAGES)
-	mkdir -p $(LOCALDOCDIR)/man/man1 $(LOCALDOCDIR)/man/man5
-	install -m644 $(MANPAGES1) $(LOCALDOCDIR)/man/man1
-	install -m644 $(MANPAGES5) $(LOCALDOCDIR)/man/man5
-
 uninstall:
 	for x in $(MANPAGES1) ; do rm -f $(DESTDIR)$(MANDIR)/man1/$$x ; done
 	for x in $(MANPAGES5) ; do rm -f $(DESTDIR)$(MANDIR)/man5/$$x ; done
 	rmdir $(DESTDIR)$(MANDIR)/man1 || :
 	rmdir $(DESTDIR)$(MANDIR)/man5 || :
 
+local:
+
+install-local: doc
+	mkdir -p $(LOCALDOCDIR)/man/man1 $(LOCALDOCDIR)/man/man5
+	install -m644 $(MANPAGES1) $(LOCALDOCDIR)/man/man1
+	install -m644 $(MANPAGES5) $(LOCALDOCDIR)/man/man5
+
+doc: $(MANPAGES)
+	tar -czf man.tar.gz $(MANPAGES)
+
 %: %.in
 	sed s/@VERSION@/$(VERSION)/g $< > $@
+
+install-doc:
 
 clean:
 	rm -f $(CLEAN_FILES)
 	rm -fr html man
+
+check:
+
+localdist:
+

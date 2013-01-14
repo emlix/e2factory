@@ -25,7 +25,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-SUBDIRS    = ldoc developer man manual
+SUBDIRS    = ldoc developer man
 TOPLEVEL   = ..
 
 include $(TOPLEVEL)/make.vars
@@ -67,12 +67,11 @@ doc:
 	$(MAKE) documentation.tar.gz
 
 documentation.tar.gz: developer/e2factory.tar.gz \
-					man/man.tar.gz manual/manual.tar.gz
+					man/man.tar.gz
 	rm -fr documentation
 	mkdir -p documentation/developer
 	tar -C documentation/developer -xzf developer/e2factory.tar.gz
 	tar -C documentation -xzf man/man.tar.gz
-	tar -C documentation -xzf manual/manual.tar.gz
 	cp $(TOPLEVEL)/Changelog documentation
 	tar -czf documentation.tar.gz documentation
 
