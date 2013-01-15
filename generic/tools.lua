@@ -103,8 +103,8 @@ function tools.set_tool(name, value, flags)
     if type(flags) == "string" then
         toollist[name].flags = flags
     end
-    e2lib.log(3, string.format("setting tool: %s=%s flags=%s",
-    name, toollist[name].name, toollist[name].flags))
+    e2lib.logf(3, "setting tool: %s=%s flags=%s", name, toollist[name].name,
+        toollist[name].flags)
     return true, nil
 end
 
@@ -135,8 +135,8 @@ function tools.add_tool(name, value, flags, optional)
     }
 
     local t = toollist[name]
-    e2lib.log(3, string.format("adding tool: %s=%s flags=%s optional=%s",
-    name, t.name, t.flags, tostring(t.optional)))
+    e2lib.logf(3, "adding tool: %s=%s flags=%s optional=%s", name, t.name,
+        t.flags, tostring(t.optional))
 
     return true, nil
 end
@@ -153,14 +153,12 @@ function tools.check_tool(name)
         tool.path = p:read()
         p:close()
         if not tool.path then
-            e2lib.log(3, string.format(
-            "tool not available: %s", tool.name))
+            e2lib.logf(3, "tool not available: %s", tool.name)
             return false, "tool not available"
         end
     end
-    e2lib.log(4, string.format(
-    "tool available: %s (%s)",
-    tool.name, tool.path))
+    e2lib.logf(4, "tool available: %s (%s)", tool.name, tool.path)
+
     return true
 end
 
@@ -176,9 +174,7 @@ function tools.init()
                 error = true
                 warn = "Error"
             end
-            e2lib.log(1, string.format(
-            "%s: tool is not available: %s",
-            warn, tool))
+            e2lib.logf(1, "%s: tool is not available: %s", warn, tool)
         end
     end
     if error then
