@@ -87,6 +87,17 @@ function tools.get_tool_flags(name)
     return toollist[name].flags or ""
 end
 
+--- Get tool name.
+-- @param name tool name (string)
+-- @return Tool name field (string) used to find tool in PATH.
+function tools.get_tool_name(name)
+    if not toollist[name] then
+        e2lib.bomb("looking up flags for invalid tool: " ..
+        tostring(name))
+    end
+    return toollist[name].name
+end
+
 --- set a tool command and flags
 -- @param name string: the tool name
 -- @param value string: the new tool command
