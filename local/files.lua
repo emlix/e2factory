@@ -35,6 +35,7 @@ local err = require("err")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local strict = require("strict")
+local tools = require("tools")
 
 plugin_descriptor = {
     description = "Files SCM Plugin",
@@ -268,10 +269,19 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             if not path then
                 return false, e:cat(re)
             end
-            local y = e2lib.howtounpack(path, path, buildpath)
-            if not y or e2lib.callcmd_capture(y) ~= 0 then
-                return false, e:append("failed to unpack: %s", path)
+
+            local rc, re = e2lib.howtounpack(path, path, buildpath)
+            if not rc then
+                return false, e:cat(re)
             end
+
+            local tool, toolargv = rc, re
+            rc, re = e2lib.call_tool_argv(tool, toolargv)
+            if not rc then
+                e:cat(err.new("unpacking archive '%s' failed", path))
+                return false, e:cat(re)
+            end
+
             if not symlink then
                 symlink = buildpath .. "/" .. sourcename
                 if file.unpack ~= sourcename then
@@ -463,18 +473,23 @@ function files.toresult(info, sourcename, sourceset, directory)
             e2lib.basename(checksum_file)))
         end
         if file.unpack then
-            local c = e2lib.howtounpack(
-            string.format("%s/%s", destdir,
-            e2lib.basename(file.location)),
-            string.format("%s/%s", source,
-            e2lib.basename(file.location)),
-            string.format("$(BUILD)"))
-            if not c then
-                return false, e:cat("%s:%s: "..
-                "can't generate command to unpack",
-                file.server, file.location)
+            local physpath = e2lib.join(destdir, e2lib.basename(file.location))
+            local virtpath = e2lib.join(source, e2lib.basename(file.location))
+            local rc, re = e2lib.howtounpack(physpath, virtpath, "$(BUILD)")
+            if not rc then
+                e:cat("unable to generate unpack command")
+                return false, e:cat(re)
             end
-            f:write(string.format("\t%s\n", c))
+
+            local tool, toolargv = rc, re
+            local toolname = tools.get_tool_name(tool)
+
+            f:write(string.format("\t%s", toolname))
+            for _,v in ipairs(toolargv) do
+                f:write(string.format(" %s", e2lib.shquote(v)))
+            end
+            f:write("\n")
+
             if file.unpack ~= sourcename then
                 f:write(string.format(
                 "\tln -s %s $(BUILD)/%s\n", file.unpack,
