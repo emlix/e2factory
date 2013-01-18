@@ -251,7 +251,7 @@ function git.fetch_source(info, sourcename)
     src.server, src.location, src.branch))
     local skip_checkout = e2lib.globals.git_skip_checkout
     rc, re = generic_git.git_clone_from_server(info.cache, src.server,
-    src.location, wrk, skip_checkout)
+        src.location, wrk, false)
     if not rc then
         return false, e:cat(re)
     end

@@ -93,7 +93,6 @@ e2lib.globals = {
     -- @class table
     -- @name cmdline
     cmdline = {},
-    git_skip_checkout = true,
     template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
     extension_config = ".e2/extensions",
     e2config = ".e2/e2config",
