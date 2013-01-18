@@ -144,10 +144,9 @@ end
 local server = config.site.e2_server
 local location = config.site.e2_location
 local destdir = "e2"
-local skip_checkout = false
 e2lib.logf(2, "fetching e2factory (ref %s)", ref)
 rc, re = generic_git.git_clone_from_server(scache, server, location,
-destdir, skip_checkout)
+    destdir, false)
 if not rc then
     e2lib.abort(e:cat(re))
 end
@@ -176,13 +175,12 @@ for _,ex in ipairs(extensions) do
     local server = config.site.e2_server
     local location = string.format("%s/%s.git", config.site.e2_base, ex.name)
     local destdir = ex.name
-    local skip_checkout = false
     rc, re = e2lib.rm(destdir, "-fr")
     if not rc then
         e2lib.abort(e:cat(re))
     end
     rc, re = generic_git.git_clone_from_server(scache, server, location,
-    destdir, skip_checkout)
+        destdir, false)
     if not rc then
         e2lib.abort(e:cat(re))
     end
