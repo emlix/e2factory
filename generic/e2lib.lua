@@ -745,17 +745,10 @@ function e2lib.howtounpack(physpath, virtpath, destdir)
     return tool, toolargv
 end
 
--- Input/Output operations
---
---   read_line(PATHNAME)
---
---     Reads a single line from the given file and returns it.
---
---   read_all(FD, [BLOCKSIZE]) -> STRING
---
---     Reads all remaining input from a given file-descriptor. BLOCKSIZE
---     specifies the size of subsequently read blocks and defaults to 1024.
-
+--- Read the first line from the given file and return it.
+-- @param path Path to file (string).
+-- @return The first line or nil on error.
+-- @return Error object on failure.
 function e2lib.read_line(path)
     local f, msg = io.open(path)
     if not f then
@@ -768,19 +761,6 @@ function e2lib.read_line(path)
     f:close()
     return l
 end
-
-function e2lib.read_all(fd, blocksize)
-    local input = {}
-    local blocksize = blocksize or 1024
-    while true do
-        local s, msg = e2util.read(fd, blocksize)
-        if not s then e2lib.bomb("read error: ", msg)
-        elseif #s == 0 then break
-        else table.insert(input, s) end
-    end
-    return table.concat(input)
-end
-
 
 -- Iterators
 --
