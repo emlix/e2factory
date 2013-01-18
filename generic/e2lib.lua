@@ -181,7 +181,13 @@ function e2lib.init()
     end
 
     -- get the host name
-    e2lib.globals.hostname = e2lib.program_output("hostname")
+    local hostname = io.popen("hostname")
+    if not hostname then
+        e2lib.abort("execution of \"hostname\" failed")
+    end
+
+    e2lib.globals.hostname = hostname:read("*a")
+    hostname:close()
     if not e2lib.globals.hostname then
         e2lib.abort("hostname ist not set")
     end
@@ -291,19 +297,6 @@ function e2lib.tracer(event, line)
     else
         e2lib.log(4, string.format("< %s%s", module, ftbl.name))
     end
-end
-
---- return the output of a program, abort if the call fails
--- @param cmd string: the program to call
--- @return string: the program output
-function e2lib.program_output(cmd)
-    local i = io.popen(cmd)
-    if not i then
-        e2lib.abort("invocation of program failed:  ", cmd)
-    end
-    local input = i:read("*a")
-    i:close()
-    return input
 end
 
 --- print a warning, composed by concatenating all arguments to a string
