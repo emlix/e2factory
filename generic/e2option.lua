@@ -89,181 +89,194 @@ function e2option.alias(alias, option)
     aliases[alias] = option
 end
 
+local function defaultoptions()
+    local category = "Verbosity Control Options"
+    e2option.option("e2-config", "specify configuration file", nil,
+    function(arg)
+        e2lib.sete2config(arg)
+    end,
+    "FILE")
+
+    e2option.flag("quiet", "disable all log levels",
+    function()
+        e2lib.setlog(1, false)
+        e2lib.setlog(2, false)
+        e2lib.setlog(3, false)
+        e2lib.setlog(4, false)
+        return true
+    end,
+    category)
+
+    e2option.flag("verbose", "enable log levels 1-2",
+    function()
+        e2lib.setlog(1, true)
+        e2lib.setlog(2, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("debug", "enable log levels 1-3",
+    function()
+        e2lib.setlog(1, true)
+        e2lib.setlog(2, true)
+        e2lib.setlog(3, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("tooldebug", "enable log levels 1-4",
+    function()
+        e2lib.setlog(1, true)
+        e2lib.setlog(2, true)
+        e2lib.setlog(3, true)
+        e2lib.setlog(4, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("vall", "enable all log levels",
+    function()
+        e2lib.setlog(1, true)
+        e2lib.setlog(2, true)
+        e2lib.setlog(3, true)
+        e2lib.setlog(4, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("v1", "enable log level 1 (minimal)",
+    function()
+        e2lib.setlog(1, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("v2", "enable log level 2 (verbose)",
+    function()
+        e2lib.setlog(2, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("v3", "enable log level 3 (show user debug information)",
+    function()
+        e2lib.setlog(3, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("v4", "enable log level 4 (show tool debug information)",
+    function()
+        e2lib.setlog(4, true)
+        return true
+    end,
+    category)
+
+    e2option.flag("log-debug", "enable logging of debugging output",
+    function()
+        e2lib.globals.log_debug = true
+        return true
+    end,
+    category)
+
+    e2option.flag("Wall", "enable all warnings")
+    e2option.flag("Wdefault", "warn when default values are applied")
+    e2option.flag("Wdeprecated", "warn if deprecated options are used")
+    e2option.flag("Wnoother",
+        "disable all warnings not mentioned above (enabled by default)")
+    e2option.flag("Wpolicy", "warn when hurting policies")
+    e2option.flag("Whint", "enable hints to the user")
+
+    category = "General Options"
+    e2option.flag("help", "show usage information",
+    function()
+        e2option.usage(0)
+    end,
+    category)
+
+    e2option.flag("version", "show version number",
+    function()
+        print(buildconfig.VERSIONSTRING)
+        plugin.print_descriptions()
+        e2lib.finish(0)
+    end,
+    category)
+
+    e2option.flag("licence", "show licence information",
+    function()
+        print(e2lib.globals._version)
+        print()
+        print(e2lib.globals._licence)
+        e2lib.finish(0)
+    end,
+    category)
+end
+
+local function userdefaultoptions(opts)
+    local home = e2lib.globals.homedir
+    if not home then
+        return
+    end
+
+    local file = home .. "/.e2/e2rc"
+    if not e2util.exists(file) then
+        return
+    end
+
+    local e2rc = {}
+    local rc, e = e2lib.dofile_protected(file, { e2rc = function(t) e2rc = t end })
+    if not rc then
+        e2lib.abort(e)
+    end
+
+    for _,tbl in pairs(e2rc) do
+        if type(tbl) ~= "table" then
+            e2lib.abort(string.format("could not parse user defaults.\n"..
+            "'%s' is not in the expected format.", file))
+        end
+
+        local opt=tbl[1]
+        local val=tbl[2]
+
+        if type(opt) ~= "string" or string.len(opt) == 0 then
+            e2lib.abort(string.format("could not parse user defaults.\n"..
+            "'%s' has a malformed option", file))
+        end
+
+        opt = aliases[opt] or opt
+
+        if not options[opt] then
+            e2lib.abort("unknown option in user defaults: " .. opt)
+        end
+
+        if options[opt].type == "flag" and val then
+            e2lib.abort(string.format(
+            "user default option '%s' does not take an argument ",
+            opt))
+        elseif options[opt].type == "option" and not val then
+            e2lib.abort(
+            "argument missing for user default option: " .. opt)
+        end
+
+        if options[opt].proc then
+            if  options[opt].type == "flag" then
+                opts[opt] = options[opt].proc()
+            else
+                opts[opt] = options[opt].proc(val)
+            end
+        elseif options[opt].default then
+            opts[opt] = options[opt].default
+        else
+            e2lib.bomb("user default option has no effect")
+        end
+    end
+end
+
 --- fill in defaults, parse user defauls and parse normal options
 -- @param args table: command line arguments (usually the arg global variable)
 -- @return table: option_table
 -- @return table of unparsed arguments (everything not identified as an option)
 function e2option.parse(args)
-    local function defaultoptions()
-        local category = "Verbosity Control Options"
-        e2option.option("e2-config", "specify configuration file", nil,
-        function(arg)
-            e2lib.sete2config(arg)
-        end,
-        "FILE")
-        e2option.flag("quiet", "disable all log levels",
-        function()
-            e2lib.setlog(1, false)
-            e2lib.setlog(2, false)
-            e2lib.setlog(3, false)
-            e2lib.setlog(4, false)
-            return true
-        end,
-        category)
-        e2option.flag("verbose", "enable log levels 1-2",
-        function()
-            e2lib.setlog(1, true)
-            e2lib.setlog(2, true)
-            return true
-        end,
-        category)
-        e2option.flag("debug", "enable log levels 1-3",
-        function()
-            e2lib.setlog(1, true)
-            e2lib.setlog(2, true)
-            e2lib.setlog(3, true)
-            return true
-        end,
-        category)
-        e2option.flag("tooldebug", "enable log levels 1-4",
-        function()
-            e2lib.setlog(1, true)
-            e2lib.setlog(2, true)
-            e2lib.setlog(3, true)
-            e2lib.setlog(4, true)
-            return true
-        end,
-        category)
-        e2option.flag("vall", "enable all log levels",
-        function()
-            e2lib.setlog(1, true)
-            e2lib.setlog(2, true)
-            e2lib.setlog(3, true)
-            e2lib.setlog(4, true)
-            return true
-        end,
-        category)
-        e2option.flag("v1", "enable log level 1 (minimal)",
-        function()
-            e2lib.setlog(1, true)
-            return true
-        end,
-        category)
-        e2option.flag("v2", "enable log level 2 (verbose)",
-        function()
-            e2lib.setlog(2, true)
-            return true
-        end,
-        category)
-        e2option.flag("v3", "enable log level 3 (show user debug information)",
-        function()
-            e2lib.setlog(3, true)
-            return true
-        end,
-        category)
-        e2option.flag("v4", "enable log level 4 (show tool debug information)",
-        function()
-            e2lib.setlog(4, true)
-            return true
-        end,
-        category)
-        e2option.flag("log-debug", "enable logging of debugging output",
-        function()
-            e2lib.globals.log_debug = true
-            return true
-        end,
-        category)
-        e2option.flag("Wall", "enable all warnings")
-        e2option.flag("Wdefault", "warn when default values are applied")
-        e2option.flag("Wdeprecated", "warn if deprecated options are used")
-        e2option.flag("Wnoother",
-        "disable all warnings not mentioned above (enabled by default)")
-        e2option.flag("Wpolicy", "warn when hurting policies")
-        e2option.flag("Whint", "enable hints to the user")
-        category = "General Options"
-        e2option.flag("help", "show usage information",
-        function()
-            e2option.usage()
-        end,
-        category)
-        e2option.flag("version", "show version number",
-        function()
-            print(buildconfig.VERSIONSTRING)
-            plugin.print_descriptions()
-            e2lib.finish(0)
-        end,
-        category)
-        e2option.flag("licence", "show licence information",
-        function()
-            print(e2lib.globals._version)
-            print()
-            print(e2lib.globals._licence)
-            e2lib.finish(0)
-        end,
-        category)
-    end
-
-    local function userdefaultoptions(opts)
-        local home = e2lib.globals.homedir
-
-        if not home then
-            return
-        end
-
-        local file = home .. "/.e2/e2rc"
-        if not e2util.exists(file) then
-            return
-        end
-
-        local e2rc = {}
-        local rc, e = e2lib.dofile_protected(file, { e2rc = function(t) e2rc = t end })
-        if not rc then
-            e2lib.abort(e)
-        end
-
-        for _,tbl in pairs(e2rc) do
-            if type(tbl) ~= "table" then
-                e2lib.abort(string.format("could not parse user defaults.\n"..
-                    "'%s' is not in the expected format.", file))
-            end
-
-            local opt=tbl[1]
-            local val=tbl[2]
-
-            if type(opt) ~= "string" or string.len(opt) == 0 then
-                e2lib.abort(string.format("could not parse user defaults.\n"..
-                    "'%s' has a malformed option", file))
-            end
-
-            opt = aliases[opt] or opt
-
-            if not options[opt] then
-                e2lib.abort("unknown option in user defaults: " .. opt)
-            end
-
-            if options[opt].type == "flag" and val then
-                e2lib.abort(string.format(
-                    "user default option '%s' does not take an argument ",
-                    opt))
-            elseif options[opt].type == "option" and not val then
-                e2lib.abort(
-                    "argument missing for user default option: " .. opt)
-            end
-
-            if options[opt].proc then
-                if  options[opt].type == "flag" then
-                    opts[opt] = options[opt].proc()
-                else
-                    opts[opt] = options[opt].proc(val)
-                end
-            elseif options[opt].default then
-                opts[opt] = options[opt].default
-            else
-                e2lib.bomb("user default option has no effect")
-            end
-        end
-    end
-
     defaultoptions()
     local opts = {}
     local vals = {}
