@@ -329,7 +329,7 @@ function e2lib.warnf(category, format, ...)
 end
 
 --- exit, cleaning up temporary files and directories.
--- Return code is '1' and cannot be overrided.
+-- Return code is '1' and cannot be overwritten.
 -- This function takes any number of strings or an error object as arguments.
 -- Please pass error objects to this function in the future.
 -- @param ... an error object, or any number of strings
@@ -346,12 +346,7 @@ function e2lib.abort(...)
         end
         e2lib.log(1, "Error: " .. msg)
     end
-    e2lib.rmtempdirs()
-    e2lib.rmtempfiles()
-    if e2lib.globals.lock then
-        e2lib.globals.lock:cleanup()
-    end
-    os.exit(1)
+    e2lib.finish(1)
 end
 
 --- write a message about an internal error, including a traceback
@@ -532,13 +527,8 @@ function e2lib.rotate_log(file)
     return true, nil
 end
 
---- exit from the tool, cleaning up temporary files and directories
--- @param rc number: return code (optional, defaults to 0)
--- @return This function does not return.
-function e2lib.finish(returncode)
-    if not returncode then
-        returncode = 0
-    end
+--- Clean up temporary files and directories, shut down plugins.
+function e2lib.cleanup()
     local rc, re = plugin.exit_plugins()
     if not rc then
         e2lib.logf(1, "deinitializing plugins failed (ignoring)")
@@ -548,6 +538,16 @@ function e2lib.finish(returncode)
     if e2lib.globals.lock then
         e2lib.globals.lock:cleanup()
     end
+end
+
+--- exit from the tool, cleaning up temporary files and directories
+-- @param rc number: return code (optional, defaults to 0)
+-- @return This function does not return.
+function e2lib.finish(returncode)
+    if not returncode then
+        returncode = 0
+    end
+    e2lib.cleanup()
     os.exit(returncode)
 end
 
