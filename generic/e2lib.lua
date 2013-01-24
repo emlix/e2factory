@@ -638,15 +638,6 @@ function e2lib.is_backup_file(path)
     return string.find(path, "~$") or string.find(path, "^#.*#$")
 end
 
-function e2lib.chomp(str, chr)
-    local chr = chr or "/"
-    if string.sub(str, -1, -1) == chr then
-        return string.sub(str, 1, -2)
-    else
-        return str
-    end
-end
-
 --- quotes a string so it can be safely passed to a shell
 -- @param str string to quote
 -- @return quoted string
@@ -765,35 +756,6 @@ function e2lib.read_line(path)
     end
     f:close()
     return l
-end
-
--- Iterators
---
--- These iterators are convenience functions for use in "for" statements.
---
---   read_configuration(PATH)
---
---     Returns the successive non-empty lines contained in the file PATH.
---     Comments (of the form "# ...") are removed.
-function e2lib.read_configuration(p)
-    if e2util.exists(p) then
-        local function nextline(s)
-            while true do
-                local ln = s:read("*l")
-                if not ln then
-                    s:close()
-                    return nil
-                elseif not string.find(ln, "^%s*#") and string.find(ln, "%S") then
-                    local s = string.find(ln, "#.*")
-                    if s then return string.sub(ln, 1, s - 1)
-                    else return ln end
-                end
-            end
-        end
-        return nextline, io.open(p)
-    else
-        e2lib.abort("no such file: " .. p)
-    end
 end
 
 --- read the global config file
