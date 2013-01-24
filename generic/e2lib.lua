@@ -1201,13 +1201,13 @@ function e2lib.dofile2(path, gtable)
     return true, nil
 end
 
---   locate_project_root([PATH]) -> PATH | nil
---
---     Locates the root directory of current project. If PATH is not given,
---     then the current working directory is taken as the base directory from
---     where to start.
---
-
+--- Locates the root directory of the current project. If path is not given,
+-- then the current working directory is taken as the base directory from
+-- where to start.
+-- @param path Project directory (string) or nil.
+-- @return Absolute base project directory or nil on error.
+-- XXX: change nil to false.
+-- @return Error object on failure.
 function e2lib.locate_project_root(path)
     local rc, re
     local e = err.new("checking for project directory failed")
