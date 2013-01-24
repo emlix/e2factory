@@ -118,16 +118,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.]],
     debuglogfilebuffer = {},
 }
 
--- Interrupt handling
+--- Interrupt handling.
 --
 -- e2util sets up a SIGINT handler that calls back into this function.
-
 function e2lib.interrupt_hook()
     e2lib.abort("*interrupted by user*")
 end
 
---- make sure the environment variables inside the globals table are
--- initialized properly, and abort otherwise
+--- Make sure the environment variables inside the globals table are
+-- initialized properly, and abort otherwise.
 -- This function always succeeds or aborts.
 function e2lib.init()
     e2lib.log(4, "e2lib.init()")
@@ -195,6 +194,7 @@ function e2lib.init()
     e2lib.globals.lock = lock.new()
 end
 
+--- init2.
 function e2lib.init2()
     local rc, re
     local e = err.new("initializing globals (step2)")
@@ -299,7 +299,7 @@ function e2lib.tracer(event, line)
     end
 end
 
---- print a warning, composed by concatenating all arguments to a string
+--- Print a warning, composed by concatenating all arguments to a string.
 -- @param ... any number of strings
 -- @return nil
 function e2lib.warn(category, ...)
@@ -307,7 +307,7 @@ function e2lib.warn(category, ...)
     return e2lib.warnf(category, "%s", msg)
 end
 
---- print a warning
+--- Print a warning.
 -- @param format string: a format string
 -- @param ... arguments required for the format string
 -- @return nil
@@ -328,7 +328,7 @@ function e2lib.warnf(category, format, ...)
     return nil
 end
 
---- exit, cleaning up temporary files and directories.
+--- Exit, cleaning up temporary files and directories.
 -- Return code is '1' and cannot be overwritten.
 -- This function takes any number of strings or an error object as arguments.
 -- Please pass error objects to this function in the future.
@@ -349,10 +349,10 @@ function e2lib.abort(...)
     e2lib.finish(1)
 end
 
---- write a message about an internal error, including a traceback
+--- Write a message about an internal error, including a traceback
 -- and exit. Return code is 32.
--- @param ... any number of strings
--- @return This function does not return
+-- @param ... any number of strings.
+-- @return This function does not return.
 function e2lib.bomb(...)
     local msg = table.concat({...})
     io.stderr:write(
@@ -369,13 +369,15 @@ function e2lib.bomb(...)
     os.exit(32)
 end
 
+--- Set E2_CONFIG in the environment to file. Also sets commandline option.
+-- @param file Config file name (string).
 function e2lib.sete2config(file)
     e2util.setenv("E2_CONFIG", file, 1)
     e2lib.globals.osenv["E2_CONFIG"] = file
     e2lib.globals.cmdline["e2-config"] = file
 end
 
---- enable or disable logging for level.
+--- Enable or disable logging for level.
 -- @param level number: loglevel
 -- @param value bool
 -- @return nil
@@ -383,14 +385,14 @@ function e2lib.setlog(level, value)
     e2lib.globals.logflags[level][2] = value
 end
 
---- get logging setting for level
+--- Get logging setting for level
 -- @param level number: loglevel
 -- @return bool
 function e2lib.getlog(level)
     return e2lib.globals.logflags[level][2]
 end
 
---- return highest loglevel that is enabled
+--- Return highest loglevel that is enabled.
 -- @return number
 function e2lib.maxloglevel()
     local level = 0
@@ -473,6 +475,7 @@ function e2lib.log(level, msg)
     end
 end
 
+--- Rotate log file.
 function e2lib.rotate_log(file)
     local e = err.new("rotating logfile: %s", file)
     local rc, re
@@ -629,6 +632,8 @@ function e2lib.join(p1, p2, ...)
 	return buildpath
 end
 
+--- Checks whether file matches some usual backup file names left behind by vi
+-- and emacs.
 function e2lib.is_backup_file(path)
     return string.find(path, "~$") or string.find(path, "^#.*#$")
 end
@@ -770,13 +775,6 @@ end
 --
 --     Returns the successive non-empty lines contained in the file PATH.
 --     Comments (of the form "# ...") are removed.
---
---   directory(PATH, [DOTFILES, [NOERROR]])
---
---     Successively returns the files in the directory designated by
---     PATH. If DOTFILES is given and true, then files beginning with "."
---     are also included in the listing.
-
 function e2lib.read_configuration(p)
     if e2util.exists(p) then
         local function nextline(s)
@@ -860,6 +858,7 @@ function e2lib.read_global_config(e2_config_file)
     return false, "no config file available"
 end
 
+--- Create a extensions config.
 function e2lib.write_extension_config(extensions)
     local e = err.new("writing extensions config: %s", e2lib.globals.extension_config)
     local f, re = io.open(e2lib.globals.extension_config, "w")
@@ -950,6 +949,13 @@ function e2lib.get_global_config()
     return config
 end
 
+--- Successively returns the files in the directory.
+-- @param p Directory path (string).
+-- @param dotfiles If true, also return files starting with a '.'. Optional.
+-- @param noerror If true, do not call e2lib.abort on error, but pretend the
+-- directory is empty. Optional.
+-- @return Iterator function.
+-- @return dir table.
 function e2lib.directory(p, dotfiles, noerror)
     local dir = e2util.directory(p, dotfiles)
     if not dir then
@@ -973,9 +979,8 @@ function e2lib.directory(p, dotfiles, noerror)
     return nextfile, dir
 end
 
--- callcmd: call a command, connecting
---  stdin, stdout, stderr to luafile objects
-
+--- callcmd: call a command, connecting
+--  stdin, stdout, stderr to luafile objects.
 function e2lib.callcmd(infile, outfile, errfile, cmd)
     -- redirect stdin
     io.stdin:close()
@@ -991,10 +996,9 @@ function e2lib.callcmd(infile, outfile, errfile, cmd)
     return (rc/256)
 end
 
--- callcmd_redirect: call a command with
+--- callcmd_redirect: call a command with
 --  stdin redirected from /dev/null
---  stdout/stderr redirected to a luafile object
-
+--  stdout/stderr redirected to a luafile object.
 function e2lib.callcmd_redirect(cmd, out)
     local devnull, pid, rc
     devnull = luafile.open("/dev/null", "r")
@@ -1010,11 +1014,10 @@ function e2lib.callcmd_redirect(cmd, out)
     end
 end
 
--- callcmd_pipe: call several commands in a pipe
+--- callcmd_pipe: call several commands in a pipe.
 --  cmds is a table of unix commands
 --  redirect endpoints to /dev/null, unless given
 --  return nil on success, descriptive string on error
-
 function e2lib.callcmd_pipe(cmds, infile, outfile)
     local i = infile or luafile.open("/dev/null", "r")
     local c = #cmds
@@ -1151,14 +1154,18 @@ function e2lib.callcmd_log(cmd, loglevel)
     return rc, e
 end
 
--- Protected execution of Lua code
---
---   dofile_protected(PATH, TABLE, [ALLOWNEWDEFS])
---
---     Runs the code in the Lua file at PATH with a restricted global environment.
---     TABLE contains a table with the initial global environment. If ALLOWNEWDEFS
---     is given and true, then the code may define new global variables.
-
+--- Protected execution of Lua code.
+-- Runs the code in the Lua file at path with a restricted global environment.
+-- gtable contains a table with the initial global environment. If allownewdefs 
+-- is given and true, then the code may define new global variables.
+-- This function aborts on error.
+-- XXX: This looks like a more restricted version of dofile2 with problematic
+-- error handling. Merge the two and fix usage.
+-- @param path Filename to load lua code from (string).
+-- @param gtable Environment (table) that is used instead of the global _G.
+-- @param allownewdefs Allow adding new definitions to gtable (boolean).
+-- @return True on success.
+-- @see dofile2
 function e2lib.dofile_protected(path, gtable, allownewdefs)
     local chunk, msg = loadfile(path)
     if not chunk then
@@ -1187,6 +1194,11 @@ function e2lib.dofile_protected(path, gtable, allownewdefs)
     return true, nil
 end
 
+--- Executes Lua code loaded from path.
+--@param path Filename to load lua code from (string).
+--@param gtable Environment (table) that is used instead of the global _G.
+--@return True on success, false on error.
+--@return Error object on failure.
 function e2lib.dofile2(path, gtable)
     local e = err.new("error loading config file: %s", path)
     local chunk, msg = loadfile(path)
@@ -1252,8 +1264,7 @@ function e2lib.locate_project_root(path)
     return nil, err.new("not in a project directory")
 end
 
--- parse version files:
-
+--- Parse version files.
 function e2lib.parse_versionfile(filename)
     local f = luafile.open(filename, "r")
     if not f then
@@ -1271,6 +1282,7 @@ function e2lib.parse_versionfile(filename)
     return v
 end
 
+--- Parse e2version file.
 function e2lib.parse_e2versionfile(filename)
     local f = luafile.open(filename, "r")
     if not f then
@@ -1358,8 +1370,8 @@ function e2lib.mktempdir(template)
     return tmpdir
 end
 
--- remove a temporary directory and remove it from the builtin list of
--- temporary directories
+--- Remove a temporary directory and remove it from the builtin list of
+-- temporary directories.
 -- This function always succeeds (or aborts immediately)
 -- @param path
 function e2lib.rmtempdir(tmpdir)
