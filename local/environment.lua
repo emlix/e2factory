@@ -62,8 +62,7 @@ function environment.id(env)
     for var, val in env:iter() do
         hc:hash_append(string.format("%s=%s", var, val))
     end
-    -- XXX: get rid string.upper one day, causes a build-id change
-    return string.upper(hc:hash_finish())
+    return hc:hash_finish()
 end
 
 --- merge environment from merge into env.
