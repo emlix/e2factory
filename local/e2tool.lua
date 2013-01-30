@@ -407,7 +407,6 @@ local function check_collect_project(info, resultname)
     -- store a sorted list of required sources, chroot groups and licences
     local tmp_grp = {}
     local tmp_src = {}
-    tmp_grp["base"] = true
     for _,r in ipairs(res.collect_project_results) do
         local res = info.results[r]
         for _,s in ipairs(res.sources) do
@@ -2122,11 +2121,7 @@ function e2tool.pbuildid(info, resultname)
         end
         hash.hash_line(hc, lid)		-- licence id
     end
-    local groupid, re = chrootgroupid(info, "base")
-    if not groupid then
-        return nil, e:cat(re)
-    end
-    hc:hash_line(groupid)
+
     if r.chroot then
         for _,g in ipairs(r.chroot) do
             local groupid = chrootgroupid(info, g)
