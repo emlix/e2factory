@@ -42,6 +42,7 @@ local toollist = {
     git = { name = "git", flags = "", optional = false },
     cvs = { name = "cvs", flags = "", optional = true },
     svn = { name = "svn", flags = "", optional = true },
+    man = { name = "man", flags = "-l", optional = true },
     mktemp = { name = "mktemp", flags = "", optional = false },
     rm = { name = "rm", flags = "", optional = false },
     mkdir = { name = "mkdir", flags = "", optional = false },
