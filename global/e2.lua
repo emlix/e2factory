@@ -67,7 +67,7 @@ elseif e2call.basename == "e2" then
     e2call.toolname = "e2"
     local opts = e2option.parse(arg)
     if #opts == 0 then
-        e2option.usage()
+        e2option.usage(1)
     end
     e2lib.finish(0)
 else
