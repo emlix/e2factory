@@ -269,6 +269,10 @@ if opts.git then
     end
     e2lib.log(1, "Read e2-new-source(1) for the next step")
 elseif opts.files then
+    if #arguments < 2 or #arguments > 3 then
+        e2option.usage(1)
+    end
+
     local location = arguments[1]
     local sl, e = e2lib.parse_server_location(location, info.default_files_server)
     if not sl then
