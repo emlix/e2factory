@@ -1226,6 +1226,43 @@ function e2lib.locate_project_root(path)
     return nil, err.new("not in a project directory")
 end
 
+--- Checks whether the tool is an existing global e2factory tool. Note that
+-- there is third class of binaries living in BINDIR, which are not considered
+-- global (in a tool sense).
+-- @param tool Tool name such as 'e2-create-project', 'e2-build' etc.
+-- @return True or false.
+-- @return Error object when false.
+-- @see islocaltool
+function e2lib.isglobaltool(tool)
+    local tool = e2lib.join(buildconfig.TOOLDIR, tool)
+    if e2lib.isfile(tool) then
+        return true
+    end
+
+    return false, err.new('global tool "%s" does not exists', tool)
+end
+
+--- Check whether tool is an existing local e2factory tool.
+-- @param tool Tool name such as 'e2-install-e2', 'e2-build' etc.
+-- @param projectdir Optional directory where the tool should be searched in. If
+-- not specified, the current working directory will be used.
+-- @return True or false
+-- @return Error object when false.
+-- @see isglobaltool
+function e2lib.islocaltool(tool, projectdir)
+    local dir, re = e2lib.locate_project_root(projectdir)
+    if not dir then
+        return false, re
+    end
+
+    local tool = e2lib.join(dir, tool)
+    if e2lib.isfile(tool) then
+        return tool
+    end
+
+    return false, err.new('local tool "%s" does not exist', tool)
+end
+
 --- Parse version files.
 function e2lib.parse_versionfile(filename)
     local f = luafile.open(filename, "r")
