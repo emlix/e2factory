@@ -1862,15 +1862,16 @@ function e2lib.read_template(file)
 end
 
 --- parse a server:location string, taking a default server into account
--- @param arg string: the string to parse
+-- @param serverloc string: the string to parse
 -- @param default_server string: the default server name
 -- @return a table with fields server and location, nil on error
 -- @return nil, an error string on error
-function e2lib.parse_server_location(arg, default_server)
+function e2lib.parse_server_location(serverloc, default_server)
+    assert(type(serverloc) == 'string' and type(default_server) == 'string')
     local sl = {}
-    sl.server, sl.location = arg:match("(%S+):(%S+)")
+    sl.server, sl.location = serverloc:match("(%S+):(%S+)")
     if not (sl.server and sl.location) then
-        sl.location = arg:match("(%S+)")
+        sl.location = serverloc:match("(%S+)")
         if not (sl.location and default_server) then
             return nil, "can't parse location"
         end
