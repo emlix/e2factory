@@ -37,6 +37,7 @@ local function what()
 end
 
 --- Lock a table against adding fields explicitly or by implicit assignment.
+-- Prevent reading from undeclared fields.
 -- @param t table to lock
 function strict.lock(t)
     assert(type(t) == "table")
@@ -61,7 +62,7 @@ function strict.lock(t)
 
     mt.__index = function(t, k, v)
         local mt = getmetatable(t)
-        if not mt.__declared[k] and what() ~= "C" then
+        if type(k) == 'string' and not mt.__declared[k] and what() ~= "C" then
             error("variable "..k.." is not declared")
         end
 
@@ -90,7 +91,7 @@ end
 
 --- Test whether a table is locked.
 -- The implementation determines this by looking at certain keys, it's therefore
--- not 100% accurate.
+-- not 100% reliable.
 -- @param t table to check
 -- @return true if it's locked, false if not
 function strict.islocked(t)
