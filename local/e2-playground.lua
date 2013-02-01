@@ -46,11 +46,6 @@ end
 local e = err.new("entering playground failed")
 local rc, re
 
-e2option.documentation = [[
-usage: e2-playground [<options> ...] <result>
-
-Jump into chroot(1) environment for specified result, if it exists.
-]]
 e2option.option("command","execute command in chroot")
 e2option.flag("runinit","run init files automatically")
 e2option.flag("showpath", "prints the path of the build directory inside the chroot to stdout" )

@@ -38,12 +38,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2-dsort
-
-lists all results sorted by dependency
-]]
-
 e2option.parse(arg)
 
 info, re = e2tool.collect_project_info(info)

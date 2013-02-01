@@ -38,12 +38,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2-dlist [<option> | <result> ...]
-
-for the given result show those results which it depends on
-]]
-
 e2option.flag("recursive", "show indirect dependencies, too")
 local opts, arguments = e2option.parse(arg)
 

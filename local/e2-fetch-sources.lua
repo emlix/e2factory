@@ -42,26 +42,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2-fetch-sources <source> ...
-
-fetch all sources for a project, provided they are not fetched yet.
-up-to-dateness is not checked for sources which are already fetched.
-]]
-
--- --all (--scm)
--- --source    select sources by source names
--- --result    select sources by result names
--- --chroot    select chroot files
--- --files     select files sources
--- --scm       select sources using scm systems
---  --git
---  --cvs
---  --svn
---
--- --fetch, --cache  fetch selected sources
--- --update          update selected sources
-
 local e = err.new()
 
 e2option.flag("all", "select all sources, even files sources")

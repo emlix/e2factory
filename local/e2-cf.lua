@@ -39,25 +39,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2 cf <command> ...
-
-commands:
-newresult       <name>
-newsource       <name> <scm>
-editresult      <name>
-editbuildscript <name>
-editsource      <name>
-
-Commands starting with 'edit' can be abbreviated by using e...
-Commands starting with 'new' can be abbreviated by using n...
-Commands can be shortened as long as they remain unambiguous
-
-e.g.: eb <name> is equivalent to editbuildscript <name>
-
-modify and create configuration files
-]]
-
 local opts, arguments = e2option.parse(arg)
 
 -- initialize some basics in the info structure without actually loading

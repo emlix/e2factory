@@ -37,15 +37,6 @@ require("buildconfig")
 
 e2lib.init()
 
-local doc = [[
-usage: e2-create-project [<option> ...] [<server>:]<location>
-
-Create a new project and store it on <server> in <location>.
-<server> defaults to '%s'.
-]]
-e2option.documentation = string.format(doc,
-e2lib.globals.default_projects_server)
-
 local opts, arguments = e2option.parse(arg)
 local rc, e = e2lib.read_global_config()
 if not rc then

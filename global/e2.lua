@@ -35,15 +35,6 @@ require("e2util")
 
 e2lib.init()
 
-e2option.documentation = [[
-usage: e2 OPTION ...
-e2 COMMAND ARGUMENT ...
-
-"e2" is a wrapper script for invoking e2 commands. Any e2 commands called will
-be redirected either to the project-local or the global installation, depend‐
-ing on whether the invocation took place inside or outside a project tree.
-]]
-
 e2option.flag("prefix", "print installation prefix",
 function()
     print(buildconfig.PREFIX)

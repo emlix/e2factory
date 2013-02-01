@@ -42,12 +42,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2-build [<option> | <result> ...]
-
-build results from repository or local sources.
-]]
-
 e2option.flag("all", "build all results (default unless for working copy)")
 policy.register_commandline_options()
 e2option.flag("branch-mode", "build selected results in branch mode")

@@ -43,12 +43,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2-ls-project [<result> ...]
-
-show project information
-]]
-
 policy.register_commandline_options()
 e2option.flag("dot", "generate dot(1) graph")
 e2option.flag("dot-sources", "generate dot(1) graph with sources included")

@@ -36,12 +36,6 @@ require("buildconfig")
 
 e2lib.init()
 
-e2option.documentation = [[
-usage: e2-install-e2 [OPTION ...]
-
-Installs local tools in project environment.
-]]
-
 local opts, arguments = e2option.parse(arg)
 
 local root = e2lib.locate_project_root()

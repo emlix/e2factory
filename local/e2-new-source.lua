@@ -47,24 +47,6 @@ if not info then
     e2lib.abort(re)
 end
 
-e2option.documentation = [[
-usage: e2-new-source --git [--server <server>] <name>
-       e2-new-source --files [--no-checksum]
-		[<server>:]<location> <source_file_url> [<checksum_file_url>]
-
- Put new source onto an existing server.
-
- --git
- Put a repository named <name> into the projects' 'git/' directory on
- the server, i.e. <server>/<project>/git/<name>.git
- The server defaults to the default repository server, and the <project>
- part is the project location relative to the projects server.
-
- --files
- Put a new file onto the server.
- Server defaults to 'upstream'
-]]
-
 e2option.flag("git", "create a git repository")
 e2option.flag("files", "create a new file on a files server")
 e2option.option("server", "specify server")

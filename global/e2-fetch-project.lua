@@ -36,17 +36,8 @@ local err = require("err")
 require("buildconfig")
 
 e2lib.init()
+
 local e = err.new("fetching project failed")
-local doc = [[
-usage: e2-fetch-project [<option> ...] [<server>:]<location> [<destination>]
-
-fetch the project located in server:location to a directory given in
-<destination>.
-<server> defaults to '%s'.
-]]
-e2option.documentation = string.format(doc,
-e2lib.globals.default_projects_server)
-
 e2option.option("branch", "retrieve a specific project branch")
 e2option.option("tag", "retrieve a specific project tag")
 
