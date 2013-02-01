@@ -33,6 +33,8 @@ local e2lib = require("e2lib")
 local strict = require("strict")
 require("buildconfig")
 
+local initialized = false
+
 local toollist = {
     which = { name = "which", flags = "", optional = false },
     curl = { name = "curl", flags = "", optional = false },
@@ -192,7 +194,14 @@ function tools.init()
     if error then
         return false, "missing mandatory tools"
     end
+    initialized = true
     return true, nil
+end
+
+--- Check whether the tools library is initialized.
+-- @return True or false.
+function tools.isinitialized()
+    return initialized
 end
 
 return strict.lock(tools)
