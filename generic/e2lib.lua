@@ -1737,15 +1737,6 @@ function e2lib.sha1sum(path)
     return sha1
 end
 
---- call the e2-su command
--- @param argv table: argument vector
--- @return bool
-function e2lib.e2_su(argv)
-    assert(type(argv) == "table")
-
-    return e2lib.call_tool_argv("e2-su", argv)
-end
-
 --- call the e2-su-2.2 command
 -- @param argv table: argument vector
 -- @return bool
