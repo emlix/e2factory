@@ -868,9 +868,14 @@ local function store_result(info, r, return_flags)
         local d = "result/files"
         rc, re = e2lib.ln(s, d)
         if not rc then
-            e:cat(re)
-            e2lib.warnf("WOTHER",
-            "Creating hardlink failed. Falling back to copying.")
+            -- There are three reasons this might fail
+            -- a) Legitimate IO etc. errors.
+            -- b) Source and destination are not on the same filesystem.
+            -- c) The file being linked to is owned by root, but the process is
+            --    not root. It would be nice to fix this case by changing
+            --    ownership of the source before copying, since this security
+            --    feature (of recentish Linux) basically makes the optimization
+            --    moot.
             rc, re = e2lib.cp(s, d)
             if not rc then
                 return false, e:cat(re)
