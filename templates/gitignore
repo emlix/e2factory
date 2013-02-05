@@ -1,8 +1,12 @@
-in/*
-out/*
-log/*
 .e2/bin
+.e2/doc
 .e2/e2
+.e2/global-version
+.e2/hashcache
 .e2/lib
+.e2/plugins
 .e2/project-location
 .e2/run.log
+in/
+log/
+out/
