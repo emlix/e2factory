@@ -707,7 +707,7 @@ do_exec(lua_State *lua)
 		return 1;
 	}
 	args[i] = NULL;
-	rc = execvp(args[0], &args[0]);
+	rc = execvp(args[0], (char * const*)args);
 	lua_pushboolean(lua, rc == 0);
 
 	return 1;
