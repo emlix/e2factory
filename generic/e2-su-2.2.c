@@ -141,7 +141,6 @@ void assert_chroot_environment_2_3(char *base)
 
 int main(int argc, char *argv[])
 {
-	int rc;
 	if(argc < 3) {
 		perr("too few arguments");
 	}
@@ -166,7 +165,7 @@ int main(int argc, char *argv[])
 		arg[i-1] = 0;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(chroot_tool, arg);
+		execv(chroot_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "extract_tar_2_2")) {
@@ -197,7 +196,7 @@ int main(int argc, char *argv[])
 		arg[n++] = NULL;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(tar_tool, arg);
+		execv(tar_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "set_permissions_2_2")) {
@@ -214,7 +213,7 @@ int main(int argc, char *argv[])
 		arg[3] = NULL;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(chown_tool, arg);
+		execv(chown_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "remove_chroot_2_2")) {
@@ -232,7 +231,7 @@ int main(int argc, char *argv[])
 		arg[4] = NULL;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(rm_tool, arg);
+		execv(rm_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "chroot_2_3")) {
@@ -255,7 +254,7 @@ int main(int argc, char *argv[])
 		arg[i-1] = 0;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(chroot_tool, arg);
+		execv(chroot_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "extract_tar_2_3")) {
@@ -289,7 +288,7 @@ int main(int argc, char *argv[])
 		arg[n++] = NULL;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(tar_tool, arg);
+		execv(tar_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "set_permissions_2_3")) {
@@ -309,7 +308,7 @@ int main(int argc, char *argv[])
 		arg[3] = NULL;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(chown_tool, arg);
+		execv(chown_tool, arg);
 		perror("can't exec");
 		exit(99);
 	} else if(!strcmp(cmd, "remove_chroot_2_3")) {
@@ -330,7 +329,7 @@ int main(int argc, char *argv[])
 		arg[4] = NULL;
 		print_arg(arg);
 		setuid_root();
-		rc = execv(rm_tool, arg);
+		execv(rm_tool, arg);
 		perror("can't exec");
 		exit(99);
 	}
