@@ -742,19 +742,24 @@ function e2lib.howtounpack(physpath, virtpath, destdir)
 end
 
 --- Read the first line from the given file and return it.
+-- Beware that end of file is considered an error.
 -- @param path Path to file (string).
--- @return The first line or nil on error.
+-- @return The first line or false on error.
 -- @return Error object on failure.
 function e2lib.read_line(path)
     local f, msg = io.open(path)
     if not f then
-        return nil, err.new("%s", msg)
+        return false, err.new("%s: %s", path, msg)
     end
     local l, msg = f:read("*l")
     if not l then
-        return nil, err.new("%s", msg)
+        if not msg then
+            msg = "end of file"
+        end
+
+        f:close()
+        return false, err.new("%s: %s", path, msg)
     end
-    f:close()
     return l
 end
 
