@@ -9,53 +9,53 @@ CLEAN_FILES = ldoc
 	localdist
 
 all: ldoc
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 uninstall:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 local:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-local:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 clean: clean-lua-5.1.3 clean-luafilesystem-1.6.2
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(CLEAN_FILES)
 
 check:
-	for s in $(SUBDIRS) do ;\
+	set -e; for s in $(SUBDIRS) do ;\
 		$(MAKE) -C $$s $@ ;\
 	done
 
 localdist:
-	for s in $(SUBDIRS) do ;\
+	set -e; for s in $(SUBDIRS) do ;\
 		$(MAKE) -C $$s $@ ;\
 	done
 

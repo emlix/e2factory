@@ -34,28 +34,28 @@ export SRC = $(shell pwd)/$(TOPLEVEL)
 CLEAN_FILES = *~
 
 all:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 install:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 uninstall:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 local:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 install-local:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 doc:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 install-doc:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 
 clean:
-	@for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
 	rm -f $(CLEAN_FILES)
 
 .PHONY: all install local install-local doc install-doc clean

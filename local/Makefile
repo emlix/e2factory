@@ -57,7 +57,7 @@ LOCALPLUGINS = cvs.lua files.lua git.lua svn.lua
 all: linux32 sha1.so luafile_ll.so e2util.so
 
 install:
-	for i in $(LOCALTOOLS); do \
+	set -e; for i in $(LOCALTOOLS); do \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 
@@ -70,13 +70,13 @@ install-local-lua: $(LUA_LIBS)
 install-local: all install-local-dirs install-local-lua install-local-sourcefiles
 	test -n "$(PROJECTDIR)"
 	install -m 755 -d $(LOCALPLUGINDIR)
-	for p in $(LOCALPLUGINS) ; do \
+	set -e; for p in $(LOCALPLUGINS) ; do \
 		install -m 644 $$p $(LOCALPLUGINDIR)/$$p; \
 	done
-	for i in $(LOCALLUATOOLS); do \
+	set -e; for i in $(LOCALLUATOOLS); do \
 		install -m 755 $$i.lua $(LOCALBINDIR)/$$i; \
 	done
-	for i in $(LOCALSHTOOLS); do \
+	set -e; for i in $(LOCALSHTOOLS); do \
 		install -m 755 $$i $(LOCALBINDIR)/$$i; \
 	done
 	install -m755 linux32 $(LOCALBINDIR)/e2-linux32; \
@@ -90,17 +90,17 @@ install-local: all install-local-dirs install-local-lua install-local-sourcefile
 install-local-sourcefiles: e2-su-2.2.c
 	install -m 644 $^ $(LOCALMAKDIR)
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 uninstall:
-	for i in $(LOCALTOOLS); do \
+	set -e; for i in $(LOCALTOOLS); do \
 		rm -f $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
 

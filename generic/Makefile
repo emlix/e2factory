@@ -48,12 +48,12 @@ local:
 install-local: local
 
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 

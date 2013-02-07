@@ -40,28 +40,30 @@ CLEAN_FILES = *~ buildconfig.lua
 help:
 	@cat INSTALL
 
+.SILENT: buildconfig.lua
 buildconfig.lua: Makefile make.vars
-	@echo 'writing buildconfig.lua'
-	@echo 'module ("buildconfig")' > $@
-	@echo 'PREFIX="$(PREFIX)"' >>$@
-	@echo 'BINDIR="$(BINDIR)"' >>$@
-	@echo 'LIBDIR="$(LIBDIR)"' >>$@
-	@echo 'TOOLDIR="$(TOOLDIR)"' >>$@
-	@echo 'SYSCONFDIR="$(SYSCONFDIR)"' >>$@
-	@echo 'E2="$(E2)"' >>$@
-	@echo 'LUA="$(LUA)"' >>$@
-	@echo 'MAJOR="$(MAJOR)"' >>$@
-	@echo 'MINOR="$(MINOR)"' >>$@
-	@echo 'PATCHLEVEL="$(PATCHLEVEL)"' >>$@
-	@echo 'EXTRAVERSION="$(EXTRAVERSION)"' >>$@
-	@echo 'VERSION="$(VERSION)"' >>$@
-	@echo 'VERSIONSTRING="$(VERSIONSTRING)"' >>$@
-	@echo 'GLOBAL_INTERFACE_VERSION={' >>$@
-	@for x in $(GLOBAL_INTERFACE_VERSION) ; do echo " \"$$x\"," ; done >>$@
-	@echo '}' >>$@
-	@echo 'SYNTAX={' >>$@
-	@for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
-	@echo '}' >>$@
+	echo 'writing buildconfig.lua'
+	echo 'module ("buildconfig")' > $@
+	echo 'PREFIX="$(PREFIX)"' >>$@
+	echo 'BINDIR="$(BINDIR)"' >>$@
+	echo 'LIBDIR="$(LIBDIR)"' >>$@
+	echo 'TOOLDIR="$(TOOLDIR)"' >>$@
+	echo 'SYSCONFDIR="$(SYSCONFDIR)"' >>$@
+	echo 'E2="$(E2)"' >>$@
+	echo 'LUA="$(LUA)"' >>$@
+	echo 'MAJOR="$(MAJOR)"' >>$@
+	echo 'MINOR="$(MINOR)"' >>$@
+	echo 'PATCHLEVEL="$(PATCHLEVEL)"' >>$@
+	echo 'EXTRAVERSION="$(EXTRAVERSION)"' >>$@
+	echo 'VERSION="$(VERSION)"' >>$@
+	echo 'VERSIONSTRING="$(VERSIONSTRING)"' >>$@
+	echo 'GLOBAL_INTERFACE_VERSION={' >>$@
+	set -e; for x in $(GLOBAL_INTERFACE_VERSION) ; do \
+		echo " \"$$x\"," ; done >>$@
+	echo '}' >>$@
+	echo 'SYNTAX={' >>$@
+	set -e; for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
+	echo '}' >>$@
 
 all: e2commit buildconfig.lua
 	$(MAKE) -C lua
@@ -118,22 +120,22 @@ install-local:
 	$(MAKE) -C doc install-local
 
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
 	install -d -m 755 $(DOCDIR)
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	install -m 644 Changelog $(DOCDIR)/
 
 clean:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
-	for s in $(LOCALSUBDIRS) ; do \
+	set -e; for s in $(LOCALSUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ; \
 	done
 	rm -f $(CLEAN_FILES)

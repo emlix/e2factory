@@ -56,18 +56,18 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3
 	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3
 	rm -fr $(DESTDIR)$(LIBEXECDIR)/lua-5.1.3
-	for x in $(LUA_HEADER) ; do \
+	set -e; for x in $(LUA_HEADER) ; do \
 		rm -f $(DESTDIR)$(INCDIR)/lua-5.1.3/$$x ; \
 	done
 	rmdir -p $(DESTDIR)$(INCDIR)/lua-5.1.3 || :
 
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 

@@ -61,11 +61,11 @@ install-lua: $(LUA_LIBS)
 	install -m 644 $^ $(DESTDIR)$(LIBDIR)
 
 install: all install-dirs install-lua
-	for i in $(GLOBALLUATOOLS) ; do \
+	set -e; for i in $(GLOBALLUATOOLS) ; do \
 		install -m 755 $$i.lua $(DESTDIR)$(TOOLDIR)/$$i ; \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
 	done
-	for i in $(GLOBALSHTOOLS) ; do \
+	set -e; for i in $(GLOBALSHTOOLS) ; do \
 		install -m 755 $$i.sh $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
@@ -80,11 +80,11 @@ install: all install-dirs install-lua
 		$(DESTDIR)$(BINDIR)/
 
 uninstall:
-	for i in $(GLOBALLUATOOLS) ; do \
+	set -e; for i in $(GLOBALLUATOOLS) ; do \
 		rm -f $(DESTDIR)$(TOOLDIR)/$$i ; \
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
-	for i in $(GLOBALSHTOOLS) ; do \
+	set -e; for i in $(GLOBALSHTOOLS) ; do \
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
@@ -93,12 +93,12 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/e2
 
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 

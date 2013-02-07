@@ -36,32 +36,32 @@ CLEAN_FILES = documentation.tar.gz
 	doc
 
 all:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 uninstall:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 local:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-local:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	$(MAKE) documentation.tar.gz
@@ -76,24 +76,24 @@ documentation.tar.gz: developer/e2factory.tar.gz \
 	tar -czf documentation.tar.gz documentation
 
 install-doc:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 clean:
-	for s in $(SUBDIRS) ; do \
+	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -fr documentation
 	rm -f $(CLEAN_FILES)
 
 check:
-	for s in $(SUBDIRS) do ;\
+	set -e; for s in $(SUBDIRS) do ;\
 		$(MAKE) -C $$s $@ ;\
 	done
 
 localdist:
-	for s in $(SUBDIRS) do ;\
+	set -e; for s in $(SUBDIRS) do ;\
 		$(MAKE) -C $$s $@ ;\
 	done
 

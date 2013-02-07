@@ -42,7 +42,7 @@ e2-install-e2.1 \
 e2-locate-project-root.1 \
 e2-ls-project.1 \
 e2-new-source.1 \
-e2-playground.1 
+e2-playground.1
 
 MANPAGES5 = \
 e2.conf.5 \
@@ -68,8 +68,10 @@ install: $(MANPAGES)
 	install -m644 $(MANPAGES5) $(DESTDIR)$(MANDIR)/man5
 
 uninstall:
-	for x in $(MANPAGES1) ; do rm -f $(DESTDIR)$(MANDIR)/man1/$$x ; done
-	for x in $(MANPAGES5) ; do rm -f $(DESTDIR)$(MANDIR)/man5/$$x ; done
+	set -e; for x in $(MANPAGES1) ; \
+		do rm -f $(DESTDIR)$(MANDIR)/man1/$$x ; done
+	set -e; for x in $(MANPAGES5) ; \
+		do rm -f $(DESTDIR)$(MANDIR)/man5/$$x ; done
 	rmdir $(DESTDIR)$(MANDIR)/man1 || :
 	rmdir $(DESTDIR)$(MANDIR)/man5 || :
 
