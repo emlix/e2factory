@@ -34,48 +34,42 @@ local err = require("err")
 local e2lib = require("e2lib")
 local strict = require("strict")
 
---- plugin descriptor
+--- Plugin descriptor. Must be present in a plugin, otherwise it can not be
+-- loaded.
 -- @class table
--- @name plugin descriptor
--- @field description string: human readable plugin description string,
---                            including unique plugin version information
--- @field init function: initialization function
--- @field exit function: deinitialization function
--- @field file string: plugin file name (inserted by plugin loader)
--- @field ctx table: plugin context (inserted by plugin loader)
+-- @name plugin_descriptor
+-- @field description Human readable plugin description string, including
+-- unique plugin version information (string).
+-- @field init Initialization function (see description below).
+-- @field exit Deinitialization function (see description below).
+-- @field depends Array of plugin file names to be loaded before this plugin
+-- (table containing strings). Optional.
+-- @field Plugin file name (string) (inserted by plugin loader)
+-- @field ctx Plugin context (table) (inserted by plugin loader)
 
---- plugin context
+--- Plugin context. The plugin is passed this table on (de)initialization by
+-- the plugin loader.
 -- @class table
--- @name plugin context
--- @field plugin table: plugin descriptor
--- @field info table: info table (local tools only)
+-- @name plugin_ctx
+-- @field plugin Plugin descriptor (table)
+-- @field info Global info table (local tools only)
 
---- plugin init function
+--- Plugin init function.
 -- @class function
 -- @name init
--- @param ctx table: plugin context
--- @return bool
--- @return an error object on failure
+-- @param ctx Plugin context (table).
+-- @return Boolean.
+-- @return An error object on failure.
 
---- plugin exit function
+--- Plugin exit function
 -- @class function
--- @name init
--- @param ctx table: plugin context
--- @return bool
--- @return an error object on failure
+-- @name exit
+-- @param ctx Plugin context (table).
+-- @return Boolean.
+-- @return An error object on failure.
 
 -- list of plugin descriptors
 local plugins = {}
-
---[[ example plugin descriptor:
--- plugin = {
---   description = "...",
---   init = init,
---   exit = exit,
---   file = nil, -- automatically inserted by plugin loader
---   ctx = nil,  -- automatically inserted by plugin loader
--- }
---]]
 
 --- load a plugin
 -- @param dir string: plugin directory
@@ -165,6 +159,7 @@ function plugin.load_plugins(dir, ctx)
     return true
 end
 
+--- Depth first search visitor that does the sorting.
 local function plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted,
     cycledetect)
     if pluginsvisited[plugin] then
@@ -195,7 +190,7 @@ local function plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted,
     table.insert(pluginssorted, 1,  plugin)
 end
 
---- topological sort for plugins according to their dependencies
+--- Topological sort for plugins according to their dependencies.
 -- When cycles are encountered, it aborts.
 -- @return a sorted plugin table
 local function plugin_tsort(plugins)
