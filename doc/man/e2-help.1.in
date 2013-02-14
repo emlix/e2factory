@@ -1,0 +1,31 @@
+.\" (c)2013 emlix GmbH
+.TH e2-help 1 "Feb 13, 2013" "@VERSION@"
+
+.SH NAME
+e2-help \- display documentation for e2factory commands and configuration.
+
+.SH SYNOPSIS
+e2-help <document>
+
+.SH DESCRIPTION
+\fBe2-help\fR opens man pages and other documentation specific to the
+e2factory version used in a project.
+.br
+With no arguments, e2-help lists all available documents.
+To view a specific document, supply its name as an argument.
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+For options, see global options in \fBe2factory\fR(1).
+
+.SH EXAMPLES
+\fBe2-help e2factory\fR displays the e2factory overview page.
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH
