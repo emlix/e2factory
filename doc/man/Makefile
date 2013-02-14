@@ -42,7 +42,9 @@ e2-install-e2.1 \
 e2-locate-project-root.1 \
 e2-ls-project.1 \
 e2-new-source.1 \
-e2-playground.1
+e2-playground.1 \
+e2-help.1 \
+e2.1
 
 MANPAGES5 = \
 e2.conf.5 \
