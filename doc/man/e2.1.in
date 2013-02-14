@@ -1,0 +1,36 @@
+.\" (c)2013 emlix GmbH
+.\"
+.TH e2 1 "Feb 14, 2013" "@VERSION@"
+
+.SH NAME
+e2 \- the emlix embedded build system
+
+.SH SYNOPSIS
+e2 <tool> ...
+
+.SH DESCRIPTION
+\fBe2\fR is the entry point to the local and global e2factory tools.
+.PP
+e2 ensures that the correct version of the specified tool is called,
+according to the project configuration. As a convenience, symbolic links
+in the form "e2\-tool" which point to e2 are interpreted as "e2 tool".
+.PP
+The e2 tool provides little user\-visible functionality.
+For a general overview of e2factory and the available tools,
+see \fBe2factory\fR(1).
+
+.SH RETURN VALUE
+Normally, exit status is 0. On error, it is non-zero.
+
+.SH OPTIONS
+.TP
+.BR \-\-prefix
+Print installation prefix.
+.TP
+For further global options and environment variables, see \fBe2factory\fR(1).
+
+.SH SEE ALSO
+.BR e2factory (1)
+
+.SH COPYRIGHT
+(c)2013 emlix GmbH
