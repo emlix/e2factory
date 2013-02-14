@@ -40,7 +40,7 @@ CFLAGS += -I. -I$(DESTDIR)$(INCDIR) -I$(DESTDIR)$(INCDIR)/lua-$(LUA_VERSION) \
 LDFLAGS += -L. -L../lua/lua-$(LUA_VERSION)/src -Wl,-R$(LIBDIR)
 LOCALLUATOOLS = e2-build e2-dlist e2-dsort e2-fetch-sources \
 	e2-new-source e2-ls-project e2-playground \
-	e2-build-numbers e2-cf
+	e2-build-numbers e2-cf e2-help
 LOCALSHTOOLS =
 LUA_LIBS = e2option.lua luafile.lua generic_git.lua err.lua
 LUA_LIBS += e2tool.lua scm.lua digest.lua
