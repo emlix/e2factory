@@ -32,16 +32,16 @@
 
 local e2option = {}
 local e2lib = require("e2lib")
-require("e2util")
 local plugin = require("plugin")
 local err = require("err")
 local strict = require("strict")
+local tools = require("tools")
+require("e2util")
+require("buildconfig")
 
 local options = {}
 local aliases = {}
 local optionlist = {} -- ordered list of option names
-
-e2option.documentation = "<no documentation available>"
 
 e2option.opts = {}
 
@@ -188,9 +188,9 @@ local function defaultoptions()
     e2option.flag("Whint", "enable hints to the user")
 
     category = "General Options"
-    e2option.flag("help", "show usage information",
+    e2option.flag("help", "show manpage",
     function()
-        e2option.usage(0)
+        e2option.showtoolmanpage()
     end,
     category)
 
@@ -369,41 +369,105 @@ function e2option.parse(args)
     return opts, vals
 end
 
---- display builtin option documentation and exit
--- @param rc number: return code, passed to e2lib.finish()
-function e2option.usage(rc)
-    print(e2lib.globals._version)
-    print([[
-Copyright (C) 2007-2009 by Gordon Hecker and Oskar Schirmer, emlix GmbH
-Copyright (C) 2007-2008 by Felix Winkelmann, emlix GmbH
+--- Construct tool name from argument vector.
+-- @return Tool name (string)
+local function toolname()
+   local tool = e2lib.basename(arg[0])
+   local toolnm
 
-This program comes with ABSOLUTELY NO WARRANTY; This is free software,
-and you are welcome to redistribute it under certain conditions.
-Type e2 --licence for more information.
-]])
-    print(e2option.documentation)
-    local category = nil
-    for _, n in ipairs(optionlist) do
-        local opt = options[n]
-        if category ~= opt.category then
-            print()
-            category = opt.category
-            if category then
-                print(category .. ":")
-            end
-        end
-        io.write("  -")
-        if #n > 1 then io.write("-") end
-        io.write(n)
-        if opt.type == "option" then
-            io.write("=", opt.argumentname)
-        elseif #n < 4 then
-            io.write("\t")
-        end
-        print("\t" .. opt.documentation)
+   if tool == 'e2' and
+       arg[1] and string.sub(arg[1], 1, 1) ~= '-' then
+       toolnm = string.format('%s-%s', tool, arg[1])
+   else
+       toolnm = tool
+   end
+
+   return toolnm
+end
+
+--- Display message how to get help and exit.
+-- If the exit code is 0, stdout will be used for the message.
+-- Otherwise stderr is used.
+-- @param rc program exit code (number).
+-- @return This function does not return.
+function e2option.usage(rc)
+    local out
+    if rc == 0 then
+        out = io.stdout
+    else
+        out = io.stderr
     end
-    print()
+
+    local m = string.format("usage: %s --help for more information\n",
+        toolname())
+    out:write(m)
     e2lib.finish(rc)
+end
+
+--- Show the manpage of the current tool and exit the process.
+-- @return This function does not return.
+function e2option.showtoolmanpage()
+    local tool = toolname()
+    local mpage = e2lib.join('man', 'man1', string.format('%s.1', tool))
+    local prefix
+
+    if e2lib.islocaltool(tool) then
+        local dir = e2lib.locate_project_root()
+        if dir then
+            prefix = e2lib.join(dir, '.e2', 'doc')
+        else
+            e2lib.warn("WOTHER",
+                "Could not locate project root, showing global help")
+            prefix = e2lib.join(buildconfig.PREFIX, 'share')
+        end
+    elseif e2lib.isglobaltool(tool) then
+        prefix = e2lib.join(buildconfig.PREFIX, 'share')
+    else
+        local file = e2lib.join(buildconfig.BINDIR, tool)
+        if e2lib.isfile(file) then
+            prefix = e2lib.join(buildconfig.PREFIX, 'share')
+        else
+            e2lib.abort(err.new('tool "%s" does not exist', tool))
+        end
+    end
+
+    mpage = e2lib.join(prefix, mpage)
+    if not e2lib.isfile(mpage) then
+        e2lib.abort(err.new('manual page for "%s" does not exist (%s)',
+            tool, mpage))
+    end
+
+    if not tools.isinitialized() then
+        local rc, re = tools.init()
+        if not rc then
+            e2lib.abort(re)
+        end
+    end
+
+    local cmd = {}
+    for _,s in ipairs({"man"}) do
+        local viewer, viewerflags
+        viewer = tools.get_tool(s)
+        viewerflags = tools.get_tool_flags(s)
+        if viewer then
+            table.insert(cmd, e2lib.shquote(viewer))
+            if viewerflags ~= "" then
+                table.insert(cmd, viewerflags)
+            end
+
+            break
+        end
+    end
+
+    if #cmd < 1 then
+        e2lib.abort("Could not find manual viewer to display help")
+    end
+
+    table.insert(cmd, e2lib.shquote(mpage))
+
+    os.execute(table.concat(cmd, ' '))
+
+    e2lib.finish(0)
 end
 
 return strict.lock(e2option)
