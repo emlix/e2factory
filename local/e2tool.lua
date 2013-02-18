@@ -904,26 +904,37 @@ local function gather_source_paths(info, basedir, sources)
     return sources
 end
 
---- checks for valid characters in str
-local function checkFilenameInvalidCharacters(str)
-    local msg = "only digits, alphabetic characters, and '-_./' " ..
-    "are allowed"
-    if not str:match("^[-_0-9a-zA-Z/.]+$") then
+--- Verify that a result or source file pathname in the form
+-- "group1/group2/name" contains only valid characters.
+-- Note that the path to the project root does not share the same constraints,
+-- it's an error to pass it to this function.
+--
+-- @param pathname Relative path to a source or result, including
+-- sub-directories (string).
+-- @return True when the path is legal, false otherwise.
+-- @return Error object on failure.
+function e2tool.verify_src_res_pathname_valid_chars(pathname)
+    local msg = "only alphanumeric characters and '-_/' are allowed"
+    if not pathname:match("^[-_0-9a-zA-Z/]+$") then
         return false, err.new(msg)
-    else
-        return true
     end
+
+    return true
 end
 
---- check for invalid characters in source/result names
-local function checkNameInvalidCharacters(str)
-    local msg = "only digits, alphabetic characters, and '-_.' " ..
-    "are allowed"
-    if not str:match("^[-_0-9a-zA-Z.]+$") then
+--- Verify that a result or source name in the form "group1.group2.name"
+-- contains only valid characters.
+--
+-- @param name Full source or result name, including groups (string).
+-- @return True when the name is legal, false otherwise.
+-- @return Error object on failure.
+function e2tool.verify_src_res_name_valid_chars(name)
+    local msg = "only alphanumeric characters and '-_.' are allowed"
+    if not name:match("^[-_0-9a-zA-Z.]+$") then
         return false, err.new(msg)
-    else
-        return true
     end
+
+    return true
 end
 
 --- replaces all slashed in str with dots
@@ -940,7 +951,7 @@ local function load_source_config(info)
         local list, re
         local path = e2tool.sourceconfig(src)
         local types = { "e2source", }
-        local rc, re = checkFilenameInvalidCharacters(src)
+        local rc, re = e2tool.verify_src_res_pathname_valid_chars(src)
         if not rc then
             e:append("invalid source file name: %s", src)
             e:cat(re)
@@ -967,7 +978,7 @@ local function load_source_config(info)
                 return false, e:append("`name' attribute missing in source config")
             end
 
-            local rc, re = checkNameInvalidCharacters(name)
+            local rc, re = e2tool.verify_src_res_name_valid_chars(name)
             if not rc then
                 e:append("invalid source name: %s", name)
                 e:cat(re)
@@ -1063,7 +1074,7 @@ local function load_result_config(info)
         local path = e2tool.resultconfig(res)
         local types = { "e2result", }
 
-        local rc, re = checkFilenameInvalidCharacters(res)
+        local rc, re = e2tool.verify_src_res_pathname_valid_chars(res)
         if not rc then
             e:append("invalid result file name: %s", res)
             e:cat(re)
@@ -1090,7 +1101,7 @@ local function load_result_config(info)
             item.data.name = slashToDot(res)
             name = slashToDot(res)
 
-            local rc, re = checkNameInvalidCharacters(name)
+            local rc, re = e2tool.verify_src_res_name_valid_chars(name)
             if not rc then
                 e:append("invalid result name: %s",name)
                 e:cat(re)
@@ -2337,6 +2348,11 @@ end
 -- @param playground bool
 -- @return nil
 local function select_result(info, r, force_rebuild, request_buildno, keep_chroot, build_mode, playground)
+    local rc, re = e2tool.verify_src_res_name_valid_chars(r)
+    if not rc then
+        e2lib.abort(string.format("'%s' is not a valid result name", r))
+    end
+
     local res = info.results[r]
     if not res then
         e2lib.abort(string.format("selecting invalid result: %s", r))
