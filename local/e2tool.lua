@@ -928,7 +928,7 @@ end
 
 --- replaces all slashed in str with dots
 local function slashToDot(str)
-    return string.gsub(str,"/",".",100)
+    return string.gsub(str,"/", ".")
 end
 
 --- load source config.
