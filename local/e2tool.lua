@@ -985,58 +985,49 @@ local function load_source_config(info)
     return true, nil
 end
 
---- assemble a path from parts.
--- the returned string is created from the input parameters like
--- "base[/str][/postfix]"
-local function generatePath(base, str, postfix)
-    if str then
-        base = base .. "/" .. str
+--- Get directory for a result.
+-- Returns the relative path to the resultdir and optionally a name
+-- (e.g. res/name).
+-- @param name optional path component (string).
+-- @return Path of the result.
+function e2tool.resultdir(name)
+    if name then
+        return e2lib.join("res", name)
     end
-    if postfix then
-        base = base .. "/" .. postfix
-    end
-    return base
+    return "res"
 end
 
---- get directory for a result.
--- Returns the path to the resultdir and the optional postfix is appended
--- with a slash (e.g. res/name/build-script)
--- @param result name optional
--- @param optional postfix for the direcory
--- @return path of the result
-function e2tool.resultdir(name, postfix)
-    return generatePath("res",name,postfix)
-end
-
---- get directory for a source.
--- Returns the path to the sourcedir and the optional postfix is appended
--- with a slash (e.g. src/name/config)
--- @param source name optional
--- @param optional postfix for the direcory
--- @return path of the source
-function e2tool.sourcedir(name, postfix)
-    return generatePath("src",name,postfix)
+--- Get directory for a source.
+-- Returns the relative path to the sourcedir and optinally a name
+-- (e.g. src/name).
+-- @param name optional path component (string).
+-- @return Path of the source.
+function e2tool.sourcedir(name)
+    if name then
+        return e2lib.join("src", name)
+    end
+    return "src"
 end
 
 --- get path to the result config.
 -- @param resultname
 -- @return path to the resultconfig
 function e2tool.resultconfig(name)
-    return e2tool.resultdir(name,"config")
+    return e2lib.join(e2tool.resultdir(name), "config")
 end
 
 --- get path to the result build-script
 -- @param resultname
 -- @return path to the result build-script
 function e2tool.resultbuildscript(name)
-    return e2tool.resultdir(name,"build-script")
+    return e2lib.join(e2tool.resultdir(name), "build-script")
 end
 
 --- get path to the source config
 -- @param sourcename
 -- @return path to the sourceconfig
 function e2tool.sourceconfig(name)
-    return e2tool.sourcedir(name,"config")
+    return e2lib.join(e2tool.sourcedir(name), "config")
 end
 
 --- gather result paths.
@@ -1061,7 +1052,7 @@ local function gather_result_paths(info, basedir, results)
     end
     return results
 end
- 
+
 --- load result config.
 local function load_result_config(info)
     local e = err.new("error loading result configuration")
