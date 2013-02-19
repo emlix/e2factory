@@ -937,9 +937,20 @@ function e2tool.verify_src_res_name_valid_chars(name)
     return true
 end
 
---- replaces all slashed in str with dots
-local function slashToDot(str)
-    return string.gsub(str,"/", ".")
+--- Convert source or result name, including groups, to a file system path.
+-- @param name Name of a src or res, with optional group notation (string).
+-- @return File system path equivalent of the input.
+function e2tool.src_res_name_to_path(name)
+    return name:gsub("%.", "/")
+end
+
+--- Convert file system path of a source or result, including sub-directories
+-- to group notation separated by dots.
+-- @param pathname File system path of a src or res, with optional
+-- sub-directories (string).
+-- @return Group dot notation equivalent of the input.
+function e2tool.src_res_path_to_name(pathname)
+    return pathname:gsub("/", ".")
 end
 
 --- load source config.
@@ -970,8 +981,8 @@ local function load_source_config(info)
             if not name and #list == 1 then
                 e2lib.warnf("WDEFAULT", "`name' attribute missing in source config.")
                 e2lib.warnf("WDEFAULT", " Defaulting to directory name")
-                item.data.name = slashToDot(src)
-                name = slashToDot(src)
+                item.data.name = e2tool.src_res_path_to_name(src)
+                name = item.data.name
             end
 
             if not name then
@@ -1098,8 +1109,8 @@ local function load_result_config(info)
                 return false, e
             end
 
-            item.data.name = slashToDot(res)
-            name = slashToDot(res)
+            item.data.name = e2tool.src_res_path_to_name(res)
+            name = item.data.name
 
             local rc, re = e2tool.verify_src_res_name_valid_chars(name)
             if not rc then
