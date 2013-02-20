@@ -84,6 +84,7 @@ local cache = require("cache")
 -- @field release_id string: release identifiert XXX where do we initialize it?
 -- @field env table: env table
 -- @field env_files table: list of env files
+-- @field local_template_path Path to the local templates (string).
 
 --- table of sources records, keyed by source names
 -- @name sources
@@ -1154,8 +1155,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    info.local_template_path = string.format("%s/.e2/lib/e2/templates",
-    info.root)
+    info.local_template_path = e2lib.join(info.root, "/.e2/lib/e2/templates")
 
     e2lib.init2() -- configuration must be available
 
