@@ -1,4 +1,4 @@
---- e2-cf command
+--- e2-cf helps creating and editing sources and results.
 -- @module local.e2-cf
 
 --[[
@@ -48,20 +48,99 @@ if not info then
     e2lib.abort(re)
 end
 
-rc, re = e2lib.chdir(info.root)
+local rc, re = e2lib.chdir(info.root)
 if not rc then
     e2lib.abort(re)
 end
 
-local editor = e2lib.globals.osenv["EDITOR"]
-
 local commands = {}
 
+--- Start external editor.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function editor(file)
+    local e = e2lib.globals.osenv["EDITOR"]
+    e2lib.shquote(e)
+    file = e2lib.shquote(file)
+
+    local cmd = string.format("%s %s", e, file)
+
+
+    local rc
+    rc = os.execute(cmd)
+    rc = rc / 256
+    if rc ~= 0 then
+        return false, err.new("Editor finished with exit status %d", rc)
+    end
+
+    return true
+end
+
+--- Find whether upstream config files hide this source/result.
+local function shadow_config_up(src_res, pathname)
+    local cf, cfdir
+    if src_res == "src" then
+        cf = e2tool.sourceconfig(pathname)
+        cfdir = e2tool.sourcedir(pathname)
+    elseif src_res == "res" then
+        cf = e2tool.resultconfig(pathname)
+        cfdir = e2tool.resultdir(pathname)
+    else
+        e2lib.bomb("unexpected value in src_res")
+    end
+
+    if pathname == "." then
+        return true
+    end
+
+    if e2lib.isfile(cf) then
+        local thing = "source"
+        if src_res == "res" then
+            thing = "result"
+        end
+
+        return false,
+            err.new("config in %s would shadow the new %s", cfdir, thing)
+    end
+
+    return shadow_config_up(src_res, e2lib.dirname(pathname))
+end
+
+--- Find whether downstream sources/results would be hidden by creating
+-- config here.
+local function shadow_config_down(src_res, pathname)
+    local cf, cfdir
+    if src_res == "src" then
+        cf = e2tool.sourceconfig(pathname)
+        cfdir = e2tool.sourcedir(pathname)
+    elseif src_res == "res" then
+        cf = e2tool.resultconfig(pathname)
+        cfdir = e2tool.resultdir(pathname)
+    else
+        e2lib.bomb("unexpected value in src_res")
+    end
+
+    if e2lib.isfile(cf) then
+        return false, err.new("config in %s would be shadowed", cfdir)
+    end
+
+    for f in e2lib.directory(cfdir, false, true) do
+        if e2lib.isdir(e2lib.join(cfdir, f)) then
+            return shadow_config_down(src_res, e2lib.join(pathname, f))
+        end
+    end
+
+    return true
+end
+
+--- Create new source.
 local function newsource(info, ...)
-    local e = err.new("newsource")
+    local rc, re
+    local e = err.new("creating a new source failed")
     local t = ...
     local name = t[2]
     local scm = t[3]
+
     if not name then
         e:append("missing parameter: name")
     end
@@ -71,114 +150,190 @@ local function newsource(info, ...)
     if e:getcount() > 1 then
         return false, e
     end
-    local cfdir = e2tool.sourcedir(name)
-    local cf = e2tool.sourceconfig(name)
-    local cftemplate = string.format("%s/source.%s", info.local_template_path,
-    scm)
-    if not e2lib.isfile(cftemplate) then
-        return false, e:append("template not available:", cftemplate)
-    end
-    if not e2lib.isfile(cf) and e2lib.isfile(cftemplate) then
-        local rc, re = e2lib.mkdir(cfdir)
-        if not rc then
-            return false, e:cat(re)
-        end
-        local rc, re = e2lib.cp(cftemplate, cf)
-        if not rc then
-            return false, e:cat(re)
-        end
-    end
-    rc, re = commands.editsource(info, ...)
+
+    rc, re = e2tool.verify_src_res_name_valid_chars(name)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+
+    local cftemplate =
+        e2lib.join(info.local_template_path, string.format("source.%s", scm))
+    if not e2lib.isfile(cftemplate) then
+        return false, e:append("no template for '%s' available", scm)
+    end
+
+    local pathname = e2tool.src_res_name_to_path(name)
+    local cf = e2tool.sourceconfig(pathname)
+    local cfdir = e2tool.sourcedir(pathname)
+
+    if e2lib.isfile(cf) then
+        return false, e:append("refusing to overwrite config in %s", cfdir)
+    end
+
+    rc, re = shadow_config_up("src", pathname)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = shadow_config_down("src", pathname)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    local rc, re = e2lib.mkdir(cfdir, "-p")
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    local rc, re = e2lib.cp(cftemplate, cf)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    local rc, re = commands.editsource(info, ...)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
+--- Edit source.
 local function editsource(info, ...)
+    local rc, re
     local e = err.new("editsource")
     local t = ...
     local name = t[2]
     if not name then
-        e:append("missing parameter: name")
+        return false, e:append("missing parameter: name")
     end
-    if e:getcount() > 1 then
-        return false, e
+
+    rc, re = e2tool.verify_src_res_name_valid_chars(name)
+    if not rc then
+        return false, e:cat(re)
     end
-    local cf = e2tool.sourceconfig(name)
-    rc = os.execute(string.format("%s %s", editor, cf))
-    return true, nil
+
+    local pathname = e2tool.src_res_name_to_path(name)
+    local cf = e2tool.sourceconfig(pathname)
+    return editor(cf)
 end
 
+--- Create new result.
 local function newresult(info, ...)
-    local e = err.new("newresult")
+    local rc, re
+    local e = err.new("making new result failed")
     local t = ...
     local name = t[2]
     if not name then
-        e:append("missing parameter: name")
+        return false, e:append("missing parameter: name")
     end
-    if e:getcount() > 1 then
-        return false, e
+
+    rc, re = e2tool.verify_src_res_name_valid_chars(name)
+    if not rc then
+        return false, e:cat(re)
     end
-    local cfdir = e2tool.resultdir(name)
-    local cf = e2tool.resultconfig(name)
-    local bs = e2tool.resultbuildscript(name)
-    local cftemplate = string.format("%s/result", info.local_template_path)
-    local bstemplate = string.format("%s/build-script", info.local_template_path)
-    if not e2lib.isfile(cf) and not e2lib.isfile(bs) and
-        e2lib.isfile(cftemplate) and e2lib.isfile(bstemplate) then
-        local rc, re = e2lib.mkdir(cfdir)
-        if not rc then
-            return false, e:cat(re)
-        end
-        local rc, re = e2lib.cp(cftemplate, cf)
-        if not rc then
-            return false, e:cat(re)
-        end
-        local rc, re = e2lib.cp(bstemplate, bs)
-        if not rc then
-            return false, e:cat(re)
-        end
+
+    local pathname = e2tool.src_res_name_to_path(name)
+    local cfdir = e2tool.resultdir(pathname)
+    local cf = e2tool.resultconfig(pathname)
+    local bs = e2tool.resultbuildscript(pathname)
+
+    local cftemplate = e2lib.join(info.local_template_path, "result")
+    local bstemplate = e2lib.join(info.local_template_path, "build-script")
+    if not e2lib.isfile(cftemplate) then
+        return false, e:append("config template %s not available", cftemplate)
     end
+
+    if not e2lib.isfile(bstemplate) then
+        return false, e:append("build-script template % not available",
+            bstemplate)
+    end
+
+    if e2lib.isfile(cf) then
+        return false, e:append("refusing to overwrite config in %s", cfdir)
+    end
+
+    if e2lib.isfile(bs) then
+        return false,
+            e:append("refusing to overwrite build-script in %s", cfdir)
+    end
+
+    rc, re = shadow_config_up("res", pathname)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = shadow_config_down("res", pathname)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    local rc, re = e2lib.mkdir(cfdir, "-p")
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    local rc, re = e2lib.cp(cftemplate, cf)
+    if not rc then
+        return false, e:cat(re)
+    end
+    local rc, re = e2lib.cp(bstemplate, bs)
+    if not rc then
+        return false, e:cat(re)
+    end
+
     rc, re = commands.editresult(info, ...)
     if not rc then
         return false, e:cat(re)
     end
+
     rc, re = commands.editbuildscript(info, ...)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
+--- Edit result config.
+-- @return True on success, false on failure.
+-- @return Error object on failure.
 local function editresult(info, ...)
+    local rc, re
     local e = err.new("editresult")
     local t = ...
     local name = t[2]
     if not name then
-        e:append("missing parameter: name")
+        return false, e:append("missing parameter: name")
     end
-    if e:getcount() > 1 then
-        return false, e
+
+    rc, re = e2tool.verify_src_res_name_valid_chars(name)
+    if not rc then
+        return false, e:cat(re)
     end
-    local cf = e2tool.resultconfig(name)
-    os.execute(string.format("%s %s", editor, cf))
-    return true, nil
+
+    local pathname = e2tool.src_res_name_to_path(name)
+    local cf = e2tool.resultconfig(pathname)
+    return editor(cf)
 end
 
+--- Edit build-script.
 local function editbuildscript(info, ...)
+    local rc, re
     local e = err.new("editbuildscript")
     local t = ...
     local name = t[2]
     if not name then
-        e:append("missing parameter: name")
+        return false, e:append("missing parameter: name")
     end
-    if e:getcount() > 1 then
-        return false, e
+
+    rc, re = e2tool.verify_src_res_name_valid_chars(name)
+    if not rc then
+        return false, e:cat(re)
     end
-    local cf = e2tool.resultbuildscript(name)
-    os.execute(string.format("%s %s", editor, cf))
-    return true, nil
+
+    local pathname = e2tool.src_res_name_to_path(name)
+    local cf = e2tool.resultbuildscript(pathname)
+    return editor(cf)
 end
 
 commands.editbuildscript = editbuildscript
@@ -192,19 +347,21 @@ commands.nresult = newresult
 commands.nsource = newsource
 commands.esource = editsource
 
-local i = 1
+if #arguments < 1 then
+    e2option.usage(1)
+end
+
 local match = {}
 local cmd = arguments[1]
-if #arguments < 1 then
-    e2option.usage()
-    e2lib.finish(1)
-end
 for c,f in pairs(commands) do
     if c:match(string.format("^%s", cmd)) then
         table.insert(match, c)
     end
 end
-if #match == 1 then
+
+if #match == 0 then
+    e2lib.abort(err.new("unknown command"))
+elseif #match == 1 then
     local a = {}
     for _,o in ipairs(arguments) do
         table.insert(a, o)
@@ -215,15 +372,10 @@ if #match == 1 then
         e2lib.abort(re)
     end
 else
-    if #match > 1 then
-        print(string.format("Ambiguous command: %s", cmd))
-    end
-    print("Available commands:")
-    for c,f in pairs(commands) do
-        print(c)
-    end
-    e2lib.finish(1)
+    e2lib.abort(err.new("Ambiguous command: \"%s\" matches: %s",
+        cmd, table.concat(match, ', ')))
 end
+
 e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:
