@@ -1,4 +1,4 @@
---- Core data structure manipulation
+--- Core e2factory data structure and functions around the build process.
 -- @module local.e2tool
 
 --[[
@@ -28,10 +28,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- e2tool.lua
---
--- High-level tools used by the build process and basic build operations.
-
 local e2tool = {}
 local e2lib = require("e2lib")
 local err = require("err")
@@ -49,15 +45,7 @@ local strict = require("strict")
 local transport = require("transport")
 local cache = require("cache")
 
--- Information gathering and inquiry
---
---   e2tool.collect_project_info([PATH]) -> INFO
---
---     Collects project-information from the project directory which is computed
---     via e2lib.locate_project_root(PATH). Returns a table with the following
---     entries:
-
---- info table
+--- Info table contains sources, results, servers, caches and more...
 -- @name info
 -- @class table
 -- @field name string: project name
