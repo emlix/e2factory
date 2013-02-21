@@ -1184,27 +1184,26 @@ end
 -- then the current working directory is taken as the base directory from
 -- where to start.
 -- @param path Project directory (string) or nil.
--- @return Absolute base project directory or nil on error.
--- XXX: change nil to false.
+-- @return Absolute base project directory or false on error.
 -- @return Error object on failure.
 function e2lib.locate_project_root(path)
     local rc, re
     local e = err.new("checking for project directory failed")
     local save_path = e2util.cwd()
     if not save_path then
-        return nil, e:append("cannot get current working directory")
+        return false, e:append("cannot get current working directory")
     end
     if path then
         rc = e2lib.chdir(path)
         if not rc then
             e2lib.chdir(save_path)
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
     else
         path = e2util.cwd()
         if not path then
             e2lib.chdir(save_path)
-            return nil, e:append("cannot get current working directory")
+            return false, e:append("cannot get current working directory")
         end
     end
     while true do
@@ -1219,16 +1218,16 @@ function e2lib.locate_project_root(path)
         rc = e2lib.chdir("..")
         if not rc then
             e2lib.chdir(save_path)
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
         path = e2util.cwd()
         if not path then
             e2lib.chdir(save_path)
-            return nil, e:append("cannot get current working directory")
+            return false, e:append("cannot get current working directory")
         end
     end
     e2lib.chdir(save_path)
-    return nil, err.new("not in a project directory")
+    return false, err.new("not in a project directory")
 end
 
 --- Checks whether the tool is an existing global e2factory tool. Note that
