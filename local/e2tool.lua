@@ -46,10 +46,15 @@ local transport = require("transport")
 local cache = require("cache")
 
 --- Info table contains sources, results, servers, caches and more...
--- @name info
--- @class table
+-- @table info
+-- @field current_tool Name of the current local tool (string).
+-- @field startup_cwd Current working dir at startup (string).
+-- @field chroot_umask Umask setting for chroot (decimal number).
+-- @field host_umask Default umask of the process (decimal number).
+-- @field root Project root directory (string).
+-- @field ftab Table of build functions tables (table). See info.ftab table.
+-- @see info.ftab
 -- @field name string: project name
--- @field root string: project root directory
 -- @field root_server string: url pointing to the project root
 -- @field root_server_name string: name of the root server (".")
 -- @field default_repo_server string: name of the default scm repo server
@@ -73,6 +78,15 @@ local cache = require("cache")
 -- @field env table: env table
 -- @field env_files table: list of env files
 -- @field local_template_path Path to the local templates (string).
+
+--- Function table, driving the build process. Contains further tables to
+-- which e2factory and plugins add functions that comprise the build process.
+-- @table info.ftab
+-- @field collect_project_info
+-- @field check_result
+-- @field resultid
+-- @field pbuildid
+-- @field dlist
 
 --- table of sources records, keyed by source names
 -- @name sources
@@ -609,10 +623,14 @@ end
 -- initialize the umask set/reset mechanism (i.e. store the host umask)
 -- @param info
 local function init_umask(info)
+    -- set the umask value to be used in chroot
+    info.chroot_umask = 18   -- 022 octal
+
     -- save the umask value we run with
-    info.host_umask = e2util.umask(022);
+    info.host_umask = e2util.umask(info.chroot_umask)
+
     -- restore the previous umask value again
-    e2util.umask(info.host_umask);
+    e2tool.reset_umask(info)
 end
 
 --- initialize the local library, load and initialize local plugins
@@ -622,41 +640,37 @@ end
 -- @return an error object on failure
 function e2tool.local_init(path, tool)
     local rc, re
-    local e = err.new("initializing")
+    local e = err.new("initializing local tool")
     local info = {}
 
-    -- provide the current tool name to allow conditionals in plugin
-    -- initialization
     info.current_tool = tool
-
-    -- provide the current working directory at tool startup
     info.startup_cwd = e2util.cwd()
 
-    -- set the umask value to be used in chroot
-    info.chroot_umask = 18   -- 0022 octal
     init_umask(info)
 
     info.root, re = e2lib.locate_project_root(path)
     if not info.root then
-        return false, e:append("you are not located in a project directory")
+        return false, e:append("not located in a project directory")
     end
+
     rc, re = e2tool.lcd(info, ".")
     if not rc then
         return false, e:cat(re)
     end
 
-    -- table of functions, extensible by plugins
-    info.ftab = {
+    info.ftab = strict.lock({
         collect_project_info = {},		-- f(info)
         check_result = {},			-- f(info, resultname)
         resultid = {},			-- f(info, resultname)
         pbuildid = {},			-- f(info, resultname)
         dlist = {},				-- f(info, resultname)
-    }
+    })
+
     rc, re = e2tool.register_check_result(info, check_result)
     if not rc then
         return nil, e:cat(re)
     end
+
     rc, re = e2tool.register_dlist(info, e2tool.get_depends)
     if not rc then
         return nil, e:cat(re)
