@@ -55,32 +55,40 @@ local function source_set_working_copy()
     return "working-copy"
 end
 
---- storage_*
--- @class function
--- @name policy.storage_*
--- @param location string: the project location
--- @param release_id string: the release id
--- @return the server to store the result on
--- @return the location to store the result in
-local results_server = "results"
+--- Get release server and location.
+-- @param location Project location (e.g. customer/project) (string).
+-- @param release_id Release Id (string).
+-- @return Server name (string).
+-- @return Location path to store results in (string).
 local function storage_release(location, release_id)
-    return results_server, string.format("%s/release/%s", location,
-    release_id)
+    return "results", string.format("%s/release/%s", location, release_id)
 end
 
+--- Get results server and location.
+-- @param location Project location (e.g. customer/project) (string).
+-- @param release_id Release Id (string).
+-- @return Server name (string).
+-- @return Location path to store results in (string).
 local function storage_default(location, release_id)
-    return results_server, string.format("%s/shared", location)
+    return "results", string.format("%s/shared", location)
 end
 
+--- Get local server and location.
+-- @param location Project location (e.g. customer/project) (string).
+-- @param release_id Release Id (string).
+-- @return Server name (string).
+-- @return Location path to store results in (string).
 local function storage_local(location, release_id)
-    local local_server = "."
-    return local_server , string.format("out")
+    return "." , string.format("out")
 end
 
--- deploy function
+--- Get deploy server and location.
+-- @param location Project location (e.g. customer/project) (string).
+-- @param release_id Release Id (string).
+-- @return Server name (string).
+-- @return Location path to store results in (string).
 local function deploy_storage_default(location, release_id)
-    local releases_server = "releases"
-    return releases_server, string.format("%s/archive/%s", location, release_id)
+    return "releases", string.format("%s/archive/%s", location, release_id)
 end
 
 --- dep_set_*
@@ -111,6 +119,7 @@ end
 
 function policy.init(info)
     local e = err.new("checking policy")
+
     -- check if all required servers exist
     local storage = {
         storage_release,
@@ -118,12 +127,12 @@ function policy.init(info)
         storage_local,
         deploy_storage_default,
     }
-    for i,s in ipairs(storage) do
+
+    for _,s in ipairs(storage) do
         local location = "test/test"
         local release_id = "release-id"
         local server, location = s(location, release_id)
-        local se = err.new("checking server configuration for '%s'",
-        server)
+        local se = err.new("checking server configuration for '%s'", server)
         local ce, re = info.cache:ce_by_server(server)
         if not ce then
             se:cat(re)
