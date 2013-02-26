@@ -39,38 +39,43 @@ local tools = require("tools")
 local err = require("err")
 local strict = require("strict")
 
---- clone a git repository
--- @param surl url to the server
--- @param location location relative to the server url
--- @param destdir
--- @param skip_checkout bool: pass -n to git clone?
--- @return true on success, false on error
--- @return nil, an error object on failure
-function generic_git.git_clone_url1(surl, location, destdir, skip_checkout)
-    if (not surl) or (not location) or (not destdir) then
-        e2lib.abort("git_clone_url1(): missing parameter")
-    end
+--- Clone a git repository.
+-- @param surl URL to the git repository (string).
+-- @param destdir Destination on file system (string). Must not exist.
+-- @param skip_checkout Pass -n to git clone? (boolean)
+-- @return True on success, false on error
+-- @return Error object on failure
+local function git_clone_url(surl, destdir, skip_checkout)
     local rc, re
     local e = err.new("cloning git repository")
-    local full_url = string.format("%s/%s", surl, location)
-    local u, re = url.parse(full_url)
+
+    if (not surl) or (not destdir) then
+        return false, err.new("git_clone_url(): missing parameter")
+    end
+
+    local u, re = url.parse(surl)
     if not u then
         return false, e:cat(re)
     end
+
     local src, re = generic_git.git_url1(u)
     if not src then
         return false, e:cat(re)
     end
+
     local flags = ""
     if skip_checkout then
         flags = "-n"
     end
-    local cmd = string.format("git clone %s --quiet %s %s", flags,
-    e2lib.shquote(src), e2lib.shquote(destdir))
+
+    local cmd = string.format("git clone %s --quiet %s %s", flags, 
+        e2lib.shquote(src), e2lib.shquote(destdir))
+
     local rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
         return false, e:cat(re)
     end
+
     return true, nil
 end
 
@@ -308,7 +313,7 @@ function generic_git.git_clone_from_server(c, server, location, destdir,
     if not surl then
         return false, e:cat(re)
     end
-    local rc, re = generic_git.git_clone_url1(surl, "", destdir, skip_checkout)
+    local rc, re = git_clone_url(surl, destdir, skip_checkout)
     if not rc then
         return false, re
     end
