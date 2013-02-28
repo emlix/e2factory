@@ -1,4 +1,52 @@
-NEXT:
+e2factory-2.3.13rc1
+ * Change source git URL construction to be compatible with assembla.
+ * e2-cf can now handle source and result groups, plus better error checking.
+ * Result and source names are better enforced, dots are only legal for groups.
+ * --help now displays the manual page of the tool.
+ * Add command e2-help to view project-specific help.
+ * Fix error propagation from sub-makes when building e2factory.
+ * Don't warn when hardlink optimization fails.
+ * Default .gitignore when creating a project improved.
+ * Many improvements and additions to the developer documentation.
+ * Bugfix: Remove undocumented requirement on "base" chroot group.
+   This requires a BUILDID change. All results will have to be rebuilt.
+ * Add, improve and update man pages for all tools.
+ * Remove outdated and misleading example directory.
+ * e2-fetch-sources now checks out working copy after cloning.
+ * Many fixes concerning proper pathname handling.
+ * Improve e2source copy attribute, auto-creates missing directories and more.
+ * Improve debug logging to be able to provide better assistance.
+ * Remove server component used by e2-build-numbers.
+ * Remove unused e2-build-numbers command.
+ * Many improvements to e2-new-source.
+ * Add a digest module to improve working with SHA1 and MD5 hashes.
+ * Add LDoc and dependencies to generate developer documentation.
+ * Bugfix: e2-new-source checks whether a file exists before upload.
+ * Bugfix: collect-project result does not copy non-existent files.
+ * Remove unused e2ssh command.
+ * Remove new-source option that doesn't do anything.
+ * Bugfix: transport correctly returns error when upload fails.
+ * CVS plugin understands scp:// URLs.
+ * Git URLs may now use http and https.
+ * Remove e2-su and e2-root commands, both are unused.
+ * Provide internal version of Lua, making it unnecessary to download it first.
+ * Improved the strict module to spot more programmer errors, reducing bugs.
+ * Turn the default SCM modules into plugins.
+ * Add a dependency mechanisms for plugins, they can now depend on each other.
+ * Rename local tools to be consistent with their installed name.
+ * Bugfix: user default options should work now.
+ * Bugfix: make argument parsing more precise.
+ * Don't call test(1) to determine whether something is a directory...
+ * Bugfix: order of --e2-config/E2_CONFIG selection now deterministic.
+ * Remove old and misleading documentation.
+ * Remove old, pre-opensource e2-2.1 tools that didn't help anyone.
+ * No more compiled Lua code which allows for better module separation.
+ * Improve error messages.
+ * Dead code removal.
+ * Lots of code cleanup and internal modularization.
+ * Remove test directory which was also unused.
+ * Remove unused server-tools.
+ * Remove unused buildversion and release scripts.
 
 e2factory-2.3.12
  * allow server paths to contain whitespace
