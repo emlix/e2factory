@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.13rc1
  * Change source git URL construction to be compatible with assembla.
  * e2-cf can now handle source and result groups, plus better error checking.
