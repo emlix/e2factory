@@ -2062,7 +2062,7 @@ end
 -- @param licence
 -- @return string
 -- @return an error object on failure
-local function licenceid(info, licence)
+function e2tool.licenceid(info, licence)
     local rc, re
     local e = err.new("calculating licence id failed for licence: %s",
     licence)
@@ -2188,7 +2188,7 @@ function e2tool.pbuildid(info, resultname)
         hash.hash_line(hc, l)		-- name
         -- We collect all licences. So we cannot be sure to catch
         -- them via results/sources. Include them explicitly here.
-        local lid, re = licenceid(info, l)
+        local lid, re = e2tool.licenceid(info, l)
         if not lid then
             return nil, e:cat(re)
         end
