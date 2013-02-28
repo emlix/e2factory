@@ -1564,6 +1564,55 @@ local function check_sources(info)
     return true, nil
 end
 
+--- check licence.
+local function check_licence(info, l)
+    local e = err.new("in licence: %s", l)
+    local lic = info.licences[l]
+    if not lic.server then
+        e:append("no server attribute")
+    end
+    if not lic.files then
+        e:append("no files attribute")
+    elseif not type(lic.files) == "table" then
+        e:append("files attribute is not a table")
+    else
+        for _,f in ipairs(lic.files) do
+            local inherit = {
+                server = lic.server,
+            }
+            local keys = {
+                server = {
+                    mandatory = true,
+                    type = "string",
+                    inherit = true,
+                },
+                location = {
+                    mandatory = true,
+                    type = "string",
+                    inherit = false,
+                },
+                sha1 = {
+                    mandatory = false,
+                    type = "string",
+                    inherit = false,
+                },
+            }
+            local rc, re = check_tab(f, keys, inherit)
+            if not rc then
+                e:cat(re)
+            elseif f.server ~= info.root_server_name and
+                not f.sha1 then
+                e:append("file entry for remote file without"..
+                " `sha1` attribute")
+            end
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
 --- check licences.
 local function check_licences(info)
     local e = err.new("Error while checking licences")
@@ -2284,55 +2333,6 @@ local function add_source_results(info, source_set)
     for _, src in pairs(info.sources) do
         add_source_result(info, src.name)
     end
-end
-
---- check licence.
-local function check_licence(info, l)
-    local e = err.new("in licence: %s", l)
-    local lic = info.licences[l]
-    if not lic.server then
-        e:append("no server attribute")
-    end
-    if not lic.files then
-        e:append("no files attribute")
-    elseif not type(lic.files) == "table" then
-        e:append("files attribute is not a table")
-    else
-        for _,f in ipairs(lic.files) do
-            local inherit = {
-                server = lic.server,
-            }
-            local keys = {
-                server = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = true,
-                },
-                location = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = false,
-                },
-                sha1 = {
-                    mandatory = false,
-                    type = "string",
-                    inherit = false,
-                },
-            }
-            local rc, re = check_tab(f, keys, inherit)
-            if not rc then
-                e:cat(re)
-            elseif f.server ~= info.root_server_name and
-                not f.sha1 then
-                e:append("file entry for remote file without"..
-                " `sha1` attribute")
-            end
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
 end
 
 --- check working copies.
