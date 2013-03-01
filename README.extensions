@@ -1,18 +1,21 @@
-e2factory has extension support now.
+e2factory extension
+-------------------
 
-e2factory extensions are simply additional code that is installed in
-addition to the e2factory core.
+e2factory extensions are additional bundles of code and a little Makefile glue
+that is installed in addition to the e2factory core.
 
-extensions can provide a local and a global part. The requirements are
+Extensions can provide a local and a global part.
 
- * a git repository, located next to the e2factory core one, if the
-   extension should be automatically installed with the local tools
- * the extensions' Makefile must provide the targets local and install-local
-   to do local install (via e2-install-e2)
- * the extensions' Makefile should provide the targets all and install to
+The requirements are:
+
+ * A git repository, located next to the e2factory git repository on the server,
+   if the extension should be automatically installed with the local tools.
+ * The extensions' Makefile must provide the targets local and install-local
+   to do local installation (via e2-install-e2).
+ * The extensions' Makefile should provide the targets all and install to
    install globally.
  * Either part may be empty (i.e. build and install nothing). In other words:
    Extensions may provide code for local install or code for global install
    or both.
- * extensions are configured in .e2/extensions
- * It is planned to provide a plugin interface
+ * Extensions are configured in .e2/extensions.
+ * Extensions may install plugins, extending the e2factory core itself.
