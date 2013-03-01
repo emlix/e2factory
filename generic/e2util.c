@@ -66,7 +66,7 @@ lua_fork(lua_State *lua)
 
 	if(rc < 0) {
 		lua_pushnil(lua);
-		lua_pushstring(lua, (char *)strerror(errno));
+		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
 
@@ -164,10 +164,8 @@ get_file_statistics(lua_State *lua)
 	}
 
 	if (s < 0) {
-		char buf[256];
-		strerror_r(errno, buf, sizeof(buf));
 		lua_pushnil(lua);
-		lua_pushstring(lua, buf);
+		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
 
@@ -339,10 +337,8 @@ change_directory(lua_State *lua)
 	const char *ptr = luaL_checkstring(lua, 1);
 	rc = chdir(ptr);
 	if (rc < 0) {
-		char buf[256];
-		strerror_r(errno, buf, sizeof(buf));
 		lua_pushboolean(lua, 0);
-		lua_pushstring(lua, buf);
+		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
 	lua_pushboolean(lua, 1);
@@ -455,7 +451,7 @@ run_pipe(lua_State *lua)
 
 fail:
 	lua_pushnil(lua);
-	lua_pushstring(lua, (char *)strerror(errno));
+	lua_pushstring(lua, strerror(errno));
 	return 2;
 }
 
@@ -474,7 +470,7 @@ process_wait(lua_State *lua)
 	rc = waitpid(pid, &status, 0);
 	if (rc < 0) {
 		lua_pushnil(lua);
-		lua_pushstring(lua, (char *)strerror(errno));
+		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
 	lua_pushnumber(lua, WEXITSTATUS(status));
@@ -503,7 +499,7 @@ read_fd(lua_State *lua)
 
 	if (m < 0) {
 		lua_pushnil(lua);
-		lua_pushstring(lua, (char *)strerror(errno));
+		lua_pushstring(lua, strerror(errno));
 		free(buf);
 		return 2;
 	}
@@ -534,7 +530,7 @@ write_fd(lua_State *lua)
 
 	if (m < 0) {
 		lua_pushnil(lua);
-		lua_pushstring(lua, (char *)strerror(errno));
+		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
 
@@ -557,7 +553,7 @@ close_fd(lua_State *lua)
 
 	if (close(fd) < 0) {
 		lua_pushnil(lua);
-		lua_pushstring(lua, (char *)strerror(errno));
+		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
 
