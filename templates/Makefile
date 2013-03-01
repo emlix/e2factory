@@ -25,8 +25,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# makefile for emlix-specific global installations
-
 TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
