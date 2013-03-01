@@ -1,15 +1,11 @@
--- e2factory cvs source configuration template --
+-- -*- Mode: Lua; tab-width: 8 -*-
+-- vim:ft=lua:sts=0:noet:nosta:ts=8:
 
 e2source {
-	-- the source name
-	-- (is derived from the config file path if only one source is
-	-- specified per file)
-	name = "name",
-	-- the source type
 	type = "cvs",
 	-- environment
 	env = {
-		key = "value",
+		--key = "value",
 	},
 	-- a list of licences from proj/licences
 	licences={ },

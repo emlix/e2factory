@@ -1,3 +1,6 @@
+-- -*- Mode: Lua; tab-width: 8 -*-
+-- vim:ft=lua:sts=0:noet:nosta:ts=8:
+
 -- e2factory environment configuration file --
 env {
 	-- global variables

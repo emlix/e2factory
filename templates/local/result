@@ -1,4 +1,5 @@
--- e2factory result configuration template --
+-- -*- Mode: Lua; tab-width: 8 -*-
+-- vim:ft=lua:sts=0:noet:nosta:ts=8:
 
 e2result {
 	-- a list of sources
@@ -7,9 +8,4 @@ e2result {
 	depends = { },
 	-- a list of chroot groups
 	chroot = { },
-	-- an environment dictionary
-	env = { },
-	-- use the collect_project feature for this result?
-	collect_project = false,
-	-- collect_project_default_result = "<result>",
 }

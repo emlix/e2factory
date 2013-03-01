@@ -1,3 +1,6 @@
+# -*- Mode: sh; tab-width: 8 -*-
+# vim:ft=sh:sts=0:noet:nosta:ts=8:
+
 # e2factory build script template
 #
 # The build system provides the following variables for use in build scripts:

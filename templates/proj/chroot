@@ -1,19 +1,22 @@
+-- -*- Mode: Lua; tab-width: 8 -*-
+-- vim:ft=lua:sts=0:noet:nosta:ts=8:
+
 -- e2factory chroot configuration file --
-local cp = "emlix/chroot-i386/tags/20080916-stable-2/"
+local cp = "emlix/chroot-i386/tags/20080916-stable-5/"
 e2chroot {
-  default_groups = {
-    "base",
-  },
-  groups = {
-    {
-      name = "base",
-      server = "chroot",
-      files = {
-	{
-	  location = cp.."base.tar.gz",
-	  sha1 = "130584621d77fadff34127be31653c675f7cb582",
-	}
-      },
-    },
-  },
+	default_groups = {
+		"base",
+	},
+	groups = {
+		{
+			name = "base",
+			server = "chroot",
+			files = {
+				{
+					location = cp.."base.tar.gz",
+					sha1 = "653e4244ee255dd0924296d79a330fd9b350a9b4",
+				}
+			},
+		},
+	},
 }
