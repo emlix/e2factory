@@ -1,24 +1,15 @@
-1. Including the e2 tool version into the buildid calculation
-
-The version of e2factory is set in make.vars
-
-The buildconfig lua module provides each single part of the version string
-and the full version string.
-
-The full version string is calculated into the buildid, to catch tool
-changes and be sure to rebuild results whenever the e2 tool version changes.
-
-The VERSIONSTRING variable is not used, as that makes development impossible,
-as buildids would change with each single commit.
-
-2. The release process
-
 Releasing e2factory requires the following steps:
-step 1. run the release.sh script
-        (update the version-related variables in make.vars, update the
-        Changelog file)
-step 2. push the release tag (git push --tags)
 
-3. Version and Release naming
-Any e2 version follows this naming scheme:
+1. Run the release.sh script (be sure to read it first)
+   - update the version-related variables in make.vars
+   - update the Changelog file
+
+2. Push the changes and the release tag (git push --tags)
+
+3. Upload the generated tarballs to a suitable location.
+
+
+Version and Release naming:
+
+Any e2factory version follows this naming scheme:
 NAME-MAJOR.MINOR.PATCHLEVEL(EXTRAVERSION)
