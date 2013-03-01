@@ -40,21 +40,10 @@ The installation step HAS to be done as root, as some global tools
 need to have their setuid(1) bit set to create and remove the
 chroot(1) environment.
 
-To build the documentation a few tools must be available:
-  luadoc (http://luadoc.luaforge.net)
-  man2html (http://users.actrix.gen.nz/michael/vhman2html.html)
-  markdown (http://daringfireball.net/projects/markdown)
-
 To build and install the documentation use the doc and install-doc targets:
 
   make doc
   make install-doc
-
-This will build and install the tutorial, the html manual pages and the
-luadoc source code documentation.
-
-The example/ subdirectory holds an example project. Read example/README
-for more information.
 
 In case you have any problems with the installation, please
 contact the e2factory team via the mailinglist:
