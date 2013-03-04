@@ -232,6 +232,87 @@ local function gen_dest_dir_name(buildpath, sourcename, copypath, location,
     return destdir, destname
 end
 
+--- Determine archive type by looking at the file extension.
+-- @param filename File name (string).
+-- @return String constant describing archive,
+-- or false if archive suffix is unknown.
+-- @return Error object on failure.
+local function archive_by_suffix(filename)
+    local name = filename:lower() -- case insensitive matching
+    local atype
+
+    if name:match("%.tar$") then
+        atype = "TAR"
+    elseif name:match("%.tgz") or name:match("%.tar%.gz$") then
+        atype = "TAR_GZ"
+    elseif name:match("%.tar%.bz2$") then
+        atype = "TAR_BZIP2"
+    elseif name:match("%.tar%.xz$") then
+        atype = "TAR_XZ"
+    elseif name:match("%.zip$") then
+        atype = "ZIP"
+    else
+        return false, err.new("can not determine archive type of '%s'",
+            filename)
+    end
+
+    return atype
+end
+
+--- Generates the command to unpack an archive file.
+-- @param physpath Current location and filename to be unpacked later.
+-- @param virtpath Location and name of the file at the time of unpacking.
+-- @param destdir Path where the unpacked files shall be put.
+-- @return Tool name (string), or false on error.
+-- @return Argument vector table for the tool, or an error object on failure.
+local function gen_unpack_command(physpath, virtpath, destdir)
+    local tool
+    local toolargv = {}
+
+    local atype, re = archive_by_suffix(physpath)
+    if not atype then
+        return false, re
+    end
+
+    if atype == "ZIP" then
+        tool = "unzip"
+        table.insert(toolargv, virtpath)
+        table.insert(toolargv, "-d")
+        table.insert(toolargv, destdir)
+    elseif atype == "TAR" then
+        tool = "tar"
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    elseif atype == "TAR_GZ" then
+        tool = "tar"
+        table.insert(toolargv, "-z")
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    elseif atype == "TAR_BZIP2" then
+        tool = "tar"
+        table.insert(toolargv, "-j")
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    elseif atype == "TAR_XZ" then
+        tool = "tar"
+        table.insert(toolargv, "--xz")
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    else
+        return false, err.new("unhandled archive type")
+    end
+
+    return tool, toolargv
+end
+
 --- Prepare a files source.
 -- @param info The info table.
 -- @param sourcename The source name (string)
@@ -270,7 +351,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 return false, e:cat(re)
             end
 
-            local rc, re = e2lib.howtounpack(path, path, buildpath)
+            local rc, re = gen_unpack_command(path, path, buildpath)
             if not rc then
                 return false, e:cat(re)
             end
@@ -475,7 +556,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         if file.unpack then
             local physpath = e2lib.join(destdir, e2lib.basename(file.location))
             local virtpath = e2lib.join(source, e2lib.basename(file.location))
-            local rc, re = e2lib.howtounpack(physpath, virtpath, "$(BUILD)")
+            local rc, re = gen_unpack_command(physpath, virtpath, "$(BUILD)")
             if not rc then
                 e:cat("unable to generate unpack command")
                 return false, e:cat(re)

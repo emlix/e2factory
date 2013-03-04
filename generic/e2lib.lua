@@ -648,47 +648,7 @@ function e2lib.shquote(str)
     return "'"..str.."'"
 end
 
---- Determines the type of an archive.
--- Returns an empty string for tar archives, "--gzip" for
--- gzip files, "--bzip2" for bzip2 files,
--- and "zip" for zip archives.
--- @param path Path to an archive file (string).
--- @return False on error, otherwise a string as described above.
--- @return An error object on failure.
-function e2lib.tartype(path)
-    local e = err.new("Could not determine archive type")
-    local c
-
-    local f, re = io.open(path, "r")
-    if not f then
-        return false, e:append(": %s", re)
-    end
-
-    local d = f:read(512)
-    if not d then
-        return false, e:append(": read error")
-    end
-
-    f:close()
-
-    local l = string.len(d)
-
-    if l > 261 and string.sub(d, 258, 262) == "ustar" then
-        c = ""
-    elseif l > 1 and string.sub(d, 1, 2) == "\031\139" then
-        c = "--gzip"
-    elseif l > 2 and string.sub(d, 1, 3) == "BZh" then
-        c = "--bzip2"
-    elseif l > 3 and string.sub(d, 1, 4) == "PK\003\004" then
-        c = "zip"
-    else
-        return false, e:append(": could not determine type")
-    end
-
-    return c
-end
-
---- translate filename suffixes to valid tartypes for e2-su-2.2
+--- Translate filename suffixes to valid tartypes for e2-su-2.2 only.
 -- @param filename string: filename
 -- @return string: tartype, or nil on failure
 -- @return an error object on failure
@@ -705,40 +665,6 @@ function e2lib.tartype_by_suffix(filename)
         return false, e
     end
     return tartype
-end
-
---- Generates the command to unpack an archive file.
--- @param physpath Current location and filename to be unpacked later.
--- @param virtpath Location and name of the file at the time of unpacking.
--- @param destdir Path where the unpacked files shall be put.
--- @return Tool name (string), or false on error.
--- @return Argument vector table for the tool, or an error object on failure.
-function e2lib.howtounpack(physpath, virtpath, destdir)
-    local tool
-    local toolargv = {}
-    local rc, re = e2lib.tartype(physpath)
-
-    if not rc then
-        return false, re
-    end
-
-    if rc == "zip" then
-        tool = "unzip"
-        table.insert(toolargv, virtpath)
-        table.insert(toolargv, "-d")
-        table.insert(toolargv, destdir)
-    else
-        tool = "tar"
-        table.insert(toolargv, "-C")
-        table.insert(toolargv, destdir)
-        if rc ~= "" then
-            table.insert(toolargv, rc)
-        end
-        table.insert(toolargv, "-xf")
-        table.insert(toolargv, virtpath)
-    end
-
-    return tool, toolargv
 end
 
 --- Read the first line from the given file and return it.
