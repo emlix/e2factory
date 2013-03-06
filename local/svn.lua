@@ -51,21 +51,24 @@ local function mksvnurl(surl)
     local rc, re
     local e = err.new("cannot translate url into subversion url:")
     e:append("%s", surl)
+
     local u, re = url.parse(surl)
     if not u then
         return nil, e:cat(re)
     end
+
     local transport
-    -- TODO: http, https and svn are valid transports that should be added
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
         transport = "svn+ssh"
-    elseif u.transport == "file" then
-        transport = "file"
+    elseif u.transport == "http" or u.transport == "https"
+        or u.transport == "svn" or u.transport == "file" then
+        transport = u.transport
     else
-        return nil, e:append(string.format("unsupported subversion transport: %s",
-        u.transport))
+        return nil,
+            e:append("unsupported subversion transport: %s", u.transport)
     end
+
     return string.format("%s://%s/%s", transport, u.server, u.path)
 end
 
