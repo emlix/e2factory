@@ -287,10 +287,9 @@ function generic_git.git_url1(u)
         giturl = string.format("git+ssh://%s/%s", u.server, u.path)
     elseif u.transport == "file" then
         giturl = string.format("/%s", u.path)
-    elseif u.transport == "http" then
-        giturl = string.format("http://%s/%s", u.server, u.path)
-    elseif u.transport == "https" then
-        giturl = string.format("https://%s/%s", u.server, u.path)
+    elseif u.transport == "http" or u.transport == "https" or
+        u.transport == "git" then
+        giturl = string.format("%s://%s/%s", u.transport, u.server, u.path)
     else
         return nil, err.new("git_url1: transport not supported: %s", u.transport)
     end
