@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.13rc2
  * Drop guessing the archive file type using magic numbers.
  * Add tar.xz support, requires tar and xz in the chroot.
