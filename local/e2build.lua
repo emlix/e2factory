@@ -349,8 +349,8 @@ local function fix_permissions(info, r, return_flags)
     local e = err.new("fixing permissions failed")
     e2lib.log(3, "fix permissions")
     e2tool.set_umask(info)
-    local argv = { "chroot_2_3", res.build_config.base, tools.get_tool("chown"),
-        "-R", "root:root", res.build_config.Tc }
+    local argv = { "chroot_2_3", res.build_config.base, "chown", "-R",
+    "root:root", res.build_config.Tc }
     rc, re = e2lib.e2_su_2_2(argv)
     e2tool.reset_umask(info)
     if not rc then
