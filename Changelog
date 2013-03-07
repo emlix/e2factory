@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.13rc3
  * Add git url protocol support.
  * Add http, https and svn url support to svn plugin.
