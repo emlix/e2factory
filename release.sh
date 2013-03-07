@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+if [ "$EDITOR" = "" ]; then
+	EDITOR="vi"
+fi
+
 #E=echo
 E=""
 cat <<EOF
@@ -11,10 +15,10 @@ Release Checklist:
 
 EOF
 
-vi make.vars
+$EDITOR make.vars
 TAG=$(make showtag)
 sed -i -r -e s,"^NEXT:.*","$TAG", Changelog
-vi Changelog
+$EDITOR Changelog
 echo "Release name will be: $TAG"
 echo "Changes in the final commit:"
 $E git diff HEAD Changelog make.vars
