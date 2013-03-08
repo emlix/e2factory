@@ -1,4 +1,5 @@
-NEXT:
+e2factory-2.3.13rc4
+ * interrupt_hook() bugfix.
 
 e2factory-2.3.13rc3
  * Add git url protocol support.
