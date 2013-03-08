@@ -730,10 +730,20 @@ do_getpid(lua_State *lua) {
 static void
 lstop(lua_State *L, lua_Debug *ar) {
 	lua_sethook(L, NULL, 0, 0);
-	lua_getglobal(L, "e2lib");
-	lua_pushstring(L, "interrupt_hook");
-	lua_rawget(L, -2);
+
+	/* require e2lib */
+	lua_getglobal(L, "require");
+	lua_pushstring(L, "e2lib");
+	lua_call(L, 1, 1);
+
+	/* load and call interrupt_hook */
+	lua_getfield(L, -1, "interrupt_hook");
+	lua_remove(L, -2); /* remove e2lib, balance stack */
 	lua_call(L, 0, 0);
+
+	/* not reached under normal circumstances */
+	fprintf(stderr, "e2: interrupt_hook failed, terminating\n");
+	exit(1);
 }
 
 static lua_State *globalL;
@@ -741,8 +751,9 @@ static lua_State *globalL;
 
 static void
 laction(int i) {
-	signal(i, SIG_DFL); /* if another SIGINT happens before lstop,
-			       terminate process (default action) */
+	/* Ignore further signals because lstop() should
+	 * terminate the process in an orderly fashion */
+	signal(i, SIG_IGN);
 	lua_sethook(globalL, lstop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1);
 }
 
