@@ -8,7 +8,7 @@
 e2-install-e2 \- install the e2factory local tools into a project environment
 
 .SH SYNOPSIS
-e2-install-e2 [<option>
+e2-install-e2 [<option>]
 
 .SH DESCRIPTION
 \fBe2-install-e2\fR is part of the e2factory commandline tools.
