@@ -202,11 +202,10 @@ end
 local function display_doc(documentation, doc_name)
     local rc, re, e
 
-    local doc_re_match = string.format("^%s$", doc_name)
     local found = 0
     local founddoc
     for _,doc in ipairs(documentation) do
-        if doc.displayname:match(doc_re_match) then
+        if doc.displayname == doc_name then
             found = found + 1;
             founddoc = doc
         end
@@ -221,8 +220,7 @@ local function display_doc(documentation, doc_name)
             e2lib.bomb(string.format("unhandled doctype: %d", founddoc.doctype))
         end
     else
-        return false, err.new("More than one document found for '%s',"..
-            " specify a section", doc_name)
+        return false, err.new("More than one document matches '%s'", doc_name)
     end
 
     return true
