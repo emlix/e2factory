@@ -1173,19 +1173,18 @@ function e2lib.isglobaltool(tool)
 end
 
 --- Check whether tool is an existing local e2factory tool.
+-- Only works in a project context.
 -- @param tool Tool name such as 'e2-install-e2', 'e2-build' etc.
--- @param projectdir Optional directory where the tool should be searched in. If
--- not specified, the current working directory will be used.
 -- @return True or false
 -- @return Error object when false.
 -- @see isglobaltool
-function e2lib.islocaltool(tool, projectdir)
-    local dir, re = e2lib.locate_project_root(projectdir)
+function e2lib.islocaltool(tool)
+    local dir, re = e2lib.locate_project_root()
     if not dir then
         return false, re
     end
 
-    local tool = e2lib.join(dir, tool)
+    local tool = e2lib.join(dir, ".e2/bin", tool)
     if e2lib.isfile(tool) then
         return tool
     end
