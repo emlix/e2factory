@@ -129,8 +129,8 @@ function files.cache_source(info, sourcename)
     local s = info.sources[sourcename]
     -- cache all files for this source
     for i,f in pairs(s.file) do
-        e2lib.log(4, string.format("files.cache_source: caching file %s:%s",
-        f.server, f.location))
+        e2lib.logf(4, "files.cache_source: caching file %s:%s", f.server,
+            f.location)
         local flags = { cache = true }
         if f.server ~= info.root_server_name then
             local rc, e = info.cache:cache_file(f.server, f.location, flags)
@@ -138,8 +138,8 @@ function files.cache_source(info, sourcename)
                 return false, e
             end
         else
-            e2lib.log(4, string.format("not caching %s:%s (stored locally)",
-            f.server, f.location))
+            e2lib.logf(4, "not caching %s:%s (stored locally)", f.server,
+                f.location)
         end
     end
     return true, nil
@@ -329,7 +329,6 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
         return false, e:cat(re)
     end
     local symlink = nil
-    e2lib.log(4, string.format("prepare source: %s", sourcename))
     local s = info.sources[sourcename]
     for _,file in ipairs(info.sources[sourcename].file) do
         if file.sha1 then
@@ -497,8 +496,7 @@ function files.sourceid(info, sourcename, sourceset)
         hash.hash_line(hc, tostring(f.patch))
         hash.hash_line(hc, tostring(f.copy))
     end
-    e2lib.log(4, string.format("hash data for source %s\n%s", src.name,
-    hc.data))
+    e2lib.logf(4, "hash data for source %s\n%s", src.name, hc.data)
     src.sourceid = hash.hash_finish(hc)
     return true, nil, src.sourceid
 end
@@ -531,7 +529,7 @@ function files.toresult(info, sourcename, sourceset, directory)
 
     f:write(string.format(".PHONY: place\n\nplace:\n"))
     for _,file in ipairs(s.file) do
-        e2lib.log(4, string.format("export file: %s", file.location))
+        e2lib.logf(4, "export file: %s", file.location)
         local destdir = string.format("%s/%s", directory, source)
         local destname = nil
         e2lib.mkdir(destdir, "-p")
@@ -628,8 +626,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         if not rc then
             return false, e:cat(re)
         end
-        e2lib.log(4, string.format("export file: %s done",
-        file.location))
+        e2lib.logf(4, "export file: %s done", file.location)
     end
     f:close()
     return true, nil

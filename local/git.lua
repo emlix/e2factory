@@ -252,8 +252,7 @@ function git.fetch_source(info, sourcename)
         return false, e:cat(re)
     end
     local wrk = info.root .. "/" .. src.working
-    e2lib.log(2, string.format("cloning %s:%s [%s]",
-    src.server, src.location, src.branch))
+    e2lib.logf(2, "cloning %s:%s [%s]", src.server, src.location, src.branch)
     local skip_checkout = e2lib.globals.git_skip_checkout
     rc, re = generic_git.git_clone_from_server(info.cache, src.server,
         src.location, wrk, false)
@@ -490,8 +489,7 @@ function git.sourceid(info, sourcename, sourceset)
     hash.hash_line(hc, src.location)
     hash.hash_line(hc, src.working)
     hash.hash_line(hc, src.commitid[sourceset])
-    e2lib.log(4, string.format("hash data for source %s\n%s", src.name,
-    hc.data))
+    e2lib.logf(4, "hash data for source %s\n%s", src.name, hc.data)
     src.sourceid[sourceset] = hash.hash_finish(hc)
     return true, nil, src.sourceid[sourceset]
 end

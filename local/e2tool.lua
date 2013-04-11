@@ -277,7 +277,7 @@ end
 local function load_user_config(info, path, dest, index, var)
     local rc, re
     local e = err.new("loading configuration failed")
-    e2lib.log(3, "loading " .. path)
+    e2lib.logf(3, "loading %s", path)
     if not e2util.exists(path) then
         return false, e:append("file does not exist: %s", path)
     end
@@ -1372,7 +1372,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         info.project_location_config)
     end
     info.project_location = l
-    e2lib.log(4, string.format("project location is %s", info.project_location))
+    e2lib.logf(4, "project location is %s", info.project_location)
 
     -- read global interface version and check if this version of the local
     -- tools supports the version used for the project
@@ -1838,8 +1838,6 @@ end
 -- @return bool true if verify succeeds, false otherwise
 -- @return nil, an error string on error
 function e2tool.verify_hash(info, server, location, sha1)
-    e2lib.logf(4, "verify_hash %s %s %s %s", tostring(info), tostring(server),
-    tostring(location), tostring(sha1))
     local rc, re
     local e = err.new("error verifying checksum")
     local is_sha1, re = hash_file(info, server, location)
@@ -2140,7 +2138,6 @@ end
 -- @param resultname
 -- @return the buildid
 function e2tool.buildid(info, resultname)
-    e2lib.log(4, string.format("get buildid for %s", resultname))
     local r = info.results[resultname]
     local id, e = e2tool.pbuildid(info, resultname)
     if not id then
@@ -2172,8 +2169,7 @@ local function chrootgroupid(info, groupname)
         end
         hc:hash_line(fileid)
     end
-    e2lib.log(4, string.format("hash data for chroot group %s\n%s",
-    groupname, hc.data))
+    e2lib.logf(4, "hash data for chroot group %s\n%s", groupname, hc.data)
     g.groupid = hc:hash_finish()
     return g.groupid
 end
@@ -2192,7 +2188,6 @@ end
 -- @param resultname
 -- @return the buildid
 function e2tool.pbuildid(info, resultname)
-    e2lib.log(4, string.format("get pbuildid for %s", resultname))
     local e = err.new("error calculating result id for result: %s",
     resultname)
     local r = info.results[resultname]
@@ -2269,8 +2264,7 @@ function e2tool.pbuildid(info, resultname)
             hc:hash_line(hash)
         end
     end
-    e2lib.log(4, string.format("hash data for resultid %s\n%s",
-    resultname, hc.data))
+    e2lib.logf(4, "hash data for resultid %s\n%s", resultname, hc.data)
     r.resultid = hash.hash_finish(hc)	-- result id (without deps)
 
     hc = hash.hash_start()
@@ -2304,8 +2298,7 @@ function e2tool.pbuildid(info, resultname)
             hc:hash_line(hash)
         end
     end
-    e2lib.log(4, string.format("hash data for buildid %s\n%s",
-    resultname, hc.data))
+    e2lib.logf(4, "hash data for buildid %s\n%s", resultname, hc.data)
     r.pbuildid = hash.hash_finish(hc)	-- buildid (with deps)
     return r.build_mode.buildid(r.pbuildid)
 end
@@ -2314,13 +2307,13 @@ end
 -- @param info
 -- @return nothing
 function e2tool.calc_buildids(info)
-    e2lib.logf(3, "calculating buildids")
+    e2lib.log(3, "calculating buildids")
     for _,r in ipairs(info.results) do
         local bid, pbid
         bid = buildid(info, r)
         pbid = e2tool.pbuildid(info, r)
-        e2lib.logf(3, "result %20s: pbid(%s) bid(%s)",
-        r, e2tool.bid_display(pbid), e2tool.bid_display(bid))
+        e2lib.logf(3, "result %20s: pbid(%s) bid(%s)", r,
+            e2tool.bid_display(pbid), e2tool.bid_display(bid))
     end
 end
 
@@ -2356,8 +2349,7 @@ end
 
 --- add source result.
 local function add_source_result(info, sourcename, source_set)
-    e2lib.log(3, string.format("adding source result for source %s",
-    sourcename))
+    e2lib.logf(3, "adding source result for source %s", sourcename)
     local src = info.sources[sourcename]
     local r = {}
     r.name = string.format("src-%s", src.name)
@@ -2371,7 +2363,6 @@ end
 
 --- add source results.
 local function add_source_results(info, source_set)
-    e2lib.log(4, "add source results")
     for _, src in pairs(info.sources) do
         add_source_result(info, src.name)
     end
@@ -2454,14 +2445,11 @@ function e2tool.print_selection(info, results)
         if not res then
             return false, e:append("no such result: %s", r)
         end
-        local s = res.selected and "[ selected ]" or
-        "[dependency]"
+        local s = res.selected and "[ selected ]" or "[dependency]"
         local f = res.force_rebuild and "[force rebuild]" or ""
         local b = res.request_buildno and "[request buildno]" or ""
         local p = res.playground and "[playground]" or ""
-        e2lib.log(3, string.format(
-        "Selected result: %-20s %s %s %s %s",
-        r, s, f, b, p))
+        e2lib.logf(3, "Selected result: %-20s %s %s %s %s", r, s, f, b, p)
     end
     return true, nil
 end

@@ -133,13 +133,12 @@ local function fetch_sources(info, opts, sel)
         local wc_avail = scm.working_copy_available(info, s.name)
         if opts.fetch and sel[s.name] then
             if wc_avail then
-                e2lib.log(1, "working copy for " .. s.name .. " is already available")
+                e2lib.logf(1,
+                    "working copy for %s is already available", s.name)
             else
-                e2lib.log(1, "fetching working copy for source " .. s.name)
+                e2lib.logf(1, "fetching working copy for source %s", s.name)
                 local rc, re = scm.fetch_source(info, s.name)
                 if not rc then
-                    e2lib.log(4, string.format("fetching source failed: %s",
-                    s.name))
                     e:cat(re)
                 end
             end
@@ -152,14 +151,11 @@ local function fetch_sources(info, opts, sel)
         local wc_avail = scm.working_copy_available(info, s.name)
         if opts.update and has_wc and sel[s.name] then
             if not wc_avail then
-                e2lib.log(1, string.format("working copy for %s is not available",
-                s.name))
+                e2lib.logf(1, "working copy for %s is not available", s.name)
             else
-                e2lib.log(1, "updating working copy for " .. s.name)
+                e2lib.logf(1, "updating working copy for %s", s.name)
                 local rc, re = scm.update(info, s.name)
                 if not rc then
-                    e2lib.log(4, string.format("updating working copy failed: %s",
-                    s.name))
                     e:cat(re)
                 end
             end
@@ -178,10 +174,10 @@ local sel = {} -- selected sources
 if #arguments > 0 then
     for _, x in pairs(arguments) do
         if info.sources[x] and not opts.result then
-            e2lib.log(3, "is regarded as source: " .. x)
+            e2lib.logf(3, "is regarded as source: %s", x)
             sel[x] = x
         elseif info.results[x] and opts.result then
-            e2lib.log(3, "is regarded as result: " .. x)
+            e2lib.logf(3, "is regarded as result: %s", x)
             local res = info.results[x]
             for _, s in ipairs(res.sources) do
                 sel[s] = s

@@ -247,8 +247,7 @@ function e2lib.init2()
     local ssh = nil
     ssh  = e2lib.globals.osenv["E2_SSH"]
     if ssh then
-        e2lib.log(3, string.format(
-        "using ssh command from the E2_SSH environment variable: %s", ssh))
+        e2lib.logf(3, "using E2_SSH environment variable: %s", ssh)
         tools.set_tool("ssh", ssh)
     end
 
@@ -329,7 +328,7 @@ function e2lib.tracer(event, line)
         out = out .. ")"
         e2lib.log(4, out)
     else
-        e2lib.log(4, string.format("< %s%s", module, ftbl.name))
+        e2lib.logf(4, "< %s%s", module, ftbl.name)
     end
 end
 
@@ -588,7 +587,7 @@ end
 function e2lib.cleanup()
     local rc, re = plugin.exit_plugins()
     if not rc then
-        e2lib.logf(1, "deinitializing plugins failed (ignoring)")
+        e2lib.log(1, "deinitializing plugins failed (ignoring)")
     end
     e2lib.rmtempdirs()
     e2lib.rmtempfiles()
@@ -785,10 +784,10 @@ function e2lib.read_global_config(e2_config_file)
         c.config = function(x)
             c.data = x
         end
-        e2lib.log(4, string.format("reading global config file: %s", path))
+        e2lib.logf(4, "reading global config file: %s", path)
         local rc = e2util.exists(path)
         if rc then
-            e2lib.log(3, string.format("using global config file: %s", path))
+            e2lib.logf(3, "using global config file: %s", path)
             local rc, e = e2lib.dofile_protected(path, c, true)
             if not rc then
                 return nil, e
@@ -800,8 +799,7 @@ function e2lib.read_global_config(e2_config_file)
             e2lib.use_global_config()
             return true, nil
         else
-            e2lib.log(4, string.format(
-            "global config file does not exist: %s", path))
+            e2lib.logf(4, "global config file does not exist: %s", path)
         end
     end
     return false, "no config file available"
@@ -963,7 +961,7 @@ function e2lib.callcmd_redirect(cmd, out)
     if not devnull then
         e2lib.abort("could not open /dev/null")
     end
-    e2lib.log(3, "+ " .. cmd)
+    e2lib.logf(3, "+ %s", cmd)
     pid = e2util.fork()
     if pid == 0 then
         rc = e2lib.callcmd(devnull, out, out, cmd)
@@ -1001,7 +999,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         else
             o = outfile or ew
         end
-        e2lib.log(3, "+ " .. cmds[n])
+        e2lib.logf(3, "+ %s", cmds[n])
         local pid = e2util.fork()
         if pid == 0 then
             if n < c then fr:close() end
@@ -1079,7 +1077,7 @@ function e2lib.callcmd_capture(cmd, capture)
     if not devnull then
         e2lib.abort("could not open /dev/null")
     end
-    e2lib.log(4, "+ " .. cmd)
+    e2lib.logf(4, "+ %s", cmd)
     pid = e2util.fork()
     if pid == 0 then
         oread:close()
@@ -1304,7 +1302,7 @@ function e2lib.parse_e2versionfile(filename)
     filename)
     v.tag = match() or e2lib.abort("invalid tag name `", l, "' in e2 version file ",
     filename)
-    e2lib.log(3, "using e2 branch " .. v.branch .. " tag " .. v.tag)
+    e2lib.logf(3, "using e2 branch %s tag %s", v.branch, v.tag)
     return v
 end
 
@@ -1331,7 +1329,7 @@ function e2lib.mktempfile(template)
     mktemp:close()
     -- register tmp for removing with rmtempfiles() later on
     table.insert(e2lib.globals.tmpfiles, tmp)
-    e2lib.log(4, string.format("creating temporary file: %s", tmp))
+    e2lib.logf(4, "creating temporary file: %s", tmp)
     return tmp
 end
 
@@ -1343,7 +1341,7 @@ function e2lib.rmtempfile(tmpfile)
     for i,v in ipairs(e2lib.globals.tmpfiles) do
         if v == tmpfile then
             table.remove(e2lib.globals.tmpfiles, i)
-            e2lib.log(4, string.format("removing temporary file: %s", tmpfile))
+            e2lib.logf(4, "removing temporary file: %s", tmpfile)
             e2lib.rm(tmpfile, "-f")
         end
     end
@@ -1372,7 +1370,7 @@ function e2lib.mktempdir(template)
     mktemp:close()
     -- register tmpdir for removing with rmtempdirs() later on
     table.insert(e2lib.globals.tmpdirs, tmpdir)
-    e2lib.log(4, string.format("creating temporary directory: %s", tmpdir))
+    e2lib.logf(4, "creating temporary directory: %s", tmpdir)
     return tmpdir
 end
 
@@ -1384,7 +1382,7 @@ function e2lib.rmtempdir(tmpdir)
     for i,v in ipairs(e2lib.globals.tmpdirs) do
         if v == tmpdir then
             table.remove(e2lib.globals.tmpdirs, i)
-            e2lib.log(4, string.format("removing temporary directory: %s", tmpdir))
+            e2lib.logf(4, "removing temporary directory: %s", tmpdir)
             e2lib.rm(tmpdir, "-fr")
         end
     end

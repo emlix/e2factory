@@ -144,8 +144,6 @@ end
 -- @return true on success, false on error
 -- @return an error object on failure
 function transport.fetch_file(surl, location, destdir, destname)
-    e2lib.log(4, string.format("%s: %s %s %s", "fetch_file()", surl,
-    location, destdir))
     if not destname then
         destname = e2lib.basename(location)
     end
@@ -288,7 +286,7 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
             if rc then
                 done = true
             else
-                e2lib.logf(4, "Creating hardlink failed. "..
+                e2lib.log(4, "Creating hardlink failed. "..
                 "Falling back to copying.")
             end
         end
@@ -365,8 +363,6 @@ end
 -- @return true on success, false on error
 -- @return nil, an error string on error
 function transport.file_path(surl, location)
-    e2lib.log(4, string.format("%s: %s %s", "file_path()", surl,
-    location))
     local e = err.new("can't get path to file")
     local u, re = url.parse(surl)
     if not u then

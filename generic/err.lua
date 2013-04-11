@@ -70,7 +70,7 @@ function err.print(e, depth)
 
     for k,m in ipairs(e.msg) do
         if type(m) == "string" then
-            e2lib.log(1, string.format("%s%s", prefix, m))
+            e2lib.logf(1, "%s%s", prefix, m)
             prefix = string.format("      [%d]: ", depth)
         else
             -- it's a sub error

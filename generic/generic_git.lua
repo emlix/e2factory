@@ -110,7 +110,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function generic_git.git_checkout1(gitwc, branch)
-    e2lib.log(3, string.format("checking out branch: %s", branch))
+    e2lib.logf(3, "checking out branch: %s", branch)
     -- git checkout <branch>
     local cmd = string.format("cd %s && git checkout %s", e2lib.shquote(gitwc),
     e2lib.shquote(branch))
@@ -127,8 +127,6 @@ end
 -- @return string: the commit id matching the ref parameter, or nil on error
 -- @return an error object on failure
 function generic_git.git_rev_list1(gitdir, ref)
-    e2lib.log(4, string.format("git_rev_list(): %s %s",
-    tostring(gitdir), tostring(ref)))
     local e = err.new("git rev-list failed")
     local rc, re
     local tmpfile = e2lib.mktempfile()
@@ -148,9 +146,9 @@ function generic_git.git_rev_list1(gitdir, ref)
         return nil, err.new("can't parse git rev-list output")
     end
     if rev then
-        e2lib.log(4, string.format("git_rev_list: %s", rev))
+        e2lib.logf(4, "git_rev_list: %s", rev)
     else
-        e2lib.log(4, string.format("git_rev_list: unknown ref: %s", ref))
+        e2lib.logf(4, "git_rev_list: unknown ref: %s", ref)
     end
     return rev, nil
 end
@@ -257,9 +255,6 @@ function generic_git.git_remote_add1(lurl, rurl, name)
 end
 
 function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
-    e2lib.log(4, string.format("%s, %s, %s, %s, %s, %s",
-    tostring(c), tostring(lserver), tostring(llocation),
-    tostring(name), tostring(rserver), tostring(rlocation)))
     local rurl, e = cache.remote_url(c, rserver, rlocation)
     if not rurl then
         e2lib.abort(e)
@@ -280,7 +275,6 @@ end
 -- @return string: the git url
 -- @return an error object on failure
 function generic_git.git_url1(u)
-    e2lib.log(4, string.format("git_url(%s)", tostring(u)))
     local giturl
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
@@ -418,8 +412,6 @@ end
 -- @return bool, or nil on error
 -- @return an error object on failure
 function generic_git.verify_remote_tag(gitdir, tag)
-    e2lib.logf(4, "generic_git.verify_remote_tag(%s, %s)", tostring(gitdir),
-    tostring(tag))
     local e = err.new("verifying remote tag")
     local rc, re
 
@@ -469,7 +461,6 @@ end
 -- @return bool, or nil on error
 -- @return an error object on failure
 function generic_git.verify_clean_repository(gitwc)
-    e2lib.logf(4, "generic_git.verify_clean_repository(%s)", tostring(gitwc))
     gitwc = gitwc or "."
     local e = err.new("verifying that repository is clean")
     local rc, re
@@ -539,8 +530,6 @@ end
 -- @return bool, or nil on error
 -- @return an error object on failure
 function generic_git.verify_head_match_tag(gitwc, verify_tag)
-    e2lib.logf(4, "generic_git.verify_head_match_tag(%s, %s)", tostring(gitwc),
-    tostring(verify_tag))
     assert(verify_tag)
     gitwc = gitwc or "."
     local e = err.new("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
