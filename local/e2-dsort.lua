@@ -1,5 +1,5 @@
---- e2-dlist command
--- @module local.e2-dlist
+--- e2-dsort command
+-- @module local.e2-dsort
 
 --[[
    e2factory, the emlix embedded build system
