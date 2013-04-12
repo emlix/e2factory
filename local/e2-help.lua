@@ -278,6 +278,7 @@ local rc, re = e2_help(arg)
 if not rc then
     e2lib.abort(re)
 end
+
 e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:

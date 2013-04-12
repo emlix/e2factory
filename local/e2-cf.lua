@@ -33,26 +33,6 @@ local e2tool = require("e2tool")
 local err = require("err")
 local e2option = require("e2option")
 
-e2lib.init()
-local info, re = e2tool.local_init(nil, "cf")
-if not info then
-    e2lib.abort(re)
-end
-
-local opts, arguments = e2option.parse(arg)
-
--- initialize some basics in the info structure without actually loading
--- the project configuration.
-info, re = e2tool.collect_project_info(info, true)
-if not info then
-    e2lib.abort(re)
-end
-
-local rc, re = e2lib.chdir(info.root)
-if not rc then
-    e2lib.abort(re)
-end
-
 local commands = {}
 
 --- Start external editor.
@@ -336,44 +316,73 @@ local function editbuildscript(info, ...)
     return editor(cf)
 end
 
-commands.editbuildscript = editbuildscript
-commands.editresult = editresult
-commands.newresult = newresult
-commands.newsource = newsource
-commands.editsource = editsource
-commands.ebuildscript = editbuildscript
-commands.eresult = editresult
-commands.nresult = newresult
-commands.nsource = newsource
-commands.esource = editsource
-
-if #arguments < 1 then
-    e2option.usage(1)
-end
-
-local match = {}
-local cmd = arguments[1]
-for c,f in pairs(commands) do
-    if c:match(string.format("^%s", cmd)) then
-        table.insert(match, c)
+local function e2_cf(arg)
+    e2lib.init()
+    local info, re = e2tool.local_init(nil, "cf")
+    if not info then
+        e2lib.abort(re)
     end
-end
 
-if #match == 0 then
-    e2lib.abort(err.new("unknown command"))
-elseif #match == 1 then
-    local a = {}
-    for _,o in ipairs(arguments) do
-        table.insert(a, o)
+    local opts, arguments = e2option.parse(arg)
+
+    -- initialize some basics in the info structure without actually loading
+    -- the project configuration.
+    info, re = e2tool.collect_project_info(info, true)
+    if not info then
+        e2lib.abort(re)
     end
-    local f = commands[match[1]]
-    rc, re = f(info, a)
+
+    local rc, re = e2lib.chdir(info.root)
     if not rc then
         e2lib.abort(re)
     end
-else
-    e2lib.abort(err.new("Ambiguous command: \"%s\" matches: %s",
+
+    commands.editbuildscript = editbuildscript
+    commands.editresult = editresult
+    commands.newresult = newresult
+    commands.newsource = newsource
+    commands.editsource = editsource
+    commands.ebuildscript = editbuildscript
+    commands.eresult = editresult
+    commands.nresult = newresult
+    commands.nsource = newsource
+    commands.esource = editsource
+
+    if #arguments < 1 then
+        e2option.usage(1)
+    end
+
+    local match = {}
+    local cmd = arguments[1]
+    for c,f in pairs(commands) do
+        if c:match(string.format("^%s", cmd)) then
+            table.insert(match, c)
+        end
+    end
+
+    if #match == 0 then
+        e2lib.abort(err.new("unknown command"))
+    elseif #match == 1 then
+        local a = {}
+        for _,o in ipairs(arguments) do
+            table.insert(a, o)
+        end
+        local f = commands[match[1]]
+        rc, re = f(info, a)
+        if not rc then
+            e2lib.abort(re)
+        end
+    else
+        e2lib.abort(err.new("Ambiguous command: \"%s\" matches: %s",
         cmd, table.concat(match, ', ')))
+    end
+
+    return true
+end
+
+local rc, re = e2_cf(arg)
+if not rc then
+    e2lib.abort(re)
 end
 
 e2lib.finish(0)

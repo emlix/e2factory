@@ -31,12 +31,21 @@ local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
 
-e2lib.init()
-local info, re = e2tool.local_init(nil, "build-numbers")
-if not info then
+local function e2_build_numbers(arg)
+    e2lib.init()
+    local info, re = e2tool.local_init(nil, "build-numbers")
+    if not info then
+        e2lib.abort(re)
+    end
+
+    return false, err.new("e2-build-numbers is deprecated and has been removed")
+end
+
+local rc, re = e2_build_numbers(arg)
+if not rc then
     e2lib.abort(re)
 end
 
-e2lib.abort(err.new("e2-build-numbers is deprecated and has been removed"))
+e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:

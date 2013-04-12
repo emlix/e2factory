@@ -32,24 +32,33 @@ local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local e2option = require("e2option")
 
-e2lib.init()
-local info, re = e2tool.local_init(nil, "dsort")
-if not info then
+local function e2_dsort(arg)
+    e2lib.init()
+    local info, re = e2tool.local_init(nil, "dsort")
+    if not info then
+        e2lib.abort(re)
+    end
+
+    e2option.parse(arg)
+
+    info, re = e2tool.collect_project_info(info)
+    if not info then
+        e2lib.abort(re)
+    end
+
+    local d = e2tool.dsort(info)
+    if d then
+        for i = 1, #d do print(d[i]) end
+    end
+
+    return true
+end
+
+local rc, re = e2_dsort(arg)
+if not rc then
     e2lib.abort(re)
 end
 
-e2option.parse(arg)
-
-info, re = e2tool.collect_project_info(info)
-if not info then
-    e2lib.abort(re)
-end
-
-local d = e2tool.dsort(info)
-if d then
-    for i = 1, #d do print(d[i]) end
-end
-
-e2lib.finish()
+e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:
