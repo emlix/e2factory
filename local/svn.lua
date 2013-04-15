@@ -366,7 +366,7 @@ end
 function svn.update(info, sourcename)
     local rc, re = svn.validate_source(info, sourcename)
     if not rc then
-        e2lib.abort(re)
+        return false, re
     end
     local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
