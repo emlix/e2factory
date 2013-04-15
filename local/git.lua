@@ -123,7 +123,7 @@ local function get_revision_id(info, source, sourceset, check_remote)
             e2lib.logf(4, "%s: check for remote tag: match", s.name)
         end
     else
-        e2lib.abort("not an scm sourceset: " .. sourceset)
+        return false, err.new("not an scm sourceset: %s", sourceset)
     end
     if not id then
         fr = string.format("can't get commit id for ref %s from repository %s",
@@ -347,9 +347,13 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         local cmd2 = string.format("%s %s -x -C %s/%s", e2lib.shquote(tar),
         tarflags, e2lib.shquote(buildpath), e2lib.shquote(sourcename))
         local r = e2lib.callcmd_pipe({ cmd1, cmd2 })
-        if r then e2lib.abort(r) end
-    else e2lib.abort("invalid sourceset: ", sourceset)
+        if r then
+            return false, err.new("%s", r)
+        end
+    else
+        return false, err.new("invalid sourceset: %s", sourceset)
     end
+
     return true, nil
 end
 
