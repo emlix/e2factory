@@ -41,7 +41,7 @@ local function e2_install_e2(arg)
 
     local root = e2lib.locate_project_root()
     if not root then
-        e2lib.abort("can't locate project root.")
+        return false, err.new("can't locate project root.")
     end
 
     -- try to get project specific config file paht
@@ -51,7 +51,7 @@ local function e2_install_e2(arg)
 
     local rc, e = e2lib.read_global_config(config_file)
     if not rc then
-        e2lib.abort(e)
+        return false, e
     end
     e2lib.init2()
     local e = err.new("e2-install-e2 failed")
@@ -59,12 +59,12 @@ local function e2_install_e2(arg)
     local config = e2lib.get_global_config()
     local servers = config.servers
     if not servers then
-        e2lib.abort("no servers configured in global config")
+        return false, err.new("no servers configured in global config")
     end
 
     local scache, re = e2lib.setup_cache()
     if not scache then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- standard global tool setup finished
@@ -78,18 +78,18 @@ local function e2_install_e2(arg)
     -- change to the project root directory
     rc, re = e2lib.chdir(root)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- read the version from the first line
     local line, re = e2lib.read_line(e2lib.globals.global_interface_version_file)
     if not line then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     local v = tonumber(line:match("[0-9]+"))
     if not v or v < 1 or v > 2 then
-        e2lib.abort(e:append("unhandled project version"))
+        return false, e:append("unhandled project version")
     end
 
     -- version is 1 or 2
@@ -97,7 +97,7 @@ local function e2_install_e2(arg)
     -- remove the old e2 source, installation and plugins, if it exists
     rc, re = e2lib.rm(".e2/e2 .e2/bin .e2/lib .e2/plugins", "-fr")
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     e2lib.logf(2, "installing local tools")
@@ -106,7 +106,7 @@ local function e2_install_e2(arg)
     if e2util.exists(e2lib.globals.extension_config) then
         extensions, re = e2lib.read_extension_config()
         if not extensions then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     else
         e2lib.warnf("WOTHER", "extension configuration not available")
@@ -116,7 +116,7 @@ local function e2_install_e2(arg)
     local s = e2lib.read_line(".e2/e2version")
     local branch, tag = s:match("(%S+) (%S+)")
     if not branch or not tag then
-        e2lib.abort(e:append("cannot parse e2 version"))
+        return false, e:append("cannot parse e2 version")
     end
     local ref
     if tag == "^" then
@@ -132,7 +132,7 @@ local function e2_install_e2(arg)
 
     rc, re = e2lib.chdir(".e2")
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- checkout e2factory itself
@@ -143,7 +143,7 @@ local function e2_install_e2(arg)
     rc, re = generic_git.git_clone_from_server(scache, server, location,
     destdir, false)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     e2lib.chdir(destdir)
 
@@ -151,14 +151,14 @@ local function e2_install_e2(arg)
     local args = string.format("%s --", ref)
     rc, re = e2lib.git(nil, "checkout", args)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     for _,ex in ipairs(extensions) do
         -- change to the e2factory extensions directory
         rc, re = e2lib.chdir(root .. "/.e2/e2/extensions")
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         local ref
         if ex.ref:match("/") then
@@ -172,19 +172,19 @@ local function e2_install_e2(arg)
         local destdir = ex.name
         rc, re = e2lib.rm(destdir, "-fr")
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         rc, re = generic_git.git_clone_from_server(scache, server, location,
         destdir, false)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         e2lib.chdir(destdir)
 
         -- checkout ref
         rc, re = e2lib.git(nil, "checkout", ref)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
 
@@ -192,21 +192,23 @@ local function e2_install_e2(arg)
     e2lib.logf(2, "building e2factory")
     rc, re = e2lib.chdir(root .. "/.e2/e2")
     if not rc then
-        e2lib.abort(e:cat(re))
+       return false, e:cat(re)
     end
     local cmd = string.format("make PREFIX=%s BINDIR=%s local install-local",
     e2lib.shquote(buildconfig.PREFIX), e2lib.shquote(buildconfig.BINDIR))
     rc, re = e2lib.callcmd_capture(cmd)
     if rc ~= 0 then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
-    e2lib.finish()
+    return true
 end
 
 local rc, re = e2_install_e2(arg)
 if not rc then
     e2lib.abort(re)
 end
+
+e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:

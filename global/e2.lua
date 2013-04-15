@@ -30,6 +30,7 @@
 
 local e2lib = require("e2lib")
 local e2option = require("e2option")
+local err = require("err")
 require("buildconfig")
 require("e2util")
 
@@ -61,7 +62,7 @@ local function e2(arg)
         if #opts == 0 then
             e2option.usage(1)
         end
-        e2lib.finish(0)
+        return 0
     else
         e2call.toolname = e2call.basename
         e2call.arg_string = quoteargs(table.concat(arg, "' '", 1))
@@ -80,8 +81,7 @@ local function e2(arg)
         cmd = string.format("%s %s %s %s", env, buildconfig.LUA, e2call.tool,
         e2call.arg_string)
     elseif not root then
-        e2lib.abort(e2call.toolname ..
-        " is not a global tool and we're not in a project environment")
+        return false, err.new("%s is not a global tool and we're not in a project environment", e2call.toolname)
     elseif root and e2util.stat(e2call.localtool) then
         e2call.tool = e2call.localtool
         -- Search for .lc files, the local e2 may be of an older version
@@ -92,7 +92,8 @@ local function e2(arg)
         root .. "/.e2/bin/e2-lua " ..
         e2call.tool .. " " .. e2call.arg_string
     else
-        e2lib.abort(e2call.toolname .. " is neither local nor global tool")
+        return false,
+            err.new("%s is neither local nor global tool", e2call.toolname)
     end
 
     local function table_log(loglevel, t)
@@ -107,12 +108,15 @@ local function e2(arg)
     e2lib.log(3, "calling " .. e2call.tool)
     e2lib.log(4, cmd)
     local rc = os.execute(cmd)
-    e2lib.finish(rc/256)
+
+    return rc/256
 end
 
 local rc, re = e2(arg)
 if not rc then
     e2lib.abort(re)
 end
+
+e2lib.finish(rc)
 
 -- vim:sw=4:sts=4:et:

@@ -41,18 +41,18 @@ local function e2_create_project(arg)
     local opts, arguments = e2option.parse(arg)
     local rc, e = e2lib.read_global_config()
     if not rc then
-        e2lib.abort(e)
+        return false, e
     end
     e2lib.init2()
     local e = err.new("creating project failed")
 
     local config, re = e2lib.get_global_config()
     if not config then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     local scache, re = e2lib.setup_cache()
     if not scache then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- standard global tool setup finished
@@ -78,7 +78,7 @@ local function e2_create_project(arg)
     local sl, re = e2lib.parse_server_location(arguments[1],
     e2lib.globals.default_projects_server)
     if not sl then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     local p = {}
@@ -108,11 +108,11 @@ local function e2_create_project(arg)
         local dir = e2lib.dirname(f.filename)
         rc, re = e2lib.mkdir(dir, "-p")
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         rc, re = e2lib.write_file(f.filename, f.content)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         local sourcefile = string.format("%s/%s", tmpdir, f.filename)
         local flocation = string.format("%s/%s", p.location, f.filename)
@@ -120,7 +120,7 @@ local function e2_create_project(arg)
         rc, re = cache.push_file(scache, sourcefile, p.server, flocation,
         cache_flags)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
     e2lib.chdir("/")
@@ -133,7 +133,7 @@ local function e2_create_project(arg)
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
     local rc, re = generic_git.git_init_db(scache, p.server, rlocation)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- works up to this point
@@ -142,28 +142,28 @@ local function e2_create_project(arg)
     local url = string.format("file://%s/.git", tmpdir)
     rc, re = e2lib.git(nil, "init-db")
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     local gitignore = e2lib.read_template("gitignore")
     if not gitignore then
-        e2lib.abort(re)
+        return false, re
     end
     local chroot, re = e2lib.read_template("proj/chroot")
     if not chroot then
-        e2lib.abort(re)
+        return false, re
     end
     local licences, re = e2lib.read_template("proj/licences")
     if not licences then
-        e2lib.abort(re)
+        return false, re
     end
     local env, re = e2lib.read_template("proj/env")
     if not env then
-        e2lib.abort(re)
+        return false, re
     end
     local pconfig, re = e2lib.read_template("proj/config")
     if not pconfig then
-        e2lib.abort(re)
+        return false, re
     end
     pconfig = pconfig:gsub("<<release_id>>", p.name)
     pconfig = pconfig:gsub("<<name>>", p.name)
@@ -192,45 +192,48 @@ local function e2_create_project(arg)
         local dir = e2lib.dirname(f.filename)
         rc, re = e2lib.mkdir(dir, "-p")
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         rc, re = e2lib.write_file(f.filename, f.content)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         rc, re = e2lib.git(nil, "add", f.filename)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
     rc, re = e2lib.write_extension_config(config.site.default_extensions)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     rc, re = e2lib.git(nil, "add", e2lib.globals.extension_config)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     rc, re = e2lib.git(nil, "commit", "-m \"project setup\"")
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     local refspec = "master:refs/heads/master"
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
     rc, re = generic_git.git_push(scache, ".git", p.server, rlocation, refspec)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     e2lib.chdir("/")
     e2lib.rmtempdir(tmpdir)
-    e2lib.finish()
+
+    return true
 end
 
 local rc, re = e2_create_project(arg)
 if not rc then
     e2lib.abort(re)
 end
+
+e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:

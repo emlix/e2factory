@@ -45,7 +45,7 @@ local function e2_fetch_project(arg)
     local opts, arguments = e2option.parse(arg)
     local rc, re = e2lib.read_global_config()
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     e2lib.init2()
 
@@ -55,22 +55,22 @@ local function e2_fetch_project(arg)
     -- setup cache
     local scache, re = e2lib.setup_cache()
     if not scache then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- standard global tool setup finished
 
     if #arguments < 1 then
-        e2lib.abort("specify path to a project to fetch")
+        return false, err.new("specify path to a project to fetch")
     end
     if #arguments > 2 then
-        e2lib.abort("too many arguments")
+        return false, err.new("too many arguments")
     end
 
     local sl, re = e2lib.parse_server_location(arguments[1],
     e2lib.globals.default_projects_server)
     if not sl then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     local p = {}
@@ -99,20 +99,20 @@ local function e2_fetch_project(arg)
     local rc, re = cache.fetch_file(scache, p.server, location, tmpdir, nil,
     { cache = false })
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- read the version from the first line
     local version_file = string.format("%s/version", tmpdir)
     local line, re = e2lib.read_line(version_file)
     if not line then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     e2lib.rmtempdir()
 
     local v = tonumber(line:match("[0-9]+"))
     if not v or v < 1 or v > 2 then
-        e2lib.abort(e:append("unhandled project version"))
+        return false, e:append("unhandled project version")
     end
 
     -- version is 1 or 2
@@ -124,7 +124,7 @@ local function e2_fetch_project(arg)
     local rc, re = generic_git.git_clone_from_server(scache, p.server, location,
     p.destdir, skip_checkout)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     e2lib.chdir(p.destdir)
@@ -139,7 +139,7 @@ local function e2_fetch_project(arg)
             "--track -b '%s' 'origin/%s'", p.branch, p.branch)
             local rc, re = e2lib.git(nil, "checkout", args)
             if not rc then
-                e2lib.abort(e:cat(re))
+                return false, e:cat(re)
             end
         end
     end
@@ -157,7 +157,7 @@ local function e2_fetch_project(arg)
         local args = string.format("'refs/tags/%s'", p.tag)
         local rc, re = e2lib.git(nil, "checkout", args)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
 
@@ -166,7 +166,7 @@ local function e2_fetch_project(arg)
     local data = string.format("%s\n", p.location)
     local rc, re = e2lib.write_file(file, data)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- write version file
@@ -178,9 +178,8 @@ local function e2_fetch_project(arg)
     e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
     rc, re = e2lib.callcmd_log(e2_install_e2)
     if rc ~= 0 then
-        e2lib.abort(err.new("installing local e2 failed"))
+        return false, err.new("installing local e2 failed")
     end
-    e2lib.finish()
 
     return true
 end
@@ -189,5 +188,7 @@ local rc, re = e2_fetch_project(arg)
 if not rc then
     e2lib.abort(re)
 end
+
+e2lib.finish(0)
 
 -- vim:sw=4:sts=4:et:
