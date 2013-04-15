@@ -41,7 +41,7 @@ local function e2_playground(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "playground")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     local e = err.new("entering playground failed")
@@ -55,15 +55,15 @@ local function e2_playground(arg)
     -- get build mode from the command line
     local build_mode = policy.handle_commandline_options(opts, true)
     if not build_mode then
-        e2lib.abort("no build mode given")
+        return false, err.new("no build mode given")
     end
     info, re = e2tool.collect_project_info(info)
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
     local rc, re = e2tool.check_project_info(info)
     if not rc then
-        e2lib.abort(re)
+        return false, re
     end
 
     if #arguments ~= 1 then
@@ -78,10 +78,10 @@ local function e2_playground(arg)
     end
     rc, re = e2build.build_config(info, r, {})
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
     if not e2build.chroot_exists(info, r) then
-        e2lib.abort("playground does not exist")
+        return false, err.new("playground does not exist")
     end
     if opts.showpath then
         print(info.results[r].build_config.c)
@@ -93,7 +93,7 @@ local function e2_playground(arg)
     local profile = string.format("%s/%s", bc.c, bc.profile)
     local f, msg = io.open(profile, "w")
     if not f then
-        e2lib.abort(e:cat(msg))
+        return false, e:cat(msg)
     end
     f:write(string.format("export TERM='%s'\n", e2lib.globals.osenv["TERM"]))
     f:write(string.format("export HOME=/root\n"))
@@ -119,7 +119,7 @@ local function e2_playground(arg)
     end
     rc, re = e2build.enter_playground(info, r, command)
     if not rc then
-        e2lib.abort(re)
+        return false, re
     end
 
     return true

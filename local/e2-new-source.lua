@@ -215,7 +215,7 @@ local function e2_new_source(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "new-source")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     e2option.flag("git", "create a git repository")
@@ -226,12 +226,12 @@ local function e2_new_source(arg)
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     if opts.git then
         if #arguments ~= 1 then
-            e2lib.abort("<name> argument required")
+            return false, err.new("<name> argument required")
         end
         -- remote
         local rserver = info.default_repo_server
@@ -247,7 +247,7 @@ local function e2_new_source(arg)
         local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
         rserver, rlocation, flags)
         if not rc then
-            e2lib.abort(re)
+            return false, re
         end
         e2lib.log(1, "Read e2-new-source(1) for the next step")
     elseif opts.files then
@@ -258,7 +258,7 @@ local function e2_new_source(arg)
         local location = arguments[1]
         local sl, e = e2lib.parse_server_location(location, info.default_files_server)
         if not sl then
-            e2lib.abort(e)
+            return false, e
         end
         local server = sl.server
         local location = sl.location
@@ -266,16 +266,16 @@ local function e2_new_source(arg)
         local checksum_file = arguments[3]
         local verify = not opts["no-checksum"]
         if verify and not checksum_file then
-            e2lib.abort("checksum file argument missing")
+            return false, err.new("checksum file argument missing")
         end
 
         local rc, re = new_files_source(info.cache, server, location, source_file,
         checksum_file, verify)
         if not rc then
-            e2lib.abort(re)
+            return false, re
         end
     else
-        e2lib.abort(err.new("Please specify either --files are --git"))
+        return false, err.new("Please specify either --files are --git")
     end
 
     return true

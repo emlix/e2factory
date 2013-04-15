@@ -320,7 +320,7 @@ local function e2_cf(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "cf")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     local opts, arguments = e2option.parse(arg)
@@ -329,12 +329,12 @@ local function e2_cf(arg)
     -- the project configuration.
     info, re = e2tool.collect_project_info(info, true)
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     local rc, re = e2lib.chdir(info.root)
     if not rc then
-        e2lib.abort(re)
+        return false, re
     end
 
     commands.editbuildscript = editbuildscript
@@ -361,7 +361,7 @@ local function e2_cf(arg)
     end
 
     if #match == 0 then
-        e2lib.abort(err.new("unknown command"))
+        return false, err.new("unknown command")
     elseif #match == 1 then
         local a = {}
         for _,o in ipairs(arguments) do
@@ -370,11 +370,11 @@ local function e2_cf(arg)
         local f = commands[match[1]]
         rc, re = f(info, a)
         if not rc then
-            e2lib.abort(re)
+            return false, re
         end
     else
-        e2lib.abort(err.new("Ambiguous command: \"%s\" matches: %s",
-        cmd, table.concat(match, ', ')))
+        return false, err.new("Ambiguous command: \"%s\" matches: %s",
+            cmd, table.concat(match, ', '))
     end
 
     return true

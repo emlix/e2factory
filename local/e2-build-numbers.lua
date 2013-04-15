@@ -35,7 +35,7 @@ local function e2_build_numbers(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "build-numbers")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     return false, err.new("e2-build-numbers is deprecated and has been removed")

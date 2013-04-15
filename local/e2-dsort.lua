@@ -36,14 +36,14 @@ local function e2_dsort(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "dsort")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     e2option.parse(arg)
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     local d = e2tool.dsort(info)

@@ -40,7 +40,7 @@ local function e2_fetch_source(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "fetch-sources")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     local e = err.new()
@@ -60,11 +60,11 @@ local function e2_fetch_source(arg)
     local opts, arguments = e2option.parse(arg)
     info, re = e2tool.collect_project_info(info)
     if not info then
-        e2lib.abort(re)
+        return false, info
     end
     local rc, re = e2tool.check_project_info(info)
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     if not (opts.fetch or opts.update) then
@@ -110,7 +110,7 @@ local function e2_fetch_source(arg)
             for _,file in ipairs(info.chroot.groups_byname[c].files) do
                 local rc, e = info.cache:cache_file(file.server, file.location, {})
                 if not rc then
-                    return false, "caching file failed"
+                    return false, err.new("caching file failed")
                 end
             end
         end
@@ -184,9 +184,9 @@ local function e2_fetch_source(arg)
                     sel[s] = s
                 end
             elseif opts.result then
-                e2lib.abort("is not a result: " .. x)
+                return false, err.new("is not a result: %s", x)
             else
-                e2lib.abort("is not a source: " .. x)
+                return false, err.new("is not a source: %s", x)
             end
         end
     elseif opts["all"] then
@@ -212,7 +212,7 @@ local function e2_fetch_source(arg)
         end
     end
     if e:getcount() > 0 then
-        e2lib.abort(e)
+        return false, e
     end
 
     if opts.chroot then
@@ -234,7 +234,7 @@ local function e2_fetch_source(arg)
     end
 
     if e:getcount() > 0 then
-        e2lib.abort(e)
+        return false, e
     end
 
     return true

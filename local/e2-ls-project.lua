@@ -41,7 +41,7 @@ local function e2_ls_project(arg)
     e2lib.init()
     local info, re = e2tool.local_init(nil, "ls-project")
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
 
     policy.register_commandline_options()
@@ -54,11 +54,11 @@ local function e2_ls_project(arg)
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        e2lib.abort(re)
+        return false, re
     end
     local rc, re = e2tool.check_project_info(info)
     if not rc then
-        e2lib.abort(re)
+        return false, re
     end
 
     local results = {}
@@ -71,19 +71,19 @@ local function e2_ls_project(arg)
             if info.results[r] then
                 table.insert(results, r)
             else
-                e2lib.abort(err.new("not a result: %s", r))
+                return false, err.new("not a result: %s", r)
             end
         end
     end
     if #results > 0 then
         results, re = e2tool.dlist_recursive(info, results)
         if not results then
-            e2lib.abort(re)
+            return false, re
         end
     else
         results, re = e2tool.dsort(info)
         if not results then
-            e2lib.abort(re)
+            return false, re
         end
     end
     table.sort(results)
@@ -241,7 +241,7 @@ local function e2_ls_project(arg)
         p2(s1, s2, src.name)
         local t, re = scm.display(info, src.name)
         if not t then
-            e2lib.abort(re)
+            return false, re
         end
         for _,line in pairs(t) do
             p3(s1, s2, line)
