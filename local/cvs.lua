@@ -233,7 +233,7 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
         e2lib.shquote(info.root), e2lib.shquote(src.working),
         e2lib.shquote(buildpath), e2lib.shquote(src.name))
     else
-        e2lib.abort("invalid build mode")
+        return false, err.new("invalid build mode")
     end
     local rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
@@ -245,7 +245,7 @@ end
 function cvs.update(info, sourcename)
     local rc, re = cvs.validate_source(info, sourcename)
     if not rc then
-        e2lib.abort(re)
+        return false, re
     end
     local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
