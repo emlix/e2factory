@@ -92,9 +92,9 @@ local function e2_build(arg)
     local opts, arguments = e2option.parse(arg)
 
     -- get build mode from the command line
-    local build_mode = policy.handle_commandline_options(opts, true)
+    local build_mode, re = policy.handle_commandline_options(opts, true)
     if not build_mode then
-        return false, err.new("no build mode given")
+        return false, re
     end
 
     info, re = e2tool.collect_project_info(info)

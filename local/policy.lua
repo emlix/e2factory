@@ -222,7 +222,8 @@ end
 function policy.handle_commandline_options(opts, use_default)
     local default_build_mode_name = "tag"
     local nmodes = 0
-    local mode = nil
+    local mode = false
+
     if opts["build-mode"] then
         nmodes = nmodes + 1
     end
@@ -243,24 +244,30 @@ function policy.handle_commandline_options(opts, use_default)
         nmodes = nmodes + 1
     end
     if nmodes > 1 then
-        e2lib.abort("Error: Multiple build modes are not supported")
+        return false, err.new("multiple build modes are not supported")
     end
     if not opts["build-mode"] and use_default then
         e2lib.warnf("WDEFAULT", "build-mode defaults to '%s'",
             default_build_mode_name)
         opts["build-mode"] = default_build_mode_name
     end
+
     if opts["build-mode"] then
         if policy.default_build_mode(opts["build-mode"]) then
             mode = policy.default_build_mode(opts["build-mode"])
         else
-            e2lib.abort("invalid build mode")
+            return false, err.new("invalid build mode")
         end
         if opts["build-mode"] == "release" then
             opts["check-remote"] = true
             opts["check"] = true
         end
     end
+
+    if not mode then
+        return false, err.new("no build mode given")
+    end
+
     return mode
 end
 
@@ -307,7 +314,6 @@ function policy.default_build_mode(mode)
             deploy = false,
         }
     else
-        -- e2lib.abort("unknown default_build_mode mode=%s", tostring(mode))
         return nil
     end
 end
