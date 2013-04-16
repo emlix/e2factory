@@ -1231,17 +1231,13 @@ function e2tool.collect_project_info(info, skip_load_config)
         local f = ".e2/e2version"
         local v = e2lib.parse_e2versionfile(f)
         if v.tag == "^" then
-            e2lib.abort(string.format(
-            "local tool version is not configured to a fixed tag\n"..
-            "fix you configuration in %s before running e2factory in release mode",
-            f))
+            return false, err.new("local tool version is not configured to " ..
+                "a fixed tag\nfix you configuration in %s before running " ..
+                "e2factory in release mode", f)
         elseif v.tag ~= buildconfig.VERSIONSTRING then
-            e2lib.abort(string.format(
-            "local tool version does not match the version configured\n"..
-            "in `%s`\n"..
-            "local tool version is %s\n"..
-            "required version is %s",
-            f, buildconfig.VERSIONSTRING, v.tag))
+            return false, err.new("local tool version does not match the " ..
+                "version configured\n in `%s`\n local tool version is %s\n" ..
+                "required version is %s", f, buildconfig.VERSIONSTRING, v.tag)
         end
     end
 
@@ -1445,21 +1441,20 @@ function e2tool.collect_project_info(info, skip_load_config)
         e2tool.lcd(info, ".")
         rc, re = generic_git.verify_head_match_tag(nil, info.release_id)
         if rc == nil then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         if not rc then
-            local msg = "project repository tag does not match the ReleaseId"..
-            " given in proj/config"
-            e:append(msg)
-            e2lib.abort(e:cat(re))
+            e:append("project repository tag does not match the ReleaseId" ..
+                " given in proj/config")
+            return false, e:cat(re)
         end
         rc, re = generic_git.verify_clean_repository(nil)
         if rc == nil then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
         if not rc then
             e = err.new("project repository is not clean")
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
 
@@ -1467,14 +1462,14 @@ function e2tool.collect_project_info(info, skip_load_config)
         rc, re = generic_git.verify_remote_tag(nil, info.release_id)
         if not rc then
             e:append("verifying remote tag failed")
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
 
     for _,f in ipairs(info.ftab.collect_project_info) do
         rc, re = f(info)
         if not rc then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         end
     end
     return info, nil
