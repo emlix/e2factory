@@ -1848,6 +1848,8 @@ function e2tool.verify_hash(info, server, location, sha1)
 end
 
 --- project id.
+-- @return Project ID or false on error.
+-- @return Error object on failure
 local function projid(info)
     if info.projid then
         return info.projid
@@ -1864,7 +1866,7 @@ local function projid(info)
             }
             local fileid, e = e2tool.fileid(info, f)
             if not fileid then
-                e2lib.abort(e)
+                return false, e
             end
             hc:hash_line(location)	-- the filename
             hc:hash_line(fileid)	-- the file content
@@ -2177,14 +2179,14 @@ local function envid(info, resultname)
     return e2tool.env_by_result(info, resultname):id()
 end
 
---- get the pbuildid for a result, calculating it if required
--- XXX this function always succeeds or aborts
+--- Get the pbuildid for a result, calculating it if required.
 -- @param info
 -- @param resultname
--- @return the buildid
+-- @return Build ID or false on error.
+-- @return Error object on failure.
 function e2tool.pbuildid(info, resultname)
     local e = err.new("error calculating result id for result: %s",
-    resultname)
+        resultname)
     local r = info.results[resultname]
     if r.pbuildid then
         return r.build_mode.buildid(r.pbuildid)
@@ -2199,7 +2201,7 @@ function e2tool.pbuildid(info, resultname)
         local rc, re, sourceid =
         scm.sourceid(info, s, source_set)
         if not rc then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
         hash.hash_line(hc, s)			-- source name
         hash.hash_line(hc, sourceid)		-- sourceid
@@ -2222,7 +2224,7 @@ function e2tool.pbuildid(info, resultname)
         -- them via results/sources. Include them explicitly here.
         local lid, re = e2tool.licenceid(info, l)
         if not lid then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
         hash.hash_line(hc, lid)		-- licence id
     end
@@ -2244,7 +2246,7 @@ function e2tool.pbuildid(info, resultname)
         }
         local fileid, re = e2tool.fileid(info, f)
         if not fileid then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
         hc:hash_line(fileid)			-- build script hash
     end
@@ -2254,7 +2256,7 @@ function e2tool.pbuildid(info, resultname)
         -- nil -> error
         -- false -> don't modify the hash
         if hash == nil then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         elseif hash ~= false then
             hc:hash_line(hash)
         end
@@ -2262,14 +2264,17 @@ function e2tool.pbuildid(info, resultname)
     e2lib.logf(4, "hash data for resultid %s\n%s", resultname, hc.data)
     r.resultid = hash.hash_finish(hc)	-- result id (without deps)
 
+    local projid, re = projid(info)
+    if not projid then
+        return false, e:cat(re)
+    end
     hc = hash.hash_start()
-    local projid = projid(info)
     hc:hash_line(projid)		-- project id
     hash.hash_line(hc, r.resultid)	-- result id
     for _,d in ipairs(r.depends) do
         local id, re = e2tool.pbuildid(info, d)
         if not id then
-            e2lib.abort(re)
+            return false, re
         end
         hash.hash_line(hc, id)		-- buildid of dependency
     end
@@ -2278,7 +2283,7 @@ function e2tool.pbuildid(info, resultname)
         -- pbuildids of collected results
         local pbid, re = e2tool.pbuildid(info, c)
         if not pbid then
-            e2lib.abort(re)
+            return false, re
         end
         hash.hash_line(hc, pbid)
     end
@@ -2288,7 +2293,7 @@ function e2tool.pbuildid(info, resultname)
         -- nil -> error
         -- false -> don't modify the hash
         if hash == nil then
-            e2lib.abort(e:cat(re))
+            return false, e:cat(re)
         elseif hash ~= false then
             hc:hash_line(hash)
         end
