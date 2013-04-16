@@ -415,8 +415,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:cat(re)
                 end
             else
-                e2lib.abort(string.format("missing destiny for file %s (%s)",
-                file.location, file.server))
+                return false, err.new("missing destination for file %s (%s)",
+                    file.location, file.server)
             end
         end
     end
