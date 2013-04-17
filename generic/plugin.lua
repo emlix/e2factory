@@ -162,8 +162,11 @@ end
 --- Depth first search visitor that does the sorting.
 local function plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted,
     cycledetect)
+
+    local rc, re
+
     if pluginsvisited[plugin] then
-        return
+        return true
     end
 
     pluginsvisited[plugin] = true
@@ -179,27 +182,37 @@ local function plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted,
                         c = " " .. p.file
                     end
                     e:append("somewhere in this branch:" .. c)
-                    e2lib.abort(e)
+                    return false, e
                 end
-                plugin_dfs_visit(pluginm, plugins, pluginsvisited,
+                rc, re = plugin_dfs_visit(pluginm, plugins, pluginsvisited,
                     pluginssorted, cycledetect)
+                if not rc then
+                    return false, re
+                end
             end
         end
     end
 
     table.insert(pluginssorted, 1,  plugin)
+
+    return true
 end
 
 --- Topological sort for plugins according to their dependencies.
--- When cycles are encountered, it aborts.
--- @return a sorted plugin table
+-- @return Sorted plugin table or false on error.
+-- @return Error object on failure.
 local function plugin_tsort(plugins)
+    local rc, re
     local pluginsvisited = {}
     local pluginssorted = {}
 
     for _, plugin in ipairs(plugins) do
         if not pluginsvisited[plugin] then
-            plugin_dfs_visit(plugin, plugins, pluginsvisited, pluginssorted, {})
+            rc, re = plugin_dfs_visit(plugin, plugins,
+                pluginsvisited, pluginssorted, {})
+            if not rc then
+                return false, re
+            end
         end
     end
 
@@ -211,8 +224,12 @@ end
 -- @return an error object on failure
 function plugin.init_plugins()
     local e = err.new("initializing plugins failed")
+    local re
 
-    plugins = plugin_tsort(plugins)
+    plugins, re = plugin_tsort(plugins)
+    if not plugins then
+        return false, e:cat(re)
+    end
 
     for _, pd in ipairs(plugins) do
         e2lib.logf(4, "init plugin %s", pd.file)
