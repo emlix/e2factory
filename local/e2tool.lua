@@ -2392,16 +2392,17 @@ end
 -- @param keep_chroot bool
 -- @param build_mode table: build mode policy
 -- @param playground bool
--- @return nil
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function select_result(info, r, force_rebuild, request_buildno, keep_chroot, build_mode, playground)
     local rc, re = e2tool.verify_src_res_name_valid_chars(r)
     if not rc then
-        e2lib.abort(string.format("'%s' is not a valid result name", r))
+        return false, err.new("'%s' is not a valid result name", r)
     end
 
     local res = info.results[r]
     if not res then
-        e2lib.abort(string.format("selecting invalid result: %s", r))
+        return false, err.new("selecting invalid result: %s", r)
     end
     res.selected = true
     res.force_rebuild = force_rebuild
@@ -2411,6 +2412,8 @@ local function select_result(info, r, force_rebuild, request_buildno, keep_chroo
         res.build_mode = build_mode
     end
     res.playground = playground
+
+    return true
 end
 
 
@@ -2426,10 +2429,16 @@ end
 -- @return bool
 -- @return an error object on failure
 function e2tool.select_results(info, results, force_rebuild, request_buildno, keep_chroot, build_mode, playground)
+    local rc, re
+
     for _,r in ipairs(results) do
-        select_result(info, r, force_rebuild, request_buildno,
-        keep_chroot, build_mode, playground)
+        rc, re = select_result(info, r, force_rebuild, request_buildno,
+            keep_chroot, build_mode, playground)
+        if not rc then
+            return false, re
+        end
     end
+
     return true, nil
 end
 
