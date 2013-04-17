@@ -159,7 +159,7 @@ end
 -- @return an error object on failure
 function generic_git.git_init_db1(rurl)
     if (not rurl) then
-        e2lib.abort("git_init_db1(): missing parameter")
+        return false, err.new("git_init_db1(): missing parameter")
     end
     local e = err.new("git_init_db failed")
     local rc, re
@@ -198,7 +198,7 @@ end
 -- @return an error object on failure
 function generic_git.git_push1(gitdir, rurl, refspec)
     if (not rurl) or (not gitdir) or (not refspec) then
-        e2lib.abort("git_push1(): missing parameter")
+        return false, err.new("git_push1(): missing parameter")
     end
     local rc, re
     local e = err.new("git push failed")
@@ -228,7 +228,7 @@ end
 -- @return an error object on failure
 function generic_git.git_remote_add1(lurl, rurl, name)
     if (not lurl) or (not rurl) or (not name) then
-        e2lib.abort("missing parameter")
+        return false, err.new("missing parameter")
     end
     local rc, re
     local e = err.new("git remote-add failed")
@@ -257,15 +257,15 @@ end
 function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
     local rurl, e = cache.remote_url(c, rserver, rlocation)
     if not rurl then
-        e2lib.abort(e)
+        return false, e
     end
     local lurl, e = cache.remote_url(c, lserver, llocation)
     if not lurl then
-        e2lib.abort(e)
+        return false, e
     end
     local rc, e = generic_git.git_remote_add1(lurl, rurl, name)
     if not rc then
-        e2lib.abort(e)
+        return false, e
     end
     return true, nil
 end
