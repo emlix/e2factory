@@ -2129,16 +2129,16 @@ function e2tool.bid_display(buildid)
     return string.format("%s...", string.sub(buildid, 1, 8))
 end
 
---- get the buildid for a result, calculating it if required
--- XXX this function always succeeds or aborts
--- @param info
--- @param resultname
--- @return the buildid
+--- Get the buildid for a result, calculating it if required.
+-- @param Info table.
+-- @param Result name.
+-- @return Build ID or false on error
+-- @return Error object on failure
 function e2tool.buildid(info, resultname)
     local r = info.results[resultname]
     local id, e = e2tool.pbuildid(info, resultname)
     if not id then
-        e2lib.abort(e)
+        return false, e
     end
     local hc = hash.hash_start()
     hc:hash_line(r.buildno)

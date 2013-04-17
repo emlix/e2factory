@@ -89,12 +89,18 @@ end
 -- @return an error object on failure
 local function result_available(info, r, return_flags)
     local res = info.results[r]
-    local mode = res.build_mode
-    local buildid = e2tool.buildid(info, r)
-    local sbid = e2tool.bid_display(buildid)
     local rc, re
+    local buildid, sbid
     local e = err.new("error while checking if result is available: %s", r)
     local columns = tonumber(e2lib.globals.osenv["COLUMNS"])
+
+    buildid, re = e2tool.buildid(info, r)
+    if not buildid then
+        return false, e:cat(re)
+    end
+
+    sbid = e2tool.bid_display(buildid)
+
     if res.playground then
         return_flags.message = e2lib.align(columns,
         0, string.format("building %-20s", r),
@@ -110,11 +116,13 @@ local function result_available(info, r, return_flags)
         return_flags.stop = false
         return true, nil
     end
-    local server, location = mode.storage(info.project_location, info.release_id)
-    local dep_set = mode.buildid(e2tool.buildid(info, r))
+    local server, location =
+        res.build_mode.storage(info.project_location, info.release_id)
+    local dep_set = res.build_mode.dep_set(buildid)
+
     -- cache the result
     local result_location = string.format("%s/%s/%s/result.tar", location, r,
-    dep_set)
+        dep_set)
     local cache_flags = {}
     rc, re = info.cache:cache_file(server, result_location, cache_flags)
     if not rc then
@@ -480,7 +488,11 @@ function e2build.unpack_result(info, r, dep, destdir)
     local tmpdir = e2lib.mktempdir()
     local e = err.new("unpacking result failed: %s", dep)
     local d = info.results[dep]
-    local buildid = e2tool.buildid(info, dep)
+
+    local buildid, re = e2tool.buildid(info, dep)
+    if not buildid then
+        return false, re
+    end
 
     local dep_set = d.build_mode.dep_set(buildid)
     local server, location = d.build_mode.storage(info.project_location,
@@ -917,13 +929,18 @@ local function store_result(info, r, return_flags)
     end
     local server, location = res.build_mode.storage(info.project_location,
     info.release_id)
-    local buildid = e2tool.buildid(info, r)
+
+    local buildid, re = e2tool.buildid(info, r)
+    if not buildid then
+        return false, re
+    end
+
     local sourcefile = string.format("%s/result.tar", tmpdir)
     local location1 = string.format("%s/%s/%s/result.tar", location, r, buildid)
     local cache_flags = {
         try_hardlink = true,
     }
-    local rc, re = info.cache:push_file(sourcefile, server, location1,
+    rc, re = info.cache:push_file(sourcefile, server, location1,
     cache_flags)
     if not rc then
         return false, e:cat(re)

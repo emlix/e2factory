@@ -204,7 +204,11 @@ local function e2_build(arg)
 
     if opts["buildid"] then
         for _,r in ipairs(sel_res) do
-            print(string.format("%-20s [%s]", r, e2tool.buildid(info, r)))
+            local bid, re = e2tool.buildid(info, r)
+            if not bid then
+                return false, re
+            end
+            print(string.format("%-20s [%s]", r, bid))
         end
 
         return true
