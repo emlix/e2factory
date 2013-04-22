@@ -190,7 +190,12 @@ local function defaultoptions()
     category = "General Options"
     e2option.flag("help", "show manpage",
     function()
-        e2option.showtoolmanpage()
+        local rc, re = e2option.showtoolmanpage()
+        if not rc then
+            e2lib.abort(re)
+        end
+
+        e2lib.finish(0)
     end,
     category)
 
@@ -215,47 +220,46 @@ end
 local function userdefaultoptions(opts)
     local home = e2lib.globals.homedir
     if not home then
-        return
+        return true
     end
 
     local file = home .. "/.e2/e2rc"
     if not e2util.exists(file) then
-        return
+        return true
     end
 
     local e2rc = {}
     local rc, e = e2lib.dofile_protected(file, { e2rc = function(t) e2rc = t end })
     if not rc then
-        e2lib.abort(e)
+        return false, e
     end
 
     for _,tbl in pairs(e2rc) do
         if type(tbl) ~= "table" then
-            e2lib.abort(string.format("could not parse user defaults.\n"..
-            "'%s' is not in the expected format.", file))
+            return false, err.new("could not parse user defaults.\n"..
+                "'%s' is not in the expected format.", file)
         end
 
         local opt=tbl[1]
         local val=tbl[2]
 
         if type(opt) ~= "string" or string.len(opt) == 0 then
-            e2lib.abort(string.format("could not parse user defaults.\n"..
-            "'%s' has a malformed option", file))
+            return false, err.new("could not parse user defaults.\n"..
+                "'%s' has a malformed option", file)
         end
 
         opt = aliases[opt] or opt
 
         if not options[opt] then
-            e2lib.abort("unknown option in user defaults: " .. opt)
+            return false, err.new("unknown option in user defaults: %s", opt)
         end
 
         if options[opt].type == "flag" and val then
-            e2lib.abort(string.format(
-            "user default option '%s' does not take an argument ",
-            opt))
+            return false, err.new(
+                "user default option '%s' does not take an argument ", opt)
         elseif options[opt].type == "option" and not val then
-            e2lib.abort(
-            "argument missing for user default option: " .. opt)
+            return false,
+                err.new("argument missing for user default option: %s", opt)
         end
 
         if options[opt].proc then
@@ -270,18 +274,25 @@ local function userdefaultoptions(opts)
             e2lib.bomb("user default option has no effect")
         end
     end
+
+    return true
 end
 
 --- fill in defaults, parse user defauls and parse normal options
 -- @param args table: command line arguments (usually the arg global variable)
--- @return table: option_table
+-- @return table: option_table or false on error.
 -- @return table of unparsed arguments (everything not identified as an option)
+-- or an error object on failure.
 function e2option.parse(args)
     defaultoptions()
     local opts = {}
     local vals = {}
+    local rc, re
 
-    userdefaultoptions(opts)
+    rc, re = userdefaultoptions(opts)
+    if not rc then
+        return false, re
+    end
 
     local i = 1
     while i <= #args do		-- we may modify args
@@ -291,9 +302,9 @@ function e2option.parse(args)
             opt = aliases[opt] or opt
             if options[opt] then
                 if options[opt].type == "flag" then
-                    e2lib.abort(string.format(
-                    "option '%s' does not take an argument\n"..
-                    "Try the --help option for usage information.", opt))
+                    return false, err.new(
+                        "option '%s' does not take an argument\n"..
+                        "Try the --help option for usage information.", opt)
                 end
 
                 local proc = options[opt].proc
@@ -303,8 +314,8 @@ function e2option.parse(args)
 
                 opts[opt] = val
             else
-                e2lib.abort(string.format("unknown option: %s\n"..
-                "Try the --help option for usage information.", opt))
+                return false, err.new("unknown option: %s\n"..
+                "Try the --help option for usage information.", opt)
             end
         else
             s, e, opt = string.find(v, "^%-%-?(.*)$")
@@ -314,7 +325,8 @@ function e2option.parse(args)
                     local proc = options[opt].proc
                     if options[opt].type == "option" then
                         if i == #args then
-                            e2lib.abort("argument missing for option: " .. opt)
+                            return false,
+                                err.new("argument missing for option: %s", opt)
                         end
                         if proc then
                             opts[opt] = proc(args[i + 1])
@@ -337,8 +349,9 @@ function e2option.parse(args)
 
                     for k, v in pairs(set) do
                         if not options[v] then
-                            e2lib.abort(string.format("unknown option: %s\n"..
-                            "Try the --help option for usage information.", opt))
+                            return false, err.new("unknown option: %s\n"..
+                                "Try the --help option for usage information.",
+                                opt)
                         else
                             table.insert(args, "-" .. v)
                         end
@@ -427,20 +440,20 @@ function e2option.showtoolmanpage()
         if e2lib.isfile(file) then
             prefix = e2lib.join(buildconfig.PREFIX, 'share')
         else
-            e2lib.abort(err.new('tool "%s" does not exist', tool))
+            return false, err.new('tool "%s" does not exist', tool)
         end
     end
 
     mpage = e2lib.join(prefix, mpage)
     if not e2lib.isfile(mpage) then
-        e2lib.abort(err.new('manual page for "%s" does not exist (%s)',
-            tool, mpage))
+        return false, err.new('manual page for "%s" does not exist (%s)',
+            tool, mpage)
     end
 
     if not tools.isinitialized() then
         local rc, re = tools.init()
         if not rc then
-            e2lib.abort(re)
+            return false, re
         end
     end
 
@@ -460,14 +473,14 @@ function e2option.showtoolmanpage()
     end
 
     if #cmd < 1 then
-        e2lib.abort("Could not find manual viewer to display help")
+        return false, err.new("Could not find manual viewer to display help")
     end
 
     table.insert(cmd, e2lib.shquote(mpage))
 
     os.execute(table.concat(cmd, ' '))
 
-    e2lib.finish(0)
+    return true
 end
 
 return strict.lock(e2option)
