@@ -43,6 +43,10 @@ local function e2_fetch_project(arg)
     e2option.option("tag", "retrieve a specific project tag")
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
+
     local rc, re = e2lib.read_global_config()
     if not rc then
         return false, e:cat(re)

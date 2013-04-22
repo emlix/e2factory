@@ -39,7 +39,10 @@ local function e2_dsort(arg)
         return false, re
     end
 
-    e2option.parse(arg)
+    local opts, re = e2option.parse(arg)
+    if not opts then
+        return false, re
+    end
 
     info, re = e2tool.collect_project_info(info)
     if not info then

@@ -240,6 +240,9 @@ local function e2_help(arg)
     end
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
 
     info, re = e2tool.collect_project_info(info, true)
     if not info then

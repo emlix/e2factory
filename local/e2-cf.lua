@@ -324,6 +324,9 @@ local function e2_cf(arg)
     end
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
 
     -- initialize some basics in the info structure without actually loading
     -- the project configuration.

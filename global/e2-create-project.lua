@@ -39,6 +39,10 @@ local function e2_create_project(arg)
     e2lib.init()
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
+
     local rc, e = e2lib.read_global_config()
     if not rc then
         return false, e

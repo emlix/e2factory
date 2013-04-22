@@ -223,6 +223,9 @@ local function e2_new_source(arg)
     e2option.option("server", "specify server")
     e2option.flag("no-checksum", "do not verify checksum file")
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
 
     info, re = e2tool.collect_project_info(info)
     if not info then

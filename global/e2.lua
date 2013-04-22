@@ -58,7 +58,11 @@ local function e2(arg)
         e2call.arg_string = quoteargs(table.concat(arg, "' '", 2))
     elseif e2call.basename == "e2" then
         e2call.toolname = "e2"
-        local opts = e2option.parse(arg)
+        local opts, re = e2option.parse(arg)
+        if not opts then
+            return false, re
+        end
+
         if #opts == 0 then
             e2option.usage(1)
         end

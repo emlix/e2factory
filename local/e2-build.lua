@@ -90,6 +90,9 @@ local function e2_build(arg)
     enable_writeback, "SERVER")
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
 
     -- get build mode from the command line
     local build_mode, re = policy.handle_commandline_options(opts, true)

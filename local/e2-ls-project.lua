@@ -51,6 +51,9 @@ local function e2_ls_project(arg)
     e2option.flag("all", "show unused results and sources, too")
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
 
     info, re = e2tool.collect_project_info(info)
     if not info then

@@ -58,6 +58,10 @@ local function e2_fetch_source(arg)
     e2option.flag("result", "select sources by result names")
 
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
+
     info, re = e2tool.collect_project_info(info)
     if not info then
         return false, info

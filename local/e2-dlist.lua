@@ -41,6 +41,9 @@ local function e2_dlist(arg)
 
     e2option.flag("recursive", "show indirect dependencies, too")
     local opts, arguments = e2option.parse(arg)
+    if not opts then
+        return false, arguments
+    end
 
     if #arguments == 0 then
         return false,
