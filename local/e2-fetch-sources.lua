@@ -37,7 +37,11 @@ local e2option = require("e2option")
 local scm = require("scm")
 
 local function e2_fetch_source(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
+
     local info, re = e2tool.local_init(nil, "fetch-sources")
     if not info then
         return false, re

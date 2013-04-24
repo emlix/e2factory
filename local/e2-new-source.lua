@@ -212,7 +212,11 @@ local function new_files_source(c, server, location, source_file, checksum_file,
 end
 
 local function e2_new_source(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
+
     local info, re = e2tool.local_init(nil, "new-source")
     if not info then
         return false, re

@@ -33,7 +33,11 @@ local e2tool = require("e2tool")
 local e2option = require("e2option")
 
 local function e2_dlist(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
+
     local info, re = e2tool.local_init(nil, "dlist")
     if not info then
         return false, re

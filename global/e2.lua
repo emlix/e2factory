@@ -35,7 +35,10 @@ require("buildconfig")
 require("e2util")
 
 local function e2(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
 
     e2option.flag("prefix", "print installation prefix",
     function()

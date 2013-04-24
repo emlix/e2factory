@@ -36,7 +36,10 @@ local err = require("err")
 require("buildconfig")
 
 local function e2_fetch_project(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
 
     local e = err.new("fetching project failed")
     e2option.option("branch", "retrieve a specific project branch")

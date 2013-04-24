@@ -126,8 +126,9 @@ function e2lib.interrupt_hook()
 end
 
 --- Make sure the environment variables inside the globals table are
--- initialized properly, and abort otherwise.
--- This function always succeeds or aborts.
+-- initialized properly.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2lib.init()
     e2lib.log(4, "e2lib.init()")
     -- DEBUG: change to "cr" to log return from function
@@ -194,7 +195,7 @@ function e2lib.init()
     for _, var in pairs(getenv) do
         var.val = os.getenv(var.name)
         if var.required and not var.val then
-            e2lib.abort(string.format("%s is not set in the environment", var.name))
+            return false, err.new("%s is not set in the environment", var.name)
         end
         if var.default and not var.val then
             var.val = var.default
@@ -216,16 +217,18 @@ function e2lib.init()
     -- get the host name
     local hostname = io.popen("hostname")
     if not hostname then
-        e2lib.abort("execution of \"hostname\" failed")
+        return false, err.new("execution of \"hostname\" failed")
     end
 
     e2lib.globals.hostname = hostname:read("*a")
     hostname:close()
     if not e2lib.globals.hostname then
-        e2lib.abort("hostname ist not set")
+        return false, err.new("hostname ist not set")
     end
 
     e2lib.globals.lock = lock.new()
+
+    return true
 end
 
 --- init2.

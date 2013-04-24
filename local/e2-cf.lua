@@ -317,7 +317,11 @@ local function editbuildscript(info, ...)
 end
 
 local function e2_cf(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
+
     local info, re = e2tool.local_init(nil, "cf")
     if not info then
         return false, re

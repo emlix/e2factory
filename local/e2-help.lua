@@ -232,7 +232,10 @@ end
 -- @return Error object on failure.
 local function e2_help(arg)
     local rc, re, e
-    e2lib.init()
+    rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
 
     local info, re = e2tool.local_init(nil, "help")
     if not info then

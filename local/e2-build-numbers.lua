@@ -32,7 +32,11 @@ local e2tool = require("e2tool")
 local err = require("err")
 
 local function e2_build_numbers(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
+
     local info, re = e2tool.local_init(nil, "build-numbers")
     if not info then
         return false, re

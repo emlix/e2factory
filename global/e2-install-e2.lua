@@ -35,7 +35,10 @@ local err = require("err")
 require("buildconfig")
 
 local function e2_install_e2(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
 
     local opts, arguments = e2option.parse(arg)
     if not opts then

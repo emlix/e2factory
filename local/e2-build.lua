@@ -37,7 +37,11 @@ local scm = require("scm")
 local policy = require("policy")
 
 local function e2_build(arg)
-    e2lib.init()
+    local rc, re = e2lib.init()
+    if not rc then
+        return false, re
+    end
+
     local info, re = e2tool.local_init(nil, "build")
     if not info then
         return false, re
