@@ -747,6 +747,74 @@ function e2lib.read_line(path)
     return l
 end
 
+--- Use the global parameters from the global configuration.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function use_global_config()
+    local rc, re
+
+    local function assert_type(x, d, t1)
+        local t2 = type(x)
+        if t1 ~= t2 then
+            return false,
+                err.new("configuration error: %s (expected %s got %s)",
+                d, t1, t2)
+        end
+
+        return true
+    end
+
+    local config = global_config
+    if not config then
+        return false, err.new("global config not available")
+    end
+    if config.log then
+        rc, re = assert_type(config.log, "config.log", "table")
+        if not rc then
+            return false, re
+        end
+
+        if config.log.logrotate then
+            rc, re = assert_type(config.log.logrotate, "config.log.logrotate", "number")
+            if not rc then
+                return false, re
+            end
+            e2lib.globals.logrotate = config.log.logrotate
+        end
+    end
+    rc, re = assert_type(config.site, "config.site", "table")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = assert_type(config.site.e2_branch, "config.site.e2_branch", "string")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = assert_type(config.site.e2_tag, "config.site.e2_tag", "string")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = assert_type(config.site.e2_server, "config.site.e2_server", "string")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = assert_type(config.site.e2_base, "config.site.e2_base", "string")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = assert_type(config.site.default_extensions, "config.site.default_extensions", "table")
+    if not rc then
+        return false, re
+    end
+
+    return true
+end
+
 --- read the global config file
 -- local tools call this function inside collect_project_info()
 -- global tools must call this function after parsing command line options
@@ -755,12 +823,13 @@ end
 -- @return error string on error
 function e2lib.read_global_config(e2_config_file)
     local cf
+    local rc, re
     if type(e2lib.globals.cmdline["e2-config"]) == "string" then
         cf = e2lib.globals.cmdline["e2-config"]
     elseif type(e2lib.globals.osenv["E2_CONFIG"]) == "string" then
         cf = e2lib.globals.osenv["E2_CONFIG"]
     end
-    
+
     local cf_path
     if cf then
         cf_path = { cf }
@@ -791,21 +860,25 @@ function e2lib.read_global_config(e2_config_file)
         local rc = e2util.exists(path)
         if rc then
             e2lib.logf(3, "using global config file: %s", path)
-            local rc, e = e2lib.dofile_protected(path, c, true)
+            rc, re = e2lib.dofile_protected(path, c, true)
             if not rc then
-                return nil, e
+                return false, re
             end
             if not c.data then
-                return false, "invalid configuration"
+                return false, err.new("invalid configuration")
             end
             global_config = c.data
-            e2lib.use_global_config()
-            return true, nil
+            rc, re = use_global_config()
+            if not rc then
+                return false, re
+            end
+
+            return true
         else
             e2lib.logf(4, "global config file does not exist: %s", path)
         end
     end
-    return false, "no config file available"
+    return false, err.new("no config file available")
 end
 
 --- Create a extensions config.
@@ -853,39 +926,6 @@ function e2lib.read_extension_config()
         return false, e:append("invalid extension configuration")
     end
     return extension, nil
-end
-
---- use the global parameters from the global configuration
--- this function always succeeds or aborts
--- @return nothing
-function e2lib.use_global_config()
-
-    -- check if type(x) == t, and abort if not.
-    local function assert_type(x, d, t1)
-        local t2 = type(x)
-        if t1 ~= t2 then
-            e2lib.abort(
-            string.format("configuration error: %s (expected %s got %s)", d, t1, t2))
-        end
-    end
-
-    local config = global_config
-    if not config then
-        e2lib.abort("global config not available")
-    end
-    if config.log then
-        assert_type(config.log, "config.log", "table")
-        if config.log.logrotate then
-            assert_type(config.log.logrotate, "config.log.logrotate", "number")
-            e2lib.globals.logrotate = config.log.logrotate
-        end
-    end
-    assert_type(config.site, "config.site", "table")
-    assert_type(config.site.e2_branch, "config.site.e2_branch", "string")
-    assert_type(config.site.e2_tag, "config.site.e2_tag", "string")
-    assert_type(config.site.e2_server, "config.site.e2_server", "string")
-    assert_type(config.site.e2_base, "config.site.e2_base", "string")
-    assert_type(config.site.default_extensions, "config.site.default_extensions", "table")
 end
 
 --- get the global configuration
