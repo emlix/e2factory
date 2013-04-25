@@ -239,7 +239,10 @@ function e2lib.init2()
     local e = err.new("initializing globals (step2)")
 
     -- get the global configuration
-    local config = e2lib.get_global_config()
+    local config, re = e2lib.get_global_config()
+    if not config then
+        return false, re
+    end
 
     -- honour tool customizations from the config file
     if config.tools then
@@ -934,12 +937,14 @@ end
 
 --- get the global configuration
 -- this function always succeeds or aborts
--- @return the global configuration
+-- @return The global configuration, or false on error.
+-- @return Error object on failure.
 function e2lib.get_global_config()
     local config = global_config
     if not config then
-        e2lib.abort("global config not available")
+        return false, err.new("global config not available")
     end
+
     return config
 end
 
@@ -1962,10 +1967,16 @@ end
 -- @return an error object on failure
 function e2lib.setup_cache()
     local e = err.new("setting up cache failed")
-    local config = e2lib.get_global_config()
+
+    local config, re = e2lib.get_global_config()
+    if not config then
+        return false, re
+    end
+
     if type(config.cache) ~= "table" or type(config.cache.path) ~= "string" then
         return false, e:append("invalid cache configuration: config.cache.path")
     end
+
     local replace = { u=e2lib.globals.username }
     local cache_path = e2lib.format_replace(config.cache.path, replace)
     local cache_url = string.format("file://%s", cache_path)

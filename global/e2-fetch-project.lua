@@ -61,7 +61,10 @@ local function e2_fetch_project(arg)
     end
 
     -- get the global configuration
-    local config = e2lib.get_global_config()
+    local config, re = e2lib.get_global_config()
+    if not config then
+        return false, e:cat(re)
+    end
 
     -- setup cache
     local scache, re = e2lib.setup_cache()

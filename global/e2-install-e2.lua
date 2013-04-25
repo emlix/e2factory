@@ -67,7 +67,11 @@ local function e2_install_e2(arg)
 
     local e = err.new("e2-install-e2 failed")
 
-    local config = e2lib.get_global_config()
+    local config, re = e2lib.get_global_config()
+    if not config then
+        return false, re
+    end
+
     local servers = config.servers
     if not servers then
         return false, err.new("no servers configured in global config")
