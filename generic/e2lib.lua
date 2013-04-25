@@ -1338,24 +1338,39 @@ function e2lib.parse_versionfile(filename)
 end
 
 --- Parse e2version file.
+-- @return Table containing tag and branch. False on error.
+-- @return Error object on failure.
 function e2lib.parse_e2versionfile(filename)
     local f = luafile.open(filename, "r")
     if not f then
-        e2lib.abort("can't open e2version file: " .. filename)
+        return false, err.new("can't open e2version file: %s", filename)
     end
+
     local l = f:readline()
     f:close()
     if not l then
-        e2lib.abort("can't parse e2version file: " .. filename)
+        return false, err.new("can't parse e2version file: %s", filename)
     end
+
     local match = l:gmatch("[^%s]+")
-    local v = {}
-    v.branch = match() or e2lib.abort("invalid branch name `", l, "' in e2 version file ",
-    filename)
-    v.tag = match() or e2lib.abort("invalid tag name `", l, "' in e2 version file ",
-    filename)
-    e2lib.logf(3, "using e2 branch %s tag %s", v.branch, v.tag)
-    return v
+
+    local version_table = {}
+    version_table.branch = match()
+    if not version_table.branch then
+        return false, err.new("invalid branch name `%s' in e2 version file %s",
+            l, filename)
+    end
+
+    version_table.tag = match()
+    if not version_table.tag then
+        return false, err.new("invalid tag name `%s' in e2 version file %s",
+            l, filename)
+    end
+
+    e2lib.logf(3, "using e2 branch %s tag %s",
+        version_table.branch, version_table.tag)
+
+    return strict.lock(version_table)
 end
 
 --- Create a temporary file.

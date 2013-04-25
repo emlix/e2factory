@@ -197,8 +197,17 @@ local function e2_build(arg)
         return false, re
     end
 
-    if opts.release and not e2tool.e2_has_fixed_tag(info) then
-        return false, err.new("Failure: e2 is on pseudo tag while building in release mode.")
+    if opts.release then
+        local version_table, re = e2lib.parse_e2versionfile(
+            e2lib.join(info.root, ".e2/e2version"))
+        if not version_table then
+            return false, re
+        end
+
+        if version_table.tag == "^" then
+            return false,
+                err.new("e2 is on a pseudo tag while building in release mode.")
+        end
     end
 
     -- calculate buildids for selected results

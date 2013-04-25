@@ -1232,7 +1232,11 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     if e2option.opts["check"] then
         local f = ".e2/e2version"
-        local v = e2lib.parse_e2versionfile(f)
+        local v, re = e2lib.parse_e2versionfile(f)
+        if not v then
+            return false, re
+        end
+
         if v.tag == "^" then
             return false, err.new("local tool version is not configured to " ..
                 "a fixed tag\nfix you configuration in %s before running " ..
@@ -1881,21 +1885,6 @@ local function projid(info)
     hc:hash_line(buildconfig.VERSION)
     info.projid = hc:hash_finish()
     return info.projid
-end
-
---- Check if e2 is in a fixed tag.
---
---   e2tool.e2_has_fixed_tag(info)
---
---     return true if e2 is at fixed tag, and false if not.
-function e2tool.e2_has_fixed_tag(info)
-    local v = e2lib.parse_e2versionfile(info.root .. "/.e2/e2version")
-    e2lib.log(2, "Checking for fixed e2 tag.")
-    if v.tag == "^" then
-        e2lib.log(1, "Fatal: e2 is not at a fixed tag.")
-        return false
-    end
-    return true
 end
 
 --- hashcache write.
