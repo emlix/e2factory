@@ -50,11 +50,15 @@ local function e2_fetch_project(arg)
         return false, arguments
     end
 
-    local rc, re = e2lib.read_global_config()
+    rc, re = e2lib.read_global_config()
     if not rc then
         return false, e:cat(re)
     end
-    e2lib.init2()
+
+    rc, re = e2lib.init2()
+    if not rc then
+        return false, re
+    end
 
     -- get the global configuration
     local config = e2lib.get_global_config()

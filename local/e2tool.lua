@@ -1175,7 +1175,10 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     info.local_template_path = e2lib.join(info.root, "/.e2/lib/e2/templates")
 
-    e2lib.init2() -- configuration must be available
+    rc, re = e2lib.init2() -- configuration must be available
+    if not rc then
+        return false, re
+    end
 
     if skip_load_config == true then
         return info

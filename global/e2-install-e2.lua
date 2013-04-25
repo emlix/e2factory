@@ -59,7 +59,12 @@ local function e2_install_e2(arg)
     if not rc then
         return false, e
     end
-    e2lib.init2()
+
+    rc, re = e2lib.init2()
+    if not rc then
+        return false, re
+    end
+
     local e = err.new("e2-install-e2 failed")
 
     local config = e2lib.get_global_config()

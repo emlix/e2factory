@@ -50,7 +50,12 @@ local function e2_create_project(arg)
     if not rc then
         return false, e
     end
-    e2lib.init2()
+
+    rc, re = e2lib.init2()
+    if not rc then
+        return false, re
+    end
+
     local e = err.new("creating project failed")
 
     local config, re = e2lib.get_global_config()

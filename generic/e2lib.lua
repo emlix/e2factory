@@ -232,6 +232,8 @@ function e2lib.init()
 end
 
 --- init2.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2lib.init2()
     local rc, re
     local e = err.new("initializing globals (step2)")
@@ -257,14 +259,16 @@ function e2lib.init2()
     -- initialize the tools library after resetting tools
     local rc, re = tools.init()
     if not rc then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
 
     -- get host system architecture
     local host_system_arch, re = e2lib.get_sys_arch()
     if not host_system_arch then
-        e2lib.abort(e:cat(re))
+        return false, e:cat(re)
     end
+
+    return true
 end
 
 --- function call tracer
