@@ -1419,7 +1419,8 @@ end
 -- trailing X characters by some random string to create a unique name.
 -- This function always succeeds (or aborts immediately).
 -- @param template string: template name (optional)
--- @return string: name of the directory
+-- @return Name of the directory (string) or false on error.
+-- @return Error object on failure.
 function e2lib.mktempdir(template)
     if not template then
         template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.globals.tmpdir,
@@ -1428,11 +1429,11 @@ function e2lib.mktempdir(template)
     local cmd = string.format("mktemp -d '%s'", template)
     local mktemp = io.popen(cmd, "r")
     if not mktemp then
-        e2lib.abort("can't mktemp")
+        return false, err.new("can't mktemp")
     end
     local tmpdir = mktemp:read()
     if not tmpdir then
-        e2lib.abort("can't mktemp")
+        return false, err.new("can't mktemp")
     end
     mktemp:close()
     -- register tmpdir for removing with rmtempdirs() later on

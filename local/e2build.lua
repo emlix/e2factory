@@ -485,7 +485,6 @@ end
 function e2build.unpack_result(info, r, dep, destdir)
     local res = info.results[r]
     local rc, re
-    local tmpdir = e2lib.mktempdir()
     local e = err.new("unpacking result failed: %s", dep)
     local d = info.results[dep]
 
@@ -505,6 +504,11 @@ function e2build.unpack_result(info, r, dep, destdir)
     if not path then
         return false, e:cat(re)
     end
+    local tmpdir, re = e2lib.mktempdir()
+    if not tmpdir then
+        return false, re
+    end
+
     rc, re = e2lib.chdir(tmpdir)
     if not rc then
         return false, e:cat(re)
@@ -861,7 +865,10 @@ local function store_result(info, r, return_flags)
     local e = err.new("fetching build results from chroot")
 
     -- create a temporary directory to build up the result
-    local tmpdir = e2lib.mktempdir()
+    local tmpdir, re = e2lib.mktempdir()
+    if not tmpdir then
+        return false, re
+    end
 
     -- build a stored result structure and store
     local rfilesdir = string.format("%s/out", res.build_config.T)

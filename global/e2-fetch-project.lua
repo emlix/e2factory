@@ -108,7 +108,11 @@ local function e2_fetch_project(arg)
     end
 
     -- fetch project descriptor file
-    local tmpdir = e2lib.mktempdir()
+    local tmpdir, re = e2lib.mktempdir()
+    if not tmpdir then
+        return false, re
+    end
+
     local location = string.format("%s/version", p.location)
     local rc, re = cache.fetch_file(scache, p.server, location, tmpdir, nil,
     { cache = false })

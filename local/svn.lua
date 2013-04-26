@@ -335,7 +335,11 @@ function svn.toresult(info, sourcename, sourceset, directory)
     source, archive))
     f:close()
     -- export the source tree to a temporary directory
-    local tmpdir = e2lib.mktempdir()
+    local tmpdir, re = e2lib.mktempdir()
+    if not tmpdir then
+        return false, e:cat(re)
+    end
+
     rc, re = svn.prepare_source(info, sourcename, sourceset, tmpdir)
     if not rc then
         return false, e:cat(re)

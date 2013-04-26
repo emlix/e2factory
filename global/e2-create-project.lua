@@ -103,7 +103,11 @@ local function e2_create_project(arg)
     p.server = sl.server				-- the server
 
     -- create the server side structure
-    local tmpdir = e2lib.mktempdir()
+    local tmpdir, re = e2lib.mktempdir()
+    if not tmpdir then
+        return false, re
+    end
+
     e2lib.chdir(tmpdir)
 
     local version = string.format("%d\n", p.version)
@@ -138,7 +142,11 @@ local function e2_create_project(arg)
     e2lib.chdir("/")
     e2lib.rmtempdir(tmpdir)
 
-    local tmpdir = e2lib.mktempdir()
+    local tmpdir, re = e2lib.mktempdir()
+    if not tmpdir then
+        return false, re
+    end
+
     e2lib.chdir(tmpdir)
 
     -- create the initial repository on server side

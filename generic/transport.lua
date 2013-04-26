@@ -97,13 +97,17 @@ local function rsync_ssh_mkdir(opts, user, server, dir)
     assert(type(server) == "string")
     assert(type(dir) == "string")
 
-    local emptydir = e2lib.mktempdir()
     local stack = {}
     local argv = {}
     for _,opt in ipairs(opts) do
         table.insert(argv, opt)
     end
     table.insert(argv, "-r")
+
+    local emptydir, re = e2lib.mktempdir()
+    if not emptydir then
+        return false, re
+    end
 
     while dir ~= "/" do
         local dest = rsync_quote_remote(user, server, dir .. "/")
