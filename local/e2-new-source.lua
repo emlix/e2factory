@@ -45,14 +45,19 @@ local url = require("url")
 -- @return temporary filename or false.
 -- @return an error object on failure.
 local function download(f)
+    local rc, re
     local path = e2lib.dirname(f)
     local fn = e2lib.basename(f)
 
-    local tfile = e2lib.mktempfile()
+    local tfile, re = e2lib.mktempfile()
+    if not tfile then
+        return false, re
+    end
+
     local tpath = e2lib.dirname(tfile)
     local tfn = e2lib.basename(tfile)
 
-    local rc, re = transport.fetch_file(path, fn, tpath, tfn)
+    rc, re = transport.fetch_file(path, fn, tpath, tfn)
     if not rc then
         return rc, re
     end
@@ -120,7 +125,10 @@ local function new_files_source(c, server, location, source_file, checksum_file,
 
     -- check for file with identical name on the server
     local tmpfile = {}
-    tmpfile.file = e2lib.mktempfile()
+    tmpfile.file, re = e2lib.mktempfile()
+    if not tmpfile.file then
+        return false, e:cat(re)
+    end
     tmpfile.base = e2lib.basename(tmpfile.file)
     tmpfile.dir = e2lib.dirname(tmpfile.file)
 

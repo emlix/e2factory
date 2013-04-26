@@ -2029,7 +2029,11 @@ local function verify_remote_fileid(info, file, fileid)
             return false, e:cat(re)
         end
 
-        local tmpfile = e2lib.mktempfile()
+        local tmpfile, re = e2lib.mktempfile()
+        if not tmpfile then
+            return false, e:cat(re)
+        end
+
         rc, re = transport.fetch_file(ce.remote_url, file.location,
             e2lib.dirname(tmpfile), e2lib.basename(tmpfile))
         if not rc then

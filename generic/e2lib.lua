@@ -1376,22 +1376,22 @@ end
 --- Create a temporary file.
 -- The template string is passed to the mktemp tool, which replaces
 -- trailing X characters by some random string to create a unique name.
--- This function always succeeds (or aborts immediately).
 -- @param template string: template name (optional)
--- @return string: name of the file
+-- @return Name of the file or false on error.
+-- @return Error object on failure.
 function e2lib.mktempfile(template)
     if not template then
         template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.globals.tmpdir,
-        e2util.getpid())
+            e2util.getpid())
     end
     local cmd = string.format("mktemp '%s'", template)
     local mktemp = io.popen(cmd, "r")
     if not mktemp then
-        e2lib.abort("can't mktemp")
+        return false, err.new("can't mktemp")
     end
     local tmp = mktemp:read()
     if not tmp then
-        e2lib.abort("can't mktemp")
+        return false, err.new("can't mktemp")
     end
     mktemp:close()
     -- register tmp for removing with rmtempfiles() later on

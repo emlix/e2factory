@@ -129,7 +129,12 @@ end
 function generic_git.git_rev_list1(gitdir, ref)
     local e = err.new("git rev-list failed")
     local rc, re
-    local tmpfile = e2lib.mktempfile()
+
+    local tmpfile, re = e2lib.mktempfile()
+    if not tmpfile then
+        return false, e:cat(re)
+    end
+
     local args = string.format("--max-count=1 '%s' -- >'%s'", ref, tmpfile)
     rc, re = e2lib.git(gitdir, "rev-list", args)
     if not rc then
@@ -359,7 +364,12 @@ end
 function generic_git.git_config(gitdir, query)
     local rc, re
     local e = err.new("running git config")
-    local tmpfile = e2lib.mktempfile()
+
+    local tmpfile, re = e2lib.mktempfile()
+    if not tmpfile then
+        return false, e:cat(re)
+    end
+
     local cmd = string.format("GIT_DIR=%s git config %s > %s",
     e2lib.shquote(gitdir), e2lib.shquote(query), e2lib.shquote(tmpfile))
     local rc, re = e2lib.callcmd_log(cmd)
@@ -464,7 +474,12 @@ function generic_git.verify_clean_repository(gitwc)
     gitwc = gitwc or "."
     local e = err.new("verifying that repository is clean")
     local rc, re
-    local tmp = e2lib.mktempfile()
+
+    local tmp, re = e2lib.mktempfile()
+    if not tmp then
+        return false, e:cat(re)
+    end
+
     rc, re = e2lib.chdir(gitwc)
     if not rc then
         return nil, e:cat(re)
@@ -534,7 +549,12 @@ function generic_git.verify_head_match_tag(gitwc, verify_tag)
     gitwc = gitwc or "."
     local e = err.new("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
     local rc, re
-    local tmp = e2lib.mktempfile()
+
+    local tmp, re = e2lib.mktempfile()
+    if not tmp then
+        return false, e:cat(re)
+    end
+
     local args = string.format("--tags --match '%s' >%s", verify_tag, tmp)
     rc, re = e2lib.chdir(gitwc)
     if not rc then
