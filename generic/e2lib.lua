@@ -1318,25 +1318,6 @@ function e2lib.islocaltool(tool)
     return false, err.new('local tool "%s" does not exist', tool)
 end
 
---- Parse version files.
-function e2lib.parse_versionfile(filename)
-    local f = luafile.open(filename, "r")
-    if not f then
-        e2lib.abort("can't open version file: " .. filename)
-    end
-    local l = f:readline()
-    f:close()
-    if not l then
-        e2lib.abort("can't parse version file: " .. filename)
-    end
-    local v = l:match("[0-9]+")
-    if not v then
-        e2lib.abort("invalid format of project version `" .. l .. "' in " .. filename)
-    end
-    --log(4, "project version is " .. v)
-    return v
-end
-
 --- Parse e2version file.
 -- @return Table containing tag and branch. False on error.
 -- @return Error object on failure.
