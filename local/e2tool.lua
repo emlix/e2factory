@@ -2361,22 +2361,6 @@ local function add_source_results(info, source_set)
     end
 end
 
---- check working copies.
-local function check_workingcopies(info)
-    local e = err.new("Error while checking working copies")
-    local rc, re
-    for n,s in pairs(info.sources) do
-        rc, re = scm.check_workingcopy(info, n)
-        if not rc then
-            return false, e:cat(re)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true, nil
-end
-
 --- select the result and apply build options
 -- @param info
 -- @param r string: the result name
