@@ -1192,12 +1192,15 @@ function e2lib.dofile2(path, gtable, allownewdefs)
         if x then
             return x
         else
-            e2lib.abort(path, ": attempt to reference undefined global variable '", k, "'")
+            error(string.format(
+                "%s: attempt to reference undefined global variable '%s'",
+                path, tostring(k)), 0)
         end
     end
 
     local function checkwrite(t, k, v)
-        e2lib.abort(path, ": attempt to set new global variable `", k, "' to ", v)
+        error(string.format("%s: attempt to set new global variable `%s' to %s",
+            path, tostring(k), tostring(v)), 0)
     end
 
     if not allownewdefs then
