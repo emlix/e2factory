@@ -1650,14 +1650,11 @@ local function check_licences(info)
     return true, nil
 end
 
----   e2tool.check_project_info(INFO, ALL, [ACCESS, [VERBOSE]]) -> BOOLEAN.
---
---     Checks project information for consistancy
---     When ALL is false, check only those results/sources reachable from
---       the dependency list
---     When ACCESS is true, checks also server locations
---     When VERBOSE is true, sends error messages to stderr
-function e2tool.check_project_info(info, all, access, verbose)
+--- Checks project information for consistancy.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function e2tool.check_project_info(info)
     local rc, re
     local e = err.new("error in project configuration")
     rc, re = check_chroot_config(info)
