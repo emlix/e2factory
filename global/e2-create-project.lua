@@ -100,7 +100,6 @@ local function e2_create_project(arg)
     p.server = sl.server				-- the server
     p.location = sl.location			-- the project location
     p.name = e2lib.basename(sl.location)		-- the project basename
-    p.server = sl.server				-- the server
 
     -- create the server side structure
     local tmpdir, re = e2lib.mktempdir()
