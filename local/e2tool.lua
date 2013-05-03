@@ -2123,8 +2123,8 @@ function e2tool.bid_display(buildid)
 end
 
 --- Get the buildid for a result, calculating it if required.
--- @param Info table.
--- @param Result name.
+-- @param info Info table.
+-- @param resultname Result name.
 -- @return Build ID or false on error
 -- @return Error object on failure
 function e2tool.buildid(info, resultname)
