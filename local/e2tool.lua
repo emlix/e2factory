@@ -284,7 +284,7 @@ local function load_user_config(info, path, dest, index, var)
     local function func(table)
         dest[index] = table
     end
-    local rc, re = e2lib.dofile_protected(path, { [var] = func, env = info.env, string=string })
+    local rc, re = e2lib.dofile2(path, { [var] = func, env = info.env, string=string }, false)
     if not rc then
         return false, e:cat(re)
     end
@@ -357,7 +357,7 @@ local function load_user_config2(info, path, types)
         g[type] = f[type]			-- and some config functions
     end
 
-    rc, re = e2lib.dofile2(path, g)
+    rc, re = e2lib.dofile2(path, g, true)
     if not rc then
         return nil, e:cat(re)
     end
@@ -836,7 +836,7 @@ local function load_env_config(info, file)
     g.e2env = info.env                    -- env as built up so far
     g.string = string                     -- string
     g.env = mergeenv
-    rc, re = e2lib.dofile2(path, g)
+    rc, re = e2lib.dofile2(path, g, true)
     if not rc then
         return false, e:cat(re)
     end

@@ -867,7 +867,7 @@ function e2lib.read_global_config(e2_config_file)
         local rc = e2util.exists(path)
         if rc then
             e2lib.logf(3, "using global config file: %s", path)
-            rc, re = e2lib.dofile_protected(path, c, true)
+            rc, re = e2lib.dofile2(path, c, true)
             if not rc then
                 return false, re
             end
@@ -924,7 +924,7 @@ function e2lib.read_extension_config()
     c.extensions = function(x)
         c.data = x
     end
-    local rc, re = e2lib.dofile_protected(e2lib.globals.extension_config, c, true)
+    local rc, re = e2lib.dofile2(e2lib.globals.extension_config, c, true)
     if not rc then
         return false, e:cat(re)
     end
@@ -1173,57 +1173,37 @@ function e2lib.callcmd_log(cmd, loglevel)
     return rc, e
 end
 
---- Protected execution of Lua code.
--- Runs the code in the Lua file at path with a restricted global environment.
--- gtable contains a table with the initial global environment. If allownewdefs 
--- is given and true, then the code may define new global variables.
--- This function aborts on error.
--- XXX: This looks like a more restricted version of dofile2 with problematic
--- error handling. Merge the two and fix usage.
--- @param path Filename to load lua code from (string).
--- @param gtable Environment (table) that is used instead of the global _G.
--- @param allownewdefs Allow adding new definitions to gtable (boolean).
--- @return True on success.
--- @see dofile2
-function e2lib.dofile_protected(path, gtable, allownewdefs)
-    local chunk, msg = loadfile(path)
-    if not chunk then
-        return false, msg
-    end
-    local t = gtable
-    -- t._G = t
-    local function checkread(t, k)
-        local x = rawget(t, k)
-        if x then return x
-        else e2lib.abort(path, ": attempt to reference undefined global variable '",
-            k, "'")
-        end
-    end
-    local function checkwrite(t, k, v)
-        e2lib.abort(path, ": attempt to set new global variable `", k, "' to ", v)
-    end
-    if not allownewdefs then
-        setmetatable(t, { __newindex = checkwrite, __index = checkread })
-    end
-    setfenv(chunk, t)
-    local s, msg = pcall(chunk)
-    if not s then
-        e2lib.abort(msg)
-    end
-    return true, nil
-end
-
 --- Executes Lua code loaded from path.
 --@param path Filename to load lua code from (string).
 --@param gtable Environment (table) that is used instead of the global _G.
+--@param allownewdefs Boolean indicating whether new variables may be defined
+--                    and undefined ones read.
 --@return True on success, false on error.
 --@return Error object on failure.
-function e2lib.dofile2(path, gtable)
+function e2lib.dofile2(path, gtable, allownewdefs)
     local e = err.new("error loading config file: %s", path)
     local chunk, msg = loadfile(path)
     if not chunk then
         return false, e:cat(msg)
     end
+
+    local function checkread(t, k)
+        local x = rawget(t, k)
+        if x then
+            return x
+        else
+            e2lib.abort(path, ": attempt to reference undefined global variable '", k, "'")
+        end
+    end
+
+    local function checkwrite(t, k, v)
+        e2lib.abort(path, ": attempt to set new global variable `", k, "' to ", v)
+    end
+
+    if not allownewdefs then
+        setmetatable(gtable, { __newindex = checkwrite, __index = checkread })
+    end
+
     setfenv(chunk, gtable)
     local s, msg = pcall(chunk)
     if not s then
