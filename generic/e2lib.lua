@@ -1025,48 +1025,79 @@ function e2lib.callcmd_redirect(cmd, out)
     end
 end
 
---- callcmd_pipe: call several commands in a pipe.
---  cmds is a table of unix commands
---  redirect endpoints to /dev/null, unless given
---  return nil on success, descriptive string on error
+--- Call several commands in a pipe.
+-- @param cmds Table of shell commands.
+-- @param infile Luafile that is readable, or nil.
+-- @param outfile Luafile that is writeable, or nil.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2lib.callcmd_pipe(cmds, infile, outfile)
-    local i = infile or luafile.open("/dev/null", "r")
-    local c = #cmds
-    local rc = nil
+    local e = err.new("calling commands in a pipe failed")
+    local rc, re
+
+    local input = infile or luafile.open("/dev/null", "r")
+    if not input then
+        return false, e:cat("input could not be opened")
+    end
+
     local rcs = {}
     local pids = {}
     local ers = {}
 
-    if not i then
-        e2lib.abort("could not open /dev/null")
+    if not input then
+        return false, err.new("could not open /dev/null")
     end
 
-    for n = 1, c do
-        local o, pr, fr, er, ew
-        pr, er, ew = luafile.pipe()
-        if not pr then e2lib.abort("failed to open pipe (error)") end
-        if n < c then
-            pr, fr, o = luafile.pipe()
-            if not pr then e2lib.abort("failed to open pipe") end
-        else
-            o = outfile or ew
+    local c = #cmds
+    for cmdidx = 1, c do
+        local pipein, output
+        local errin, errout
+
+        rc, errin, errout = luafile.pipe()
+        if not rc then
+            return false, err.new("failed to open error pipe")
         end
-        e2lib.logf(3, "+ %s", cmds[n])
+
+        if cmdidx < c then
+            rc , pipein, output = luafile.pipe()
+            if not rc then
+                return false, err.new("failed to open pipe")
+            end
+        else
+            -- last command in pipe
+            output = outfile or errout
+        end
+
+        e2lib.logf(3, "+ %s", cmds[cmdidx])
         local pid = e2util.fork()
         if pid == 0 then
-            if n < c then fr:close() end
-            er:close()
-            rc = e2lib.callcmd(i, o, ew, cmds[n])
+            if cmdidx < c then
+                -- everyone but the last
+                pipein:close()
+            end
+
+            errin:close()
+            rc = e2lib.callcmd(input, output, errout, cmds[cmdidx])
             os.exit(rc)
         end
-        pids[pid] = n
-        e2util.unblock(er:fileno())
-        ers[n] = er
-        ew:close()
-        if n < c then o:close() end
-        if n > 1 or not infile then i:close() end
-        i = fr
+
+        pids[pid] = cmdidx
+        e2util.unblock(errin:fileno())
+        ers[cmdidx] = errin
+        errout:close()
+
+        -- close all outputs except the last one (outfile)
+        if cmdidx < c then
+            output:close()
+        end
+
+        -- do not close first input (infile)
+        if cmdidx > 1 or not infile then
+            input:close()
+        end
+        input = pipein
     end
+
     while c > 0 do
         local fds = {}
         local ifd = {}
@@ -1076,36 +1107,57 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
             ifd[n] = i
         end
         local i, r = e2util.poll(-1, fds)
-        if i <= 0 then e2lib.abort("fatal poll abort " .. tostring(i)) end
+
+        if i <= 0 then
+            return false, err.new("poll error: %s", tostring(i))
+        end
+
         i = ifd[fds[i]]
         if r then
             local x
+
             repeat
                 x = ers[i]:readline()
                 if x then
                     e2lib.log(3, x)
                 end
             until not x
+
         else
             ers[i]:close()
             ers[i] = nil
             c = c - 1
         end
     end
+
+
     c = #cmds
+    rc = true
     while c > 0 do
-        local r, p = e2util.wait(-1)
-        if not r then e2lib.abort(p) end
-        local n = pids[p]
-        if n then
-            if r ~= 0 then rc = rc or r end
-            rcs[n] = r
-            pids[p] = nil
+        local status, pid = e2util.wait(-1)
+        if not status then
+            return false, err.new("waiting for child to exit failed: %s", pid)
+        end
+
+        local cmdidx = pids[pid]
+        if cmdidx then
+            if status ~= 0 then
+                rc = false
+            end
+
+            rcs[cmdidx] = status
+            pids[pid] = nil
             c = c - 1
         end
     end
-    return rc and "failed to execute commands in a pipe, exit codes are: "
-    .. table.concat(rcs, ", ")
+
+    if not rc then
+        return false,
+            err.new("failed to execute commands in a pipe, exit codes are: %s",
+                table.concat(rcs, ", "))
+    end
+
+    return true
 end
 
 --- call a command with stdin redirected from /dev/null, stdout/stderr
