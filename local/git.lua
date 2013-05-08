@@ -307,8 +307,8 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         e2lib.shquote(gitdir), e2lib.shquote(sourcename),
         e2lib.shquote(src.branch))
         local tar = string.format("tar -C %s -xf -", e2lib.shquote(buildpath))
-        local re = e2lib.callcmd_pipe({git, tar})
-        if re then
+        rc, re = e2lib.callcmd_pipe({git, tar})
+        if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "tag" or
@@ -322,8 +322,8 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         "git archive --format=tar --prefix=%s/ refs/tags/%s",
         e2lib.shquote(gitdir), e2lib.shquote(sourcename), e2lib.shquote(src.tag))
         local tar = string.format("tar -C %s -xf -", e2lib.shquote(buildpath))
-        local re = e2lib.callcmd_pipe({git, tar})
-        if re then
+        rc, re = e2lib.callcmd_pipe({git, tar})
+        if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
@@ -346,9 +346,9 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         e2lib.shquote(src.working))
         local cmd2 = string.format("%s %s -x -C %s/%s", e2lib.shquote(tar),
         tarflags, e2lib.shquote(buildpath), e2lib.shquote(sourcename))
-        local r = e2lib.callcmd_pipe({ cmd1, cmd2 })
-        if r then
-            return false, err.new("%s", r)
+        rc, re = e2lib.callcmd_pipe({ cmd1, cmd2 })
+        if not rc then
+            return false, e:cat(re)
         end
     else
         return false, err.new("invalid sourceset: %s", sourceset)
