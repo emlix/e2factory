@@ -935,8 +935,7 @@ function e2lib.read_extension_config()
     return extension, nil
 end
 
---- get the global configuration
--- this function always succeeds or aborts
+--- Get the global configuration.
 -- @return The global configuration, or false on error.
 -- @return Error object on failure.
 function e2lib.get_global_config()
@@ -1416,10 +1415,9 @@ function e2lib.mktempfile(template)
     return tmp
 end
 
---- remove a temporary file and remove it from the builtin list of
--- temporary files
--- This function always succeeds (or aborts immediately)
--- @param path
+--- Delete the temporary file and remove it from the builtin list of
+-- temporary files.
+-- @param tmpfile File name to remove (string).
 function e2lib.rmtempfile(tmpfile)
     for i,v in ipairs(e2lib.globals.tmpfiles) do
         if v == tmpfile then
@@ -1433,7 +1431,6 @@ end
 --- Create a temporary directory.
 -- The template string is passed to the mktemp tool, which replaces
 -- trailing X characters by some random string to create a unique name.
--- This function always succeeds (or aborts immediately).
 -- @param template string: template name (optional)
 -- @return Name of the directory (string) or false on error.
 -- @return Error object on failure.
@@ -1458,10 +1455,9 @@ function e2lib.mktempdir(template)
     return tmpdir
 end
 
---- Remove a temporary directory and remove it from the builtin list of
--- temporary directories.
--- This function always succeeds (or aborts immediately)
--- @param path
+--- Recursively delete the temporary directory and remove it from the builtin
+-- list of temporary directories.
+-- @param tmpdir Directory name to remove (string).
 function e2lib.rmtempdir(tmpdir)
     for i,v in ipairs(e2lib.globals.tmpdirs) do
         if v == tmpdir then
