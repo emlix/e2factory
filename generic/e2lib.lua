@@ -947,34 +947,44 @@ function e2lib.get_global_config()
     return config
 end
 
---- Successively returns the files in the directory.
--- @param p Directory path (string).
+--- Successively returns the file names in the directory.
+-- @param path Directory path (string).
 -- @param dotfiles If true, also return files starting with a '.'. Optional.
--- @param noerror If true, do not call e2lib.abort on error, but pretend the
--- directory is empty. Optional.
--- @return Iterator function.
--- @return dir table.
-function e2lib.directory(p, dotfiles, noerror)
-    local dir = e2util.directory(p, dotfiles)
+-- @param noerror If true, do not report any errors. Optional.
+-- @return Iterator function, returning a string containing the filename,
+--         or false and an err object on error. The iterator signals the
+--         end of the list by returning nil.
+function e2lib.directory(path, dotfiles, noerror)
+    local dir = e2util.directory(path, dotfiles)
     if not dir then
         if noerror then
             dir = {}
         else
-            e2lib.abort("directory `", p, "' does not exist")
+            -- iterator that signals an error, once.
+            local error_signaled = false
+
+            return function ()
+                if not error_signaled then
+                    error_signaled = true
+                    return false, err.new("directory `%s' does not exist", p)
+                else
+                    return nil
+                end
+            end
         end
     end
+
     table.sort(dir)
     local i = 1
-    local function nextfile(s)
-        if i > #s then
+
+    return function ()
+        if i > #dir then
             return nil
         else
-            local j = i
             i = i + 1
-            return s[ j ]
+            return dir[i-1]
         end
     end
-    return nextfile, dir
 end
 
 --- callcmd: call a command, connecting
