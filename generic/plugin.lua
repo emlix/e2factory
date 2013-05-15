@@ -142,7 +142,11 @@ function plugin.load_plugins(dir, ctx)
     e2lib.logf(4, "loading plugins from: %s", dir)
 
     local pfn = {}
-    for fn in e2lib.directory(dir) do
+    for fn, re in e2lib.directory(dir) do
+        if not fn then
+            return false, e:cat(re)
+        end
+
         table.insert(pfn, fn)
     end
 

@@ -104,7 +104,12 @@ local function shadow_config_down(src_res, pathname)
         return false, err.new("config in %s would be shadowed", cfdir)
     end
 
-    for f in e2lib.directory(cfdir, false, true) do
+    local re
+    for f, re in e2lib.directory(cfdir, false, true) do
+        if not f then
+            return false, re
+        end
+
         if e2lib.isdir(e2lib.join(cfdir, f)) then
             return shadow_config_down(src_res, e2lib.join(pathname, f))
         end

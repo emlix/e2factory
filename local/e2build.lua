@@ -538,7 +538,11 @@ function e2build.unpack_result(info, r, dep, destdir)
     if not rc then
         return false, e:cat(re)
     end
-    for f in e2lib.directory(".") do
+    for f, re in e2lib.directory(".") do
+        if not f then
+            return false, e:cat(re)
+        end
+
         rc, re = e2lib.mv(f, destdir)
         if not rc then
             return false, e:cat(re)
@@ -572,7 +576,11 @@ local function write_build_driver(info, r, destdir)
     bd=bd..string.format("source %s/env/builtin\n", res.build_config.Tc)
     bd=bd..string.format("source %s/env/env\n", res.build_config.Tc)
     local brc_noinit = bd
-    for x in e2lib.directory(info.root .. "/proj/init") do
+    for x, re in e2lib.directory(info.root .. "/proj/init") do
+        if not x then
+            return false, e:cat(re)
+        end
+
         if not e2lib.is_backup_file(x) then
             bd=bd..string.format("source %s/init/%s\n", res.build_config.Tc, x)
         end
@@ -701,7 +709,11 @@ local function sources(info, r, return_flags)
         local res = info.results[r]
         local rc, re
         local e = err.new("installing init files")
-        for x in e2lib.directory(info.root .. "/proj/init") do
+        for x, re in e2lib.directory(info.root .. "/proj/init") do
+            if not x then
+                return false, e:cat(re)
+            end
+
             if not e2lib.is_backup_file(x) then
                 local location = string.format("proj/init/%s", x)
                 local abslocation = string.format("%s/%s", info.root, location)
@@ -820,7 +832,12 @@ local function deploy(info, r, return_flags)
         return true
     end
     local files = {}
-    for f in e2lib.directory("result/files") do
+    local re
+    for f, re in e2lib.directory("result/files") do
+        if not f then
+            return false, re
+        end
+
         table.insert(files, string.format("files/%s", f))
     end
     table.insert(files, "checksums")

@@ -903,7 +903,11 @@ end
 --- gather source paths.
 local function gather_source_paths(info, basedir, sources)
     sources = sources or {}
-    for dir in e2lib.directory(info.root .. "/" .. e2tool.sourcedir(basedir)) do
+    for dir, re in e2lib.directory(e2lib.join(info.root, e2tool.sourcedir(basedir))) do
+        if not dir then
+            return false, re
+        end
+
         local tmp
         if basedir then
             tmp = basedir .. "/" .. dir
@@ -977,7 +981,12 @@ local function load_source_config(info)
     local e = err.new("error loading source configuration")
     info.sources = {}
 
-    for _,src in ipairs(gather_source_paths(info)) do
+    local sources, re = gather_source_paths(info)
+    if not sources then
+        return false, e:cat(re)
+    end
+
+    for _,src in ipairs(sources) do
         local list, re
         local path = e2tool.sourceconfig(src)
         local types = { "e2source", }
@@ -1074,7 +1083,11 @@ end
 --- gather result paths.
 local function gather_result_paths(info, basedir, results)
     results = results or {}
-    for dir in e2lib.directory(info.root .. "/" .. e2tool.resultdir(basedir)) do
+    for dir, re in e2lib.directory(e2lib.join(info.root, e2tool.resultdir(basedir))) do
+        if not dir then
+            return false, re
+        end
+
         local tmp
         if basedir then
             tmp = basedir .. "/" .. dir
@@ -1099,7 +1112,12 @@ local function load_result_config(info)
     local e = err.new("error loading result configuration")
     info.results = {}
 
-    for _,res in ipairs(gather_result_paths(info)) do
+    local results, re = gather_result_paths(info)
+    if not results then
+        return false, e:cat(re)
+    end
+
+    for _,res in ipairs(results) do
         local list, re
         local path = e2tool.resultconfig(res)
         local types = { "e2result", }
@@ -1860,7 +1878,11 @@ local function projid(info)
     end
     -- catch proj/init/*
     local hc = hash.hash_start()
-    for f in e2lib.directory(info.root .. "/proj/init") do
+    for f, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
+        if not f then
+            return false, re
+        end
+
         if not e2lib.is_backup_file(f) then
             local location = string.format("proj/init/%s",
             e2lib.basename(f))
