@@ -397,13 +397,13 @@ local function check_collect_project(info, resultname)
         return false, e
     end
     res.collect_project_results, re = e2tool.dlist_recursive(info,
-    res.collect_project_default_result)
+        res.collect_project_default_result)
     if not res.collect_project_results then
         return false, e:cat(re)
     end
     -- store a sorted list of required results
     table.insert(res.collect_project_results,
-    res.collect_project_default_result)
+        res.collect_project_default_result)
     table.sort(res.collect_project_results)
     e2lib.warnf("WDEFAULT", "in result %s:", resultname)
     e2lib.warnf("WDEFAULT", " collect_project takes these results: %s",
@@ -594,7 +594,7 @@ local function check_result(info, resultname)
         end
     end
     local build_script = string.format("%s/%s", info.root,
-    e2tool.resultbuildscript(info.results[resultname].directory))
+        e2tool.resultbuildscript(info.results[resultname].directory))
     if not e2lib.isfile(build_script) then
         e:append("build-script does not exist: %s", build_script)
     end
@@ -661,8 +661,8 @@ function e2tool.local_init(path, tool)
     info.ftab = strict.lock({
         collect_project_info = {},		-- f(info)
         check_result = {},			-- f(info, resultname)
-        resultid = {},			-- f(info, resultname)
-        pbuildid = {},			-- f(info, resultname)
+        resultid = {},		        	-- f(info, resultname)
+        pbuildid = {},			        -- f(info, resultname)
         dlist = {},				-- f(info, resultname)
     })
 
@@ -2165,7 +2165,7 @@ end
 --- chroot group id.
 local function chrootgroupid(info, groupname)
     local e = err.new("calculating chroot group id failed for group %s",
-    groupname)
+        groupname)
     local g = info.chroot.groups_byname[groupname]
     if g.groupid then
         return g.groupid
