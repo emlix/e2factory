@@ -166,12 +166,11 @@ local function e2_build(arg)
         end
     end
     local force_rebuild = opts["force-rebuild"]
-    local request_buildno = opts["request-buildno"]
     local keep_chroot = opts["keep"]
 
     -- apply flags to the selected results
     rc, re = e2tool.select_results(info, results, force_rebuild,
-        request_buildno, keep_chroot, build_mode, playground)
+        keep_chroot, build_mode, playground)
     if not rc then
         return false, re
     end

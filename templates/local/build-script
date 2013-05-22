@@ -7,7 +7,6 @@
 # - E2_TMPDIR       pointing to a temporary directory with a directory
 #                   structure
 # - E2_RESULT       the name of the result currently building
-# - E2_BUILD_NUMBER the build number, 0 by default
 #
 # Additional variables can be provided in init files.
 # Variables are not exported unless the init files do.

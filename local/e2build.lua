@@ -227,7 +227,6 @@ function e2build.build_config(info, r)
     tab.buildrc_noinit_file = string.format("buildrc-noinit")
     tab.profile = string.format("/tmp/bashrc")
     tab.builtin_env = environment.new()
-    tab.builtin_env:set("E2_BUILD_NUMBER", res.buildno)
     tab.builtin_env:set("E2_TMPDIR", res.build_config.Tc)
     tab.builtin_env:set("E2_RESULT", r)
     tab.builtin_env:set("E2_RELEASE_ID", info.project.release_id)
@@ -1215,8 +1214,7 @@ local function collect_project(info, r, return_flags)
         end
         -- generate builtin environment script
         local file = string.format("%s/builtin", destdir)
-        rc, re = write_environment_script(
-        rn.build_config.builtin_env, file)
+        rc, re = write_environment_script(rn.build_config.builtin_env, file)
         if not rc then
             return false, e:cat(re)
         end
