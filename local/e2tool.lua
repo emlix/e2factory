@@ -896,30 +896,41 @@ local function read_chroot_config(info)
     return true
 end
 
---- gather source paths.
+--- Gather source paths.
+-- @param info Info table.
+-- @param basedir Nil or directory from where to start scanning for more
+--                sources. Only for recursion.
+-- @param sources Nil or table of source paths. Only for recursion.
+-- @return Table with source paths, or false on error.
+-- @return Error object on failure.
 local function gather_source_paths(info, basedir, sources)
     sources = sources or {}
-    for dir, re in e2lib.directory(e2lib.join(info.root, e2tool.sourcedir(basedir))) do
-        if not dir then
+
+    local currdir = e2lib.join(info.root, e2tool.sourcedir(basedir))
+    for entry, re in e2lib.directory(currdir) do
+        if not entry then
             return false, re
         end
 
-        local tmp
         if basedir then
-            tmp = basedir .. "/" .. dir
-        else
-            tmp = dir
+            entry = e2lib.join(basedir, entry)
         end
-        local s = e2util.stat(info.root .. "/" .. e2tool.sourcedir(tmp), false)
+
+        local fullentry = e2lib.join(info.root, e2tool.sourcedir(entry))
+        local s = e2util.stat(fullentry, false)
         if s.type == "directory" then
-            if e2util.exists(e2tool.sourceconfig(tmp)) then
-                table.insert(sources, tmp)
+            if e2util.exists(e2tool.sourceconfig(entry)) then
+                table.insert(sources, entry)
             else
-                --try subfolder
-                gather_source_paths(info,tmp, sources)
+                -- try subfolder
+                local rc, re = gather_source_paths(info, entry, sources)
+                if not rc then
+                    return false, re
+                end
             end
         end
     end
+
     return sources
 end
 
@@ -1076,30 +1087,41 @@ function e2tool.sourceconfig(name)
     return e2lib.join(e2tool.sourcedir(name), "config")
 end
 
---- gather result paths.
+--- Gather result paths.
+-- @param info Info table.
+-- @param basedir Nil or directory from where to start scanning for more
+--                results. Only for recursion.
+-- @param results Nil or table of result paths. Only for recursion.
+-- @return Table with result paths, or false on error.
+-- @return Error object on failure.
 local function gather_result_paths(info, basedir, results)
     results = results or {}
-    for dir, re in e2lib.directory(e2lib.join(info.root, e2tool.resultdir(basedir))) do
-        if not dir then
+
+    local currdir = e2lib.join(info.root, e2tool.resultdir(basedir))
+    for entry, re in e2lib.directory(currdir) do
+        if not entry then
             return false, re
         end
 
-        local tmp
         if basedir then
-            tmp = basedir .. "/" .. dir
-        else
-            tmp = dir
+            entry = e2lib.join(basedir, entry)
         end
-        local s = e2util.stat(info.root .. "/" .. e2tool.resultdir(tmp), false)
+
+        local fullentry = e2lib.join(info.root, e2tool.resultdir(entry))
+        local s = e2util.stat(fullentry, false)
         if s.type == "directory" then
-            if e2util.exists(e2tool.resultconfig(tmp)) then
-                table.insert(results, tmp)
+            if e2util.exists(e2tool.resultconfig(entry)) then
+                table.insert(results, entry)
             else
-                --try subfolder
-                gather_result_paths(info,tmp, results)
+                -- try subfolder
+                local rc, re = gather_result_paths(info, entry, results)
+                if not rc then
+                    return false, re
+                end
             end
         end
     end
+
     return results
 end
 
