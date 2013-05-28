@@ -168,7 +168,7 @@ local function e2_ls_project(arg)
 
     if opts.dot or opts["dot-sources"] then
         local arrow = "->"
-        print("digraph \"" .. info.name .. "\" {")
+        print("digraph \"" .. info.project.name .. "\" {")
         for _, r in pairs(results) do
             local res = info.results[r]
             local deps = e2tool.dlist(info, r)
@@ -205,7 +205,7 @@ local function e2_ls_project(arg)
     --------------- project name
     local s1 = "|"
     local s2 = "|"
-    p0(s1, s2, info.name)
+    p0(s1, s2, info.project.name)
 
     --------------- servers
     local s1 = "|"

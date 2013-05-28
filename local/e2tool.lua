@@ -1486,7 +1486,7 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     if e2option.opts["check"] then
         e2tool.lcd(info, ".")
-        rc, re = generic_git.verify_head_match_tag(nil, info.release_id)
+        rc, re = generic_git.verify_head_match_tag(nil, info.project.release_id)
         if rc == nil then
             return false, e:cat(re)
         end
@@ -1506,7 +1506,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     if e2option.opts["check-remote"] then
-        rc, re = generic_git.verify_remote_tag(nil, info.release_id)
+        rc, re = generic_git.verify_remote_tag(nil, info.project.release_id)
         if not rc then
             e:append("verifying remote tag failed")
             return false, e:cat(re)
@@ -1806,7 +1806,7 @@ end
 --     by INFO, topologically sorted according to the projects dependency
 --     information.
 function e2tool.dsort(info)
-    return e2tool.dlist_recursive(info, info.default_results)
+    return e2tool.dlist_recursive(info, info.project.default_results)
 end
 
 --- read hash file.
@@ -1920,8 +1920,8 @@ local function projid(info)
             hc:hash_line(fileid)	-- the file content
         end
     end
-    hc:hash_line(info.release_id)
-    hc:hash_line(info.name)
+    hc:hash_line(info.project.release_id)
+    hc:hash_line(info.project.name)
     hc:hash_line(info.project.chroot_arch)
     hc:hash_line(buildconfig.VERSION)
     info.projid = hc:hash_finish()

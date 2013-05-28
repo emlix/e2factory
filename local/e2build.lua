@@ -48,7 +48,7 @@ local function linklast(info, r, return_flags)
     local e = err.new("creating link to last results")
     -- calculate the path to the result
     local server, location = res.build_mode.storage(info.project_location,
-    info.release_id)
+        info.project.release_id)
     local location1 = string.format("%s/%s/%s", location, r,
         e2tool.buildid(info, r))
     local cache_flags = {
@@ -117,7 +117,7 @@ local function result_available(info, r, return_flags)
         return true, nil
     end
     local server, location =
-        res.build_mode.storage(info.project_location, info.release_id)
+        res.build_mode.storage(info.project_location, info.project.release_id)
     local dep_set = res.build_mode.dep_set(buildid)
 
     -- cache the result
@@ -200,7 +200,7 @@ function e2build.build_config(info, r)
     local tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
         e2lib.globals.tmpdir, buildconfig.MAJOR, buildconfig.MINOR,
         buildconfig.PATCHLEVEL, e2lib.globals.username)
-    local project = info.name
+    local project = info.project.name
     local builddir = "tmp/e2"
     tab.mode = nil -- XXX
     tab.location = nil -- XXX info.project_location
@@ -492,8 +492,8 @@ function e2build.unpack_result(info, r, dep, destdir)
     end
 
     local dep_set = d.build_mode.dep_set(buildid)
-    local server, location = d.build_mode.storage(info.project_location,
-    info.release_id)
+    local server, location =
+        d.build_mode.storage(info.project_location, info.project.release_id)
     e2lib.logf(3, "searching for dependency %s in %s:%s", dep, server, location)
     local location1 = string.format("%s/%s/%s/result.tar", location, dep,
     dep_set)
@@ -839,8 +839,8 @@ local function deploy(info, r, return_flags)
         table.insert(files, string.format("files/%s", f))
     end
     table.insert(files, "checksums")
-    local server, location = res.build_mode.deploy_storage(info.project_location,
-    info.release_id)
+    local server, location = res.build_mode.deploy_storage(
+        info.project_location, info.project.release_id)
 
     -- do not re-deploy if this release was already done earlier
     local location1 = string.format("%s/%s/checksums", location, r)
@@ -950,7 +950,7 @@ local function store_result(info, r, return_flags)
         return false, e:cat(re)
     end
     local server, location = res.build_mode.storage(info.project_location,
-    info.release_id)
+        info.project.release_id)
 
     local buildid, re = e2tool.buildid(info, r)
     if not buildid then
@@ -1099,8 +1099,8 @@ local function collect_project(info, r, return_flags)
     if not f then
         return false, e:cat(re)
     end
-    f:write(string.format("name='%s'\n", info.name))
-    f:write(string.format("release_id='%s'\n", info.release_id))
+    f:write(string.format("name='%s'\n", info.project.name))
+    f:write(string.format("release_id='%s'\n", info.project.release_id))
     f:write(string.format("default_results='%s'\n",
     res.collect_project_default_result))
     f:write(string.format("chroot_arch='%s'\n",
