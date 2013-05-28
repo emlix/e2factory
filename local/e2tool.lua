@@ -266,14 +266,14 @@ local function opendebuglogfile(info)
     return true, nil
 end
 
---- load user configuration file
--- @param info
--- @param path string: path to file
--- @param dest
--- @param index
--- @param var
--- @return bool
--- @return an error object on failure
+--- Load user configuration file.
+-- @param info Info table.
+-- @param path Path to file (string).
+-- @param dest Destination table.
+-- @param index Name of the newly created table inside destination (string).
+-- @param var Table name in configuration file (string).
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function load_user_config(info, path, dest, index, var)
     local rc, re
     local e = err.new("loading configuration failed")
@@ -281,16 +281,20 @@ local function load_user_config(info, path, dest, index, var)
     if not e2util.exists(path) then
         return false, e:append("file does not exist: %s", path)
     end
+
     local function func(table)
         dest[index] = table
     end
+
     local rc, re = e2lib.dofile2(path, { [var] = func, env = info.env, string=string }, false)
     if not rc then
         return false, e:cat(re)
     end
-    if not dest[ index ] then
+
+    if not dest[index] then
         return false, e:append("empty or invalid configuration: %s", path)
     end
+
     return true
 end
 
@@ -850,8 +854,8 @@ end
 local function read_chroot_config(info)
     local e = err.new("reading chroot config failed")
     local t = {}
-    local rc, re = load_user_config(info, info.chroot_config_file,
-    t, "chroot", "e2chroot")
+    local rc, re =
+        load_user_config(info, "proj/chroot", t, "chroot", "e2chroot")
     if not rc then
         return false, e:cat(re)
     end
