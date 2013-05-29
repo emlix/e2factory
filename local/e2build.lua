@@ -1014,20 +1014,20 @@ local function build_result(info, result, return_flags)
     return true, nil
 end
 
---- build a set of results
--- @param info
--- @param results table: list of results, sorted by dependencies
--- @return bool
--- @return an error object on failure
-local function build_results_default(info, results)
+--- Build a set of results.
+-- @param info Info table.
+-- @param results List of results, sorted by dependencies.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function e2build.build_results(info, results)
     e2lib.logf(3, "building results")
+
     for _, r in ipairs(results) do
         local e = err.new("building result failed: %s", r)
         local flags = {}
         local t1 = os.time()
         local rc, re = build_result(info, r, flags)
         if not rc then
-            -- do not insert an error message from this layer.
             return false, e:cat(re)
         end
         local t2 = os.time()
@@ -1037,20 +1037,7 @@ local function build_results_default(info, results)
             return true, nil
         end
     end
-    return true, nil
-end
 
-local build_results_ftab = {
-    build_results_default,
-}
-
-function e2build.build_results(info, results)
-    for i,f in ipairs(build_results_ftab) do
-        local rc, re = f(info, results)
-        if not rc then
-            return rc, re
-        end
-    end
     return true, nil
 end
 
