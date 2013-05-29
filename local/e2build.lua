@@ -161,57 +161,59 @@ local function result_available(info, r, return_flags)
     return true, nil
 end
 
---- build config
--- @class table
--- @name build config
--- @field mode       table:  the build mode policy
--- @field release id string: the release name
--- @field info       table: the info table
+--- Build config per result. This table is locked.
+-- @table build_config
 -- @field base       string: path to the build directory
 -- @field c	     string: path to the chroot
 -- @field chroot_marker string: path to chroot marker file
+-- @field chroot_lock Path to chroot lock file (string).
 -- @field T          string: absolute path to the temporary build directory
 --                           inside chroot
 -- @field Tc         string: same as c.T but relative to c
--- @field strict     bool:   pseudo tag "^" not allowed when true
 -- @field r          string: result name
+-- @field chroot_call_prefix XXX
 -- @field buildlog   string: build log file
--- @field buildid    string: build id
+-- @field scriptdir XXX
+-- @field build_driver XXX
+-- @field build_driver_file XXX
+-- @field buildrc_file XXX
+-- @field buildrc_noinit_file XXX
+-- @field profile Configuration file passed to the shell (string).
 -- @field groups     table of strings: chroot groups
+-- @field builtin_env Environment that's built in like E2_TMPDIR.
+-- @field env Environment specified by the user.
 
---- generate build_config and store in res.build_config
--- @param info
--- @param r string: result name
--- @return bool
--- @return an error object on failure
+--- Generate build_config and store in res.build_config.
+-- @param info Info table.
+-- @param r Result name (string).
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2build.build_config(info, r)
-    local e = err.new("setting up build configuration for result `%s' failed",
-    r)
+    local e = err.new("setting up build configuration for result `%s' failed", r)
     local res = info.results[r]
     if not res then
         return false, e:append("no such result: %s", r)
     end
+
     local buildid, re = e2tool.buildid(info, r)
     if not buildid then
         return false, e:cat(re)
     end
-    res.build_config = {} -- build up a new build config
-    local tab = res.build_config
+
+    local bc = {}
+
     local tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
         e2lib.globals.tmpdir, buildconfig.MAJOR, buildconfig.MINOR,
         buildconfig.PATCHLEVEL, e2lib.globals.username)
-    local project = info.project.name
     local builddir = "tmp/e2"
-    tab.mode = nil -- XXX
-    tab.location = nil -- XXX info.project_location
-    tab.release_id = nil -- XXX release_id
-    tab.base = string.format("%s/%s/%s", tmpdir, project, r)
-    tab.c = string.format("%s/chroot", tab.base)
-    tab.chroot_marker = string.format("%s/e2factory-chroot", tab.base)
-    tab.chroot_lock = string.format("%s/e2factory-chroot-lock", tab.base)
-    tab.T = string.format("%s/%s/%s/chroot/%s", tmpdir, project, r, builddir)
-    tab.Tc = string.format("/%s", builddir)
-    tab.r = string.format("%s", r)
+
+    bc.base = e2lib.join(tmpdir, info.project.name, r)
+    bc.c = e2lib.join(bc.base, "chroot")
+    bc.chroot_marker = e2lib.join(bc.base, "e2factory-chroot")
+    bc.chroot_lock = e2lib.join(bc.base, "e2factory-chroot-lock")
+    bc.T = e2lib.join(tmpdir, info.project.name, r, "chroot", builddir)
+    bc.Tc = e2lib.join("/", builddir)
+    bc.r = r
     if info.chroot_call_prefix[info.project.chroot_arch] == "" then
         -- escape only if non-empty, otherwise we fail to start "''"
         tab.chroot_call_prefix = ""
@@ -219,33 +221,33 @@ function e2build.build_config(info, r)
         tab.chroot_call_prefix =
             e2lib.shquote(info.chroot_call_prefix[info.project.chroot_arch])
     end
-    tab.buildlog = string.format("%s/log/build.%s.log", info.root, r)
-    tab.scriptdir = "script"
-    tab.build_driver = ""
-    tab.build_driver_file = string.format("build-driver")
-    tab.buildrc_file = string.format("buildrc")
-    tab.buildrc_noinit_file = string.format("buildrc-noinit")
-    tab.profile = string.format("/tmp/bashrc")
-    tab.builtin_env = environment.new()
-    tab.builtin_env:set("E2_TMPDIR", res.build_config.Tc)
-    tab.builtin_env:set("E2_RESULT", r)
-    tab.builtin_env:set("E2_RELEASE_ID", info.project.release_id)
-    tab.builtin_env:set("E2_PROJECT_NAME", info.project.name)
-    tab.builtin_env:set("E2_BUILDID", buildid)
-    tab.builtin_env:set("T", res.build_config.Tc)
-    tab.builtin_env:set("r", r)
-    tab.builtin_env:set("R", r)
-    tab.env = e2tool.env_by_result(info, r)
-    e2lib.logf(4, "build config for result %s: ", r)
-    for k,v in pairs(tab) do
-        v = tostring(v)
-        e2lib.logf(4, "\t%-10s = %s", k, v)
-    end
-    tab.groups = {}
+    bc.buildlog = string.format("%s/log/build.%s.log", info.root, r)
+    bc.scriptdir = "script"
+    bc.build_driver = ""
+    bc.build_driver_file = "build-driver"
+    bc.buildrc_file = "buildrc"
+    bc.buildrc_noinit_file = "buildrc-noinit"
+    bc.profile = "/tmp/bashrc"
+
+    bc.groups = {}
     for _,g in ipairs(res.chroot) do
-        tab.groups[g] = true
+        bc.groups[g] = true
     end
-    return tab
+
+    bc.builtin_env = environment.new()
+    bc.builtin_env:set("E2_TMPDIR", bc.Tc)
+    bc.builtin_env:set("E2_RESULT", r)
+    bc.builtin_env:set("E2_RELEASE_ID", info.project.release_id)
+    bc.builtin_env:set("E2_PROJECT_NAME", info.project.name)
+    bc.builtin_env:set("E2_BUILDID", buildid)
+    bc.builtin_env:set("T", bc.Tc)
+    bc.builtin_env:set("r", r)
+    bc.builtin_env:set("R", r)
+    bc.env = e2tool.env_by_result(info, r)
+
+    res.build_config = strict.lock(bc)
+
+    return true
 end
 
 local function chroot_lock(info, r, return_flags)
