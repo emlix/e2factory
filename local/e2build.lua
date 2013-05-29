@@ -651,7 +651,7 @@ local function sources(info, r, return_flags)
     local function append_to_build_driver(info, r, script)
         local res = info.results[r]
         res.build_config.build_driver =
-        res.build_config.build_driver .. string.format("%s\n", script)
+            res.build_config.build_driver .. string.format("%s\n", script)
     end
 
     local function install_directory_structure(info, r, return_flags)
@@ -852,7 +852,7 @@ local function deploy(info, r, return_flags)
     local rc, re = info.cache:fetch_file(server, location1, ".", nil, cache_flags)
     if rc then
         e2lib.warnf("WOTHER",
-        "Skipping deployment. This release was already deployed.")
+            "Skipping deployment. This release was already deployed.")
         return true
     end
 
@@ -862,7 +862,7 @@ local function deploy(info, r, return_flags)
         local location1 = string.format("%s/%s/%s", location, r, f)
         local cache_flags = {}
         local rc, re = info.cache:push_file(sourcefile, server, location1,
-        cache_flags)
+            cache_flags)
         if not rc then
             return false, re
         end
@@ -964,8 +964,7 @@ local function store_result(info, r, return_flags)
     local cache_flags = {
         try_hardlink = true,
     }
-    rc, re = info.cache:push_file(sourcefile, server, location1,
-    cache_flags)
+    rc, re = info.cache:push_file(sourcefile, server, location1, cache_flags)
     if not rc then
         return false, e:cat(re)
     end
