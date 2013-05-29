@@ -38,8 +38,7 @@ local environment = require("environment")
 local e2tool = require("e2tool")
 local strict = require("strict")
 
--- table of functions to drive the build process
--- forward declaration, filled at the end of file
+-- Table driving the build process, see documentation at the bottom.
 local build_process = {}
 
 local function linklast(info, r, return_flags)
@@ -79,7 +78,7 @@ local function linklast(info, r, return_flags)
     return true, nil
 end
 
--- return true if the result given in c is already available, false otherwise
+--- Return true if the result given in c is already available, false otherwise
 -- return the path to the result
 -- check if a result is already available
 -- @param info
@@ -1300,7 +1299,19 @@ local function collect_project(info, r, return_flags)
     return true, nil
 end
 
---- register a function to extend the build process
+--- Array of tables containing functions to drive the build process.
+-- @table build_process
+-- @see build_process_step
+-- @see register_build_function
+
+--- Table containing the function and name of a step in the build process.
+-- @table build_process_step
+-- @field name Name of build step (informative, string).
+-- @field func Function to be called for each build step. The function
+--             signature is function (info, result_name, return_flags).
+-- @see build_process
+
+--- Register a function to extend the build process.
 -- @param info
 -- @param name string: build function name (used for logging)
 -- @param func function: build function
@@ -1332,8 +1343,7 @@ build_process = {
     { name="build_config", func=e2build.build_config },
     { name="result_available", func=result_available },
     { name="chroot_lock", func=chroot_lock },
-    { name="chroot_cleanup_if_exists",
-        func=chroot_cleanup_if_exists },
+    { name="chroot_cleanup_if_exists", func=chroot_cleanup_if_exists },
     { name="setup_chroot", func=setup_chroot },
     { name="sources", func=sources },
     { name="collect_project", func=collect_project },
