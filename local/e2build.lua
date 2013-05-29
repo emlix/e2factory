@@ -180,7 +180,6 @@ end
 -- @field profile Configuration file passed to the shell (string).
 -- @field groups     table of strings: chroot groups
 -- @field builtin_env Environment that's built in like E2_TMPDIR.
--- @field env Environment specified by the user.
 
 --- Generate build_config and store in res.build_config.
 -- @param info Info table.
@@ -242,7 +241,6 @@ function e2build.build_config(info, r)
     bc.builtin_env:set("T", bc.Tc)
     bc.builtin_env:set("r", r)
     bc.builtin_env:set("R", r)
-    bc.env = e2tool.env_by_result(info, r)
 
     res.build_config = strict.lock(bc)
 
@@ -695,7 +693,7 @@ local function sources(info, r, return_flags)
         res.build_config.Tc))
         -- install project specific environment variables
         local file = string.format("%s/env/env", res.build_config.T)
-        rc, re = write_environment_script(res.build_config.env, file)
+        rc, re = write_environment_script(e2tool.env_by_result(info, r), file)
         if not rc then
             return false, e:cat(re)
         end
@@ -1195,7 +1193,7 @@ local function collect_project(info, r, return_flags)
         local file, line
         -- generate environment script
         file = string.format("%s/env", destdir)
-        rc, re = write_environment_script(rn.build_config.env, file)
+        rc, re = write_environment_script(e2tool.env_by_result(info, n), file)
         if not rc then
             return false, e:cat(re)
         end
