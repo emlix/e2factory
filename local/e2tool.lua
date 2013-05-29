@@ -130,10 +130,6 @@ local cache = require("cache")
 -- @field export bool: export to the result with collect_project enabled?
 -- @field selected bool: select for build?
 -- @field force_rebuild bool: force rebuild?
--- @field phash string: partial buildid for this result. (Without taking
--- 			dependencies into account.)
--- @field bhash string: buildid for this result (Taking dependencies into
--- 			account.)
 -- @field build_mode table: build mode policy object
 
 --- table of server records, keyed by server name
