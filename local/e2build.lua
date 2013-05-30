@@ -1100,7 +1100,7 @@ local function collect_project(info, r, return_flags)
         local grp = info.chroot.groups_byname[g]
         local destdir = e2lib.join( res.build_config.T, "project/chroot", g)
         e2lib.mkdir(destdir, "-p")
-        local makefile, msg = io.open(e2lib.join(destdir, "makefile"), "w")
+        local makefile, msg = io.open(e2lib.join(destdir, "Makefile"), "w")
         if not makefile then
             return false, e:cat(msg)
         end

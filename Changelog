@@ -1,4 +1,5 @@
 NEXT:
+ * collect_project now creates "Makefile" instead of "makefile".
  * remove unusable E2_BUILD_NUMBER variable from build-script.
  * on git source update, fetch tags and prevent non-ff merges
 
