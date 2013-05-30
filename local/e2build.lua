@@ -1061,7 +1061,11 @@ local function collect_project(info, r, return_flags)
     local e = err.new("providing project data to this build failed")
     -- project/proj/init/<files>
     local destdir = e2lib.join(res.build_config.T, "project/proj/init")
-    e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir(destdir, "-p")
+    if not rc then
+        return false, e:cat(re)
+    end
+
     local init_files = e2util.directory(e2lib.join(info.root, "/proj/init"))
     for _,f in ipairs(init_files) do
         e2lib.logf(3, "init file: %s", f)
@@ -1092,14 +1096,22 @@ local function collect_project(info, r, return_flags)
     f:close()
     -- files from the project
     local destdir = e2lib.join(res.build_config.T, "project/.e2/bin")
-    e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir(destdir, "-p")
+    if not rc then
+        return false, e:cat(re)
+    end
+
     -- generate build driver file for each result
     -- project/chroot/<group>/<files>
     for _,g in pairs(res.collect_project_chroot_groups) do
         e2lib.logf(3, "chroot group: %s", g)
         local grp = info.chroot.groups_byname[g]
         local destdir = e2lib.join( res.build_config.T, "project/chroot", g)
-        e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir(destdir, "-p")
+        if not rc then
+            return false, e:cat(re)
+        end
+
         local makefile, msg = io.open(e2lib.join(destdir, "Makefile"), "w")
         if not makefile then
             return false, e:cat(msg)
@@ -1142,7 +1154,11 @@ local function collect_project(info, r, return_flags)
         e2lib.logf(3, "licence: %s", l)
         local lic = info.licences[l]
         local destdir = e2lib.join(res.build_config.T, "project/licences", l)
-        e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir(destdir, "-p")
+        if not rc then
+            return false, e:cat(re)
+        end
+
         for _,file in ipairs(lic.files) do
             local cache_flags = {}
             if file.sha1 then
@@ -1170,7 +1186,11 @@ local function collect_project(info, r, return_flags)
         end
         local destdir =
             e2lib.join(res.build_config.T, "project", e2tool.resultdir(n))
-        e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir(destdir, "-p")
+        if not rc then
+            return false, e:cat(re)
+        end
+
         -- copy files
         local files = {
             e2tool.resultbuildscript(info.results[n].directory)
@@ -1220,7 +1240,11 @@ local function collect_project(info, r, return_flags)
         e2lib.logf(3, "source: %s", s)
         local destdir =
             e2lib.join(res.build_config.T, "project", e2tool.sourcedir(s))
-        e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir(destdir, "-p")
+        if not rc then
+            return false, e:cat(re)
+        end
+
         local source_set = res.build_mode.source_set()
         local files, re = scm.toresult(info, src.name, source_set,
         destdir)
