@@ -586,7 +586,7 @@ local function check_result(info, resultname)
             break
         end
     end
-    local build_script = string.format("%s/%s", info.root,
+    local build_script = e2lib.join(info.root,
         e2tool.resultbuildscript(info.results[resultname].directory))
     if not e2lib.isfile(build_script) then
         e:append("build-script does not exist: %s", build_script)
@@ -673,7 +673,7 @@ function e2tool.local_init(path, tool)
     local ctx = {  -- plugin context
         info = info,
     }
-    local plugindir = string.format("%s/.e2/plugins", info.root)
+    local plugindir = e2lib.join(info.root, ".e2/plugins")
     rc, re = plugin.load_plugins(plugindir, ctx)
     if not rc then
         return false, e:cat(re)
@@ -824,7 +824,7 @@ local function load_env_config(info, file)
     end
 
     table.insert(info.env_files, file)
-    local path = string.format("%s/%s", info.root, file)
+    local path = e2lib.join(info.root, file)
     local g = {}                  -- compose the environment for the config file
     g.e2env = info.env                    -- env as built up so far
     g.string = string                     -- string
@@ -1262,8 +1262,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- try to get project specific config file paht
-    local config_file_config = string.format("%s/%s", info.root,
-    e2lib.globals.e2config)
+    local config_file_config = e2lib.join(info.root, e2lib.globals.e2config)
     local config_file = e2lib.read_line(config_file_config)
     -- don't care if this succeeds, the parameter is optional.
 
@@ -1272,7 +1271,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    info.local_template_path = e2lib.join(info.root, "/.e2/lib/e2/templates")
+    info.local_template_path = e2lib.join(info.root, ".e2/lib/e2/templates")
 
     rc, re = e2lib.init2() -- configuration must be available
     if not rc then
@@ -1317,13 +1316,13 @@ function e2tool.collect_project_info(info, skip_load_config)
     -- prefix the chroot call with this tool (switch to 32bit on amd64)
     -- XXX not in buildid, as it is filesystem location dependent...
     info.chroot_call_prefix = {}
-    info.chroot_call_prefix["x86_32"] = string.format("%s/.e2/bin/e2-linux32",
-    info.root)
+    info.chroot_call_prefix["x86_32"] =
+        e2lib.join(info.root, ".e2/bin/e2-linux32")
     -- either we are on x86_64 or we are on x86_32 and refuse to work anyway
     -- if x86_64 mode is requested.
     info.chroot_call_prefix["x86_64"] = ""
 
-    info.hashcache_file = string.format("%s/.e2/hashcache", info.root)
+    info.hashcache_file = e2lib.join(info.root, ".e2/hashcache")
     rc, re = hashcache_setup(info)
     if not rc then
         return false, e:cat(re)
@@ -1414,8 +1413,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- read .e2/proj-location
-    info.project_location_config = string.format("%s/.e2/project-location",
-    info.root)
+    info.project_location_config = e2lib.join(info.root, ".e2/project-location")
     local line, re = e2lib.read_line(info.project_location_config)
     if not line then
         return false, e:cat(re)
@@ -1459,7 +1457,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         ".e2/version",
     }
     for _,f in ipairs(deprecated_files) do
-        local path = string.format("%s/%s", info.root, f)
+        local path = e2lib.join(info.root, f)
         if e2util.exists(path) then
             e2lib.warnf("WDEPRECATED", "File exists but is no longer used: `%s'", f)
         end
@@ -1917,8 +1915,7 @@ local function projid(info)
         end
 
         if not e2lib.is_backup_file(f) then
-            local location = string.format("proj/init/%s",
-            e2lib.basename(f))
+            local location = e2lib.join("proj/init", e2lib.basename(f))
             local f = {
                 server = info.root_server_name,
                 location = location,
@@ -2496,7 +2493,7 @@ end
 -- @return an error object on failure
 function e2tool.lcd(info, dir)
     local e = err.new("chdir failed")
-    local abspath = string.format("%s/%s", info.root, dir)
+    local abspath = e2lib.join(info.root, dir)
     local rc, re = e2lib.chdir(abspath)
     if not rc then
         return false, e:cat(re)

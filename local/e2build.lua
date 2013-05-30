@@ -48,8 +48,12 @@ local function linklast(info, r, return_flags)
     -- calculate the path to the result
     local server, location = res.build_mode.storage(info.project_location,
         info.project.release_id)
-    local location1 = string.format("%s/%s/%s", location, r,
-        e2tool.buildid(info, r))
+
+    local buildid, re = e2tool.buildid(info, r)
+    if not buildid then
+        return false, e:cat(re)
+    end
+    local location1 = e2lib.join(location, r, buildid)
     local cache_flags = {
         check_only = true
     }
@@ -58,7 +62,7 @@ local function linklast(info, r, return_flags)
         return false, e:cat(re)
     end
     -- create the last link
-    local lnk_location = string.format("out/%s/last", r)
+    local lnk_location = e2lib.join("out", r, "last")
     local lnk, re = info.cache:file_path(info.root_server_name, lnk_location)
     if not lnk then
         return false, e:cat(re)
@@ -120,8 +124,7 @@ local function result_available(info, r, return_flags)
     local dep_set = res.build_mode.dep_set(buildid)
 
     -- cache the result
-    local result_location = string.format("%s/%s/%s/result.tar", location, r,
-        dep_set)
+    local result_location = e2lib.join(location, r, dep_set, "result.tar")
     local cache_flags = {}
     rc, re = info.cache:cache_file(server, result_location, cache_flags)
     if not rc then
@@ -394,15 +397,14 @@ local function runbuild(info, r, return_flags)
     local e = err.new("build failed")
     e2lib.logf(3, "building %s ...", r)
     local runbuild = string.format("/bin/bash -e -x %s/%s/%s",
-    e2lib.shquote(res.build_config.Tc),
-    e2lib.shquote(res.build_config.scriptdir),
-    e2lib.shquote(res.build_config.build_driver_file))
+        e2lib.shquote(res.build_config.Tc),
+        e2lib.shquote(res.build_config.scriptdir),
+        e2lib.shquote(res.build_config.build_driver_file))
     local e2_su = tools.get_tool("e2-su-2.2")
     local cmd = string.format("%s %s chroot_2_3 %s %s",
         res.build_config.chroot_call_prefix,
         e2lib.shquote(e2_su),
-        e2lib.shquote(res.build_config.base),
-        runbuild)
+        e2lib.shquote(res.build_config.base), runbuild)
     -- the build log is written to an external logfile
     rc, re = e2lib.rotate_log(res.build_config.buildlog)
     if not rc then
@@ -442,7 +444,7 @@ local function chroot_remove(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    local f = string.format("%s/playground", info.root)
+    local f = e2lib.join(info.root, "playground")
     local s = e2util.stat(f)
     if s and s.type == "symbolic-link" then
         local rc, e = e2lib.rm(f, "-f")
@@ -494,8 +496,7 @@ function e2build.unpack_result(info, r, dep, destdir)
     local server, location =
         d.build_mode.storage(info.project_location, info.project.release_id)
     e2lib.logf(3, "searching for dependency %s in %s:%s", dep, server, location)
-    local location1 = string.format("%s/%s/%s/result.tar", location, dep,
-    dep_set)
+    local location1 = e2lib.join(location, dep, dep_set, "result.tar")
     local cache_flags = {}
     local path, re = info.cache:file_path(server, location1, cache_flags)
     if not path then
@@ -563,17 +564,16 @@ local function write_build_driver(info, r, destdir)
     local res = info.results[r]
     local rc, re
     local e = err.new("generating build driver script failed")
-    local buildrc_file = string.format("%s/%s", destdir,
-    res.build_config.buildrc_file)
-    local buildrc_noinit_file = string.format("%s/%s", destdir,
-    res.build_config.buildrc_noinit_file)
-    local build_driver_file = string.format("%s/%s", destdir,
-    res.build_config.build_driver_file)
+    local buildrc_file = e2lib.join(destdir, res.build_config.buildrc_file)
+    local buildrc_noinit_file =
+        e2lib.join(destdir, res.build_config.buildrc_noinit_file)
+    local build_driver_file =
+        e2lib.join(destdir, res.build_config.build_driver_file)
     local bd = ""
     bd=bd..string.format("source %s/env/builtin\n", res.build_config.Tc)
     bd=bd..string.format("source %s/env/env\n", res.build_config.Tc)
     local brc_noinit = bd
-    for x, re in e2lib.directory(info.root .. "/proj/init") do
+    for x, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
         if not x then
             return false, e:cat(re)
         end
@@ -657,7 +657,7 @@ local function sources(info, r, return_flags)
         local e = err.new("installing directory structure")
         local dirs = {"out", "init", "script", "build", "root", "env", "dep"}
         for _, v in pairs(dirs) do
-            local d = string.format("%s/%s", res.build_config.T, v)
+            local d = e2lib.join(res.build_config.T, v)
             local rc, re = e2lib.mkdir(d, "-p")
             if not rc then
                 return false, e:cat(re)
@@ -671,7 +671,7 @@ local function sources(info, r, return_flags)
         local rc, re
         local e = err.new("installing build script")
         local location = e2tool.resultbuildscript(info.results[r].directory)
-        local destdir = string.format("%s/script", res.build_config.T)
+        local destdir = e2lib.join(res.build_config.T, "script")
         rc, re = transport.fetch_file(info.root_server, location, destdir, nil)
         if not rc then
             return false, e:cat(re)
@@ -684,7 +684,7 @@ local function sources(info, r, return_flags)
         local rc, re
         local e = err.new("installing environment files failed")
         -- install builtin environment variables
-        local file = string.format("%s/env/builtin", res.build_config.T)
+        local file = e2lib.join(res.build_config.T, "env/builtin")
         rc, re = write_environment_script(res.build_config.builtin_env, file)
         if not rc then
             return false, e:cat(re)
@@ -692,7 +692,7 @@ local function sources(info, r, return_flags)
         append_to_build_driver(info, r, string.format("source %s/env/builtin",
         res.build_config.Tc))
         -- install project specific environment variables
-        local file = string.format("%s/env/env", res.build_config.T)
+        local file = e2lib.join(res.build_config.T, "env/env")
         rc, re = write_environment_script(e2tool.env_by_result(info, r), file)
         if not rc then
             return false, e:cat(re)
@@ -712,9 +712,9 @@ local function sources(info, r, return_flags)
             end
 
             if not e2lib.is_backup_file(x) then
-                local location = string.format("proj/init/%s", x)
-                local abslocation = string.format("%s/%s", info.root, location)
-                local destdir = string.format("%s/init", res.build_config.T)
+                local location = e2lib.join("proj/init", x)
+                local abslocation = e2lib.join(info.root, location)
+                local destdir = e2lib.join(res.build_config.T, "init")
 
                 if not e2lib.isfile(abslocation) then
                     return false, e:append("'%s' is not a regular file",
@@ -725,8 +725,8 @@ local function sources(info, r, return_flags)
                 if not rc then
                     return false, e:cat(re)
                 end
-                append_to_build_driver(info, r, string.format("source %s/init/%s",
-                res.build_config.Tc, x))
+                append_to_build_driver(info, r,
+                    string.format("source %s/init/%s", res.build_config.Tc, x))
             end
         end
         return true, nil
@@ -737,7 +737,7 @@ local function sources(info, r, return_flags)
         local rc, re
         local e = err.new("writing build driver script failed")
         local bc = res.build_config
-        local destdir = string.format("%s/%s", bc.T, bc.scriptdir)
+        local destdir = e2lib.join(bc.T, bc.scriptdir)
         rc, re = write_build_driver(info, r, destdir)
         if not rc then
             return false, e:cat(re)
@@ -752,7 +752,7 @@ local function sources(info, r, return_flags)
         local deps
         deps = e2tool.get_depends(info, r)
         for i, dep in pairs(deps) do
-            local destdir = string.format("%s/dep/%s", res.build_config.T, dep)
+            local destdir = e2lib.join(res.build_config.T, "dep", dep)
             rc, re = e2build.unpack_result(info, r, dep, destdir)
             if not rc then
                 return false, e:cat(re)
@@ -768,7 +768,7 @@ local function sources(info, r, return_flags)
         e2lib.log(3, "install sources")
         for i, source in pairs(res.sources) do
             local e = err.new("installing source failed: %s", source)
-            local destdir = string.format("%s/build", res.build_config.T)
+            local destdir = e2lib.join(res.build_config.T, "build")
             local source_set = res.build_mode.source_set()
             local rc, re = scm.prepare_source(info, source, source_set,
             destdir)
@@ -835,14 +835,14 @@ local function deploy(info, r, return_flags)
             return false, re
         end
 
-        table.insert(files, string.format("files/%s", f))
+        table.insert(files, e2lib.join("files", f))
     end
     table.insert(files, "checksums")
     local server, location = res.build_mode.deploy_storage(
         info.project_location, info.project.release_id)
 
     -- do not re-deploy if this release was already done earlier
-    local location1 = string.format("%s/%s/checksums", location, r)
+    local location1 = e2lib.join(location, r, "checksums")
     local cache_flags = {
         cache = false,
     }
@@ -855,8 +855,8 @@ local function deploy(info, r, return_flags)
 
     e2lib.logf(1, "deploying %s to %s:%s", r, server, location)
     for _,f in ipairs(files) do
-        local sourcefile = string.format("result/%s", f)
-        local location1 = string.format("%s/%s/%s", location, r, f)
+        local sourcefile = e2lib.join("result", f)
+        local location1 = e2lib.join(location, r, f)
         local cache_flags = {}
         local rc, re = info.cache:push_file(sourcefile, server, location1,
             cache_flags)
@@ -885,7 +885,7 @@ local function store_result(info, r, return_flags)
     end
 
     -- build a stored result structure and store
-    local rfilesdir = string.format("%s/out", res.build_config.T)
+    local rfilesdir = e2lib.join(res.build_config.T, "out")
     rc, re = e2lib.chdir(tmpdir)
     if not rc then
         return false, e:cat(re)
@@ -897,7 +897,7 @@ local function store_result(info, r, return_flags)
     local nfiles = 0
     for f in e2lib.directory(rfilesdir, false, true) do
         e2lib.logf(3, "result file: %s", f)
-        local s = string.format("%s/%s", rfilesdir, f)
+        local s = e2lib.join(rfilesdir, f)
         local d = "result/files"
         rc, re = e2lib.ln(s, d)
         if not rc then
@@ -956,8 +956,8 @@ local function store_result(info, r, return_flags)
         return false, re
     end
 
-    local sourcefile = string.format("%s/result.tar", tmpdir)
-    local location1 = string.format("%s/%s/%s/result.tar", location, r, buildid)
+    local sourcefile = e2lib.join(tmpdir, "result.tar")
+    local location1 = e2lib.join(location, r, buildid, "result.tar")
     local cache_flags = {
         try_hardlink = true,
     }
@@ -1060,14 +1060,13 @@ local function collect_project(info, r, return_flags)
     local rc, re
     local e = err.new("providing project data to this build failed")
     -- project/proj/init/<files>
-    local destdir = string.format("%s/project/proj/init",
-    res.build_config.T)
+    local destdir = e2lib.join(res.build_config.T, "project/proj/init")
     e2lib.mkdir(destdir, "-p")
-    local init_files = e2util.directory(info.root .. "/proj/init")
+    local init_files = e2util.directory(e2lib.join(info.root, "/proj/init"))
     for _,f in ipairs(init_files) do
         e2lib.logf(3, "init file: %s", f)
         local server = "."
-        local location = string.format("proj/init/%s", f)
+        local location = e2lib.join("proj/init", f)
         local cache_flags = {}
         rc, re = info.cache:fetch_file(server, location,
         destdir, nil, cache_flags)
@@ -1078,8 +1077,8 @@ local function collect_project(info, r, return_flags)
     -- write project configuration
     local file, destdir
     local lines = ""
-    destdir = string.format("%s/project/proj", res.build_config.T)
-    file = string.format("%s/config", destdir)
+    destdir = e2lib.join(res.build_config.T, "project/proj")
+    file = e2lib.join(destdir, "config")
     local f, msg = io.open(file, "w")
     if not f then
         return false, e:cat(re)
@@ -1092,18 +1091,16 @@ local function collect_project(info, r, return_flags)
     info.project.chroot_arch))
     f:close()
     -- files from the project
-    local destdir = string.format("%s/project/.e2/bin", res.build_config.T)
+    local destdir = e2lib.join(res.build_config.T, "project/.e2/bin")
     e2lib.mkdir(destdir, "-p")
     -- generate build driver file for each result
     -- project/chroot/<group>/<files>
     for _,g in pairs(res.collect_project_chroot_groups) do
         e2lib.logf(3, "chroot group: %s", g)
         local grp = info.chroot.groups_byname[g]
-        local destdir = string.format("%s/project/chroot/%s",
-        res.build_config.T, g)
+        local destdir = e2lib.join( res.build_config.T, "project/chroot", g)
         e2lib.mkdir(destdir, "-p")
-        local makefile, msg = io.open(
-        string.format("%s/makefile", destdir), "w")
+        local makefile, msg = io.open(e2lib.join(destdir, "makefile"), "w")
         if not makefile then
             return false, e:cat(msg)
         end
@@ -1117,18 +1114,16 @@ local function collect_project(info, r, return_flags)
             end
             if file.sha1 then
                 local checksum_file = string.format(
-                "%s/%s.sha1", destdir,
-                e2lib.basename(file.location))
+                    "%s/%s.sha1", destdir,
+                    e2lib.basename(file.location))
                 local filename = e2lib.basename(file.location)
                 rc, re = e2lib.write_file(checksum_file,
-                string.format("%s  %s",
-                file.sha1, filename))
+                    string.format("%s  %s", file.sha1, filename))
                 if not rc then
                     return false, e:cat(re)
                 end
-                makefile:write(string.format(
-                "\tsha1sum -c '%s'\n",
-                e2lib.basename(checksum_file)))
+                makefile:write(string.format("\tsha1sum -c '%s'\n",
+                    e2lib.basename(checksum_file)))
             end
             local tartype
             tartype, re = e2lib.tartype_by_suffix(file.location)
@@ -1136,9 +1131,9 @@ local function collect_project(info, r, return_flags)
                 return false, e:cat(re)
             end
             makefile:write(string.format(
-            "\te2-su-2.2 extract_tar_2_3 $(chroot_base) "..
-            "\"%s\" '%s'\n",
-            tartype, e2lib.basename(file.location)))
+                "\te2-su-2.2 extract_tar_2_3 $(chroot_base) "..
+                "\"%s\" '%s'\n",
+                tartype, e2lib.basename(file.location)))
         end
         makefile:close()
     end
@@ -1146,8 +1141,7 @@ local function collect_project(info, r, return_flags)
     for _,l in ipairs(res.collect_project_licences) do
         e2lib.logf(3, "licence: %s", l)
         local lic = info.licences[l]
-        local destdir = string.format("%s/project/licences/%s",
-        res.build_config.T, l)
+        local destdir = e2lib.join(res.build_config.T, "project/licences", l)
         e2lib.mkdir(destdir, "-p")
         for _,file in ipairs(lic.files) do
             local cache_flags = {}
@@ -1174,8 +1168,8 @@ local function collect_project(info, r, return_flags)
         if not rc then
             return false, e:cat(re)
         end
-        local destdir = string.format("%s/project/%s",
-        res.build_config.T, e2tool.resultdir(n))
+        local destdir =
+            e2lib.join(res.build_config.T, "project", e2tool.resultdir(n))
         e2lib.mkdir(destdir, "-p")
         -- copy files
         local files = {
@@ -1192,13 +1186,13 @@ local function collect_project(info, r, return_flags)
         end
         local file, line
         -- generate environment script
-        file = string.format("%s/env", destdir)
+        file = e2lib.join(destdir, "env")
         rc, re = write_environment_script(e2tool.env_by_result(info, n), file)
         if not rc then
             return false, e:cat(re)
         end
         -- generate builtin environment script
-        local file = string.format("%s/builtin", destdir)
+        local file = e2lib.join(destdir, "builtin")
         rc, re = write_environment_script(rn.build_config.builtin_env, file)
         if not rc then
             return false, e:cat(re)
@@ -1209,27 +1203,23 @@ local function collect_project(info, r, return_flags)
             return false, e:cat(re)
         end
         -- generate config
-        local config = string.format("%s/config", destdir)
+        local config = e2lib.join(destdir, "config")
         local f, msg = io.open(config, "w")
         if not f then
             e:cat(err.new("%s: %s", config, msg))
             return false, e
         end
-        f:write(string.format(
-        "### generated by e2 for result %s ###\n", n))
-        f:write(string.format(
-        "CHROOT='%s'\n", table.concat(rn.chroot, " ")))
-        f:write(string.format(
-        "DEPEND='%s'\n", table.concat(rn.depends, " ")))
-        f:write(string.format(
-        "SOURCE='%s'\n", table.concat(rn.sources, " ")))
+        f:write(string.format("### generated by e2 for result %s ###\n", n))
+        f:write(string.format("CHROOT='%s'\n", table.concat(rn.chroot, " ")))
+        f:write(string.format("DEPEND='%s'\n", table.concat(rn.depends, " ")))
+        f:write(string.format("SOURCE='%s'\n", table.concat(rn.sources, " ")))
         f:close()
     end
     for _,s in ipairs(info.results[r].collect_project_sources) do
         local src = info.sources[s]
         e2lib.logf(3, "source: %s", s)
-        local destdir = string.format("%s/project/%s",
-        res.build_config.T, e2tool.sourcedir(s))
+        local destdir =
+            e2lib.join(res.build_config.T, "project", e2tool.sourcedir(s))
         e2lib.mkdir(destdir, "-p")
         local source_set = res.build_mode.source_set()
         local files, re = scm.toresult(info, src.name, source_set,
@@ -1239,21 +1229,21 @@ local function collect_project(info, r, return_flags)
         end
     end
     -- write topologically sorted list of result
-    local destdir = string.format("%s/project", res.build_config.T)
+    local destdir = e2lib.join(res.build_config.T, "project")
     local tsorted_results, re = e2tool.dlist_recursive(info,
     res.collect_project_results)
     if not tsorted_results then
         return false, e:cat(re)
     end
     local tsorted_results_string = table.concat(tsorted_results, "\n")
-    local resultlist = string.format("%s/resultlist", destdir)
+    local resultlist = e2lib.join(destdir, "resultlist")
     rc, re = e2lib.write_file(resultlist, tsorted_results_string .. "\n")
     if not rc then
         return false, e:cat(re)
     end
     -- install the global Makefiles
     local server = "."
-    local destdir = string.format("%s/project", res.build_config.T)
+    local destdir = e2lib.join(res.build_config.T, "project")
     local cache_flags = {}
     local locations = {
         ".e2/lib/make/Makefile",
@@ -1275,7 +1265,7 @@ local function collect_project(info, r, return_flags)
         "detect_tool",
     }
     for _,f in ipairs(executables) do
-        local x = string.format("%s/%s", destdir, f)
+        local x = e2lib.join(destdir, f)
         local rc, re = e2lib.chmod("755", x)
         if not rc then
             return false, e:cat(re)
