@@ -108,14 +108,15 @@ local cache = require("cache")
 -- @field name string: filename
 -- @field server string: server name
 
---- table of result records, keyed by result names
--- @name results
--- @class table
+--- Table for a single result.
+-- @table result
 -- @field name string: name of the result
 -- @field sources table of strings: array of source names
 -- @field files OBSOLETE table of strings: array of result file names
 -- @field depends table of strings: list of dependencies
 -- @field chroot table of strings: list of chroot groups to use
+-- @field env table of strings
+-- @field _env
 -- @field collect_project bool: collect the project structure into this result?
 -- @field collect_project_default_result string: which result shall be
 -- 				collected, including recursive dependencies?
@@ -131,6 +132,10 @@ local cache = require("cache")
 -- @field selected bool: select for build?
 -- @field force_rebuild bool: force rebuild?
 -- @field build_mode table: build mode policy object
+-- @field build_config
+-- @field directory
+-- @see policy.build_mode
+-- @see e2build.build_config
 
 --- table of server records, keyed by server name
 -- @name servers
