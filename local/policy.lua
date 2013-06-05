@@ -35,23 +35,26 @@ local e2option = require("e2option")
 local strict = require("strict")
 local hash = require("hash")
 
---- source_set_* get the source set identifier
--- @class function
--- @name policy.source_set_*
--- @param none
+--- Get the source set identifier.
 -- @return string: the source set identifier
 local function source_set_lazytag()
     return "lazytag"
 end
 
+--- Get the source set identifier.
+-- @return string: the source set identifier
 local function source_set_tag()
     return "tag"
 end
 
+--- Get the source set identifier.
+-- @return string: the source set identifier
 local function source_set_branch()
     return "branch"
 end
 
+--- Get the source set identifier.
+-- @return string: the source set identifier
 local function source_set_working_copy()
     return "working-copy"
 end
@@ -92,22 +95,21 @@ local function deploy_storage_default(location, release_id)
     return "releases", string.format("%s/archive/%s", location, release_id)
 end
 
---- dep_set_*
--- @class function
--- @name policy.dep_set_*
+---
 -- @param buildid the buildid
 -- @return the buildid
 local function dep_set_buildid(buildid)
     return buildid
 end
 
+---
+-- @param buildid the buildid
+-- @return the buildid
 local function dep_set_last(buildid)
     return "last"
 end
 
---- buildid_* get the buildid for a build
--- @class function
--- @name policy.buildid_*
+--- Get the buildid for a build
 -- @param buildid the buildid
 -- @return the buildid
 local function buildid_buildid(buildid)
@@ -116,6 +118,9 @@ end
 
 local buildid_scratch_cache = {}
 
+--- Get the buildid for a scratch build
+-- @param buildid the buildid
+-- @return the buildid
 local function buildid_scratch(buildid)
     --- XXX: Always returning a fixed buildid string does not work when
     -- the scratch results gets used by results not in scratch mode.
@@ -161,6 +166,10 @@ local function buildid_scratch(buildid)
     return buildid_scratch_cache[buildid]
 end
 
+--- Initialize policy module.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function policy.init(info)
     local e = err.new("checking policy")
 
@@ -204,6 +213,7 @@ function policy.init(info)
     return true, nil
 end
 
+---
 function policy.register_commandline_options()
     e2option.option("build-mode", "set build mode to calculate buildids")
     e2option.flag("tag", "set build mode to 'tag' (default)")
@@ -219,6 +229,7 @@ function policy.register_commandline_options()
     Enabled by default in 'release' mode.]])
 end
 
+---
 function policy.handle_commandline_options(opts, use_default)
     local default_build_mode_name = "tag"
     local nmodes = 0
@@ -271,51 +282,57 @@ function policy.handle_commandline_options(opts, use_default)
     return mode
 end
 
+--- Build mode table for each result.
+-- @table build_mode
+-- @field source_set
+-- @field dep_set
+-- @field buildid
+-- @field storage
+-- @field deploy Boolean value, decides whether a result should be deployed.
+-- @field deploy_storage Available only when deploy is true.
+
+--- Create build_mode table based on mode. The table is locked.
+-- @param mode Release mode (string).
+-- @return Build_mode table or false on unknown mode.
 function policy.default_build_mode(mode)
+    local build_mode = {}
+
     if mode == "lazytag" then
-        return {
-            source_set = source_set_lazytag,
-            dep_set = dep_set_buildid,
-            buildid = buildid_buildid,
-            storage = storage_default,
-            deploy = false,
-        }
+        build_mode.source_set = source_set_lazytag
+        build_mode.dep_set = dep_set_buildid
+        build_mode.buildid = buildid_buildid
+        build_mode.storage = storage_default
+        build_mode.deploy = false
     elseif mode == "tag" then
-        return {
-            source_set = source_set_tag,
-            dep_set = dep_set_buildid,
-            buildid = buildid_buildid,
-            storage = storage_default,
-            deploy = false,
-        }
+        build_mode.source_set = source_set_tag
+        build_mode.dep_set = dep_set_buildid
+        build_mode.buildid = buildid_buildid
+        build_mode.storage = storage_default
+        build_mode.deploy = false
     elseif mode == "release" then
-        return {
-            source_set = source_set_tag,
-            dep_set = dep_set_buildid,
-            buildid = buildid_buildid,
-            storage = storage_release,
-            deploy = true,
-            deploy_storage = deploy_storage_default,
-        }
+        build_mode.source_set = source_set_tag
+        build_mode.dep_set = dep_set_buildid
+        build_mode.buildid = buildid_buildid
+        build_mode.storage = storage_release
+        build_mode.deploy = true
+        build_mode.deploy_storage = deploy_storage_default
     elseif mode == "branch" then
-        return {
-            source_set = source_set_branch,
-            dep_set = dep_set_buildid,
-            buildid = buildid_buildid,
-            storage = storage_default,
-            deploy = false,
-        }
+        build_mode.source_set = source_set_branch
+        build_mode.dep_set = dep_set_buildid
+        build_mode.buildid = buildid_buildid
+        build_mode.storage = storage_default
+        build_mode.deploy = false
     elseif mode == "working-copy" then
-        return {
-            source_set = source_set_working_copy,
-            dep_set = dep_set_last,
-            buildid = buildid_scratch,
-            storage = storage_local,
-            deploy = false,
-        }
+        build_mode.source_set = source_set_working_copy
+        build_mode.dep_set = dep_set_last
+        build_mode.buildid = buildid_scratch
+        build_mode.storage = storage_local
+        build_mode.deploy = false
     else
-        return nil
+        return false
     end
+
+    return strict.lock(build_mode)
 end
 
 return strict.lock(policy)
