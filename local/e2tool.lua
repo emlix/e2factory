@@ -2161,6 +2161,9 @@ function e2tool.pbuildid(info, resultname)
         return r.build_mode.buildid(r.pbuildid)
     end
     local hc = hash.hash_start()
+
+    hash.hash_line(hc, r.name)
+
     for _,s in ipairs(r.sources) do
         local src = info.sources[s]
         local source_set = r.build_mode.source_set()
