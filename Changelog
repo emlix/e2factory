@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.14rc1
  * Fix: Include result name in buildid calculation.
  * Fix: Removed hardcoded "base" chroot group in collect_project.
