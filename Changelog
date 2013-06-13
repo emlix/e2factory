@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.14
 
 e2factory-2.3.14rc1
  * Fix: Include result name in buildid calculation.
