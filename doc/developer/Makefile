@@ -34,7 +34,7 @@ include $(TOPLEVEL)/make.vars
 
 CLEAN_FILES = e2factory.tar.gz
 
-.PHONY: all e2commit install install-local clean local localdist uninstall \
+.PHONY: all install install-local clean local localdist uninstall \
 	doc
 
 all:
@@ -77,16 +77,6 @@ clean: clean-doc
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(CLEAN_FILES)
-
-check:
-	set -e; for s in $(SUBDIRS) do ;\
-		$(MAKE) -C $$s $@ ;\
-	done
-
-localdist:
-	set -e; for s in $(SUBDIRS) do ;\
-		$(MAKE) -C $$s $@ ;\
-	done
 
 $(LDOC):
 	$(MAKE) -C $(TOPLEVEL)/doc/ldoc

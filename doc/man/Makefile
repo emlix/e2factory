@@ -95,8 +95,3 @@ install-doc:
 clean:
 	rm -f $(CLEAN_FILES)
 	rm -fr html man
-
-check:
-
-localdist:
-

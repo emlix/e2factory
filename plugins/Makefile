@@ -29,46 +29,29 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-.PHONY: clean all install
+SUBDIRS =
+CLEAN_FILES =
+LOCALPLUGINS = cvs.lua files.lua git.lua svn.lua
 
-LUA_HEADER = lua.h lauxlib.h lualib.h luaconf.h
+.PHONY: all local install uninstall install install-local doc install-doc
 
-.PHONY: lua-5.1.3
-lua-5.1.3:
-	$(MAKE) -C lua-5.1.3/src all MYCFLAGS="\
-		-DLUA_USE_POSIX -DLUA_USE_DLOPEN \
-		-DLUA_PATH_DEFAULT='\"$(LIBDIR)/?.lua\"' \
-		-DLUA_CPATH_DEFAULT='\"$(LIBDIR)/?.so\"'" \
-		MYLIBS="-Wl,-E -ldl"
-
-all: lua-5.1.3
-
-install: all
-	install -d $(DESTDIR)$(LIBEXECDIR)
-	install -m755 lua-5.1.3/src/lua $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3
-	install -m755 lua-5.1.3/src/luac $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3
-	install -d $(DESTDIR)$(INCDIR)/lua-5.1.3
-	install -m644 lua-5.1.3/src/lua.h $(DESTDIR)$(INCDIR)/lua-5.1.3
-	install -m644 lua-5.1.3/src/lauxlib.h $(DESTDIR)$(INCDIR)/lua-5.1.3
-	install -m644 lua-5.1.3/src/lualib.h $(DESTDIR)$(INCDIR)/lua-5.1.3
-	install -m644 lua-5.1.3/src/luaconf.h $(DESTDIR)$(INCDIR)/lua-5.1.3
-
-uninstall:
-	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3
-	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3
-	rmdir -p $(DESTDIR)$(LIBEXECDIR)/lua-5.1.3 || true
-	set -e; for x in $(LUA_HEADER) ; do \
-		rm -f $(DESTDIR)$(INCDIR)/lua-5.1.3/$$x ; \
-	done
-	rmdir -p $(DESTDIR)$(INCDIR)/lua-5.1.3 || true
+all:
 
 local:
 
+install:
+
 install-local:
+	install -m 755 -d $(LOCALPLUGINDIR)
+	set -e; for p in $(LOCALPLUGINS) ; do \
+		install -m 644 $$p $(LOCALPLUGINDIR)/$$p; \
+	done
 
 doc:
 
 install-doc:
 
+uninstall:
+
 clean:
-	$(MAKE) -C lua-5.1.3/src clean
+	rm -f $(CLEAN_FILES)

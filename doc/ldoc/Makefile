@@ -5,8 +5,7 @@ include $(TOPLEVEL)/make.vars
 
 CLEAN_FILES = ldoc
 
-.PHONY: all install install-local clean local uninstall doc install-doc check \
-	localdist
+.PHONY: all install install-local clean local uninstall doc install-doc
 
 all: ldoc
 	set -e; for s in $(SUBDIRS) ; do \
@@ -48,16 +47,6 @@ clean: clean-lua-5.1.3 clean-luafilesystem-1.6.2
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(CLEAN_FILES)
-
-check:
-	set -e; for s in $(SUBDIRS) do ;\
-		$(MAKE) -C $$s $@ ;\
-	done
-
-localdist:
-	set -e; for s in $(SUBDIRS) do ;\
-		$(MAKE) -C $$s $@ ;\
-	done
 
 lua-5.1.3:
 	cp -Rp $(TOPLEVEL)/lua/lua-5.1.3 lua-5.1.3

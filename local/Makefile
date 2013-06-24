@@ -32,63 +32,44 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
-
 CLEAN_FILES = *~ *.so linux32 *.o
 CFLAGS += -I. -I$(DESTDIR)$(INCDIR) -I$(DESTDIR)$(INCDIR)/lua-$(LUA_VERSION) \
 	-I../lua/lua-$(LUA_VERSION)/src -fPIC
 LDFLAGS += -L. -L../lua/lua-$(LUA_VERSION)/src -Wl,-R$(LIBDIR)
 LOCALLUATOOLS = e2-build e2-dlist e2-dsort e2-fetch-sources \
-	e2-new-source e2-ls-project e2-playground \
-	e2-build-numbers e2-cf e2-help
-LOCALSHTOOLS =
-LUA_LIBS = e2option.lua luafile.lua generic_git.lua err.lua
-LUA_LIBS += e2tool.lua scm.lua digest.lua
-LUA_LIBS += tools.lua transport.lua cache.lua
-LUA_LIBS += environment.lua plugin.lua url.lua hash.lua lock.lua
-LUA_LIBS += policy.lua strict.lua e2build.lua
-LUA_LIBS += e2lib.lua buildconfig.lua
-LOCALTOOLS = $(LOCALSHTOOLS) $(LOCALLUATOOLS)
-LOCALPLUGINS = cvs.lua files.lua git.lua svn.lua
+		e2-new-source e2-ls-project e2-playground \
+		e2-build-numbers e2-cf e2-help
 
-.PHONY: all install uninstall install install-local doc install-doc
+LOCALLUALIBS= digest.lua e2build.lua e2tool.lua environment.lua \
+	      policy.lua scm.lua
+LOCALTOOLS = $(LOCALLUATOOLS)
 
+.PHONY: all install uninstall local install-local doc install-doc
 
-all: linux32 sha1.so luafile_ll.so e2util.so
+all:
 
 install:
 	set -e; for i in $(LOCALTOOLS); do \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 
-install-local-dirs:
-	mkdir -p $(LOCALBINDIR) $(LOCALMAKDIR) $(LOCALLIBDIR)
+linux32: linux32.c
 
-install-local-lua: $(LUA_LIBS)
-	install -m 644 $^ $(LOCALLIBDIR)
+local: linux32
 
-install-local: all install-local-dirs install-local-lua install-local-sourcefiles
-	test -n "$(PROJECTDIR)"
-	install -m 755 -d $(LOCALPLUGINDIR)
-	set -e; for p in $(LOCALPLUGINS) ; do \
-		install -m 644 $$p $(LOCALPLUGINDIR)/$$p; \
-	done
+install-local: local
+	install -d $(LOCALBINDIR)
+	install -d $(LOCALMAKDIR)
+	install -d $(LOCALLIBDIR)
+	install -m 644 $(LOCALLUALIBS) $(LOCALLIBDIR)
 	set -e; for i in $(LOCALLUATOOLS); do \
 		install -m 755 $$i.lua $(LOCALBINDIR)/$$i; \
-	done
-	set -e; for i in $(LOCALSHTOOLS); do \
-		install -m 755 $$i $(LOCALBINDIR)/$$i; \
 	done
 	install -m755 linux32 $(LOCALBINDIR)/e2-linux32; \
 	install -m644 linux32.c $(LOCALMAKDIR)/
 	ln -sf $(LIBEXECDIR)/e2-lua-$(LUA_VERSION) $(LOCALBINDIR)/e2-lua
 	$(MAKE) -C make install-local
-	install -m 755 sha1.so $(LOCALLIBDIR)
-	install -m 755 luafile_ll.so $(LOCALLIBDIR)
-	install -m 755 e2util.so $(LOCALLIBDIR)
 
-install-local-sourcefiles: e2-su-2.2.c
-	install -m 644 $^ $(LOCALMAKDIR)
 doc:
 	set -e; for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
@@ -106,17 +87,3 @@ uninstall:
 
 clean:
 	rm -f $(CLEAN_FILES)
-
-%: %.in
-	$(GENSCRIPT) $< $@
-
-linux32: linux32.c
-
-sha1.so: sha1.o lsha1.o
-
-luafile_ll.so: luafile_ll.o
-
-e2util.so: e2util.o
-
-%.so:
-	$(CC) -shared -o $@ $^ $(LDFLAGS)

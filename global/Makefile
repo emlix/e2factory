@@ -29,23 +29,18 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
+#VPATH = .:$(TOPLEVEL)/generic:$(TOPLEVEL)
 
 SCRIPTS =
 GLOBALLUATOOLS = e2-create-project e2-fetch-project e2-install-e2
 GLOBALSHTOOLS = e2-locate-project-root e2-su
 GLOBALTOOLS = $(GLOBALLUATOOLS) $(GLOBALSHTOOLS)
 CLEAN_FILES = e2 e2.conf
-LUA_LIBS = strict.lua plugin.lua e2lib.lua
-LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
-LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
-LUA_LIBS += buildconfig.lua
 
 .PHONY: all install uninstall clean
 
 all: e2 $(SCRIPTS) \
-	$(GLOBALSHTOOLS:=.sh) e2.conf sha1.so e2-su-2.2 \
-	luafile_ll.so e2util.so
+	$(GLOBALSHTOOLS:=.sh) e2.conf e2-su-2.2 \
 
 install-dirs:
 	install -d $(DESTDIR)$(BINDIR)
@@ -57,10 +52,8 @@ install-dirs:
 	install -d $(DESTDIR)$(SYSCONFDIR)
 	install -d -m 2775 -g $(E2_GROUP) $(DESTDIR)$(LOCALSTATEDIR)
 
-install-lua: $(LUA_LIBS)
-	install -m 644 $^ $(DESTDIR)$(LIBDIR)
 
-install: all install-dirs install-lua
+install: all install-dirs
 	set -e; for i in $(GLOBALLUATOOLS) ; do \
 		install -m 755 $$i.lua $(DESTDIR)$(TOOLDIR)/$$i ; \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
@@ -73,9 +66,6 @@ install: all install-dirs install-lua
 		install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf ; \
 	fi
 	install -m 644 e2.conf $(DESTDIR)$(SYSCONFDIR)/e2.conf.sample
-	install -m 755 sha1.so $(DESTDIR)$(LIBDIR)
-	install -m 755 luafile_ll.so $(DESTDIR)$(LIBDIR)
-	install -m 755 e2util.so $(DESTDIR)$(LIBDIR)
 	$(SUDO) install -m 4754 -o root -g $(E2_GROUP) e2-su-2.2 \
 		$(DESTDIR)$(BINDIR)/
 
@@ -88,9 +78,17 @@ uninstall:
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
-	rm -f $(DESTDIR)$(LIBDIR)/luafile_ll.so
-	rm -f $(DESTDIR)$(LIBDIR)/e2util.so
 	rm -f $(DESTDIR)$(BINDIR)/e2
+
+local:
+
+install-local:  e2-su-2.2.c
+	install -d $(LOCALMAKDIR)
+	install -m 644  e2-su-2.2.c  $(LOCALMAKDIR)
+
+uninstall-local:
+	rm -f $(LOCALMAKDIR)/e2-su-2.2.c
+	rmdir -p $(LOCALMAKDIR) || true
 
 doc:
 	set -e; for s in $(SUBDIRS) ; do \
@@ -117,12 +115,6 @@ e2: e2.lua
 
 e2.conf: e2.conf.in
 	$(GENSCRIPT) $< $@
-
-sha1.so: sha1.o lsha1.o
-
-luafile_ll.so: luafile_ll.o
-
-e2util.so: e2util.o
 
 %.so:
 	$(CC) -shared -o $@ $^ $(LDFLAGS)

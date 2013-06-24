@@ -25,43 +25,66 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-### Makefile for "generic" e2 subdirectory
-
-
 TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
+
+LUA_LIBS = strict.lua plugin.lua e2lib.lua
+LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
+LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
 
 CLEAN_FILES = *~ *.o *.so
 
 
 .PHONY: all install uninstall local install-local clean
 
-all:
+all: sha1.so luafile_ll.so e2util.so
+
+sha1.so: sha1.o lsha1.o
+
+luafile_ll.so: luafile_ll.o
+
+e2util.so: e2util.o
 
 install: all
+	install -d $(DESTDIR)$(LIBDIR)
+	install -m 644 $(LUA_LIBS) $(DESTDIR)$(LIBDIR)
+	install -m 644 sha1.so $(DESTDIR)$(LIBDIR)
+	install -m 644 luafile_ll.so $(DESTDIR)$(LIBDIR)
+	install -m 644 e2util.so $(DESTDIR)$(LIBDIR)
 
 uninstall:
+	rm -f  $(DESTDIR)$(LIBDIR)/sha1.so
+	rm -f  $(DESTDIR)$(LIBDIR)/luafile_ll.so
+	rm -f  $(DESTDIR)$(LIBDIR)/e2util.so
+	set -e; for f in $(LUA_LIBS); do \
+		rm -f "$(DESTDIR)$(LIBDIR)/$$f"; \
+	done
+	rmdir -p $(DESTDIR)$(LIBDIR) || true
 
-local:
+local: sha1.so luafile_ll.so e2util.so
 
 install-local: local
+	install -d $(LOCALLIBDIR)
+	install -m 644 sha1.so $(LOCALLIBDIR)
+	install -m 644 luafile_ll.so $(LOCALLIBDIR)
+	install -m 644 e2util.so $(LOCALLIBDIR)
+
+uninstall-local:
+	rm -f  $(LOCALLIBDIR)/sha1.so
+	rm -f  $(LOCALLIBDIR)/luafile_ll.so
+	rm -f $(LOCALLIBDIR)/e2util.so
+	rmdir -p $(LOCALLIBDIR) || true
 
 doc:
-	set -e; for s in $(SUBDIRS) ; do \
-		$(MAKE) -C $$s $@ ;\
-	done
 
 install-doc:
-	set -e; for s in $(SUBDIRS) ; do \
-		$(MAKE) -C $$s $@ ;\
-	done
 
 clean:
 	rm -f $(CLEAN_FILES)
 
-%: %.in
-	$(GENSCRIPT) $< $@
-
 %.o: %.c
-	$(CC) $(CFLAGS) $(LUA_CPPFLAGS) $(LDFLAGS) -fPIC -o $@ -c $<
+	$(CC) $(CFLAGS) $(BUILD_LUA_CPPFLAGS) $(LDFLAGS) -fPIC -o $@ -c $<
+
+%.so:
+	$(CC) -shared -o $@ $^ $(LDFLAGS)

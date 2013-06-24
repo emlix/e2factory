@@ -12,7 +12,6 @@ test -n "$LIBDIR" || die "LIBDIR not set"
 test -n "$LIBEXECDIR" || die "LIBEXECDIR not set"
 test -n "$LOCALSTATEDIR" || die "LOCALSTATEDIR not set"
 test -n "$SYSCONFDIR" || die "SYSCONFDIR not set"
-test -n "$E2DATA" || die "E2DATA not set"
 test -n "$TOOLDIR" || die "TOOLDIR not set"
 test -n "$LUA_VERSION" || die "LUA_VERSION not set"
 test -n "$ARCH" || die "ARCH not set"
@@ -25,8 +24,7 @@ test -n "$CHOWN_TOOL" || die "CHOWN_TOOL not set"
 test -n "$RM_TOOL" || die "RM_TOOL not set"
 test -n "$DEFAULT_LOCAL_BRANCH" || die "DEFAULT_LOCAL_BRANCH not set"
 test -n "$DEFAULT_LOCAL_TAG" || die "DEFAULT_LOCAL_TAG not set"
-sed -e s,"@E2_E2DATA@","$E2DATA",g \
-    -e s,"@LIBDIR@","$LIBDIR",g \
+sed -e s,"@LIBDIR@","$LIBDIR",g \
     -e s,"@LIBEXECDIR@","$LIBEXECDIR",g \
     -e s,"@BINDIR@","$BINDIR",g \
     -e s,"@LOCALSTATEDIR@","$LOCALSTATEDIR",g \
