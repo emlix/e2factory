@@ -989,7 +989,7 @@ end
 
 --- callcmd: call a command, connecting
 --  stdin, stdout, stderr to luafile objects.
-function e2lib.callcmd(infile, outfile, errfile, cmd)
+local function callcmd(infile, outfile, errfile, cmd)
     -- redirect stdin
     io.stdin:close()
     luafile.dup2(infile:fileno(), 0)
@@ -1025,7 +1025,7 @@ function e2lib.callcmd_redirect(cmd, out)
     e2lib.logf(3, "+ %s", cmd)
     pid = e2util.fork()
     if pid == 0 then
-        rc = e2lib.callcmd(devnull, out, out, cmd)
+        rc = callcmd(devnull, out, out, cmd)
         os.exit(rc)
     else
         rc = e2util.wait(pid)
@@ -1086,7 +1086,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
             end
 
             errin:close()
-            rc = e2lib.callcmd(input, output, errout, cmds[cmdidx])
+            rc = callcmd(input, output, errout, cmds[cmdidx])
             os.exit(rc)
         end
 
@@ -1194,7 +1194,7 @@ function e2lib.callcmd_capture(cmd, capture)
     pid = e2util.fork()
     if pid == 0 then
         oread:close()
-        rc = e2lib.callcmd(devnull, owrite, owrite, cmd)
+        rc = callcmd(devnull, owrite, owrite, cmd)
         os.exit(rc)
     else
         owrite:close()
@@ -1672,6 +1672,11 @@ function e2lib.git(gitdir, subtool, args)
     end
     return true, e
 end
+
+function e2lib.git_argv(argv)
+    return e2lib.call_tool_argv("git")
+end
+
 
 --- call the svn command
 -- @param argv table: vector with arguments for svn
