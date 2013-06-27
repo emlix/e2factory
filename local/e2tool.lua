@@ -44,6 +44,7 @@ local policy = require("policy")
 local strict = require("strict")
 local transport = require("transport")
 local cache = require("cache")
+local buildconfig = require("buildconfig")
 
 --- Info table contains sources, results, servers, caches and more...
 -- @table info

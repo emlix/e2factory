@@ -31,7 +31,7 @@
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 local err = require("err")
-require("buildconfig")
+local buildconfig = require("buildconfig")
 require("e2util")
 
 local function e2(arg)

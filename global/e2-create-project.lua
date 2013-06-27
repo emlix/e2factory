@@ -33,7 +33,7 @@ local cache = require("cache")
 local generic_git = require("generic_git")
 local err = require("err")
 local e2option = require("e2option")
-require("buildconfig")
+local buildconfig = require("buildconfig")
 
 local function e2_create_project(arg)
     local rc, re = e2lib.init()

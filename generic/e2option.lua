@@ -36,8 +36,8 @@ local plugin = require("plugin")
 local err = require("err")
 local strict = require("strict")
 local tools = require("tools")
+local buildconfig = require("buildconfig")
 require("e2util")
-require("buildconfig")
 
 local options = {}
 local aliases = {}

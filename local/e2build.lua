@@ -37,6 +37,7 @@ local scm = require("scm")
 local environment = require("environment")
 local e2tool = require("e2tool")
 local strict = require("strict")
+local buildconfig = require("buildconfig")
 
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}

@@ -47,7 +47,7 @@ local e2lib = {}
 -- table that we are going to fill later (after the require block below).
 package.loaded["e2lib"] = e2lib
 
-require("buildconfig")
+local buildconfig = require("buildconfig")
 require("e2util")
 local lock = require("lock")
 local err = require("err")

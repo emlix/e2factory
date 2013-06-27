@@ -42,27 +42,30 @@ help:
 .SILENT: buildconfig.lua
 buildconfig.lua: Makefile make.vars
 	echo 'writing buildconfig.lua'
-	echo 'module ("buildconfig")' > $@
-	echo 'PREFIX="$(PREFIX)"' >>$@
-	echo 'BINDIR="$(BINDIR)"' >>$@
-	echo 'LIBDIR="$(LIBDIR)"' >>$@
-	echo 'TOOLDIR="$(TOOLDIR)"' >>$@
-	echo 'SYSCONFDIR="$(SYSCONFDIR)"' >>$@
-	echo 'E2="$(E2)"' >>$@
-	echo 'LUA="$(LUA)"' >>$@
-	echo 'MAJOR="$(MAJOR)"' >>$@
-	echo 'MINOR="$(MINOR)"' >>$@
-	echo 'PATCHLEVEL="$(PATCHLEVEL)"' >>$@
-	echo 'EXTRAVERSION="$(EXTRAVERSION)"' >>$@
-	echo 'VERSION="$(VERSION)"' >>$@
-	echo 'VERSIONSTRING="$(VERSIONSTRING)"' >>$@
-	echo 'GLOBAL_INTERFACE_VERSION={' >>$@
+	echo 'local buildconfig = {}' > $@
+	echo 'local strict = require("strict")' >>$@
+	echo 'buildconfig.PREFIX="$(PREFIX)"' >>$@
+	echo 'buildconfig.BINDIR="$(BINDIR)"' >>$@
+	echo 'buildconfig.LIBDIR="$(LIBDIR)"' >>$@
+	echo 'buildconfig.TOOLDIR="$(TOOLDIR)"' >>$@
+	echo 'buildconfig.SYSCONFDIR="$(SYSCONFDIR)"' >>$@
+	echo 'buildconfig.E2="$(E2)"' >>$@
+	echo 'buildconfig.LUA="$(LUA)"' >>$@
+	echo 'buildconfig.MAJOR="$(MAJOR)"' >>$@
+	echo 'buildconfig.MINOR="$(MINOR)"' >>$@
+	echo 'buildconfig.PATCHLEVEL="$(PATCHLEVEL)"' >>$@
+	echo 'buildconfig.EXTRAVERSION="$(EXTRAVERSION)"' >>$@
+	echo 'buildconfig.VERSION="$(VERSION)"' >>$@
+	echo 'buildconfig.VERSIONSTRING="$(VERSIONSTRING)"' >>$@
+	echo 'buildconfig.GLOBAL_INTERFACE_VERSION={' >>$@
 	set -e; for x in $(GLOBAL_INTERFACE_VERSION) ; do \
 		echo " \"$$x\"," ; done >>$@
 	echo '}' >>$@
-	echo 'SYNTAX={' >>$@
+	echo 'buildconfig.SYNTAX={' >>$@
 	set -e; for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
 	echo '}' >>$@
+	echo 'return strict.lock(buildconfig)' >>$@
+
 
 all: buildconfig.lua
 	set -e; for s in $(SUBDIRS) ; do \

@@ -31,7 +31,7 @@
 local tools = {}
 local e2lib = require("e2lib")
 local strict = require("strict")
-require("buildconfig")
+local buildconfig = require("buildconfig")
 
 local initialized = false
 
