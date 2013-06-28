@@ -131,9 +131,8 @@ function svn.prepare_source(info, sourcename, source_set, build_path)
         end
     elseif source_set == "working-copy" then
         -- cp -R info.root/src.working/src.workingcopy_subdir build_path
-        local s = string.format("%s/%s/%s", info.root, src.working,
-        src.workingcopy_subdir)
-        local d = string.format("%s/%s", build_path, src.name)
+        local s = e2lib.join(info.root, src.working, src.workingcopy_subdir)
+        local d = e2lib.join(build_path, src.name)
         rc, re = e2lib.cp(s, d, "-R")
         if not rc then
             return false, e:cat(re)
@@ -151,7 +150,7 @@ function svn.working_copy_available(info, sourcename)
         return false, re
     end
     local src = info.sources[sourcename]
-    local dir = string.format("%s/%s", info.root, src.working)
+    local dir = e2lib.join(info.root, src.working)
     return e2lib.isdir(dir)
 end
 
@@ -170,11 +169,11 @@ function svn.check_workingcopy(info, sourcename)
     end
     -- check if the configured branch and tag exist
     local d
-    d = string.format("%s/%s/%s", info.root, src.working, src.branch)
+    d = e2lib.join(info.root, src.working, src.branch)
     if not e2lib.isdir(d) then
         e:append("branch does not exist: %s", src.branch)
     end
-    d = string.format("%s/%s/%s", info.root, src.working, src.tag)
+    d = e2lib.join(info.root, src.working, src.tag)
     if not e2lib.isdir(d) then
         e:append("tag does not exist: %s", src.tag)
     end
@@ -317,9 +316,9 @@ function svn.toresult(info, sourcename, sourceset, directory)
     -- write makefile
     local makefile = "makefile"
     local source = "source"
-    local sourcedir = string.format("%s/%s", directory, source)
+    local sourcedir = e2lib.join(directory, source)
     local archive = string.format("%s.tar.gz", sourcename)
-    local fname  = string.format("%s/%s", directory, makefile)
+    local fname  = e2lib.join(directory, makefile)
     rc, re = e2lib.mkdir(sourcedir, "-p")
     if not rc then
         return false, e:cat(re)
@@ -352,7 +351,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
         return false, e:cat(re)
     end
     -- write licences
-    local destdir = string.format("%s/licences", directory)
+    local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licence_list = table.concat(src.licences, "\n") .. "\n"
     rc, re = e2lib.mkdir(destdir, "-p")
@@ -374,7 +373,7 @@ function svn.update(info, sourcename)
     end
     local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
-    local working = string.format("%s/%s", info.root, src.working)
+    local working = e2lib.join(info.root, src.working)
     rc, re = e2lib.chdir(working)
     if not rc then
         return false, e:cat(re)
