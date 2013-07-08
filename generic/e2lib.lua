@@ -1013,27 +1013,6 @@ local function callcmd(infile, outfile, errfile, cmd)
     return (rc/256)
 end
 
---- callcmd_redirect: call a command with
---  stdin redirected from /dev/null
---  stdout/stderr redirected to a luafile object.
-function e2lib.callcmd_redirect(cmd, out)
-    local devnull, pid, rc
-    devnull = luafile.open("/dev/null", "r")
-    if not devnull then
-        e2lib.abort("could not open /dev/null")
-    end
-    e2lib.logf(3, "+ %s", cmd)
-    pid = e2util.fork()
-    if pid == 0 then
-        rc = callcmd(devnull, out, out, cmd)
-        os.exit(rc)
-    else
-        rc = e2util.wait(pid)
-        luafile.close(devnull)
-        return rc
-    end
-end
-
 --- Call several commands in a pipe.
 -- @param cmds Table of shell commands.
 -- @param infile Luafile that is readable, or nil.
