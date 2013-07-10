@@ -82,7 +82,6 @@ e2lib.globals = {
     hostname = nil,
     termwidth = 72,
     env = {},
-    last_output = false,
     tmpdirs = {},
     tmpfiles = {},
     default_projects_server = "projects",
@@ -1155,12 +1154,12 @@ end
 -- @return unknown
 function e2lib.callcmd_capture(cmd, capture)
     local rc, oread, owrite, devnull, pid
+
     local function autocapture(...)
         local msg = table.concat({...})
         e2lib.log(3, msg)
-        e2lib.globals.last_output = msg
     end
-    e2lib.globals.last_output = false
+
     capture = capture or autocapture
     rc, oread, owrite = luafile.pipe()
     owrite:setlinebuf()
