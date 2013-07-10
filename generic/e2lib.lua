@@ -80,7 +80,6 @@ e2lib.globals = {
     username = nil,
     homedir = nil,
     hostname = nil,
-    termwidth = 72,
     env = {},
     tmpdirs = {},
     tmpfiles = {},
