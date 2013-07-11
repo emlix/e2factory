@@ -1154,8 +1154,7 @@ end
 function e2lib.callcmd_capture(cmd, capture)
     local rc, oread, owrite, devnull, pid
 
-    local function autocapture(...)
-        local msg = table.concat({...})
+    local function autocapture(msg)
         e2lib.log(3, msg)
     end
 
