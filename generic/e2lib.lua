@@ -1191,22 +1191,35 @@ function e2lib.callcmd_capture(cmd, capture)
     return rc
 end
 
---- call a command, log its output to a loglevel, catch the last line of
--- output and return it in addition to the commands return code
+--- Call a command, log its output and catch the last lines for error reporting.
 -- @param cmd string: the command
--- @param loglevel number: loglevel (optional, defaults to 3)
--- @return number: the return code
--- @return string: the program output, or nil
-function e2lib.callcmd_log(cmd, loglevel)
-    local e = ""
-    if not loglevel then
-        loglevel = 3
+-- @return Return code of the command (number).
+-- @return Error object containing command line and last lines of output.
+function e2lib.callcmd_log(cmd)
+    local e = err.new("command %s failed:", cmd)
+    local fifo = {}
+
+    local function logto(msg)
+        e2lib.log(3, msg)
+
+        if msg ~= "" then
+            if #fifo > 4 then -- keep the last n lines.
+                table.remove(fifo, 1)
+            end
+            table.insert(fifo, msg)
+        end
     end
-    local function logto(output)
-        e2lib.log(loglevel, output)
-        e = e .. output
-    end
+
     local rc = e2lib.callcmd_capture(cmd, logto)
+
+    if #fifo == 0 then
+        table.insert(fifo, "command failed silently, no output captured")
+    end
+
+    for _,v in ipairs(fifo) do
+        e:append("%s", v)
+    end
+
     return rc, e
 end
 
@@ -1555,7 +1568,7 @@ function e2lib.call_tool(tool, args)
     if rc ~= 0 then
         return false, e
     end
-    return true, e
+    return true
 end
 
 --- call a tool with argv
@@ -1616,7 +1629,7 @@ function e2lib.call_tool_argv_capture(tool, argv, capturefn)
     if rc ~= 0 then
         return false, e
     end
-    return true, e
+    return true
 end
 
 --- call git
@@ -1643,7 +1656,6 @@ function e2lib.git(gitdir, subtool, args)
     e2lib.shquote(gitdir), e2lib.shquote(git), e2lib.shquote(subtool), args)
     rc, re = e2lib.callcmd_log(call)
     if rc ~= 0 then
-        e:append(call)
         return false, e:cat(re)
     end
     return true, e
