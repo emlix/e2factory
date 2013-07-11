@@ -211,7 +211,7 @@ local function e2_install_e2(arg)
     end
     local cmd = string.format("make PREFIX=%s BINDIR=%s local install-local",
     e2lib.shquote(buildconfig.PREFIX), e2lib.shquote(buildconfig.BINDIR))
-    rc, re = e2lib.callcmd_capture(cmd)
+    rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
         return false, e:cat(re)
     end

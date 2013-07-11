@@ -68,7 +68,7 @@ local function git_clone_url(surl, destdir, skip_checkout)
         flags = "-n"
     end
 
-    local cmd = string.format("git clone %s --quiet %s %s", flags, 
+    local cmd = string.format("git clone %s --quiet %s %s", flags,
         e2lib.shquote(src), e2lib.shquote(destdir))
 
     local rc, re = e2lib.callcmd_log(cmd)
@@ -87,21 +87,27 @@ end
 -- @return bool
 -- @return nil, an error object on failure
 function generic_git.git_branch_new1(gitwc, track, branch, start_point)
-    -- git branch [--track|--no-track] <branch> <start_point>
-    local f_track = nil
+    local rc, re, e
+    local f_track
+    local cmd
+
     if track == true then
         f_track = "--track"
     else
         f_track = "--no-track"
     end
-    local cmd = string.format( "cd %s && git branch %s %s %s",
-    e2lib.shquote(gitwc), f_track, e2lib.shquote(branch),
-    e2lib.shquote(start_point))
-    local rc = e2lib.callcmd_capture(cmd)
+
+    -- git branch [--track|--no-track] <branch> <start_point>
+    cmd = string.format( "cd %s && git branch %s %s %s",
+        e2lib.shquote(gitwc), f_track, e2lib.shquote(branch),
+        e2lib.shquote(start_point))
+    rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
-        return false, err.new("creating new branch failed")
+        e = err.new("creating new branch failed")
+        return false, e:cat(re)
     end
-    return true, nil
+
+    return true
 end
 
 --- git checkout wrapper
@@ -110,15 +116,19 @@ end
 -- @return bool
 -- @return an error object on failure
 function generic_git.git_checkout1(gitwc, branch)
+    local rc, re, e
+    local cmd
+
     e2lib.logf(3, "checking out branch: %s", branch)
-    -- git checkout <branch>
-    local cmd = string.format("cd %s && git checkout %s", e2lib.shquote(gitwc),
-    e2lib.shquote(branch))
-    local rc = e2lib.callcmd_capture(cmd)
+    cmd = string.format("cd %s && git checkout %s", e2lib.shquote(gitwc),
+        e2lib.shquote(branch))
+    rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
-        return false, err.new("git checkout failed")
+        e = err.new("git checkout failed")
+        return false, e:cat(re)
     end
-    return true, nil
+
+    return true
 end
 
 --- git rev-list wrapper function
@@ -163,36 +173,44 @@ end
 -- @return bool
 -- @return an error object on failure
 function generic_git.git_init_db1(rurl)
+    local rc, re, e
+    local u
+    local gitdir, gitcmd
+    local cmd
+
     if (not rurl) then
         return false, err.new("git_init_db1(): missing parameter")
     end
-    local e = err.new("git_init_db failed")
-    local rc, re
-    local u, re = url.parse(rurl)
+
+    e = err.new("git_init_db failed")
+
+    u, re = url.parse(rurl)
     if not u then
         return false, e:cat(re)
     end
-    local rc = false
-    local cmd = nil
-    local gitdir = string.format("/%s", u.path)
-    local gitcmd = string.format("mkdir -p %s && GIT_DIR=%s git init-db --shared",
-    e2lib.shquote(gitdir), e2lib.shquote(gitdir))
+
+    gitdir = e2lib.join("/", u.path);
+    gitcmd = string.format("mkdir -p %s && GIT_DIR=%s git init-db --shared",
+        e2lib.shquote(gitdir), e2lib.shquote(gitdir))
+
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
         local ssh = tools.get_tool("ssh")
-        cmd = string.format("%s %s %s", e2lib.shquote(ssh), e2lib.shquote(u.server),
-        e2lib.shquote(gitcmd))
+        cmd = string.format("%s %s %s", e2lib.shquote(ssh),
+            e2lib.shquote(u.server), e2lib.shquote(gitcmd))
     elseif u.transport == "file" then
         cmd = gitcmd
     else
         return false, err.new("git_init_db: can not initialize git repository"..
             " on this transport: %s", u.transport)
     end
-    rc = e2lib.callcmd_capture(cmd)
+
+    rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
-        return false, e:append("error running git init-db")
+        return false, e:cat(re)
     end
-    return true, nil
+
+    return true
 end
 
 --- do a git push
@@ -202,27 +220,32 @@ end
 -- @return bool
 -- @return an error object on failure
 function generic_git.git_push1(gitdir, rurl, refspec)
+    local rc, re, e, u, remote_git_url, cmd
+
     if (not rurl) or (not gitdir) or (not refspec) then
         return false, err.new("git_push1(): missing parameter")
     end
-    local rc, re
-    local e = err.new("git push failed")
-    local u, re = url.parse(rurl)
+
+    e = err.new("git push failed")
+    u, re = url.parse(rurl)
     if not u then
         return false, e:cat(re)
     end
-    local remote_git_url, re = generic_git.git_url1(u)
+
+    remote_git_url, re = generic_git.git_url1(u)
     if not remote_git_url then
         return false, e:cat(re)
     end
+
     -- GIT_DIR=gitdir git push remote_git_url refspec
-    local cmd = string.format("GIT_DIR=%s git push %s %s", e2lib.shquote(gitdir),
-    e2lib.shquote(remote_git_url), e2lib.shquote(refspec))
-    local rc = e2lib.callcmd_capture(cmd)
+    cmd = string.format("GIT_DIR=%s git push %s %s", e2lib.shquote(gitdir),
+        e2lib.shquote(remote_git_url), e2lib.shquote(refspec))
+    rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
-        return false, e
+        return false, e:cat(re)
     end
-    return true, nil
+
+    return true
 end
 
 --- do a git remote-add
@@ -232,47 +255,61 @@ end
 -- @return bool
 -- @return an error object on failure
 function generic_git.git_remote_add1(lurl, rurl, name)
+    local rc, re, e, lrepo, rrepo, giturl, cmd
+
     if (not lurl) or (not rurl) or (not name) then
         return false, err.new("missing parameter")
     end
-    local rc, re
-    local e = err.new("git remote-add failed")
-    local lrepo, re = url.parse(lurl)
+
+    e = err.new("git remote-add failed")
+    lrepo, re = url.parse(lurl)
     if not lrepo then
         return false, e:cat(re)
     end
-    local rrepo, re = url.parse(rurl)
+
+    rrepo, re = url.parse(rurl)
     if not rrepo then
         return false, e:cat(re)
     end
-    local giturl, re = generic_git.git_url1(rrepo)
+
+    giturl, re = generic_git.git_url1(rrepo)
     if not giturl then
         return false, e:cat(re)
     end
     -- git remote add <name> <giturl>
-    local cmd = string.format("cd %s && git remote add %s %s",
-    e2lib.shquote("/"..lrepo.path), e2lib.shquote(name), e2lib.shquote(giturl))
-    local rc = e2lib.callcmd_capture(cmd)
+    cmd = string.format("cd %s && git remote add %s %s",
+        e2lib.shquote("/"..lrepo.path), e2lib.shquote(name),
+        e2lib.shquote(giturl))
+    rc, re = e2lib.callcmd_log(cmd)
     if rc ~= 0 then
-        return false, e
+        return false, e:cat(re)
     end
-    return true, nil
+
+    return true
 end
 
+--- Add git remote.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
-    local rurl, e = cache.remote_url(c, rserver, rlocation)
+    local rc, re, rurl, lurl
+
+    rurl, re = cache.remote_url(c, rserver, rlocation)
     if not rurl then
-        return false, e
+        return false, re
     end
-    local lurl, e = cache.remote_url(c, lserver, llocation)
+
+    lurl, re = cache.remote_url(c, lserver, llocation)
     if not lurl then
-        return false, e
+        return false, re
     end
-    local rc, e = generic_git.git_remote_add1(lurl, rurl, name)
+
+    rc, re = generic_git.git_remote_add1(lurl, rurl, name)
     if not rc then
-        return false, e
+        return false, re
     end
-    return true, nil
+
+    return true
 end
 
 --- translate a url to a git url
