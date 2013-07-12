@@ -1555,11 +1555,11 @@ function e2lib.patch(args)
     return e2lib.call_tool("patch", args)
 end
 
---- call a tool
--- @param tool string: tool name as registered in the tools library
--- @param args string: arguments
--- @return bool
--- @return string: the last line ouf captured output
+--- Call a tool.
+-- @param tool Tool name as registered in the tools library (string).
+-- @param args Arguments as a string. Caller is responsible for safe escaping.
+-- @return True when the tool returned 0, false on error.
+-- @return Error object on failure
 function e2lib.call_tool(tool, args)
     local rc, re, cmd, flags, call
 
@@ -1582,11 +1582,12 @@ function e2lib.call_tool(tool, args)
     return true
 end
 
---- call a tool with argv
--- @param tool string: tool name as registered in the tools library
--- @param argv table: a vector of (string) arguments
--- @return bool
--- @return string: the last line ouf captured output
+--- Call a tool with an argument vector.
+-- @param tool Tool name as registered in the tools library (string).
+-- @param argv Vector of arguments, escaping is handled by the function
+--             (table of strings).
+-- @return True when the tool returned 0, false on error.
+-- @return Error object on failure.
 function e2lib.call_tool_argv(tool, argv)
     local rc, re, cmd, flags, call
 
