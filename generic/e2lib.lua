@@ -205,7 +205,6 @@ function e2lib.init()
     -- assign some frequently used environment variables
     e2lib.globals.homedir = e2lib.globals.osenv["HOME"]
     e2lib.globals.username = e2lib.globals.osenv["USER"]
-    e2lib.globals.terminal = e2lib.globals.osenv["TERM"]
     if e2lib.globals.osenv["E2TMPDIR"] then
         e2lib.globals.tmpdir = e2lib.globals.osenv["E2TMPDIR"]
     else
