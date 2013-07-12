@@ -1841,10 +1841,10 @@ function e2lib.isfile(path)
     return false
 end
 
---- calculate SHA1 sum for a file
+--- Calculate SHA1 sum of a file.
 -- @param path string: path
--- @return string: sha1 sum of file
--- @return an error object on failure
+-- @return SHA1 sum of file or false on error.
+-- @return Error object on failure.
 function e2lib.sha1sum(path)
     local rc, re, e, sha1sum, sha1sum_flags, cmd, p, msg, out, sha1, file
 
