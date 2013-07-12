@@ -271,7 +271,7 @@ local function userdefaultoptions(opts)
         elseif options[opt].default then
             opts[opt] = options[opt].default
         else
-            e2lib.bomb("user default option has no effect")
+            return false, err.new("user default option has no effect")
         end
     end
 
