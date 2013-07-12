@@ -9,11 +9,6 @@ Error handling
    * ignoring them (that usually requires a comment)
    * nesting them into another error object from the current layer
  * errors shall not be handled by calling e2lib.abort().
- * calling e2lib.bomb() is allowed when signalling a bug in the tool.
-   E.g. when checking function call parameters, which should never fail.
-   We need the call stack in those cases to fix that bug.
- * the behaviour if e2lib.bomb() may be different when delivering e2factory
-   to customers. (As they should not see the internals.)
  * Example:
    -- the error object from the current layer is usually named 'e'.
    e = err.new("error copying file for")

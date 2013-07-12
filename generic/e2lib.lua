@@ -359,10 +359,11 @@ end
 -- @return nil
 function e2lib.warnf(category, format, ...)
     if (format:len() == 0) or (not format) then
-        e2lib.bomb("calling warnf() with zero length format")
+        e2lib.log(1, "Internal error: calling warnf() with zero length format")
     end
     if type(e2lib.globals.warn_category[category]) ~= "boolean" then
-        e2lib.bomb("calling warnf() with invalid warning category")
+        e2lib.log(1,
+            "Internal error: calling warnf() with invalid warning category")
     end
     if e2lib.globals.warn_category[category] == true then
         local prefix = "Warning: "
@@ -371,7 +372,6 @@ function e2lib.warnf(category, format, ...)
         end
         e2lib.log(1, prefix .. string.format(format, ...))
     end
-    return nil
 end
 
 --- Exit, cleaning up temporary files and directories.
@@ -388,31 +388,12 @@ function e2lib.abort(...)
     else
         local msg = table.concat(t)
         if msg:len() == 0 then
-            e2lib.bomb("calling abort() with zero length message")
+            e2lib.log(1,
+                "Internal error: calling abort() with zero length message")
         end
         e2lib.log(1, "Error: " .. msg)
     end
     e2lib.finish(1)
-end
-
---- Write a message about an internal error, including a traceback
--- and exit. Return code is 32.
--- @param ... any number of strings.
--- @return This function does not return.
-function e2lib.bomb(...)
-    local msg = table.concat({...})
-    io.stderr:write(
-    "Internal Error:\n" ..
-    msg .. "\n" ..
-    "\n" ..
-    "You encountered an internal error in the e2 tool.\n" ..
-    "Please send a description of the problem, including the\n" ..
-    "stacktrace below to <bugs@e2factory.org>.\n" ..
-    "If possible include a copy of the project in the bug report.\n" ..
-    "\n" ..
-    "Thank you - the e2factory team.\n")
-    io.stderr:write(debug.traceback().."\n")
-    os.exit(32)
 end
 
 --- Set E2_CONFIG in the environment to file. Also sets commandline option.
@@ -477,7 +458,7 @@ end
 -- @return nil
 function e2lib.logf(level, format, ...)
     if not format then
-        e2lib.bomb("calling log() without format string")
+        e2lib.log(1, "Internal error: calling logf() without format string")
     end
     local msg = string.format(format, ...)
     return e2lib.log(level, msg)
@@ -489,10 +470,10 @@ end
 -- @param msg string: log message
 function e2lib.log(level, msg)
     if level < 1 or level > 4 then
-        e2lib.bomb("invalid log level")
+        e2lib.log(1, "Internal error: invalid log level")
     end
     if not msg then
-        e2lib.bomb("calling log() without log message")
+        e2lib.log(1, "Internal error: calling log() without log message")
     end
     local log_prefix = "[" .. level .. "] "
     -- remove end of line if it exists
