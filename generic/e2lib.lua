@@ -1898,9 +1898,9 @@ function e2lib.tar(argv)
     return e2lib.call_tool_argv("tar", argv)
 end
 
---- get system architecture
--- @return string: machine hardware name
--- @return an error object on failure
+--- Get system architecture.
+-- @return Machine hardware name as a string, false on error.
+-- @return Error object on failure.
 function e2lib.get_sys_arch()
     local rc, re, e, uname, cmd, p, msg, l, arch
 
