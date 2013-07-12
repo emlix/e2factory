@@ -218,7 +218,7 @@ local function display_doc(documentation, doc_name)
         if founddoc.doctype == doctype.MAN then
             display_man_page(founddoc)
         else
-            e2lib.bomb(string.format("unhandled doctype: %d", founddoc.doctype))
+            return false, err.new("unhandled doctype: %d", founddoc.doctype)
         end
     else
         return false, err.new("More than one document matches '%s'", doc_name)
