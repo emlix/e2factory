@@ -68,47 +68,48 @@ local toollist = {
     flags = "", optional = false },
 }
 
---- get a tool command
--- @param name string: the tool name
--- @return string: the tool command, nil on error
+--- Get a absolute tool command.
+-- @param name Tool name (string).
+-- @return Tool command or false on error.
+-- @return Error object on failure.
 function tools.get_tool(name)
     if not toollist[name] then
-        e2lib.bomb("looking up invalid tool: " .. tostring(name))
+        return false, err.new("tool '%s' is not registered in tool list", name)
     end
     return toollist[name].path
 end
 
---- get tool flags
--- @param name string: the tool name
--- @return string: the tool flags
+--- Get tool flags.
+-- @param name Tool name (string).
+-- @return Tool flags as a string, potentially empty - or false on error.
+-- @return Error object on failure.
 function tools.get_tool_flags(name)
     if not toollist[name] then
-        e2lib.bomb("looking up flags for invalid tool: " ..
-        tostring(name))
+        return false, err.new("tool '%s' is not registered in tool list", name)
     end
     return toollist[name].flags or ""
 end
 
 --- Get tool name.
--- @param name tool name (string)
--- @return Tool name field (string) used to find tool in PATH.
+-- @param name Tool name (string).
+-- @return Tool name field (string) used to find tool in PATH or false on error.
+-- @return Error object on failure.
 function tools.get_tool_name(name)
     if not toollist[name] then
-        e2lib.bomb("looking up flags for invalid tool: " ..
-        tostring(name))
+        return false, err.new("tool '%s' is not registered in tool list", name)
     end
     return toollist[name].name
 end
 
---- set a tool command and flags
--- @param name string: the tool name
--- @param value string: the new tool command
--- @param flags string: the new tool flags. Optional.
--- @return bool
--- @return nil, an error string on error
+--- Set a tool command and flags.
+-- @param name Tool name (string).
+-- @param value Tool command (string). May also be an absolute command.
+-- @param flags Tool flags (string). Optional.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function tools.set_tool(name, value, flags)
     if not toollist[name] then
-        return false, "invalid tool setting"
+        return false, err.new("tool '%s' is not registered in tool list", name)
     end
     if type(value) == "string" then
         toollist[name].name = value
@@ -118,27 +119,26 @@ function tools.set_tool(name, value, flags)
     end
     e2lib.logf(3, "setting tool: %s=%s flags=%s", name, toollist[name].name,
         toollist[name].flags)
-    return true, nil
+    return true
 end
 
---- add a new tool
--- @param name string: the tool name
--- @param value string: the new tool command
--- @param flags string: the new tool flags.
--- @param optional bool: wheter the tool is optional or not
--- @return bool
--- @return nil, an error string on error
+--- Add a new tool.
+-- @param name Tool name (string).
+-- @param value Tool command, may contain absolute path (string).
+-- @param flags Tool flags (string). May be empty.
+-- @param optional Whether the tool is required (true) or optional (false).
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function tools.add_tool(name, value, flags, optional)
     if toollist[name] then
-        e2lib.bomb("trying to add a tool that already exists: " ..
-        tostring(name))
+        return false, err.new("tool '%s' already registered in tool list", name)
     end
 
     if type(name) ~= "string" or type(value) ~= "string" or
         type(flags) ~= "string" or type(optional) ~= "boolean" then
-        print("error in add_tool")
-        e2lib.bomb("one or more parameters wrong while adding tool " ..
-        tostring(name))
+        return false,
+            err.new("one or more parameters wrong while adding tool %s",
+                tostring(name))
     end
 
     toollist[name] = {
@@ -151,53 +151,60 @@ function tools.add_tool(name, value, flags, optional)
     e2lib.logf(3, "adding tool: %s=%s flags=%s optional=%s", name, t.name,
         t.flags, tostring(t.optional))
 
-    return true, nil
+    return true
 end
 
---- check if a tool is available
+--- Check if a tool is available.
 -- @param name string a valid tool name
--- @return bool
--- @return nil, an error string on error
+-- @return True if tool exists, otherwise false. False may also indicate an
+--         error, if the second return value is not nil.
+-- @return Error object on failure.
 function tools.check_tool(name)
-    local tool = toollist[name]
+    local tool, which, p
+    if not toollist[name] then
+        return false, err.new("tool '%s' is not registered in tool list", name)
+    end
+
+    tool = toollist[name]
     if not tool.path then
-        local which = string.format("which \"%s\"", tool.name)
-        local p = io.popen(which, "r")
+        which = string.format("which \"%s\"", tool.name)
+        p = io.popen(which, "r")
         tool.path = p:read()
         p:close()
         if not tool.path then
-            e2lib.logf(3, "tool not available: %s", tool.name)
-            return false, "tool not available"
+            return false
         end
     end
-    e2lib.logf(4, "tool available: %s (%s)", tool.name, tool.path)
+    return true
+end
+
+--- Initialize the tools library. Must be called before the tools library can
+-- be used. Logs a warning about missing optional tools.
+-- @return True on success (all required tools have been found), false on error.
+-- @return Error object on failure.
+function tools.init()
+    local rc, re
+
+    for tool, t in pairs(toollist) do
+        rc, re = tools.check_tool(tool)
+        if not rc and re then
+            return false, re
+        end
+        if not rc then
+            if t.optional then
+                e2lib.warnf("optional tool is not available: %s", tool)
+            else
+                return false, err.new("required tool is missing: %s", tool)
+            end
+        end
+    end
+
+    initialized = true
 
     return true
 end
 
---- initialize the library
--- @return bool
-function tools.init()
-    local error = false
-    for tool,t in pairs(toollist) do
-        local rc = tools.check_tool(tool)
-        if not rc then
-            local warn = "Warning"
-            if not t.optional then
-                error = true
-                warn = "Error"
-            end
-            e2lib.logf(1, "%s: tool is not available: %s", warn, tool)
-        end
-    end
-    if error then
-        return false, "missing mandatory tools"
-    end
-    initialized = true
-    return true, nil
-end
-
---- Check whether the tools library is initialized.
+--- Check whether the tools library is initialized. There is no error condition.
 -- @return True or false.
 function tools.isinitialized()
     return initialized

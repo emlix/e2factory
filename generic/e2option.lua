@@ -460,11 +460,12 @@ function e2option.showtoolmanpage()
     local cmd = {}
     for _,s in ipairs({"man"}) do
         local viewer, viewerflags
+
         viewer = tools.get_tool(s)
         viewerflags = tools.get_tool_flags(s)
         if viewer then
             table.insert(cmd, e2lib.shquote(viewer))
-            if viewerflags ~= "" then
+            if viewerflags and viewerflags ~= "" then
                 table.insert(cmd, viewerflags)
             end
 

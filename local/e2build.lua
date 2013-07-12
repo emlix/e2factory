@@ -335,26 +335,36 @@ local function setup_chroot(info, r, return_flags)
     return true, nil
 end
 
+--- Enter playground.
+-- @param info
+-- @param r
+-- @param chroot_command (optional)
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2build.enter_playground(info, r, chroot_command)
+    local rc, re, e, res, e2_su, cmd
+
     if not chroot_command then
         chroot_command = "/bin/bash"
     end
-    local res = info.results[r]
-    local rc, re
-    local e = err.new("entering playground")
-    e2lib.logf(4, "entering playground for %s ...", r)
-    local term = e2lib.globals.terminal
-    local e2_su = tools.get_tool("e2-su-2.2")
-    local cmd = string.format("%s %s chroot_2_3 %s %s",
-        res.build_config.chroot_call_prefix,
-        e2lib.shquote(e2_su),
-        e2lib.shquote(res.build_config.base),
-        chroot_command)
+
+    res = info.results[r]
+    e = err.new("entering playground")
+
+    e2_su = tools.get_tool("e2-su-2.2")
+    if not e2_su then
+        return false, e:cat(re)
+    end
+
+    cmd = string.format("%s %s chroot_2_3 '%s' %s",
+        res.build_config.chroot_call_prefix, e2_su,
+        res.build_config.base, chroot_command)
     e2tool.set_umask(info)
+    -- return code depends on user commands. Ignore.
     os.execute(cmd)
     e2tool.reset_umask(info)
-    -- return code depends on user commands. Ignore.
-    return true, nil
+
+    return true
 end
 
 local function fix_permissions(info, r, return_flags)
@@ -401,7 +411,10 @@ local function runbuild(info, r, return_flags)
         e2lib.shquote(res.build_config.Tc),
         e2lib.shquote(res.build_config.scriptdir),
         e2lib.shquote(res.build_config.build_driver_file))
-    local e2_su = tools.get_tool("e2-su-2.2")
+    local e2_su, re = tools.get_tool("e2-su-2.2")
+    if not e2_su then
+        return false, e:cat(re)
+    end
     local cmd = string.format("%s %s chroot_2_3 %s %s",
         res.build_config.chroot_call_prefix,
         e2lib.shquote(e2_su),

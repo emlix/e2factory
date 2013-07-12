@@ -339,13 +339,19 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         if not rc then
             return false, re
         end
-        local tar = tools.get_tool("tar")
-        local tarflags = tools.get_tool_flags("tar")
+        local tar, re = tools.get_tool("tar")
+        if not tar then
+            return false, e:cat(re)
+        end
+        local tarflags, re = tools.get_tool_flags("tar")
+        if not tarflags then
+            return false, e:cat(re)
+        end
         local cmd1 = string.format("%s %s -c -C %s/%s --exclude '.git' .",
-        e2lib.shquote(tar), tarflags, e2lib.shquote(info.root),
-        e2lib.shquote(src.working))
+            e2lib.shquote(tar), tarflags, e2lib.shquote(info.root),
+            e2lib.shquote(src.working))
         local cmd2 = string.format("%s %s -x -C %s/%s", e2lib.shquote(tar),
-        tarflags, e2lib.shquote(buildpath), e2lib.shquote(sourcename))
+            tarflags, e2lib.shquote(buildpath), e2lib.shquote(sourcename))
         rc, re = e2lib.callcmd_pipe({ cmd1, cmd2 })
         if not rc then
             return false, e:cat(re)

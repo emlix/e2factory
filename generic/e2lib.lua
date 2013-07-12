@@ -233,11 +233,12 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2lib.init2()
-    local rc, re
-    local e = err.new("initializing globals (step2)")
+    local rc, re, e, config, ssh, host_system_arch
+
+    e = err.new("initializing globals (step2)")
 
     -- get the global configuration
-    local config, re = e2lib.get_global_config()
+    config, re = e2lib.get_global_config()
     if not config then
         return false, re
     end
@@ -245,26 +246,31 @@ function e2lib.init2()
     -- honour tool customizations from the config file
     if config.tools then
         for k,v in pairs(config.tools) do
-            tools.set_tool(k, v.name, v.flags)
+            rc, re = tools.set_tool(k, v.name, v.flags)
+            if not rc then
+                return false, e:cat(re)
+            end
         end
     end
 
     -- handle E2_SSH environment setting
-    local ssh = nil
-    ssh  = e2lib.globals.osenv["E2_SSH"]
+    ssh = e2lib.globals.osenv["E2_SSH"]
     if ssh then
         e2lib.logf(3, "using E2_SSH environment variable: %s", ssh)
-        tools.set_tool("ssh", ssh)
+        rc, re = tools.set_tool("ssh", ssh)
+        if not rc then
+            return false, e:cat(re)
+        end
     end
 
     -- initialize the tools library after resetting tools
-    local rc, re = tools.init()
+    rc, re = tools.init()
     if not rc then
         return false, e:cat(re)
     end
 
     -- get host system architecture
-    local host_system_arch, re = e2lib.get_sys_arch()
+    host_system_arch, re = e2lib.get_sys_arch()
     if not host_system_arch then
         return false, e:cat(re)
     end
@@ -1555,19 +1561,24 @@ end
 -- @return bool
 -- @return string: the last line ouf captured output
 function e2lib.call_tool(tool, args)
-    local cmd = tools.get_tool(tool)
+    local rc, re, cmd, flags, call
+
+    cmd, re = tools.get_tool(tool)
     if not cmd then
-        e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
+        return false, re
     end
-    local flags = tools.get_tool_flags(tool)
+
+    flags, re = tools.get_tool_flags(tool)
     if not flags then
-        e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
+        return false, re
     end
-    local call = string.format("%s %s %s", cmd, flags, args)
-    local rc, e = e2lib.callcmd_log(call)
+
+    call = string.format("%s %s %s", cmd, flags, args)
+    rc, re = e2lib.callcmd_log(call)
     if rc ~= 0 then
-        return false, e
+        return false, re
     end
+
     return true
 end
 
@@ -1577,28 +1588,31 @@ end
 -- @return bool
 -- @return string: the last line ouf captured output
 function e2lib.call_tool_argv(tool, argv)
-    local cmd = tools.get_tool(tool)
+    local rc, re, cmd, flags, call
+
+    cmd, re = tools.get_tool(tool)
     if not cmd then
-        e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
-    end
-    local flags = tools.get_tool_flags(tool)
-    if not flags then
-        e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
+        return false, re
     end
 
-    -- TODO: flags should be quoted as well, requires config changes
-    local call = string.format("%s %s", e2lib.shquote(cmd), flags)
+    flags, re = tools.get_tool_flags(tool)
+    if not flags then
+        return false, re
+    end
+
+    call = string.format("%s %s", e2lib.shquote(cmd), flags)
 
     for _,arg in ipairs(argv) do
         assert(type(arg) == "string")
         call = call .. " " .. e2lib.shquote(arg)
     end
 
-    local rc, e = e2lib.callcmd_log(call)
+    rc, re = e2lib.callcmd_log(call)
     if rc ~= 0 then
-        return false, e
+        return false, re
     end
-    return true, e
+
+    return true
 end
 
 --- call a tool with argv and capture output
@@ -1608,27 +1622,30 @@ end
 -- @return bool
 -- @return string: the last line ouf captured output
 function e2lib.call_tool_argv_capture(tool, argv, capturefn)
-    local cmd = tools.get_tool(tool)
+    local rc, re, cmd, flags, call
+
+    cmd, re = tools.get_tool(tool)
     if not cmd then
-        e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
-    end
-    local flags = tools.get_tool_flags(tool)
-    if not flags then
-        e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
+        return false, re
     end
 
-    -- TODO: flags should be quoted as well, requires config changes
-    local call = string.format("%s %s", e2lib.shquote(cmd), flags)
+    flags, re = tools.get_tool_flags(tool)
+    if not flags then
+        return false, re
+    end
+
+    call = string.format("%s %s", e2lib.shquote(cmd), flags)
 
     for _,arg in ipairs(argv) do
         assert(type(arg) == "string")
         call = call .. " " .. e2lib.shquote(arg)
     end
 
-    local rc, e = e2lib.callcmd_capture(call, capturefn)
+    rc, re = e2lib.callcmd_capture(call, capturefn)
     if rc ~= 0 then
-        return false, e
+        return false, re
     end
+
     return true
 end
 
@@ -1639,26 +1656,31 @@ end
 -- @return bool
 -- @return an error object on failure
 function e2lib.git(gitdir, subtool, args)
-    local rc, re
-    local e = err.new("calling git failed")
+    local rc, re, e, git, call
+
+    e = err.new("calling git failed")
+
     if not gitdir then
         gitdir = ".git"
     end
+
     if not args then
         args = ""
     end
-    local git, re = tools.get_tool("git")
+
+    git, re = tools.get_tool("git")
     if not git then
         return false, e:cat(re)
     end
-    -- TODO: args should be quoted as well
-    local call = string.format("GIT_DIR=%s %s %s %s",
-    e2lib.shquote(gitdir), e2lib.shquote(git), e2lib.shquote(subtool), args)
+
+    call = string.format("GIT_DIR=%s %s %s %s",
+        e2lib.shquote(gitdir), e2lib.shquote(git), e2lib.shquote(subtool), args)
     rc, re = e2lib.callcmd_log(call)
     if rc ~= 0 then
         return false, e:cat(re)
     end
-    return true, e
+
+    return true
 end
 
 function e2lib.git_argv(argv)
@@ -1823,36 +1845,38 @@ end
 -- @return string: sha1 sum of file
 -- @return an error object on failure
 function e2lib.sha1sum(path)
+    local rc, re, e, sha1sum, sha1sum_flags, cmd, p, msg, out, sha1, file
+
     assert(type(path) == "string")
 
-    local e = err.new("calculating SHA1 checksum failed")
+    e = err.new("calculating SHA1 checksum failed")
 
-    local sha1sum, re = tools.get_tool("sha1sum")
+    sha1sum, re = tools.get_tool("sha1sum")
     if not sha1sum then
-        return nil, e:cat(re)
+        return false , e:cat(re)
     end
 
-    local sha1sum_flags, re = tools.get_tool_flags("sha1sum")
+    sha1sum_flags, re = tools.get_tool_flags("sha1sum")
     if not sha1sum_flags then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
 
-    -- TODO: sha1sum_flags should be quoted as well
-    local cmd = string.format("%s %s %s", e2lib.shquote(sha1sum), sha1sum_flags,
-    e2lib.shquote(path))
+    cmd = string.format("%s %s %s", e2lib.shquote(sha1sum), sha1sum_flags,
+        e2lib.shquote(path))
 
-    local p, msg = io.popen(cmd, "r")
+    p, msg = io.popen(cmd, "r")
     if not p then
-        return nil, e:cat(msg)
+        return false, e:cat(msg)
     end
 
-    local out, msg = p:read("*l")
+    out, msg = p:read("*l")
     p:close()
 
-    local sha1, file = out:match("(%S+)  (%S+)")
+    sha1, file = out:match("(%S+)  (%S+)")
     if type(sha1) ~= "string" then
-        return nil, e:cat("parsing sha1sum output failed")
+        return false, e:cat("parsing sha1sum output failed")
     end
+
     return sha1
 end
 
@@ -1878,23 +1902,32 @@ end
 -- @return string: machine hardware name
 -- @return an error object on failure
 function e2lib.get_sys_arch()
-    local rc, re
-    local e = err.new("getting host system architecture failed")
-    local uname = tools.get_tool("uname")
-    local cmd = string.format("%s -m", e2lib.shquote(uname))
-    local p, msg = io.popen(cmd, "r")
+    local rc, re, e, uname, cmd, p, msg, l, arch
+
+    e = err.new("getting host system architecture failed")
+
+    uname, re = tools.get_tool("uname")
+    if not uname then
+        return false, e:cat(re)
+    end
+
+    cmd = string.format("%s -m", e2lib.shquote(uname))
+    p, msg = io.popen(cmd, "r")
     if not p then
-        return nil, e:cat(msg)
+        return false, e:cat(msg)
     end
-    local l, msg = p:read()
+
+    l, msg = p:read()
     if not l then
-        return nil, e:cat(msg)
+        return false, e:cat(msg)
     end
-    local arch = l:match("(%S+)")
+
+    arch = l:match("(%S+)")
     if not arch then
-        return nil, e:append("%s: %s: cannot parse", cmd, l)
+        return false, e:append("%s: %s: cannot parse", cmd, l)
     end
-    return arch, nil
+
+    return arch
 end
 
 --- return a table of parent directories

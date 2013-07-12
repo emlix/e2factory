@@ -56,9 +56,26 @@ local function rsync_ssh(opts, src, dest)
     table.insert(argv, "-L") -- copy symlinks as real files
     table.insert(argv, "-k") -- copy dirlinks as directories
 
-    local rsh = tools.get_tool("ssh") .. " " .. tools.get_tool_flags("ssh")
-    table.insert(argv, "--rsh=" .. rsh)
+    local rsh, rshflags, re
 
+    rsh, re = tools.get_tool("ssh")
+    if not rsh then
+        return false, re
+    end
+
+    rsh = string.format("--rsh=%s", rsh)
+
+    rshflags, re = tools.get_tool_flags("ssh")
+    if not rshflags then
+        return false, re
+    end
+
+    if rshflags ~= "" then
+        rsh = string.format("%s %s", rsh, rshflags)
+    end
+
+
+    table.insert(argv, rsh)
     table.insert(argv, src)
     table.insert(argv, dest)
 

@@ -561,7 +561,10 @@ function files.toresult(info, sourcename, sourceset, directory)
             end
 
             local tool, toolargv = rc, re
-            local toolname = tools.get_tool_name(tool)
+            local toolname, re = tools.get_tool_name(tool)
+            if not toolname then
+                return false, e:cat(re)
+            end
 
             f:write(string.format("\t%s", toolname))
             for _,v in ipairs(toolargv) do

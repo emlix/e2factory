@@ -2048,7 +2048,10 @@ local function verify_remote_fileid(info, file, fileid)
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
         local cmd = "sha1sum"
-        local ssh = tools.get_tool("ssh")
+        local ssh, re = tools.get_tool("ssh")
+        if not ssh then
+            return false, e:cat(re)
+        end
 
         local retcmd = string.format("%s %s ",
         e2lib.shquote(ssh), e2lib.shquote(u.server))

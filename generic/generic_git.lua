@@ -195,7 +195,10 @@ function generic_git.git_init_db1(rurl)
 
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
-        local ssh = tools.get_tool("ssh")
+        local ssh, re = tools.get_tool("ssh")
+        if not ssh then
+            return false, re
+        end
         cmd = string.format("%s %s %s", e2lib.shquote(ssh),
             e2lib.shquote(u.server), e2lib.shquote(gitcmd))
     elseif u.transport == "file" then

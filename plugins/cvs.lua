@@ -168,9 +168,18 @@ function cvs.fetch_source(info, sourcename)
     end
     -- always fetch the configured branch, as we don't know the build mode here.
     local rev = src.branch
-    local rsh = tools.get_tool("ssh")
-    local cvstool = tools.get_tool("cvs")
-    local cvsflags = tools.get_tool_flags("cvs")
+    local rsh, re = tools.get_tool("ssh")
+    if not rsh then
+        return false, e:cat(re)
+    end
+    local cvstool, re = tools.get_tool("cvs")
+    if not cvstool then
+        return false, e:cat(re)
+    end
+    local cvsflags, re = tools.get_tool_flags("cvs")
+    if not cvsflags then
+        return false, e:cat(re)
+    end
     -- split the working directory into dirname and basename as some cvs clients
     -- don't like slashes (e.g. in/foo) in their checkout -d<path> argument
     local dir = e2lib.dirname(src.working)
@@ -218,9 +227,19 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
     local cmd = nil
     if source_set == "tag" or source_set == "branch" then
         local rev = mkrev(src, source_set)
-        local rsh = tools.get_tool("ssh")
-        local cvstool = tools.get_tool("cvs")
-        local cvsflags = tools.get_tool_flags("cvs")
+        local rsh, re = tools.get_tool("ssh")
+        if not rsh then
+            return false, e:cat(re)
+        end
+        local cvstool, re = tools.get_tool("cvs")
+        if not cvstool then
+            return false, e:cat(re)
+        end
+        local cvsflags, re = tools.get_tool_flags("cvs")
+        if not cvsflags then
+            return false, e:cat(re)
+        end
+
         -- cd buildpath && cvs -d cvsroot export -R -r rev module
         cmd = string.format("cd %s && CVS_RSH=%s " ..
         "%s %s -d %s export -R -r %s -d %s %s",
@@ -250,9 +269,18 @@ function cvs.update(info, sourcename)
     local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
     local working = string.format("%s/%s", info.root, src.working)
-    local rsh = tools.get_tool("ssh")
-    local cvstool = tools.get_tool("cvs")
+    local rsh, re = tools.get_tool("ssh")
+    if not rsh then
+        return false, e:cat(re)
+    end
+    local cvstool, re = tools.get_tool("cvs")
+    if not cvstool then
+        return false, e:cat(re)
+    end
     local cvsflags = tools.get_tool_flags("cvs")
+    if cvsflags then
+        return false, e:cat(re)
+    end
     local cmd = string.format("cd %s && CVS_RSH=%s %s %s update -R",
     e2lib.shquote(working), e2lib.shquote(rsh), e2lib.shquote(cvstool),
     cvsflags)
