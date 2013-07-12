@@ -66,7 +66,7 @@ local function shadow_config_up(src_res, pathname)
         cf = e2tool.resultconfig(pathname)
         cfdir = e2tool.resultdir(pathname)
     else
-        e2lib.bomb("unexpected value in src_res")
+        return false, err.new("unexpected value in src_res")
     end
 
     if pathname == "." then
@@ -97,7 +97,7 @@ local function shadow_config_down(src_res, pathname)
         cf = e2tool.resultconfig(pathname)
         cfdir = e2tool.resultdir(pathname)
     else
-        e2lib.bomb("unexpected value in src_res")
+        return false, err.new("unexpected value in src_res")
     end
 
     if e2lib.isfile(cf) then
