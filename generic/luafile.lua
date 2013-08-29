@@ -32,6 +32,7 @@ local luafile = {}
 local strict = require("strict")
 require("luafile_ll")
 
+--- Create new file object.
 function luafile.new()
     local f = {}
     local meta = { __index = luafile }
@@ -39,6 +40,7 @@ function luafile.new()
     return f
 end
 
+--- Open a file.
 function luafile.open(path, mode)
     local f = luafile.new()
     f.file = luafile_ll.fopen(path, mode)
@@ -48,6 +50,7 @@ function luafile.open(path, mode)
     return nil
 end
 
+--- Open a file descriptor.
 function luafile.fdopen(fd, mode)
     local f = luafile.new()
     f.file = luafile_ll.fdopen(fd, mode)
@@ -57,6 +60,7 @@ function luafile.fdopen(fd, mode)
     return nil
 end
 
+--- Close a file.
 function luafile.close(luafile)
     if luafile and luafile.file then
         if luafile_ll.fclose(luafile.file) then
@@ -67,6 +71,7 @@ function luafile.close(luafile)
     return false
 end
 
+--- Read a file.
 function luafile.read(luafile)
     if luafile and luafile.file then
         return luafile_ll.fread(luafile.file)
@@ -74,6 +79,7 @@ function luafile.read(luafile)
     return nil
 end
 
+--- Write buffer to a file.
 function luafile.write(luafile, buffer)
     if luafile and luafile.file and buffer then
         return luafile_ll.fwrite(luafile.file, buffer)
@@ -81,6 +87,7 @@ function luafile.write(luafile, buffer)
     return nil
 end
 
+--- Read line from a file.
 function luafile.readline(luafile)
     if luafile and luafile.file then
         return luafile_ll.fgets(luafile.file)
@@ -88,6 +95,7 @@ function luafile.readline(luafile)
     return nil
 end
 
+--- Seek in a file.
 function luafile.seek(luafile, offset)
     if luafile and luafile.file and offset then
         return luafile_ll.fseek(luafile.file, offset)
@@ -95,6 +103,7 @@ function luafile.seek(luafile, offset)
     return nil
 end
 
+--- Flush file buffers.
 function luafile.flush(luafile)
     if luafile and luafile.file then
         return luafile_ll.fflush(luafile.file)
@@ -102,6 +111,7 @@ function luafile.flush(luafile)
     return nil
 end
 
+--- Return file descriptor of a file.
 function luafile.fileno(luafile)
     if luafile and luafile.file then
         return luafile_ll.fileno(luafile.file)
@@ -109,6 +119,7 @@ function luafile.fileno(luafile)
     return nil
 end
 
+--- Test for end of file.
 function luafile.eof(luafile)
     if luafile and luafile.file then
         return luafile_ll.feof(luafile.file)
@@ -116,6 +127,7 @@ function luafile.eof(luafile)
     return nil
 end
 
+--- Set buffer size used internally.
 function luafile.setlinebuf(luafile)
     if luafile and luafile.file then
         return luafile_ll.setlinebuf(luafile.file)
@@ -123,6 +135,7 @@ function luafile.setlinebuf(luafile)
     return nil
 end
 
+--- Create a pipe.
 function luafile.pipe()
     local rc, r, w = luafile_ll.pipe()
     local fr, fw
@@ -134,6 +147,7 @@ function luafile.pipe()
     return rc, fr, fw
 end
 
+--- Duplicate a file descriptor.
 function luafile.dup2(oldfd, newfd)
     if oldfd and newfd then
         return luafile_ll.dup2(oldfd, newfd)
