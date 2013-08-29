@@ -25,6 +25,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    */
 
+#include <sys/utsname.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -541,6 +543,23 @@ do_kill(lua_State *lua)
 	return 1;
 }
 
+static int
+do_uname_machine(lua_State *lua)
+{
+	struct utsname uts;
+
+	if (uname(&uts) != 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushstring(lua, uts.machine);
+
+	return 1;
+}
+
 
 /*
  * Hook that gets called once an interrupt has been requested.
@@ -598,6 +617,7 @@ static luaL_Reg lib[] = {
 	{ "stat", get_file_statistics },
 	{ "symlink", create_symlink },
 	{ "umask", set_umask },
+	{ "uname_machine", do_uname_machine },
 	{ "unblock", unblock_fd },
 	{ "unlink", do_unlink },
 	{ "wait", process_wait },

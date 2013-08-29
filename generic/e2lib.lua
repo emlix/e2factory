@@ -459,7 +459,7 @@ function e2lib.init2()
     end
 
     -- get host system architecture
-    host_system_arch, re = e2lib.get_sys_arch()
+    host_system_arch, re = e2lib.uname_machine()
     if not host_system_arch then
         return false, e:cat(re)
     end
@@ -2123,36 +2123,18 @@ function e2lib.tar(argv)
     return e2lib.call_tool_argv("tar", argv)
 end
 
---- Get system architecture.
+--- Get machine system architecture.
 -- @return Machine hardware name as a string, false on error.
 -- @return Error object on failure.
-function e2lib.get_sys_arch()
-    local rc, re, e, uname, cmd, p, msg, l, arch
+function e2lib.uname_machine()
+    local machine, errstring = le2lib.uname_machine()
 
-    e = err.new("getting host system architecture failed")
-
-    uname, re = tools.get_tool("uname")
-    if not uname then
-        return false, e:cat(re)
+    if not machine then
+        return false, err.new("getting host system architecture failed: %s",
+            errstring)
     end
 
-    cmd = string.format("%s -m", e2lib.shquote(uname))
-    p, msg = io.popen(cmd, "r")
-    if not p then
-        return false, e:cat(msg)
-    end
-
-    l, msg = p:read()
-    if not l then
-        return false, e:cat(msg)
-    end
-
-    arch = l:match("(%S+)")
-    if not arch then
-        return false, e:append("%s: %s: cannot parse", cmd, l)
-    end
-
-    return arch
+    return machine
 end
 
 --- return a table of parent directories
