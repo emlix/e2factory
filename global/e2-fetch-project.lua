@@ -195,7 +195,7 @@ local function e2_fetch_project(arg)
     local e2_install_e2 = string.format("%s %s/e2-install-e2",
     e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
     rc, re = e2lib.callcmd_log(e2_install_e2)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         local e = err.new("installing local e2 failed")
         return false, e:cat(re)
     end

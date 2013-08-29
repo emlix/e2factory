@@ -329,8 +329,16 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     elseif sourceset == "working-copy" then
         -- warn for empty working-copy
         local working = string.format("%s/%s", info.root, src.working)
-        local d = e2util.directory(working, false)
-        if #d == 0 then
+        local empty = true
+        for f, re in e2lib.directory(working, false) do
+            if not f then
+                return false, e:cat(re)
+            end
+
+            empty = false
+            break
+        end
+        if empty then
             e2lib.warnf("WOTHER", "in result: %s", src.name)
             e2lib.warnf("WOTHER", "working copy seems empty")
         end
@@ -539,8 +547,8 @@ function git.toresult(info, sourcename, sourceset, directory)
         return false, e:append("sourceset not supported: %s",
         sourceset)
     end
-    local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    rc, re = e2lib.callcmd_log(cmd)
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
     local fname  = string.format("%s/%s", directory, makefile)

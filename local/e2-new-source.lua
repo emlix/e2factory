@@ -76,7 +76,7 @@ local function path_to_url(path)
         end
 
         local u = url.parse(path)
-        local cwd = e2util.cwd()
+        local cwd = e2lib.cwd()
         if not u and cwd then
             return "file://" .. e2lib.join(cwd, path)
         end

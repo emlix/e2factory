@@ -113,7 +113,7 @@ local function load_plugin(dir, p, ctx)
                 e:append("a dependency of plugin %s is not a string", p)
             end
 
-            if not e2util.exists(string.format("%s/%s", dir, dep)) then
+            if not e2lib.exists(string.format("%s/%s", dir, dep)) then
                 e:append("dependency %s of plugin %s is not installed", dep, p)
             end
         end

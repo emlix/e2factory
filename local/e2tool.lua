@@ -37,7 +37,6 @@ local environment = require("environment")
 local plugin = require("plugin")
 local url = require("url")
 local hash = require("hash")
-require("e2util")
 local e2option = require("e2option")
 local generic_git = require("generic_git")
 local policy = require("policy")
@@ -277,7 +276,7 @@ local function load_user_config(info, path, dest, index, var)
     local rc, re
     local e = err.new("loading configuration failed")
     e2lib.logf(3, "loading %s", path)
-    if not e2util.exists(path) then
+    if not e2lib.exists(path) then
         return false, e:append("file does not exist: %s", path)
     end
 
@@ -609,14 +608,14 @@ end
 -- @param info
 function e2tool.set_umask(info)
     e2lib.logf(4, "setting umask to %04o", info.chroot_umask)
-    e2util.umask(info.chroot_umask)
+    e2lib.umask(info.chroot_umask)
 end
 
 -- set umask back to the value used on the host
 -- @param info
 function e2tool.reset_umask(info)
     e2lib.logf(4, "setting umask to %04o", info.host_umask)
-    e2util.umask(info.host_umask)
+    e2lib.umask(info.host_umask)
 end
 
 -- initialize the umask set/reset mechanism (i.e. store the host umask)
@@ -626,7 +625,7 @@ local function init_umask(info)
     info.chroot_umask = 18   -- 022 octal
 
     -- save the umask value we run with
-    info.host_umask = e2util.umask(info.chroot_umask)
+    info.host_umask = e2lib.umask(info.chroot_umask)
 
     -- restore the previous umask value again
     e2tool.reset_umask(info)
@@ -643,7 +642,12 @@ function e2tool.local_init(path, tool)
     local info = {}
 
     info.current_tool = tool
-    info.startup_cwd = e2util.cwd()
+
+    rc, re = e2lib.cwd()
+    if not rc then
+        return false, e:cat(re)
+    end
+    info.startup_cwd = rc
 
     init_umask(info)
 
@@ -920,9 +924,9 @@ local function gather_source_paths(info, basedir, sources)
         end
 
         local fullentry = e2lib.join(info.root, e2tool.sourcedir(entry))
-        local s = e2util.stat(fullentry, false)
+        local s = e2lib.stat(fullentry, false)
         if s.type == "directory" then
-            if e2util.exists(e2tool.sourceconfig(entry)) then
+            if e2lib.exists(e2tool.sourceconfig(entry)) then
                 table.insert(sources, entry)
             else
                 -- try subfolder
@@ -1110,9 +1114,9 @@ local function gather_result_paths(info, basedir, results)
         end
 
         local fullentry = e2lib.join(info.root, e2tool.resultdir(entry))
-        local s = e2util.stat(fullentry, false)
+        local s = e2lib.stat(fullentry, false)
         if s.type == "directory" then
-            if e2util.exists(e2tool.resultconfig(entry)) then
+            if e2lib.exists(e2tool.resultconfig(entry)) then
                 table.insert(results, entry)
             else
                 -- try subfolder
@@ -1464,7 +1468,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     }
     for _,f in ipairs(deprecated_files) do
         local path = e2lib.join(info.root, f)
-        if e2util.exists(path) then
+        if e2lib.exists(path) then
             e2lib.warnf("WDEPRECATED", "File exists but is no longer used: `%s'", f)
         end
     end
@@ -1970,10 +1974,9 @@ local function hashcache(info, file)
     if not p then
         return nil, e:cat(re)
     end
-
-    local s, msg = e2util.stat(p)
+    local s, re = e2lib.stat(p)
     if not s then
-        return nil, err.new("%s: %s", p, msg)
+        return nil, e:cat(re)
     end
 
     local id = string.format("%s:%s", file.server, file.location)

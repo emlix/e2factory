@@ -71,8 +71,8 @@ local function git_clone_url(surl, destdir, skip_checkout)
     local cmd = string.format("git clone %s --quiet %s %s", flags,
         e2lib.shquote(src), e2lib.shquote(destdir))
 
-    local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    rc, re = e2lib.callcmd_log(cmd)
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
 
@@ -102,7 +102,7 @@ function generic_git.git_branch_new1(gitwc, track, branch, start_point)
         e2lib.shquote(gitwc), f_track, e2lib.shquote(branch),
         e2lib.shquote(start_point))
     rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         e = err.new("creating new branch failed")
         return false, e:cat(re)
     end
@@ -123,7 +123,7 @@ function generic_git.git_checkout1(gitwc, branch)
     cmd = string.format("cd %s && git checkout %s", e2lib.shquote(gitwc),
         e2lib.shquote(branch))
     rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         e = err.new("git checkout failed")
         return false, e:cat(re)
     end
@@ -209,7 +209,7 @@ function generic_git.git_init_db1(rurl)
     end
 
     rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
 
@@ -244,7 +244,7 @@ function generic_git.git_push1(gitdir, rurl, refspec)
     cmd = string.format("GIT_DIR=%s git push %s %s", e2lib.shquote(gitdir),
         e2lib.shquote(remote_git_url), e2lib.shquote(refspec))
     rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
 
@@ -284,7 +284,7 @@ function generic_git.git_remote_add1(lurl, rurl, name)
         e2lib.shquote("/"..lrepo.path), e2lib.shquote(name),
         e2lib.shquote(giturl))
     rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
 
@@ -411,9 +411,9 @@ function generic_git.git_config(gitdir, query)
     end
 
     local cmd = string.format("GIT_DIR=%s git config %s > %s",
-    e2lib.shquote(gitdir), e2lib.shquote(query), e2lib.shquote(tmpfile))
-    local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+        e2lib.shquote(gitdir), e2lib.shquote(query), e2lib.shquote(tmpfile))
+    rc, re = e2lib.callcmd_log(cmd)
+    if not rc or rc ~= 0 then
         e:append("git config failed")
         return nil, e
     end
@@ -438,8 +438,8 @@ function generic_git.git_add(gitdir, args)
     end
     local cmd = string.format("GIT_DIR=%s git add %s",
     e2lib.shquote(gitdir), e2lib.shquote(args))
-    local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    rc, re = e2lib.callcmd_log(cmd)
+    if not rc or rc ~= 0 then
         return nil, e:cat(re)
     end
     return true, nil

@@ -72,10 +72,11 @@ local function linklast(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.rm(lnk, "-f")			-- remove the old link
-    if not rc then
-        return false, e:cat(re)
+
+    if e2lib.exists(lnk) then
+        e2lib.unlink(lnk) -- ignore errors, symlink will catch it
     end
+
     rc, re = e2lib.symlink(dst, lnk)		-- create the new link
     if not rc then
         return false, e:cat(re)
@@ -434,7 +435,10 @@ local function runbuild(info, r, return_flags)
         out:flush()
     end
     e2tool.set_umask(info)
-    local rc = e2lib.callcmd_capture(cmd, logto)
+    rc, re = e2lib.callcmd_capture(cmd, logto)
+    if not rc then
+        return false, e:cat(re)
+    end
     e2tool.reset_umask(info)
     out:close()
     if rc ~= 0 then
@@ -454,14 +458,14 @@ local function chroot_remove(info, r, return_flags)
     if not rc then
         return e:cat(re)
     end
-    rc, re = e2lib.rm(res.build_config.chroot_marker)
+    rc, re = e2lib.unlink(res.build_config.chroot_marker)
     if not rc then
         return false, e:cat(re)
     end
     local f = e2lib.join(info.root, "playground")
-    local s = e2util.stat(f)
+    local s = e2lib.stat(f)
     if s and s.type == "symbolic-link" then
-        local rc, e = e2lib.rm(f, "-f")
+        rc, re = e2lib.unlink(f)
         if not rc then
             return false, e:cat(re)
         end
@@ -913,7 +917,7 @@ local function store_result(info, r, return_flags)
         e2lib.logf(3, "result file: %s", f)
         local s = e2lib.join(rfilesdir, f)
         local d = "result/files"
-        rc, re = e2lib.ln(s, d)
+        rc, re = e2lib.hardlink(s, d)
         if not rc then
             -- There are three reasons this might fail
             -- a) Legitimate IO etc. errors.
@@ -1080,14 +1084,17 @@ local function collect_project(info, r, return_flags)
         return false, e:cat(re)
     end
 
-    local init_files = e2util.directory(e2lib.join(info.root, "/proj/init"))
-    for _,f in ipairs(init_files) do
+    for f, re in e2lib.directory(e2lib.join(info.root, "proj/init"), false) do
+        if not f then
+            return false, e:cat(re)
+        end
+
         e2lib.logf(3, "init file: %s", f)
         local server = "."
         local location = e2lib.join("proj/init", f)
         local cache_flags = {}
         rc, re = info.cache:fetch_file(server, location,
-        destdir, nil, cache_flags)
+            destdir, nil, cache_flags)
         if not rc then
             return false, e:cat(re)
         end

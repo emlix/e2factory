@@ -37,7 +37,6 @@ local err = require("err")
 local strict = require("strict")
 local tools = require("tools")
 local buildconfig = require("buildconfig")
-require("e2util")
 
 local options = {}
 local aliases = {}
@@ -224,7 +223,7 @@ local function userdefaultoptions(opts)
     end
 
     local file = home .. "/.e2/e2rc"
-    if not e2util.exists(file) then
+    if not e2lib.exists(file) then
         return true
     end
 

@@ -32,7 +32,6 @@ local e2lib = require("e2lib")
 local e2option = require("e2option")
 local err = require("err")
 local buildconfig = require("buildconfig")
-require("e2util")
 
 local function e2(arg)
     local rc, re = e2lib.init()
@@ -81,7 +80,7 @@ local function e2(arg)
     end
 
     local env, cmd
-    if e2util.stat(e2call.globaltool) then
+    if e2lib.stat(e2call.globaltool) then
         e2call.tool = e2call.globaltool
         env = string.format("LUA_PATH='%s/?.lua' LUA_CPATH='%s/?.so'",
         buildconfig.LIBDIR, buildconfig.LIBDIR)
@@ -89,7 +88,7 @@ local function e2(arg)
         e2call.arg_string)
     elseif not root then
         return false, err.new("%s is not a global tool and we're not in a project environment", e2call.toolname)
-    elseif root and e2util.stat(e2call.localtool) then
+    elseif root and e2lib.stat(e2call.localtool) then
         e2call.tool = e2call.localtool
         -- Search for .lc files, the local e2 may be of an older version
         env = "LUA_PATH='" .. root .. "/.e2/lib/e2/?.lc;" ..

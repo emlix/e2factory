@@ -197,7 +197,7 @@ function cvs.fetch_source(info, sourcename)
     e2lib.shquote(cvstool), cvsflags, e2lib.shquote(cvsroot),
     rev, e2lib.shquote(base), e2lib.shquote(src.module))
     local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
     return true, nil
@@ -254,8 +254,8 @@ function cvs.prepare_source(info, sourcename, source_set, buildpath)
     else
         return false, err.new("invalid build mode")
     end
-    local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    rc, re = e2lib.callcmd_log(cmd)
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
     return true, nil
@@ -282,13 +282,13 @@ function cvs.update(info, sourcename)
         return false, e:cat(re)
     end
     local cmd = string.format("cd %s && CVS_RSH=%s %s %s update -R",
-    e2lib.shquote(working), e2lib.shquote(rsh), e2lib.shquote(cvstool),
-    cvsflags)
-    local rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
-        e:cat(re)
-        return false, e
+        e2lib.shquote(working), e2lib.shquote(rsh), e2lib.shquote(cvstool),
+        cvsflags)
+    rc, re = e2lib.callcmd_log(cmd)
+    if not rc or rc ~= 0 then
+        return false, e:cat(re)
     end
+
     return true, nil
 end
 

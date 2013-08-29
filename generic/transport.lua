@@ -303,7 +303,11 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
         local done = false
         local dst = e2lib.join(destdir, destname)
         if (not push_permissions) and try_hardlink then
-            rc, re = e2lib.ln(sourcefile, dst, "--force")
+            local dst = e2lib.join(destdir, destname)
+            if e2lib.exists(dst) then
+                e2lib.unlink(dst) -- ignore error, hardlink will fail
+            end
+            rc, re = e2lib.hardlink(sourcefile, dst)
             if rc then
                 done = true
             else

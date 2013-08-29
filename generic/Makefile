@@ -32,48 +32,43 @@ include $(TOPLEVEL)/make.vars
 LUA_LIBS = strict.lua plugin.lua e2lib.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
 LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
+SO_LIBS = sha1.so luafile_ll.so le2lib.so
 
 CLEAN_FILES = *~ *.o *.so
 
 
 .PHONY: all install uninstall local install-local clean
 
-all: sha1.so luafile_ll.so e2util.so
+all: $(SO_LIBS)
 
 sha1.so: sha1.o lsha1.o
 
 luafile_ll.so: luafile_ll.o
 
-e2util.so: e2util.o
+le2lib.so: le2lib.o
 
 install: all
 	install -d $(DESTDIR)$(LIBDIR)
 	install -m 644 $(LUA_LIBS) $(DESTDIR)$(LIBDIR)
-	install -m 644 sha1.so $(DESTDIR)$(LIBDIR)
-	install -m 644 luafile_ll.so $(DESTDIR)$(LIBDIR)
-	install -m 644 e2util.so $(DESTDIR)$(LIBDIR)
+	install -m 644 $(SO_LIBS) $(DESTDIR)$(LIBDIR)
 
 uninstall:
-	rm -f  $(DESTDIR)$(LIBDIR)/sha1.so
-	rm -f  $(DESTDIR)$(LIBDIR)/luafile_ll.so
-	rm -f  $(DESTDIR)$(LIBDIR)/e2util.so
-	set -e; for f in $(LUA_LIBS); do \
+	set -e; for f in $(LUA_LIBS) $(SO_LIBS); do \
 		rm -f "$(DESTDIR)$(LIBDIR)/$$f"; \
 	done
 	rmdir -p $(DESTDIR)$(LIBDIR) || true
 
-local: sha1.so luafile_ll.so e2util.so
+local: $(SO_LIBS)
 
 install-local: local
 	install -d $(LOCALLIBDIR)
-	install -m 644 sha1.so $(LOCALLIBDIR)
-	install -m 644 luafile_ll.so $(LOCALLIBDIR)
-	install -m 644 e2util.so $(LOCALLIBDIR)
+	install -m 644 $(LUA_LIBS) $(LOCALLIBDIR)
+	install -m 644 $(SO_LIBS) $(LOCALLIBDIR)
 
 uninstall-local:
-	rm -f  $(LOCALLIBDIR)/sha1.so
-	rm -f  $(LOCALLIBDIR)/luafile_ll.so
-	rm -f $(LOCALLIBDIR)/e2util.so
+	set -e; for f in $(LUA_LIBS) $(SO_LIBS); do \
+		rm -f "$(LOCALLIBDIR)/$$f"; \
+	done
 	rmdir -p $(LOCALLIBDIR) || true
 
 doc:

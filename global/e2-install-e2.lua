@@ -110,15 +110,19 @@ local function e2_install_e2(arg)
     -- version is 1 or 2
 
     -- remove the old e2 source, installation and plugins, if it exists
-    rc, re = e2lib.rm(".e2/e2 .e2/bin .e2/lib .e2/plugins", "-fr")
-    if not rc then
-        return false, e:cat(re)
+    for _,dir in ipairs({".e2/e2",  ".e2/bin", ".e2/lib", ".e2/plugins"}) do
+        if e2lib.exists(dir) then
+            rc, re = e2lib.unlink_recursive(dir)
+            if not rc then
+                return false, e:cat(re)
+            end
+        end
     end
 
     e2lib.logf(2, "installing local tools")
 
     local extensions
-    if e2util.exists(e2lib.globals.extension_config) then
+    if e2lib.exists(e2lib.globals.extension_config) then
         extensions, re = e2lib.read_extension_config()
         if not extensions then
             return false, e:cat(re)
@@ -185,12 +189,16 @@ local function e2_install_e2(arg)
         local server = config.site.e2_server
         local location = string.format("%s/%s.git", config.site.e2_base, ex.name)
         local destdir = ex.name
-        rc, re = e2lib.rm(destdir, "-fr")
-        if not rc then
-            return false, e:cat(re)
+
+        if e2lib.exists(destdir) then
+            rc, re = e2lib.unlink_recursive(destdir)
+            if not rc then
+                return false, e:cat(re)
+            end
         end
+
         rc, re = generic_git.git_clone_from_server(scache, server, location,
-        destdir, false)
+            destdir, false)
         if not rc then
             return false, e:cat(re)
         end
@@ -212,7 +220,7 @@ local function e2_install_e2(arg)
     local cmd = string.format("make PREFIX=%s BINDIR=%s local install-local",
     e2lib.shquote(buildconfig.PREFIX), e2lib.shquote(buildconfig.BINDIR))
     rc, re = e2lib.callcmd_log(cmd)
-    if rc ~= 0 then
+    if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
 

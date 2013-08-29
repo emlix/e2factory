@@ -25,11 +25,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    */
 
-/*
-   Low-level file-system and process operations.
-   */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -47,15 +42,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-
 static char buffer[PATH_MAX + 1];
-
-
-/* e2util.fork() -> pid
-   | nil, ERRORMESSAGE
-
-   Forks a subprocess.
-   */
 
 static int
 lua_fork(lua_State *lua)
@@ -65,7 +52,7 @@ lua_fork(lua_State *lua)
 	rc = fork();
 
 	if(rc < 0) {
-		lua_pushnil(lua);
+		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
@@ -74,80 +61,22 @@ lua_fork(lua_State *lua)
 	return 1;
 }
 
-
-/* e2util.cwd() -> STRING
-
-   Returns the current working directory.
-   */
-
 static int
 get_working_directory(lua_State *lua)
 {
 	char *cwd = getcwd(buffer, sizeof(buffer));
 
-	if (cwd == NULL)
-		lua_pushnil(lua);
-	else
-		lua_pushstring(lua, buffer);
+	if (cwd == NULL) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushstring(lua, buffer);
 
 	return 1;
 }
-
-
-/* e2util.realpath(PATH) -> PATH' | nil
-
-   If PATH names an existing object in the file-system, then this
-   function will return the absolute, canonical representation of PATH,
-   otherwise nil is returned.
-   */
-
-static int
-get_realpath(lua_State *lua)
-{
-	const char *p = luaL_checkstring(lua, 1);
-
-	if (realpath(p, buffer) == NULL)
-		lua_pushnil(lua);
-	else
-		lua_pushstring(lua, buffer);
-
-	return 1;
-}
-
-
-/* e2util.stat(PATH, [FOLLOWLINKS?]) -> TABLE | nil
-
-   Returns stat(3) information for the file system object designated by PATH.
-   If FOLLOWLINKS? is not given or false, then the returned information will
-   apply to the actual symbolic link, if PATH designates one. Otherwise
-   the file pointed to by the link is taken. Returns a table with the
-   following entries:
-
-   dev           device-id (number)
-   ino           inode-number (number)
-   mode          permissions and access mode (number)
-   nlink         number of hard links (number)
-   uid           user id (number)
-   gid           group id (number)
-   rdev          device id for char of block special files (number)
-   size          file size (number)
-   atime         access time (number)
-   mtime         modification time (number)
-   ctime         change time (number)
-   blksize       block size (number)
-   blocks        number of blocks (number)
-
-   type          one of the following strings:
-
-   block-special
-   character-special
-   fifo-special
-   regular
-   directory
-   symbolic-link
-   socket
-   unknown
-   */
 
 static int
 get_file_statistics(lua_State *lua)
@@ -164,7 +93,7 @@ get_file_statistics(lua_State *lua)
 	}
 
 	if (s < 0) {
-		lua_pushnil(lua);
+		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
@@ -236,89 +165,57 @@ get_file_statistics(lua_State *lua)
 	return 1;
 }
 
-
-/* e2util.readlink(PATH) -> PATH' | nil
-
-   Returns the path pointed to by the symbolic link PATH or nil, if the
-   link does not exist.
-   */
-
-static int
-read_symbolic_link(lua_State *lua)
-{
-	const char *p = luaL_checkstring(lua, 1);
-	int len;
-
-	len = readlink(p, buffer, sizeof(buffer));
-
-	if (len > -1)
-		lua_pushlstring(lua, buffer, len);
-	else
-		lua_pushnil(lua);
-
-	return 1;
-}
-
-
-/* e2util.directory(PATH, [DOTFILES?]) -> TABLE | nil
-
-   Returns an array with the contents of the directory designated by PATH.
-   If DOTFILES? is given and true then files beginning with "." are also
-   included in the directory listing.
-   */
-
 static int
 get_directory(lua_State *lua)
 {
 	const char *p = luaL_checkstring(lua, 1);
 	int df = lua_gettop(lua) > 1 && lua_toboolean(lua, 2);
 	DIR *dir = opendir(p);
+	struct dirent *de;
+	int i = 1;
 
-	if (dir == NULL)
-		lua_pushnil(lua);
-	else {
-		struct dirent *de;
-		int i = 1;
+	if (dir == NULL) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
 
-		lua_newtable(lua);
-
-		for(;;) {
-			de = readdir(dir);
-
-			if(de == NULL) break;
-
-			if(df || de->d_name[0] != '.') {
-				lua_pushstring(lua, de->d_name);
-				lua_rawseti(lua, -2, i++);
-			}
-		}
-
-		closedir(dir);
+		return 2;
 	}
 
+	lua_newtable(lua);
+
+	for (;;) {
+		errno = 0;
+		de = readdir(dir);
+
+		if (de == NULL) {
+			if (errno) {
+				lua_pop(lua, 1); /* remove table */
+
+				lua_pushboolean(lua, 0);
+				lua_pushstring(lua, strerror(errno));
+
+				closedir(dir);
+
+				return 2;
+			}
+
+			break;
+		}
+
+		if (strcmp(de->d_name, ".") == 0 ||
+		    strcmp(de->d_name, "..") == 0)
+			    continue;
+
+		if (df || de->d_name[0] != '.') {
+			lua_pushstring(lua, de->d_name);
+			lua_rawseti(lua, -2, i++);
+		}
+	}
+
+	closedir(dir);
+
 	return 1;
 }
-
-
-/* e2util.tempnam(DIR) -> PATH
-
-   Returns a random temporary pathname.
-   */
-
-static int
-create_temporary_filename(lua_State *lua)
-{
-	const char *dir = luaL_checkstring(lua, 1);
-	lua_pushstring(lua, tempnam(dir, "e2"));
-	return 1;
-}
-
-
-/* e2util.exists(PATH, [EXECUTABLE?]) -> BOOL
-
-   Returns true if the file given in PATH exists. If EXECUTABLE? is given
-   and true, then it is also checked whether the file is executable.
-   */
 
 static int
 file_exists(lua_State *lua)
@@ -333,12 +230,6 @@ file_exists(lua_State *lua)
 	return 1;
 }
 
-
-/* e2util.cd(PATH)
-
-   Changes the current working directory to PATH.
-   */
-
 static int
 change_directory(lua_State *lua)
 {
@@ -350,15 +241,10 @@ change_directory(lua_State *lua)
 		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
+
 	lua_pushboolean(lua, 1);
-	lua_pushnil(lua);
-	return 2;
+	return 1;
 }
-
-/* e2util.symlink(OLDPATH, NEWPATH)
-
-   Creates a symbolic link named NEWPATH which contains the string OLDPATH.
-   */
 
 static int
 create_symlink(lua_State *lua)
@@ -366,110 +252,33 @@ create_symlink(lua_State *lua)
 	const char *old = luaL_checkstring(lua, 1);
 	const char *new = luaL_checkstring(lua, 2);
 
-	lua_pushboolean(lua, symlink(old, new) == 0);
+	 if (symlink(old, new) != 0) {
+		 lua_pushboolean(lua, 0);
+		 lua_pushstring(lua, strerror(errno));
+
+		 return 2;
+	 }
+
+	lua_pushboolean(lua, 1);
 	return 1;
 }
 
-
-/* e2util.pipe(COMMAND, [ARG...]) -> FDIN, FDOUT, FDERR, PID
-   |  nil, ERRORMESSAGE
-
-   Invokes a subcommand and returns two file-descriptors for writing to stdin
-   and/or reading from stdout/stderr of the executing subprocess, respectively.
-   File-descriptors are named as viewn from the child process.
-   */
-
 static int
-run_pipe(lua_State *lua)
+do_hardlink(lua_State *lua)
 {
-	int in[2], out[2], err[2];
-	char **argv;
-	int n;
+	const char *old = luaL_checkstring(lua, 1);
+	const char *new = luaL_checkstring(lua, 2);
 
-	if(pipe(in) != 0)
-		return 0;
+	 if (link(old, new) != 0) {
+		 lua_pushboolean(lua, 0);
+		 lua_pushstring(lua, strerror(errno));
 
-	else if(pipe(out) != 0) {
-		close(in[0]);
-		close(in[1]);
-		return 0;
-	}
-	else if(pipe(err) != 0) {
-		close(out[0]);
-		close(out[1]);
-		close(in[0]);
-		close(in[1]);
-		return 0;
-	}
-	else {
-		fflush(0);
-		pid_t child = fork();
+		 return 2;
+	 }
 
-		if (child < 0) {
-			close(in[0]);
-			close(in[1]);
-			close(out[0]);
-			close(out[1]);
-			close(err[0]);
-			close(err[1]);
-			goto fail;
-		}
-		else if (child == 0) {
-			close(in[1]);
-
-			if(in[0] != STDIN_FILENO) {
-				dup2(in[0], STDIN_FILENO);
-				close(in[0]);
-			}
-
-			close(out[0]);
-
-			if (out[1] != STDOUT_FILENO) {
-				dup2(out[1], STDOUT_FILENO);
-				close(out[1]);
-			}
-
-			close(err[0]);
-
-			if (err[1] != STDERR_FILENO) {
-				dup2(err[1], STDERR_FILENO);
-				close(err[1]);
-			}
-
-			n = lua_gettop(lua);
-			argv = alloca(sizeof(*argv) * (n+1));
-			argv[n] = NULL;
-			while (n > 0) {
-				argv[n-1] = (char *)luaL_checkstring(lua, n);
-				n -= 1;
-			}
-			execvp(argv[0], argv);
-			goto fail;
-		}
-		else {
-			close(in[0]);
-			close(out[1]);
-			close(err[1]);
-			lua_pushnumber(lua, in[1]);
-			lua_pushnumber(lua, out[0]);
-			lua_pushnumber(lua, err[0]);
-			lua_pushnumber(lua, child);
-			return 4;
-		}
-	}
-
-fail:
-	lua_pushnil(lua);
-	lua_pushstring(lua, strerror(errno));
-	return 2;
+	lua_pushboolean(lua, 1);
+	return 1;
 }
-
-
-/* e2util.wait(PID) -> STATUS, PID
-   |  nil, ERRORMESSAGE
-
-   waits for process to terminate and returns exit code.
-   */
 
 static int
 process_wait(lua_State *lua)
@@ -478,103 +287,16 @@ process_wait(lua_State *lua)
 	int rc, status;
 	rc = waitpid(pid, &status, 0);
 	if (rc < 0) {
-		lua_pushnil(lua);
+		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(errno));
 		return 2;
 	}
+
 	lua_pushnumber(lua, WEXITSTATUS(status));
 	lua_pushnumber(lua, rc);
+
 	return 2;
 }
-
-
-/* e2util.read(FD, NUM) -> STRING
-   |  nil, ERRORMESSAGE
-
-   Reads characters from a file-descriptor.
-   */
-
-static int
-read_fd(lua_State *lua)
-{
-	int fd = luaL_checkinteger(lua, 1);
-	int n = luaL_checkinteger(lua, 2);
-	char *buf = (char *)malloc(n);
-	int m;
-
-	if(buf == NULL) return 0;
-
-	m = read(fd, buf, n);
-
-	if (m < 0) {
-		lua_pushnil(lua);
-		lua_pushstring(lua, strerror(errno));
-		free(buf);
-		return 2;
-	}
-	else
-		lua_pushlstring(lua, buf, m);
-
-	free(buf);
-	return 1;
-}
-
-
-/* e2util.write(FD, STRING, [NUM]) -> NUM'
-   |  nil, ERRORMESSAGE
-
-   Writes characters to a file-descriptor.
-   */
-
-static int
-write_fd(lua_State *lua)
-{
-	int fd = luaL_checkinteger(lua, 1);
-	size_t len;
-	const char *buf = luaL_checklstring(lua, 2, &len);
-	int n = lua_gettop(lua) > 2 ? luaL_checkinteger(lua, 3) : len;
-	int m;
-
-	m = write(fd, buf, n);
-
-	if (m < 0) {
-		lua_pushnil(lua);
-		lua_pushstring(lua, strerror(errno));
-		return 2;
-	}
-
-	lua_pushnumber(lua, m);
-	return 1;
-}
-
-
-/* e2util.close(FD) -> true
-   |  false, ERRORMESSAGE
-
-   Close file-descriptor, returning "false" if an error occurred or "true"
-   otherwise.
-   */
-
-static int
-close_fd(lua_State *lua)
-{
-	int fd = luaL_checkinteger(lua, 1);
-
-	if (close(fd) < 0) {
-		lua_pushnil(lua);
-		lua_pushstring(lua, strerror(errno));
-		return 2;
-	}
-
-	lua_pushboolean(lua, 1);
-	return 1;
-}
-
-/* e2util.poll(TMO_MSEC, {FD...}) -> INDEX, POLLIN, POLLOUT
-   Returns 0 on timeout, <0 on error, otherwise indicates which FD triggered.
-   When muliple FDs triggered, only one is indicated.
-   With a FD given, two boolean values indicate read/writeability.
-   */
 
 static int
 poll_fd(lua_State *lua)
@@ -616,10 +338,6 @@ poll_fd(lua_State *lua)
 	return 1;
 }
 
-/* e2util.unblock(FD)
-   Set file to nonblocking mode
-   */
-
 static int
 unblock_fd(lua_State *lua)
 {
@@ -628,26 +346,6 @@ unblock_fd(lua_State *lua)
 	fcntl(fd, F_SETFL, fl | O_NONBLOCK);
 	return 0;
 }
-
-
-/* e2util.isatty(FD) -> BOOL
-
-   Returns true, if FD refers to a terminal device.
-   */
-
-static int
-is_terminal(lua_State *lua)
-{
-	int fd = luaL_checkinteger(lua, 1);
-	lua_pushboolean(lua, isatty(fd));
-	return 1;
-}
-
-/* e2util.umask(VAL)
-
-   Set the umask to VAL
-   Returns the previous value of umask
-   */
 
 static int
 set_umask(lua_State *lua)
@@ -658,10 +356,6 @@ set_umask(lua_State *lua)
 	lua_pushinteger(lua, pu);
 	return 1;
 }
-
-/* e2util.setenv(var, val, overwrite)
-
-*/
 
 static int
 do_setenv(lua_State *lua)
@@ -676,10 +370,6 @@ do_setenv(lua_State *lua)
 
 }
 
-/* e2util.unsetenv(var)
-
-*/
-
 static int
 do_unsetenv(lua_State *lua)
 {
@@ -690,10 +380,6 @@ do_unsetenv(lua_State *lua)
 
 	return 1;
 }
-
-/* e2util.exec()
-
-   call execvp() with the full argument list */
 
 static int
 do_exec(lua_State *lua)
@@ -718,23 +404,30 @@ do_exec(lua_State *lua)
 	return 1;
 }
 
-/* e2util.getpid()
-
-   get the pid of the current process */
-
 static int
 do_getpid(lua_State *lua) {
 	pid_t pid = getpid();
-	if (pid < 0 )
-		lua_pushnil(lua);
-	else
-		lua_pushinteger(lua, pid);
+	lua_pushinteger(lua, pid);
 	return 1;
 }
 
-/* e2util.signal_reset()
- * Reset all (possible) signals back to their default settings
- */
+static int
+do_unlink(lua_State *lua)
+{
+	const char *pathname = luaL_checkstring(lua, 1);
+
+	if (unlink(pathname) != 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushboolean(lua, 1);
+	return 1;
+}
+
+/* Reset all (possible) signals back to their default settings */
 static int
 signal_reset(lua_State *L)
 {
@@ -761,7 +454,6 @@ signal_reset(lua_State *L)
 		}
 
 		if (sigaction(s, &act, NULL) < 0) {
-			// fprintf(stderr, "%d is set to %p\n", s, (void *)act.sa_handler);
 			lua_pushboolean(L, 0);
 			lua_pushstring(L, strerror(errno));
 			return 2;
@@ -773,15 +465,7 @@ signal_reset(lua_State *L)
 }
 
 
-/*
- * e2util.closefrom() closes all file descriptors >= * fd_from.
- * closefrom() is commonly available on the BSDs, but on Linux we
- * have to use this crutch (which fails when /proc is not mounted).
- *
- * Lua:
- * e2util.closefrom(number) returns true OR false and an errno string.
- * May throw an exception.
- */
+/* closes all file descriptors >= fd */
 static int
 closefrom(lua_State *L)
 {
@@ -824,10 +508,44 @@ error:
 	return 2;
 }
 
-/* e2util.catch_interrupt()
+static int
+do_rmdir(lua_State *lua)
+{
+	const char *pathname = luaL_checkstring(lua, 1);
 
-   Establish signal handler for SIGINT that aborts. */
+	if (rmdir(pathname) != 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
 
+		return 2;
+	}
+
+	lua_pushboolean(lua, 1);
+	return 1;
+}
+
+static int
+do_kill(lua_State *lua)
+{
+	pid_t pid = luaL_checkinteger(lua, 1);
+	int sig = luaL_checkinteger(lua, 2);
+
+	if (kill(pid, sig) < 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushboolean(lua, 1);
+	return 1;
+}
+
+
+/*
+ * Hook that gets called once an interrupt has been requested.
+ * Calls e2lib.interrupt_hook() to deal with any cleanup that might be required.
+ */
 static void
 lstop(lua_State *L, lua_Debug *ar) {
 	lua_sethook(L, NULL, 0, 0);
@@ -850,6 +568,10 @@ lstop(lua_State *L, lua_Debug *ar) {
 static lua_State *globalL;
 
 
+/*
+ * Interrupt handler sets a hook to stop the interpreter from
+ * continuing normal execution at the next possible spot.
+ */
 static void
 laction(int i) {
 	/* Ignore further signals because lstop() should
@@ -860,39 +582,42 @@ laction(int i) {
 
 
 static luaL_Reg lib[] = {
-	{ "cwd", get_working_directory },
-	{ "realpath", get_realpath },
-	{ "stat", get_file_statistics },
-	{ "readlink", read_symbolic_link },
-	{ "directory", get_directory },
-	{ "tempnam", create_temporary_filename },
-	{ "exists", file_exists },
-	{ "cd", change_directory },
-	{ "symlink", create_symlink },
-	{ "pipe", run_pipe },
-	{ "wait", process_wait },
-	{ "read", read_fd },
-	{ "write", write_fd },
-	{ "close", close_fd },
-	{ "poll", poll_fd },
-	{ "unblock", unblock_fd },
-	{ "fork", lua_fork },
-	{ "isatty", is_terminal },
-	{ "umask", set_umask },
-	{ "setenv", do_setenv },
-	{ "unsetenv", do_unsetenv },
-	{ "exec", do_exec },
-	{ "getpid", do_getpid },
-	{ "signal_reset", signal_reset },
+	{ "chdir", change_directory },
 	{ "closefrom", closefrom },
+	{ "cwd", get_working_directory },
+	{ "directory", get_directory },
+	{ "exists", file_exists },
+	{ "fork", lua_fork },
+	{ "getpid", do_getpid },
+	{ "hardlink", do_hardlink },
+	{ "kill", do_kill },
+	{ "poll", poll_fd },
+	{ "rmdir", do_rmdir },
+	{ "setenv", do_setenv },
+	{ "signal_reset", signal_reset },
+	{ "stat", get_file_statistics },
+	{ "symlink", create_symlink },
+	{ "umask", set_umask },
+	{ "unblock", unblock_fd },
+	{ "unlink", do_unlink },
+	{ "wait", process_wait },
 	{ NULL, NULL }
 };
 
 
-int luaopen_e2util(lua_State *lua)
+int luaopen_le2lib(lua_State *lua)
 {
-	luaL_register(lua, "e2util", lib);
+	luaL_Reg *next;
+
+	lua_newtable(lua);
+	for (next = &lib; next->name != NULL; next++) {
+		lua_pushcfunction(lua, next->func);
+		lua_setfield(lua, -2, next->name);
+	}
+
+	/* Establish signal handler catching SIGINT for orderly shutdown */
 	globalL = lua;
 	signal(SIGINT, laction);
+
 	return 1;
 }

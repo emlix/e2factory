@@ -365,9 +365,9 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             if not symlink then
                 symlink = buildpath .. "/" .. sourcename
                 if file.unpack ~= sourcename then
-                    if not e2util.symlink(file.unpack, symlink) then
-                        return false, e:append("cannot create symlink: %s -> %s", symlink,
-                        file.unpack)
+                    rc, re = e2lib.symlink(file.unpack, symlink)
+                    if not rc then
+                        return false, e:cat(re)
                     end
                 end
             end
