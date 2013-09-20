@@ -1,4 +1,5 @@
 NEXT:
+ * Unbreak collect_project functionality with files in proj/init.
 
 e2factory-2.3.14
 
