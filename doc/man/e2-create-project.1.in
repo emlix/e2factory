@@ -32,16 +32,6 @@ Create a new project:
 e2-create-project foo/bar
 .fi
 
-.SH ENVIRONMENT
-Following environment variables are evaluated:
-.TP
-.BR E2_LOCAL_BRANCH
-Branch of version of e2factory to be used.
-.TP
-.BR E2_LOCAL_TAG
-Tag of version of e2factory to be used.
-
-
 .SH SEE ALSO
 .BR e2factory(1)
 

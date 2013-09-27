@@ -67,36 +67,20 @@ local function e2_create_project(arg)
         return false, e:cat(re)
     end
 
-    -- standard global tool setup finished
-
-    if e2lib.globals.osenv["E2_LOCAL_TAG"] and e2lib.globals.osenv["E2_LOCAL_BRANCH"] then
-        e2lib.globals.local_e2_branch = e2lib.globals.osenv["E2_LOCAL_BRANCH"]
-        e2lib.globals.local_e2_tag = e2lib.globals.osenv["E2_LOCAL_TAG"]
-    elseif e2lib.globals.osenv["E2_LOCAL_TAG"] then
-        e2lib.globals.local_e2_branch = "-"
-        e2lib.globals.local_e2_tag = e2lib.globals.osenv["E2_LOCAL_TAG"]
-    elseif e2lib.globals.osenv["E2_LOCAL_BRANCH"] then
-        e2lib.globals.local_e2_branch = e2lib.globals.osenv["E2_LOCAL_BRANCH"]
-        e2lib.globals.local_e2_tag = "^"
-    else
-        e2lib.globals.local_e2_branch = config.site.e2_branch
-        e2lib.globals.local_e2_tag =  config.site.e2_tag
-    end
-
     if #arguments ~= 1 then
         e2option.usage(1)
     end
 
     local sl, re = e2lib.parse_server_location(arguments[1],
-    e2lib.globals.default_projects_server)
+        e2lib.globals.default_projects_server)
     if not sl then
         return false, e:cat(re)
     end
 
     local p = {}
     p.version = buildconfig.GLOBAL_INTERFACE_VERSION[1] -- the project version
-    p.e2version = string.format("%s %s", e2lib.globals.local_e2_branch,
-    e2lib.globals.local_e2_tag)
+    p.e2version = string.format("%s %s",
+        config.site.e2_branch, config.site.e2_tag)
     p.server = sl.server				-- the server
     p.location = sl.location			-- the project location
     p.name = e2lib.basename(sl.location)		-- the project basename

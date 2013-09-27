@@ -86,8 +86,6 @@ e2lib.globals = {
     tmpfiles = {},
     default_projects_server = "projects",
     default_project_version = "2",
-    local_e2_branch = nil,
-    local_e2_tag = nil,
     --- command line arguments that influence global settings are stored here
     -- @class table
     -- @name cmdline
@@ -376,8 +374,6 @@ function e2lib.init()
         { name = "E2TMPDIR", required = false },
         { name = "COLUMNS", required = false, default = "72" },
         { name = "E2_SSH", required = false },
-        { name = "E2_LOCAL_BRANCH", required = false },
-        { name = "E2_LOCAL_TAG", required = false },
     }
 
     local osenv = {}
