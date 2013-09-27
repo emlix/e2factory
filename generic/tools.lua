@@ -47,7 +47,6 @@ local toollist = {
     man = { name = "man", flags = "-l", optional = true },
     mktemp = { name = "mktemp", flags = "", optional = false },
     rm = { name = "rm", flags = "", optional = false },
-    mkdir = { name = "mkdir", flags = "", optional = false },
     rmdir = { name = "rmdir", flags = "", optional = false },
     cp = { name = "cp", flags = "", optional = false },
     ln = { name = "ln", flags = "", optional = false },
