@@ -36,7 +36,6 @@ local buildconfig = require("buildconfig")
 local initialized = false
 
 local toollist = {
-    which = { name = "which", flags = "", optional = false },
     curl = { name = "curl", flags = "", optional = false },
     ssh = { name = "ssh", flags = "", optional = false },
     scp = { name = "scp", flags = "", optional = false },
@@ -45,17 +44,12 @@ local toollist = {
     cvs = { name = "cvs", flags = "", optional = true },
     svn = { name = "svn", flags = "", optional = true },
     man = { name = "man", flags = "-l", optional = true },
-    mktemp = { name = "mktemp", flags = "", optional = false },
-    rm = { name = "rm", flags = "", optional = false },
-    rmdir = { name = "rmdir", flags = "", optional = false },
     cp = { name = "cp", flags = "", optional = false },
-    ln = { name = "ln", flags = "", optional = false },
     mv = { name = "mv", flags = "", optional = false },
     tar = { name = "tar", flags = "", optional = false },
     sha1sum = { name = "sha1sum", flags = "", optional = false },
     md5sum = { name = "md5sum", flags = "", optional = false },
     chmod = { name = "chmod", flags = "", optional = false },
-    test = { name = "test", flags = "", optional = false },
     cat = { name = "cat", flags = "", optional = false },
     touch = { name = "touch", flags = "", optional = false },
     uname = { name = "uname", flags = "", optional = false },
