@@ -1,0 +1,10 @@
+3rd-party sources included in the e2factory repository and tarball
+------------------------------------------------------------------
+
+LDoc and dependencies is used to generate developer documentation:
+ - doc/ldoc/LDoc-1.2.0
+ - doc/ldoc/Penlight-1.0.2
+ - doc/ldoc/luafilesystem-1.6.2
+
+Lua is used for e2factory as well as LDoc:
+ - lua/lua-5.1.3
