@@ -50,6 +50,7 @@ package.loaded["e2lib"] = e2lib
 local buildconfig = require("buildconfig")
 local lock = require("lock")
 local err = require("err")
+local errno = require("errno")
 local plugin = require("plugin")
 local tools = require("tools")
 local cache = require("cache")
@@ -1761,20 +1762,76 @@ function e2lib.rmdir(dir)
     return true
 end
 
---- call the mkdir command
--- @param dir string: the directory name
--- @param flags string: flags to pass to mkdir
--- @return bool
--- @return the last line ouf captured output
-function e2lib.mkdir(dir, flags)
-    flags = flags or ""
-    assert(type(dir) == "string")
-    assert(string.len(dir) > 0)
-    assert(type(flags) == "string")
+--- Parse a mode string in the form ugo+rwx etc.
+-- @param modestring Mode string.
+-- @return Numeric mode or false on error.
+-- @return Error object on failure.
+function e2lib.parse_mode(modestring)
+    local rc, errstring = le2lib.parse_mode(modestring)
 
-    -- TODO: quote flags as well
-    local args = string.format("%s %s", flags, e2lib.shquote(dir))
-    return e2lib.call_tool("mkdir", args)
+    if not rc then
+        return false, err.new("cannot parse mode string '%s': %s", modestring,
+            errstring)
+    end
+
+    return rc
+end
+
+--- Create a single directory.
+-- @param dir Directory name (string).
+-- @param mode Numeric mode for directory creation (umask restrictions apply).
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Errno (number) on failure.
+function e2lib.mkdir(dir, mode)
+    local re
+
+    if mode == nil then
+        mode, re = e2lib.parse_mode("a+rwx")
+        if not mode then
+            return false, re
+        end
+    end
+
+    local rc, errstring, errnum = le2lib.mkdir(dir, mode)
+
+    if not rc then
+        return false, err.new("cannot create directory %q: %s", dir,
+            errstring), errnum
+    end
+
+    return true
+end
+
+--- Create zero or more directories making up a path. Some or all directories
+-- in the path may already exist.
+-- @param path Path name (string).
+-- @param mode Numeric mode for directory creation (umask restrictions apply).
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function e2lib.mkdir_recursive(path, mode)
+    local dirs = e2lib.parentdirs(path)
+    local rc, re, errnum, eexist
+
+    if mode == nil then
+        mode, re = e2lib.parse_mode("ugo+rwx")
+        if not mode then
+            return false, re
+        end
+    end
+
+    eexist = errno.def2errnum("EEXIST")
+
+    for _,dir in ipairs(dirs) do
+        rc, re, errnum = e2lib.mkdir(dir, mode)
+        if not rc then
+            if errnum ~= eexist then
+                return false, re
+            end
+        end
+    end
+
+    return true
 end
 
 --- call the patch command
@@ -2137,26 +2194,24 @@ function e2lib.uname_machine()
     return machine
 end
 
---- return a table of parent directories
+--- Return a table of parent directories going deeper one directory at a time.
+-- Example: "/foo/", "/foo/bar", ...
 -- @param path string: path
 -- @return a table of parent directories, including path.
 function e2lib.parentdirs(path)
-    local i = 2
+    local start = 2
+    local stop
     local t = {}
-    local stop = false
-    while true do
-        local px
-        local p = path:find("/", i)
-        if not p then
-            p = #path
-            stop = true
+    local parent
+
+    while stop ~= path:len() do
+        stop = path:find("/", start)
+        if not stop then
+            stop = path:len()
         end
-        px = path:sub(1, p)
-        table.insert(t, px)
-        i = p + 1
-        if stop then
-            break
-        end
+        start = stop + 1
+        parent = path:sub(1, stop)
+        table.insert(t, parent)
     end
     return t
 end

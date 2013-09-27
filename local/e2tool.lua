@@ -248,7 +248,7 @@ end
 
 --- Open debug logfile.
 local function opendebuglogfile(info)
-    local rc, re = e2lib.mkdir(info.root .. "/log", "-p")
+    local rc, re = e2lib.mkdir_recursive(e2lib.join(info.root, "log"))
     if not rc then
         local e = err.new("error making log directory")
         return false, e:cat(re)

@@ -526,6 +526,167 @@ do_rmdir(lua_State *lua)
 	return 1;
 }
 
+static unsigned calc_mode(unsigned, int, int, unsigned);
+enum { OWN_USER = 0x1, OWN_GROUP = 0x2, OWN_OTHER = 0x4 };
+
+static int
+do_parse_mode(lua_State *lua)
+{
+	const char *modestr = luaL_checkstring(lua, 1);
+	size_t len = strlen(modestr);
+	size_t pos;
+	enum { PARSE_OWNERS, PARSE_OP, PARSE_PERMS, PARSE_COMMA };
+
+	int state = PARSE_OWNERS;
+	int owners = 0;
+	char op = 0;
+
+	mode_t protection = 0;
+	mode_t mode = 0;
+
+
+	for (pos = 0; pos <= len; pos++) {
+		switch (state) {
+		case PARSE_OWNERS:
+			switch (modestr[pos]) {
+			case 'u': owners |= OWN_USER; break;
+			case 'g': owners |= OWN_GROUP; break;
+			case 'o': owners |= OWN_OTHER; break;
+			case 'a': owners |= (OWN_USER|OWN_GROUP|OWN_OTHER);
+				break;
+			case 0:
+				  lua_pushboolean(lua, 0);
+				  lua_pushstring(lua, "unexpected end of mode string");
+				  return 2;
+			default:
+				  state = PARSE_OP;
+				  pos--;
+				  break;
+			}
+
+			if (owners == 0)
+				owners |= (OWN_USER|OWN_GROUP|OWN_OTHER);
+
+			break;
+		case PARSE_OP:
+			switch (modestr[pos]) {
+			case '+':
+			case '-':
+			case '=':
+				op = modestr[pos];
+				state = PARSE_PERMS;
+				break;
+			case 0:
+				  lua_pushboolean(lua, 0);
+				  lua_pushstring(lua, "unexpected end of mode string");
+				  return 2;
+			default:
+				  lua_pushboolean(lua, 0);
+				  lua_pushstring(lua, "unknown operator");
+
+				  return 2;
+			}
+
+			break;
+		case PARSE_PERMS:
+			switch (modestr[pos]) {
+			case 'r': protection |= S_IRUSR; break;
+			case 'w': protection |= S_IWUSR; break;
+			case 'x':
+			case 'X':
+				  protection |= S_IXUSR; break;
+			/*case 's': break;
+			case 't': break;
+			case 'u': break;
+			case 'g': break;
+			case 'o': break;*/
+			case ',':
+				  state = PARSE_COMMA;
+				  pos--;
+				  break;
+			case 0:
+				  /* end of string, end of parse */
+				  break;
+			default:
+				  lua_pushboolean(lua, 0);
+				  lua_pushstring(lua, "unknown protection mode");
+
+				  return 2;
+			}
+
+			break;
+		case PARSE_COMMA:
+			mode = calc_mode(mode, owners, op, protection);
+			state = PARSE_OWNERS;
+			owners = op = protection = 0;
+
+			break;
+		}
+	}
+
+	mode = calc_mode(mode, owners, op, protection);
+
+	lua_pushinteger(lua, mode);
+
+	return 1;
+}
+
+static mode_t
+calc_mode(mode_t mode, int owners, int op, mode_t protection)
+{
+	int i, shift;
+
+	/* Loop over all possible owners and calc shift */
+	for (i = OWN_USER; i <= OWN_OTHER ; i <<= 1) {
+		if (owners & i) {
+			switch (i) {
+			case OWN_USER: shift = 0; break;
+			case OWN_GROUP: shift = 3; break;
+			case OWN_OTHER: shift = 6; break;
+			}
+		} else {
+			continue;
+		}
+
+		switch (op) {
+		case '+':
+			mode |= (protection>>shift);
+			break;
+		case '-':
+			mode &= ~(protection>>shift);
+			break;
+		case '=':
+			/* reset protection, leaving suid/sguid alone */
+			mode = mode & ~0777;
+			mode |= (protection>>shift);
+			break;
+		}
+	}
+
+	return mode;
+}
+
+static int
+do_mkdir(lua_State *lua)
+{
+	const char *pathname = luaL_checkstring(lua, 1);
+	mode_t mode = 0777;
+
+	if (lua_gettop(lua) > 1)
+		mode = luaL_checkinteger(lua, 2);
+
+	if (mkdir(pathname, mode) != 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		lua_pushinteger(lua, errno);
+
+		return 3;
+	}
+
+	lua_pushboolean(lua, 1);
+	return 1;
+}
+
 static int
 do_kill(lua_State *lua)
 {
@@ -610,6 +771,8 @@ static luaL_Reg lib[] = {
 	{ "getpid", do_getpid },
 	{ "hardlink", do_hardlink },
 	{ "kill", do_kill },
+	{ "mkdir", do_mkdir },
+	{ "parse_mode", do_parse_mode },
 	{ "poll", poll_fd },
 	{ "rmdir", do_rmdir },
 	{ "setenv", do_setenv },

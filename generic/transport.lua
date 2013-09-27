@@ -175,7 +175,7 @@ function transport.fetch_file(surl, location, destdir, destname)
         return false, e:cat(re)
     end
     -- create the destination directory
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -281,24 +281,25 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
     if u.transport == "file" then
         local destdir = string.format("/%s", e2lib.dirname(u.path))
         local destname = e2lib.basename(u.path)
-        -- split directories, to apply permissions to all newly
-        -- created parent directories, too.
-        local dirs = e2lib.parentdirs(destdir)
-        local mkdir_perm = ""
+        local mode = nil
+
+        if push_permissions then
+            mode, re = e2lib.parse_mode(push_permissions)
+            if not mode then
+                return false, e:cat(re)
+            end
+        end
+
+        rc, re = e2lib.mkdir_recursive(destdir, mode)
+        if not rc then
+            return false, e:cat(re)
+        end
+
         local rsync_argv = {}
         if push_permissions then
-            mkdir_perm = string.format("--mode \"%s\"", push_permissions)
             table.insert(rsync_argv, "--perms")
             table.insert(rsync_argv, "--chmod")
             table.insert(rsync_argv, push_permissions)
-
-        end
-        for _,d in ipairs(dirs) do
-            local mkdir_flags = string.format("-p %s", mkdir_perm)
-            rc, re = e2lib.mkdir(d, mkdir_flags)
-            if not rc then
-                return false, e:cat(re)
-            end
         end
         local done = false
         local dst = e2lib.join(destdir, destname)

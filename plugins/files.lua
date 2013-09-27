@@ -374,7 +374,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
         else
             if not symlink then
                 symlink = buildpath .. "/" .. sourcename
-                local rc, re = e2lib.mkdir(symlink, "-p")
+                rc, re = e2lib.mkdir_recursive(symlink)
                 if not rc then
                     return false, e:cat(re)
                 end
@@ -403,7 +403,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 destdir, destname = gen_dest_dir_name(buildpath, sourcename,
                     file.copy, file.location)
 
-                rc, re = e2lib.mkdir(destdir, "-p")
+                rc, re = e2lib.mkdir_recursive(destdir)
                 if not rc then
                     re = err.new("creating directory failed: %s", re)
                     return false, e:cat(re)
@@ -532,9 +532,13 @@ function files.toresult(info, sourcename, sourceset, directory)
         e2lib.logf(4, "export file: %s", file.location)
         local destdir = string.format("%s/%s", directory, source)
         local destname = nil
-        e2lib.mkdir(destdir, "-p")
-        local rc, re = info.cache:fetch_file(file.server,
-        file.location, destdir, destname, {})
+
+        rc, re = e2lib.mkdir_recursive(destdir)
+        if not rc then
+            return false, e:cat(re)
+        end
+        rc, re = info.cache:fetch_file(file.server, file.location, destdir,
+            destname, {})
         if not rc then
             return false, e:cat(re)
         end
@@ -621,7 +625,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         local fname = string.format("%s/%s.licences", destdir,
         e2lib.basename(file.location))
         local licence_list = table.concat(file.licences, "\n") .. "\n"
-        rc, re = e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end

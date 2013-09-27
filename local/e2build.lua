@@ -68,7 +68,7 @@ local function linklast(info, r, return_flags)
     if not lnk then
         return false, e:cat(re)
     end
-    rc, re = e2lib.mkdir(e2lib.dirname(lnk), "-p")  -- create the directory
+    rc, re = e2lib.mkdir_recursive(e2lib.dirname(lnk))
     if not rc then
         return false, e:cat(re)
     end
@@ -256,7 +256,7 @@ local function chroot_lock(info, r, return_flags)
     local res = info.results[r]
     local rc, re
     local e = err.new("error locking chroot")
-    rc, re = e2lib.mkdir(res.build_config.c, "-p")
+    rc, re = e2lib.mkdir_recursive(res.build_config.c)
     if not rc then
         return false, e:cat(re)
     end
@@ -284,7 +284,7 @@ local function setup_chroot(info, r, return_flags)
     local e = err.new("error setting up chroot")
     -- create the chroot path and create the chroot marker file without root
     -- permissions. That makes sure we have write permissions here.
-    rc, re = e2lib.mkdir(res.build_config.c, "-p")
+    rc, re = e2lib.mkdir_recursive(res.build_config.c)
     if not rc then
         return false, e:cat(re)
     end
@@ -550,7 +550,7 @@ function e2build.unpack_result(info, r, dep, destdir)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -676,7 +676,7 @@ local function sources(info, r, return_flags)
         local dirs = {"out", "init", "script", "build", "root", "env", "dep"}
         for _, v in pairs(dirs) do
             local d = e2lib.join(res.build_config.T, v)
-            local rc, re = e2lib.mkdir(d, "-p")
+            local rc, re = e2lib.mkdir_recursive(d)
             if not rc then
                 return false, e:cat(re)
             end
@@ -908,7 +908,7 @@ local function store_result(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.mkdir("result/files", "-p")
+    rc, re = e2lib.mkdir_recursive("result/files")
     if not rc then
         return false, e:cat(re)
     end
@@ -1079,7 +1079,7 @@ local function collect_project(info, r, return_flags)
     local e = err.new("providing project data to this build failed")
     -- project/proj/init/<files>
     local destdir = e2lib.join(res.build_config.T, "project/proj/init")
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -1117,7 +1117,7 @@ local function collect_project(info, r, return_flags)
     f:close()
     -- files from the project
     local destdir = e2lib.join(res.build_config.T, "project/.e2/bin")
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -1128,7 +1128,7 @@ local function collect_project(info, r, return_flags)
         e2lib.logf(3, "chroot group: %s", g)
         local grp = info.chroot.groups_byname[g]
         local destdir = e2lib.join( res.build_config.T, "project/chroot", g)
-        rc, re = e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
@@ -1175,7 +1175,7 @@ local function collect_project(info, r, return_flags)
         e2lib.logf(3, "licence: %s", l)
         local lic = info.licences[l]
         local destdir = e2lib.join(res.build_config.T, "project/licences", l)
-        rc, re = e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
@@ -1207,7 +1207,7 @@ local function collect_project(info, r, return_flags)
         end
         local destdir =
             e2lib.join(res.build_config.T, "project", e2tool.resultdir(n))
-        rc, re = e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
@@ -1261,7 +1261,7 @@ local function collect_project(info, r, return_flags)
         e2lib.logf(3, "source: %s", s)
         local destdir =
             e2lib.join(res.build_config.T, "project", e2tool.sourcedir(s))
-        rc, re = e2lib.mkdir(destdir, "-p")
+        rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end

@@ -319,7 +319,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     local sourcedir = e2lib.join(directory, source)
     local archive = string.format("%s.tar.gz", sourcename)
     local fname  = e2lib.join(directory, makefile)
-    rc, re = e2lib.mkdir(sourcedir, "-p")
+    rc, re = e2lib.mkdir_recursive(sourcedir)
     if not rc then
         return false, e:cat(re)
     end
@@ -354,7 +354,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licence_list = table.concat(src.licences, "\n") .. "\n"
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end

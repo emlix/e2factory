@@ -165,7 +165,7 @@ local function newsource(info, ...)
         return false, e:cat(re)
     end
 
-    local rc, re = e2lib.mkdir(cfdir, "-p")
+    local rc, re = e2lib.mkdir_recursive(cfdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -253,7 +253,7 @@ local function newresult(info, ...)
         return false, e:cat(re)
     end
 
-    local rc, re = e2lib.mkdir(cfdir, "-p")
+    local rc, re = e2lib.mkdir_recursive(cfdir)
     if not rc then
         return false, e:cat(re)
     end

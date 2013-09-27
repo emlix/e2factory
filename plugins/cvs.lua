@@ -406,7 +406,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     local sourcedir = string.format("%s/%s", directory, source)
     local archive = string.format("%s.tar.gz", sourcename)
     local fname  = string.format("%s/%s", directory, makefile)
-    rc, re = e2lib.mkdir(sourcedir, "-p")
+    rc, re = e2lib.mkdir_recursive(sourcedir)
     if not rc then
         return false, e:cat(re)
     end
@@ -441,7 +441,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     local destdir = string.format("%s/licences", directory)
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licence_list = table.concat(src.licences, "\n") .. "\n"
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end

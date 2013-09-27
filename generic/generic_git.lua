@@ -650,7 +650,7 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, f
     if not lurl then
         return false, e:cat(re)
     end
-    local rc = e2lib.mkdir(string.format("/%s", lurl.path), "-p")
+    local rc = e2lib.mkdir_recursive(e2lib.join("/", lurl.path))
     if not rc then
         return false, e:cat("can't create path to local git repository")
     end

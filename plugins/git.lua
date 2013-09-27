@@ -343,7 +343,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
             e2lib.warnf("WOTHER", "working copy seems empty")
         end
         local dir = string.format("%s/%s", buildpath, sourcename)
-        local rc, re = e2lib.mkdir(dir, "-p")
+        local rc, re = e2lib.mkdir_recursive(dir)
         if not rc then
             return false, re
         end
@@ -523,9 +523,14 @@ function git.toresult(info, sourcename, sourceset, directory)
     local makefile = "makefile"
     local source = "source"
     local sourcedir = string.format("%s/%s", directory, source)
-    e2lib.mkdir(sourcedir, "-p")
     local archive = string.format("%s.tar.gz", src.name)
     local cmd = nil
+
+    rc, re = e2lib.mkdir_recursive(sourcedir)
+    if not rc then
+        return false, e:cat(re)
+    end
+
     if sourceset == "tag" or sourceset == "branch" then
         local ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
         -- git archive --format=tar <ref> | gzip > <tarball>
@@ -566,7 +571,7 @@ function git.toresult(info, sourcename, sourceset, directory)
     local destdir = string.format("%s/licences", directory)
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licence_list = table.concat(src.licences, "\n") .. "\n"
-    rc, re = e2lib.mkdir(destdir, "-p")
+    rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end

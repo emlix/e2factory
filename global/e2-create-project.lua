@@ -121,7 +121,7 @@ local function e2_create_project(arg)
     }
     for _,f in ipairs(files) do
         local dir = e2lib.dirname(f.filename)
-        rc, re = e2lib.mkdir(dir, "-p")
+        rc, re = e2lib.mkdir_recursive(dir)
         if not rc then
             return false, e:cat(re)
         end
@@ -209,7 +209,7 @@ local function e2_create_project(arg)
     }
     for _,f in ipairs(files) do
         local dir = e2lib.dirname(f.filename)
-        rc, re = e2lib.mkdir(dir, "-p")
+        rc, re = e2lib.mkdir_recursive(dir)
         if not rc then
             return false, e:cat(re)
         end
