@@ -31,7 +31,7 @@ include $(TOPLEVEL)/make.vars
 
 LUA_LIBS = strict.lua plugin.lua e2lib.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
-LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua
+LUA_LIBS += generic_git.lua luafile.lua err.lua lock.lua errno.lua
 SO_LIBS = sha1.so luafile_ll.so le2lib.so
 
 CLEAN_FILES = *~ *.o *.so
