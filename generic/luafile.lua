@@ -33,6 +33,7 @@ local strict = require("strict")
 require("luafile_ll")
 
 --- Create new file object.
+-- @return File object. This functions always succeeds.
 function luafile.new()
     local f = {}
     local meta = { __index = luafile }
@@ -41,6 +42,9 @@ function luafile.new()
 end
 
 --- Open a file.
+-- @param path Path to file (string).
+-- @param mode Mode string of r, r+, w, w+, a or a+. See fopen(3) for details.
+-- @return File object on success, nil on error.
 function luafile.open(path, mode)
     local f = luafile.new()
     f.file = luafile_ll.fopen(path, mode)
@@ -51,6 +55,9 @@ function luafile.open(path, mode)
 end
 
 --- Open a file descriptor.
+-- @param fd Valid UNIX file descriptor (number).
+-- @param mode Mode string of r, r+, w, w+, a or a+. See fdopen(3) for details.
+-- @return File object on success, nil on error.
 function luafile.fdopen(fd, mode)
     local f = luafile.new()
     f.file = luafile_ll.fdopen(fd, mode)
@@ -60,7 +67,9 @@ function luafile.fdopen(fd, mode)
     return nil
 end
 
---- Close a file.
+--- Close a file object.
+-- @param luafile File object.
+-- @return True on success, false on error.
 function luafile.close(luafile)
     if luafile and luafile.file then
         if luafile_ll.fclose(luafile.file) then
