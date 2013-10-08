@@ -1982,14 +1982,26 @@ function e2lib.svn(argv)
     return e2lib.call_tool_argv("svn", argv)
 end
 
---- call the chmod command
--- @param mode string: the new mode
--- @param path string: path
--- @return bool
--- @return the last line ouf captured output
-function e2lib.chmod(mode, path)
-    local args = string.format("'%s' '%s'", mode, path)
-    return e2lib.call_tool("chmod", args)
+--- Change permission mode of file.
+-- @param path Path to file.
+-- @param mode Permission mode, may be "644" or "ugo+rwx" (string).
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function e2lib.chmod(path, mode)
+    local rc, re, errstring, pmode
+
+    pmode, re = e2lib.parse_mode(mode)
+    if not pmode then
+        return false, re
+    end
+
+    rc, errstring = le2lib.chmod(path, pmode)
+    if not rc then
+        return false, err.new("changing permission mode on %q failed: %s",
+            path, errstring)
+    end
+
+    return true
 end
 
 --- Close all file descriptors equal or larger than "fd".
