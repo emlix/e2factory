@@ -1310,8 +1310,7 @@ local function collect_project(info, r, return_flags)
         "detect_tool",
     }
     for _,f in ipairs(executables) do
-        local x = e2lib.join(destdir, f)
-        local rc, re = e2lib.chmod("755", x)
+        rc, re = e2lib.chmod(e2lib.join(destdir, f), "755")
         if not rc then
             return false, e:cat(re)
         end

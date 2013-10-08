@@ -330,8 +330,7 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
         end
     end
     if flags.chmod then
-        local f = string.format("%s/%s", destdir, destname)
-        rc, re = e2lib.chmod(flags.chmod, f)
+        rc, re = e2lib.chmod(e2lib.join(destdir, destname), flags.chmod)
         if not rc then
             return false, e:cat(re)
         end
