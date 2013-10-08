@@ -1675,18 +1675,6 @@ function e2lib.rmtempfiles()
     end
 end
 
---- call the touch tool with flags and filename
--- @param file string: the file parameter
--- @param flags string: flags to pass to touch (optional)
--- @return bool
-function e2lib.touch(file, flags)
-    if not flags then
-        flags = ""
-    end
-    local args = string.format("%s %s", flags, file)
-    return e2lib.call_tool("touch", args)
-end
-
 --- Remove regular and special files, except dirs.
 -- @param pathname Path to file (string).
 -- @return True on success, false on error.

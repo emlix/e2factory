@@ -50,7 +50,6 @@ local toollist = {
     sha1sum = { name = "sha1sum", flags = "", optional = false },
     md5sum = { name = "md5sum", flags = "", optional = false },
     cat = { name = "cat", flags = "", optional = false },
-    touch = { name = "touch", flags = "", optional = false },
     uname = { name = "uname", flags = "", optional = false },
     patch = { name = "patch", flags = "", optional = false },
     gzip = { name = "gzip", flags = "", optional = false },

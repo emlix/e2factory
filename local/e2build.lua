@@ -38,6 +38,7 @@ local environment = require("environment")
 local e2tool = require("e2tool")
 local strict = require("strict")
 local buildconfig = require("buildconfig")
+local luafile = require("luafile")
 
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}
@@ -288,8 +289,14 @@ local function setup_chroot(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    local rc, re = e2lib.touch(res.build_config.chroot_marker)
-    if not rc then
+
+    local cm = luafile.open(res.build_config.chroot_marker, "w")
+    if not cm then
+        re = err.new("could not create chroot marker")
+        return false, e:cat(re)
+    end
+    if not luafile.close(cm) then
+        re = err.new("failed to close chroot marker file")
         return false, e:cat(re)
     end
 
