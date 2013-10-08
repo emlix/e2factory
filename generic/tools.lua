@@ -49,7 +49,6 @@ local toollist = {
     tar = { name = "tar", flags = "", optional = false },
     sha1sum = { name = "sha1sum", flags = "", optional = false },
     md5sum = { name = "md5sum", flags = "", optional = false },
-    chmod = { name = "chmod", flags = "", optional = false },
     cat = { name = "cat", flags = "", optional = false },
     touch = { name = "touch", flags = "", optional = false },
     uname = { name = "uname", flags = "", optional = false },
