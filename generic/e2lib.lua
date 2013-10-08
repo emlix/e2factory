@@ -1758,7 +1758,7 @@ function e2lib.rmdir(dir)
     return true
 end
 
---- Parse a mode string in the form ugo+rwx etc.
+--- Parse a mode string in the form ugo+rwx, 755 etc.
 -- @param modestring Mode string.
 -- @return Numeric mode or false on error.
 -- @return Error object on failure.
