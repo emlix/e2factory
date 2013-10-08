@@ -533,18 +533,34 @@ static int
 do_parse_mode(lua_State *lua)
 {
 	const char *modestr = luaL_checkstring(lua, 1);
-	size_t len = strlen(modestr);
-	size_t pos;
-	enum { PARSE_OWNERS, PARSE_OP, PARSE_PERMS, PARSE_COMMA };
+	size_t pos, len = strlen(modestr);
 
+	/* Available states and start state */
+	enum { PARSE_OWNERS, PARSE_OP, PARSE_PERMS, PARSE_COMMA };
 	int state = PARSE_OWNERS;
+
+	/* Owners, operation and protection bits for a single state pass */
 	int owners = 0;
 	char op = 0;
-
 	mode_t protection = 0;
+
+	/* Result */
 	mode_t mode = 0;
 
+	/* Deal with octal numbers and exit early on success */
+	if (len && isdigit(modestr[0])) {
+		if (sscanf(modestr, "%o", &mode) != 1) {
+			lua_pushboolean(lua, 0);
+			lua_pushstring(lua, "parsing octal number failed");
 
+			return 2;
+		}
+
+		lua_pushinteger(lua, mode);
+		return 1;
+	}
+
+	/* Parse the form [ugoa][+|-|=][rwxX][,]...[\0] */
 	for (pos = 0; pos <= len; pos++) {
 		switch (state) {
 		case PARSE_OWNERS:
@@ -616,6 +632,7 @@ do_parse_mode(lua_State *lua)
 
 			break;
 		case PARSE_COMMA:
+			/* Update mode and go back to start state */
 			mode = calc_mode(mode, owners, op, protection);
 			state = PARSE_OWNERS;
 			owners = op = protection = 0;
