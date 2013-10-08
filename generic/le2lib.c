@@ -738,6 +738,22 @@ do_uname_machine(lua_State *lua)
 	return 1;
 }
 
+static int
+do_chmod(lua_State *L)
+{
+	const char *path = luaL_checkstring(L, 1);
+	mode_t mode = luaL_checkinteger(L, 2);
+
+	if (chmod(path, mode) != 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
 
 /*
  * Hook that gets called once an interrupt has been requested.
@@ -780,6 +796,7 @@ laction(int i) {
 
 static luaL_Reg lib[] = {
 	{ "chdir", change_directory },
+	{ "chmod", do_chmod },
 	{ "closefrom", closefrom },
 	{ "cwd", get_working_directory },
 	{ "directory", get_directory },
