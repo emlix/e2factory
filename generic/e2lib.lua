@@ -54,7 +54,7 @@ local errno = require("errno")
 local plugin = require("plugin")
 local tools = require("tools")
 local cache = require("cache")
-local luafile = require("luafile")
+local eio = require("eio")
 local le2lib = require("le2lib")
 
 -- Module-level global variables
@@ -329,31 +329,6 @@ function e2lib.init()
 
     e2lib.closefrom(3)
     -- ignore errors, no /proc should not prevent factory from working
-
-    -- Overwrite io functions that create a file descriptor to set the
-    -- CLOEXEC flag by default.
-    local realopen = io.open
-    local realpopen = io.popen
-
-    function io.open(...)
-        local ret = {realopen(...)} -- closure
-        if ret[1] then
-            if not luafile.cloexec(ret[1]) then
-                return nil, "Setting CLOEXEC failed"
-            end
-        end
-        return unpack(ret)
-    end
-
-    function io.popen(...)
-        local ret = {realpopen(...)} -- closure
-        if ret[1] then
-            if not luafile.cloexec(ret[1]) then
-                return nil, "Setting CLOEXEC failed"
-            end
-        end
-        return unpack(ret)
-    end
 
     e2lib.globals.warn_category = {
         WDEFAULT = false,
@@ -772,7 +747,7 @@ function e2lib.finish(returncode)
     end
     e2lib.cleanup()
     if e2lib.globals.debuglogfile then
-        e2lib.globals.debuglogfile:close()
+        eio.fclose(e2lib.globals.debuglogfile)
     end
     os.exit(returncode)
 end
@@ -1145,7 +1120,7 @@ function e2lib.directory(path, dotfiles, noerror)
     end
 end
 
---- Call a command, connecting stdin, stdout, stderr to luafile
+--- Call a command, connecting stdin, stdout, stderr to EIO
 --  objects. This function is running in the child process. It may call
 --  e2lib.abort() in case of error, which should be caught by the parent
 --  process.
@@ -1160,7 +1135,7 @@ local function callcmd(infile, outfile, errfile, cmd)
 
     -- redirect stdin
     io.stdin:close()
-    rc, re = luafile.dup2(luafile.fileno(infile), luafile.STDIN)
+    rc, re = eio.dup2(eio.fileno(infile), eio.STDIN)
     if not rc then
         e2lib.abort(re)
     end
@@ -1169,7 +1144,7 @@ local function callcmd(infile, outfile, errfile, cmd)
     end
     -- redirect stdout
     io.stdout:close()
-    rc, re = luafile.dup2(luafile.fileno(outfile), luafile.STDOUT)
+    rc, re = eio.dup2(eio.fileno(outfile), eio.STDOUT)
     if not rc then
         e2lib.abort(re)
     end
@@ -1178,7 +1153,7 @@ local function callcmd(infile, outfile, errfile, cmd)
     end
     -- redirect stderr
     io.stderr:close()
-    rc, re = luafile.dup2(luafile.fileno(errfile), luafile.STDERR)
+    rc, re = eio.dup2(eio.fileno(errfile), eio.STDERR)
     if not rc then
         e2lib.abort(re)
     end
@@ -1203,7 +1178,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
     local input = infile
 
     if not input then
-        rc, re = luafile.fopen("/dev/null", "r")
+        rc, re = eio.fopen("/dev/null", "r")
         if not rc then
             e:cat("input could not be opened")
             return false, e:cat(re)
@@ -1225,13 +1200,13 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         local errin, errout
         local pid
 
-        errin, errout = luafile.pipe()
+        errin, errout = eio.pipe()
         if not errin then
             return false, e:cat(errout)
         end
 
         if cmdidx < c then
-            pipein, output = luafile.pipe()
+            pipein, output = eio.pipe()
             if not pipein then
                 return false, e:cat(output)
             end
@@ -1247,27 +1222,27 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         elseif pid == 0 then
             if cmdidx < c then
                 -- everyone but the last
-                luafile.fclose(pipein)
+                eio.fclose(pipein)
             end
 
-            luafile.fclose(errin)
+            eio.fclose(errin)
             rc = callcmd(input, output, errout, cmds[cmdidx])
             os.exit(rc)
         end
 
         pids[pid] = cmdidx
-        e2lib.unblock(luafile.fileno(errin))
+        e2lib.unblock(eio.fileno(errin))
         ers[cmdidx] = errin
-        luafile.fclose(errout)
+        eio.fclose(errout)
 
         -- close all outputs except the last one (outfile)
         if cmdidx < c then
-            luafile.fclose(output)
+            eio.fclose(output)
         end
 
         -- do not close first input (infile)
         if cmdidx > 1 or not infile then
-            luafile.fclose(input)
+            eio.fclose(input)
         end
         input = pipein
     end
@@ -1276,7 +1251,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         local fds = {}
         local ifd = {}
         for i, f in pairs(ers) do
-            local n = luafile.fileno(f)
+            local n = eio.fileno(f)
             table.insert(fds, n)
             ifd[n] = i
         end
@@ -1291,7 +1266,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
             local line
 
             while true do
-                line, re = luafile.readline(ers[i])
+                line, re = eio.readline(ers[i])
                 if not line then
                     return false, re
                 elseif line == "" then
@@ -1302,7 +1277,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
             end
 
         else
-            luafile.fclose(ers[i])
+            eio.fclose(ers[i])
             ers[i] = nil
             c = c - 1
         end
@@ -1353,35 +1328,35 @@ function e2lib.callcmd_capture(cmd, capture)
     end
 
     capture = capture or autocapture
-    oread, owrite = luafile.pipe()
+    oread, owrite = eio.pipe()
     if not oread then
         return false, owrite
     end
-    devnull, re = luafile.fopen("/dev/null", "r")
+    devnull, re = eio.fopen("/dev/null", "r")
     if not devnull then
         return false, re
     end
 
-    luafile.setlinebuf(owrite)
-    luafile.setlinebuf(oread)
+    eio.setlinebuf(owrite)
+    eio.setlinebuf(oread)
 
     e2lib.logf(4, "+ %s", cmd)
     pid, re = e2lib.fork()
     if not pid then
         return false, re
     elseif pid == 0 then
-        luafile.fclose(oread)
+        eio.fclose(oread)
         rc = callcmd(devnull, owrite, owrite, cmd)
         os.exit(rc)
     else
-        rc, re = luafile.fclose(owrite)
+        rc, re = eio.fclose(owrite)
         if not rc then
             return false, re
         end
 
         local line
         while true do
-            line, re  = luafile.readline(oread)
+            line, re  = eio.readline(oread)
             if not line then
                 return false, re
             elseif line == "" then
@@ -1391,19 +1366,19 @@ function e2lib.callcmd_capture(cmd, capture)
             capture(line)
         end
 
-        rc, re = luafile.fclose(oread)
+        rc, re = eio.fclose(oread)
         if not rc then
             return false, re
         end
 
         rc, re = e2lib.wait(pid)
         if not rc then
-            luafile.fclose(devnull)
+            eio.fclose(devnull)
             return false, re
         end
         ret = rc
 
-        luafile.fclose(devnull)
+        eio.fclose(devnull)
     end
 
     return ret
@@ -1581,15 +1556,14 @@ end
 function e2lib.parse_e2versionfile(filename)
     local f, e, rc, re, l
 
-    f, re = luafile.fopen(filename, "r")
+    f, re = eio.fopen(filename, "r")
     if not f then
         e = err.new("can't open e2 version file: %s", filename)
         return false, e:cat(re)
     end
 
-    l, re = luafile.readline(f)
-    luafile.fclose(f)
-
+    l, re = eio.readline(f)
+    eio.fclose(f)
     if not l then
         e = err.new("can't parse e2 version file: %s", filename)
         return false, e:cat(re)

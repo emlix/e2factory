@@ -38,7 +38,7 @@ local environment = require("environment")
 local e2tool = require("e2tool")
 local strict = require("strict")
 local buildconfig = require("buildconfig")
-local luafile = require("luafile")
+local eio = require("eio")
 
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}
@@ -290,14 +290,14 @@ local function setup_chroot(info, r, return_flags)
         return false, e:cat(re)
     end
 
-    rc, re = luafile.fopen(res.build_config.chroot_marker, "w")
+    rc, re = eio.fopen(res.build_config.chroot_marker, "w")
     if not rc then
         return false, e:cat(re)
     end
 
     local cm = rc
 
-    rc, re = luafile.fclose(cm)
+    rc, re = eio.fclose(cm)
     if not rc then
         return false, e:cat(re)
     end

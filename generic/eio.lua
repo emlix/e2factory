@@ -1,5 +1,5 @@
---- File handling.
--- @module generic.luafile
+--- Extended IO
+-- @module generic.eio
 
 --[[
    e2factory, the emlix embedded build system
@@ -28,36 +28,36 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local luafile = {}
+local eio = {}
 local e2lib = require("e2lib")
 local err = require("err")
-local luafile_ll = require("luafile_ll")
+local leio = require("leio")
 local strict = require("strict")
 
 --- Numeric constant for stdin.
-luafile.STDIN = 0;
+eio.STDIN = 0;
 --- Numeric constant for stdout.
-luafile.STDOUT = 1;
+eio.STDOUT = 1;
 --- Numeric constant for sterr.
-luafile.STDERR = 2;
+eio.STDERR = 2;
 
---- Check whether a luafile object is valid and contains an open file.
--- @param luafile File object.
+--- Check whether an EIO object is valid and contains an open file.
+-- @param file File object.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-local function valid_open_luafile(luafile)
-    local msg = "Internal luafile error: Please report this error:"
+local function is_eio_object(file)
+    local msg = "Internal EIO error: Please report this error:"
 
-    if type(luafile) ~= "table" then
+    if type(file) ~= "table" then
         return false, err.new("%s invalid object", msg)
     end
 
-    if type(luafile.file) == "boolean" and not luafile.file then
+    if type(file.handle) == "boolean" and not file.handle then
         return false,
             err.new("%s no open file", msg)
     end
 
-    if type(luafile.file) ~= "userdata" then
+    if type(file.handle) ~= "userdata" then
         return false, err.new("%s invalid internal field structure")
     end
 
@@ -66,10 +66,10 @@ end
 
 --- Create new file object.
 -- @return File object. This function always succeeds.
-function luafile.new()
-    local luafile = {}
-    luafile.file = false
-    return strict.lock(luafile)
+function eio.new()
+    local file = {}
+    file.handle = false
+    return strict.lock(file)
 end
 
 --- Open a file.
@@ -77,18 +77,18 @@ end
 -- @param mode Mode string of r, r+, w, w+, a or a+. See fopen(3) for details.
 -- @return File object on success, false on error.
 -- @return Error object on failure.
-function luafile.fopen(path, mode)
-    local f, handle, errstring
+function eio.fopen(path, mode)
+    local file, handle, errstring
 
-    handle, errstring = luafile_ll.fopen(path, mode)
+    handle, errstring = leio.fopen(path, mode)
     if not handle then
         return false, err.new("could not open file %q with mode %q: %s",
             path, mode, errstring)
     end
 
-    f = luafile.new()
-    f.file = handle
-    return f
+    file = eio.new()
+    file.handle = handle
+    return file
 end
 
 --- Open a file descriptor.
@@ -96,35 +96,35 @@ end
 -- @param mode Mode string of r, r+, w, w+, a or a+. See fdopen(3) for details.
 -- @return File object on success, false on error.
 -- @return Error object on failure.
-function luafile.fdopen(fd, mode)
-    local f, handle, errstring
+function eio.fdopen(fd, mode)
+    local file, handle, errstring
 
-    handle, errstring = luafile_ll.fdopen(fd, mode)
+    handle, errstring = leio.fdopen(fd, mode)
     if not handle then
         return false,
             err.new("could not open file descriptor %d with mode %q: %s",
                 fd, mode, errstring)
     end
 
-    f = luafile.new()
-    f.file = handle
-    return f
+    file = eio.new()
+    file.handle = handle
+    return file
 end
 
 --- Close a file object.
--- @param luafile File object.
+-- @param file File object.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function luafile.fclose(luafile)
+function eio.fclose(file)
     local rc, re, errstring
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         return false, re
     end
 
-    rc, errstring = luafile_ll.fclose(luafile.file)
-    luafile.file = false
+    rc, errstring = leio.fclose(file.handle)
+    file.handle = false
     if not rc then
         return false, err.new("error closing file: %s", errstring)
     end
@@ -133,19 +133,19 @@ function luafile.fclose(luafile)
 end
 
 --- Read a file.
--- @param luafile File object.
+-- @param file File object.
 -- @return File data as a string, or false on error. May be up to 16K bytes
 -- large and contain embedded zero's. On EOF an empty string is returned.
 -- @return Error object on failure.
-function luafile.fread(luafile)
+function eio.fread(file)
     local rc, re, errstring, buffer
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         return false, re
     end
 
-    buffer, errstring = luafile_ll.fread(luafile.file)
+    buffer, errstring = leio.fread(file.handle)
     if not buffer then
         return false, err.new("error reading file: %s", errstring)
     end
@@ -154,18 +154,18 @@ function luafile.fread(luafile)
 end
 
 --- Read character from file.
--- @param luafile File object.
+-- @param file File object.
 -- @return Character as a string, string of length 0 on EOF, or false on error.
 -- @return Error object on failure.
-function luafile.fgetc(luafile)
+function eio.fgetc(file)
     local rc, re, errstring, char
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         return false, re
     end
 
-    char, errstring = luafile_ll.fgetc(luafile.file)
+    char, errstring = leio.fgetc(file.handle)
     if not char then
         return false, err.new("error reading character from file: %s",
             errstring)
@@ -176,19 +176,19 @@ function luafile.fgetc(luafile)
 end
 
 --- Write buffer to a file.
--- @param luafile File object.
+-- @param file File object.
 -- @param buffer Data string to be written. May contain embedded zero's.
 -- @return True on success, False on error.
 -- @return Error object on failure.
-function luafile.fwrite(luafile, buffer)
+function eio.fwrite(file, buffer)
     local rc, re, errstring
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         return false, rc
     end
 
-    rc, errstring = luafile_ll.fwrite(luafile.file, buffer)
+    rc, errstring = leio.fwrite(file.handle, buffer)
     if not rc then
         return false, err.new("error writing file: %s", errstring)
     end
@@ -202,17 +202,17 @@ end
 -- but no further. Returns the empty string on end-of-file, or false in
 -- case of an error.
 -- @return Error object on failure.
-function luafile.readline(file)
+function eio.readline(file)
     local rc, re, line, char
 
-    --rc, re = valid_open_luafile(file)
+    --rc, re = is_eio_object(file)
     --if not rc then
     --    return false, rc
     --end
 
     line = ""
     while true do
-        char, re = luafile.fgetc(file)
+        char, re = eio.fgetc(file)
         if not char then
             return false, re
         elseif char == "\0" then
@@ -230,19 +230,19 @@ function luafile.readline(file)
 end
 
 --- Return file descriptor of a file object.
--- @param luafile File object.
+-- @param file File object.
 -- @return Integer file descriptor of the file descriptor. This method does not
 -- have an error condition. If passed an invalid or closed file object, it calls
 -- e2lib.abort() signaling an internal error.
-function luafile.fileno(luafile)
+function eio.fileno(file)
     local rc, re, fd, errstring
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         e2lib.abort(re)
     end
 
-    fd, errstring = luafile_ll.fileno(luafile.file)
+    fd, errstring = leio.fileno(file.handle)
     if not fd then
         e2lib.abort(err.new("%s", errstring))
     end
@@ -251,18 +251,18 @@ function luafile.fileno(luafile)
 end
 
 --- Test for end of file.
--- @param luafile File object.
+-- @param file File object.
 -- @return True on end-of-file, false otherwise. feof calls
 -- e2lib.abort() when used with an invalid file object.
-function luafile.feof(luafile)
+function eio.feof(file)
     local rc, re
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         e2lib.abort(re)
     end
 
-    rc, re = luafile_ll.feof(luafile.file)
+    rc, re = leio.feof(file.handle)
     if not rc and re then
         e2lib.abort(err.new("%s", re))
     end
@@ -273,16 +273,16 @@ end
 --- Enable line buffer mode. See setbuf(3) for details. setlinebuf has no
 -- error conditions. If an invalid file object is passed, it calls
 -- e2lib.abort() terminating the process.
--- @param luafile File object
-function luafile.setlinebuf(luafile)
+-- @param file File object
+function eio.setlinebuf(file)
     local errstring, rc, re
 
-    rc, re = valid_open_luafile(luafile)
+    rc, re = is_eio_object(file)
     if not rc then
         e2lib.abort(re)
     end
 
-    rc, errstring = luafile_ll.setlinebuf(luafile.file)
+    rc, errstring = leio.setlinebuf(file.handle)
     if not rc then
         e2lib.abort(err.new("%s", errstring))
     end
@@ -294,10 +294,10 @@ end
 -- before the call, it's closed automatically.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function luafile.dup2(oldfd, newfd)
+function eio.dup2(oldfd, newfd)
     local rc, errstring
 
-    rc, errstring = luafile_ll.dup2(oldfd, newfd)
+    rc, errstring = leio.dup2(oldfd, newfd)
     if not rc then
         return false,
             err.new("duplicating file descriptor failed: %s", errstring)
@@ -310,20 +310,20 @@ end
 --- Create a new UNIX pipe(2) between two file objects.
 -- @return File object in read mode, or false on error.
 -- @return File object in write mode, or error object on failure.
-function luafile.pipe()
+function eio.pipe()
     local fd1, fd2, fr, fw, re
 
-    fd1, fd2 = luafile_ll.pipe()
+    fd1, fd2 = leio.pipe()
     if not fd1 then
         return false, err.new("failed creating pipe: %s", fd2)
     end
 
-    fr, re = luafile.fdopen(fd1, "r")
+    fr, re = eio.fdopen(fd1, "r")
     if not fr then
         return false, re
     end
 
-    fw,re = luafile.fdopen(fd2, "w")
+    fw,re = eio.fdopen(fd2, "w")
     if not fw then
         return false, re
     end
@@ -334,19 +334,19 @@ end
 
 --- Set the CLOEXEC flag on underlying file descriptor. Throws exception on
 -- invalid input.
--- @param something can be a file descriptor number, luafile object, or io file
+-- @param something can be a numeric file descriptor, eio file, or io file
 -- @param set True to set the CLOEXEC, False to unset it. Defaults to True.
 -- @return True on success, False on error.
-function luafile.cloexec(something, set)
+function eio.cloexec(something, set)
     assert(something ~= nil)
     assert(set == nil or type(set) == "boolean")
     if set == nil then
         set = true
     end
 
-    return luafile_ll.cloexec(something, set)
+    return leio.cloexec(something, set)
 end
 
-return strict.lock(luafile)
+return strict.lock(eio)
 
 -- vim:sw=4:sts=4:et:

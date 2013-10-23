@@ -25,24 +25,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
-   Low-level file-system and process operations.
-*/
-
-#include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
 static int
-lua_fopen(lua_State *lua)
+eio_fopen(lua_State *lua)
 {
 	FILE *f;
 	const char *file, *mode;
@@ -70,7 +65,7 @@ lua_fopen(lua_State *lua)
 }
 
 static int
-lua_fclose(lua_State *lua)
+eio_fclose(lua_State *lua)
 {
 	FILE *f;
 
@@ -78,7 +73,7 @@ lua_fclose(lua_State *lua)
 	if (f == NULL) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua,
-		    "lua_fclose: one or more arguments of wrong type/missing");
+		    "eio_fclose: one or more arguments of wrong type/missing");
 		return 2;
 	}
 
@@ -93,7 +88,7 @@ lua_fclose(lua_State *lua)
 }
 
 static int
-lua_fdopen(lua_State *lua)
+eio_fdopen(lua_State *lua)
 {
 	FILE *f;
 	int fd;
@@ -114,7 +109,7 @@ lua_fdopen(lua_State *lua)
 }
 
 static int
-lua_fwrite(lua_State *lua)
+eio_fwrite(lua_State *lua)
 {
 	FILE *f;
 	const char *b;
@@ -125,7 +120,7 @@ lua_fwrite(lua_State *lua)
 	if (f == NULL || b == NULL) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua,
-		    "lua_fwrite: one or more arguments of wrong type/missing");
+		    "eio_fwrite: one or more arguments of wrong type/missing");
 		return 2;
 	}
 
@@ -141,7 +136,7 @@ lua_fwrite(lua_State *lua)
 			/* What does end of file on write mean?
 			 * Signal an error */
 			lua_pushboolean(lua, 0);
-			lua_pushstring(lua, "lua_fwrite: end of file");
+			lua_pushstring(lua, "eio_fwrite: end of file");
 			return 2;
 		}
 	}
@@ -151,7 +146,7 @@ lua_fwrite(lua_State *lua)
 }
 
 static int
-lua_fread(lua_State *lua)
+eio_fread(lua_State *lua)
 {
 	char buf[16384];
 	size_t ret;
@@ -161,7 +156,7 @@ lua_fread(lua_State *lua)
 	if (f == NULL) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua,
-		    "lua_fread: one or more arguments of wrong type/missing");
+		    "eio_fread: one or more arguments of wrong type/missing");
 		return 2;
 	}
 
@@ -187,7 +182,7 @@ lua_fread(lua_State *lua)
 }
 
 static int
-lua_fgetc(lua_State *L)
+eio_fgetc(lua_State *L)
 {
 	FILE *f;
 	int c;
@@ -197,7 +192,7 @@ lua_fgetc(lua_State *L)
 	if (f == NULL) {
 		lua_pushboolean(L, 0);
 		lua_pushstring(L,
-		    "lua_fgetc: argument of wrong type or missing");
+		    "eio_fgetc: argument of wrong type or missing");
 		return 2;
 	}
 
@@ -222,7 +217,7 @@ lua_fgetc(lua_State *L)
 }
 
 static int
-lua_pipe(lua_State *L)
+eio_pipe(lua_State *L)
 {
 	int fd[2];
 	int rc;
@@ -240,7 +235,7 @@ lua_pipe(lua_State *L)
 }
 
 static int
-lua_fileno(lua_State *lua)
+eio_fileno(lua_State *lua)
 {
 	FILE *f;
 	int fd;
@@ -249,7 +244,7 @@ lua_fileno(lua_State *lua)
 	if (f == NULL) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua,
-		    "lua_fileno: one or more arguments of wrong type/missing");
+		    "eio_fileno: one or more arguments of wrong type/missing");
 		return 2;
 	}
 	fd = fileno(f);
@@ -258,7 +253,7 @@ lua_fileno(lua_State *lua)
 }
 
 static int
-lua_feof(lua_State *lua)
+eio_feof(lua_State *lua)
 {
 	FILE *f;
 
@@ -266,7 +261,7 @@ lua_feof(lua_State *lua)
 	if (f == NULL) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua,
-		    "lua_feof: arguments wrong type or missing");
+		    "eio_feof: arguments wrong type or missing");
 		return 2;
 	}
 
@@ -275,14 +270,14 @@ lua_feof(lua_State *lua)
 }
 
 static int
-lua_setlinebuf(lua_State *lua)
+eio_setlinebuf(lua_State *lua)
 {
 	FILE *f;
 
 	f = lua_touserdata(lua, 1);
 	if (!f) {
 		lua_pushboolean(lua, 0);
-		lua_pushstring(lua, "lua_setlinebuf: one or more arguments "
+		lua_pushstring(lua, "eio_setlinebuf: one or more arguments "
 		    "of wrong type/missing");
 		return 2;
 	}
@@ -293,7 +288,7 @@ lua_setlinebuf(lua_State *lua)
 }
 
 static int
-lua_dup2(lua_State *lua)
+eio_dup2(lua_State *lua)
 {
 	int oldfd, newfd, rc;
 
@@ -312,7 +307,7 @@ lua_dup2(lua_State *lua)
 }
 
 static int
-lua_cloexec(lua_State *lua)
+eio_cloexec(lua_State *lua)
 {
 	int fd = -1, rc, cloexec;
 	FILE *f = NULL;
@@ -320,10 +315,10 @@ lua_cloexec(lua_State *lua)
 	if (lua_isnumber(lua, 1)) {
 		fd = luaL_checkint(lua, 1);
 	} else if (lua_istable(lua, 1)) {
-		lua_pushstring(lua, "file"); // key
+		lua_pushstring(lua, "handle"); // key
 		lua_gettable(lua, 1);
 		if (!lua_islightuserdata(lua, -1))
-		    luaL_argerror(lua, 1, "not a luafile table");
+		    luaL_argerror(lua, 1, "not a eio table");
 		f = (FILE *)lua_topointer(lua, -1);
 	} else if (lua_isuserdata(lua, 1)) {
 		FILE **p;
@@ -341,7 +336,7 @@ lua_cloexec(lua_State *lua)
 	}
 
 	if (fd < 0) {
-		luaL_argerror(lua, 1, "fd/luafile/io file required");
+		luaL_argerror(lua, 1, "fd/eio/io file required");
 	}
 
 	if (lua_isboolean(lua, 2)) {
@@ -356,23 +351,23 @@ lua_cloexec(lua_State *lua)
 }
 
 static luaL_Reg lib[] = {
-  { "fopen", lua_fopen },
-  { "fdopen", lua_fdopen },
-  { "fclose", lua_fclose },
-  { "fwrite", lua_fwrite },
-  { "fread", lua_fread },
-  { "fgetc", lua_fgetc },
-  { "pipe", lua_pipe },
-  { "setlinebuf", lua_setlinebuf },
-  { "feof", lua_feof },
-  { "fileno", lua_fileno },
-  { "dup2", lua_dup2 },
-  { "cloexec", lua_cloexec },
+  { "cloexec", eio_cloexec },
+  { "dup2", eio_dup2 },
+  { "fclose", eio_fclose },
+  { "fdopen", eio_fdopen },
+  { "feof", eio_feof },
+  { "fgetc", eio_fgetc },
+  { "fileno", eio_fileno },
+  { "fopen", eio_fopen },
+  { "fread", eio_fread },
+  { "fwrite", eio_fwrite },
+  { "pipe", eio_pipe },
+  { "setlinebuf", eio_setlinebuf },
   { NULL, NULL }
 };
 
 int
-luaopen_luafile_ll(lua_State *lua)
+luaopen_leio(lua_State *lua)
 {
 	luaL_Reg *next;
 

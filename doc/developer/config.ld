@@ -7,7 +7,7 @@ file = { "../../generic",
 	"../../global",
 	exclude = {
 		"../../generic/test_sha1.lua",
-		"../../generic/luafile_ll.c",
+		"../../generic/leio.c",
 		"../../generic/sha1.c",
 		"../../generic/le2lib.c",
 		"../../generic/lsha1.c",
