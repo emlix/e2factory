@@ -1145,29 +1145,48 @@ function e2lib.directory(path, dotfiles, noerror)
     end
 end
 
---- callcmd: call a command, connecting
---  stdin, stdout, stderr to luafile objects.
+--- Call a command, connecting stdin, stdout, stderr to luafile
+--  objects. This function is running in the child process. It may call
+--  e2lib.abort() in case of error, which should be caught by the parent
+--  process.
+--  @param infile File object to be used as stdin.
+--  @param outfile File object to be used as stdout.
+--  @param errfile File object to be used as stderr.
+--  @param cmd Command string, passed to os.execute().
+--  @return Return code (number) in case of os.execute() failure. This function
+--  does not return on success.
 local function callcmd(infile, outfile, errfile, cmd)
+    local rc, re
+
     -- redirect stdin
     io.stdin:close()
-    luafile.dup2(infile:fileno(), 0)
-    if infile:fileno() ~= 0 then
-        infile:cloexec()
+    rc, re = luafile.dup2(luafile.fileno(infile), luafile.STDIN)
+    if not rc then
+        e2lib.abort(re)
+    end
+    if luafile.fileno(infile) ~= 0 then
+        luafile.cloexec(infile)
     end
     -- redirect stdout
     io.stdout:close()
-    luafile.dup2(outfile:fileno(), 1)
-    if outfile:fileno() ~= 1 then
-        outfile:cloexec()
+    rc, re = luafile.dup2(luafile.fileno(outfile), luafile.STDOUT)
+    if not rc then
+        e2lib.abort(re)
+    end
+    if luafile.fileno(outfile) ~= 1 then
+        luafile.cloexec(outfile)
     end
     -- redirect stderr
     io.stderr:close()
-    luafile.dup2(errfile:fileno(), 2)
-    if errfile:fileno() ~= 2 then
-        errfile:cloexec()
+    rc, re = luafile.dup2(luafile.fileno(errfile), luafile.STDERR)
+    if not rc then
+        e2lib.abort(re)
+    end
+    if luafile.fileno(errfile) ~= 2 then
+        luafile.cloexec(errfile)
     end
     -- run the command
-    local rc = os.execute(cmd)
+    rc = os.execute(cmd)
     return (rc/256)
 end
 
@@ -1181,9 +1200,15 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
     local e = err.new("calling commands in a pipe failed")
     local rc, re
 
-    local input = infile or luafile.open("/dev/null", "r")
+    local input = infile
+
     if not input then
-        return false, e:cat("input could not be opened")
+        rc, re = luafile.fopen("/dev/null", "r")
+        if not rc then
+            e:cat("input could not be opened")
+            return false, e:cat(re)
+        end
+        input = rc
     end
 
     local rcs = {}
@@ -1200,15 +1225,15 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         local errin, errout
         local pid
 
-        rc, errin, errout = luafile.pipe()
-        if not rc then
-            return false, err.new("failed to open error pipe")
+        errin, errout = luafile.pipe()
+        if not errin then
+            return false, e:cat(errout)
         end
 
         if cmdidx < c then
-            rc , pipein, output = luafile.pipe()
-            if not rc then
-                return false, err.new("failed to open pipe")
+            pipein, output = luafile.pipe()
+            if not pipein then
+                return false, e:cat(output)
             end
         else
             -- last command in pipe
@@ -1222,27 +1247,27 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         elseif pid == 0 then
             if cmdidx < c then
                 -- everyone but the last
-                pipein:close()
+                luafile.fclose(pipein)
             end
 
-            errin:close()
+            luafile.fclose(errin)
             rc = callcmd(input, output, errout, cmds[cmdidx])
             os.exit(rc)
         end
 
         pids[pid] = cmdidx
-        e2lib.unblock(errin:fileno())
+        e2lib.unblock(luafile.fileno(errin))
         ers[cmdidx] = errin
-        errout:close()
+        luafile.fclose(errout)
 
         -- close all outputs except the last one (outfile)
         if cmdidx < c then
-            output:close()
+            luafile.fclose(output)
         end
 
         -- do not close first input (infile)
         if cmdidx > 1 or not infile then
-            input:close()
+            luafile.fclose(input)
         end
         input = pipein
     end
@@ -1251,7 +1276,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
         local fds = {}
         local ifd = {}
         for i, f in pairs(ers) do
-            local n = f:fileno()
+            local n = luafile.fileno(f)
             table.insert(fds, n)
             ifd[n] = i
         end
@@ -1263,17 +1288,21 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
 
         i = ifd[fds[i]]
         if r then
-            local x
+            local line
 
-            repeat
-                x = ers[i]:readline()
-                if x then
-                    e2lib.log(3, x)
+            while true do
+                line, re = luafile.readline(ers[i])
+                if not line then
+                    return false, re
+                elseif line == "" then
+                    break
                 end
-            until not x
+
+                e2lib.log(3, line)
+            end
 
         else
-            ers[i]:close()
+            luafile.fclose(ers[i])
             ers[i] = nil
             c = c - 1
         end
@@ -1317,47 +1346,67 @@ end
 -- @return Return status code of the command (number) or false on error.
 -- @return Error object on failure.
 function e2lib.callcmd_capture(cmd, capture)
-    local rc, re, oread, owrite, devnull, pid
+    local rc, re, oread, owrite, devnull, pid, ret
 
     local function autocapture(msg)
         e2lib.log(3, msg)
     end
 
     capture = capture or autocapture
-    rc, oread, owrite = luafile.pipe()
-    owrite:setlinebuf()
-    oread:setlinebuf()
-    devnull = luafile.open("/dev/null", "r")
-    if not devnull then
-        e2lib.abort("could not open /dev/null")
+    oread, owrite = luafile.pipe()
+    if not oread then
+        return false, owrite
     end
+    devnull, re = luafile.fopen("/dev/null", "r")
+    if not devnull then
+        return false, re
+    end
+
+    luafile.setlinebuf(owrite)
+    luafile.setlinebuf(oread)
+
     e2lib.logf(4, "+ %s", cmd)
     pid, re = e2lib.fork()
     if not pid then
         return false, re
     elseif pid == 0 then
-        oread:close()
+        luafile.fclose(oread)
         rc = callcmd(devnull, owrite, owrite, cmd)
         os.exit(rc)
     else
-        owrite:close()
-        while not oread:eof() do
-            local x = oread:readline()
-            if x then
-                capture(x)
-            end
-        end
-        oread:close()
-        rc, re = e2lib.wait(pid)
+        rc, re = luafile.fclose(owrite)
         if not rc then
-            luafile.close(devnull)
             return false, re
         end
 
-        luafile.close(devnull)
+        local line
+        while true do
+            line, re  = luafile.readline(oread)
+            if not line then
+                return false, re
+            elseif line == "" then
+                break
+            end
+
+            capture(line)
+        end
+
+        rc, re = luafile.fclose(oread)
+        if not rc then
+            return false, re
+        end
+
+        rc, re = e2lib.wait(pid)
+        if not rc then
+            luafile.fclose(devnull)
+            return false, re
+        end
+        ret = rc
+
+        luafile.fclose(devnull)
     end
 
-    return rc
+    return ret
 end
 
 --- Call a command, log its output and catch the last lines for error reporting.
@@ -1384,7 +1433,7 @@ function e2lib.callcmd_log(cmd)
 
     local rc, re = e2lib.callcmd_capture(cmd, logto)
     if not rc then
-        return false, e:cat(e)
+        return false, e:cat(re)
     end
 
     if #fifo == 0 then
@@ -1530,15 +1579,20 @@ end
 -- @return Table containing tag and branch. False on error.
 -- @return Error object on failure.
 function e2lib.parse_e2versionfile(filename)
-    local f = luafile.open(filename, "r")
+    local f, e, rc, re, l
+
+    f, re = luafile.fopen(filename, "r")
     if not f then
-        return false, err.new("can't open e2version file: %s", filename)
+        e = err.new("can't open e2 version file: %s", filename)
+        return false, e:cat(re)
     end
 
-    local l = f:readline()
-    f:close()
+    l, re = luafile.readline(f)
+    luafile.fclose(f)
+
     if not l then
-        return false, err.new("can't parse e2version file: %s", filename)
+        e = err.new("can't parse e2 version file: %s", filename)
+        return false, e:cat(re)
     end
 
     local match = l:gmatch("[^%s]+")

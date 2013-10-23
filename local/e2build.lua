@@ -290,18 +290,20 @@ local function setup_chroot(info, r, return_flags)
         return false, e:cat(re)
     end
 
-    local cm = luafile.open(res.build_config.chroot_marker, "w")
-    if not cm then
-        re = err.new("could not create chroot marker")
+    rc, re = luafile.fopen(res.build_config.chroot_marker, "w")
+    if not rc then
         return false, e:cat(re)
     end
-    if not luafile.close(cm) then
-        re = err.new("failed to close chroot marker file")
+
+    local cm = rc
+
+    rc, re = luafile.fclose(cm)
+    if not rc then
         return false, e:cat(re)
     end
 
     e2tool.set_umask(info)
-    local rc, re = e2lib.e2_su_2_2({"set_permissions_2_3", res.build_config.base})
+    rc, re = e2lib.e2_su_2_2({"set_permissions_2_3", res.build_config.base})
     e2tool.reset_umask(info)
     if not rc then
         return false, e:cat(re)
