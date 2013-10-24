@@ -56,6 +56,7 @@ local tools = require("tools")
 local cache = require("cache")
 local eio = require("eio")
 local le2lib = require("le2lib")
+local trace = require("trace")
 
 -- Module-level global variables
 --
@@ -318,9 +319,8 @@ end
 -- @return Error object on failure.
 function e2lib.init()
     e2lib.log(4, "e2lib.init()")
-    -- DEBUG: change to "cr" to log return from function
-    local traceflags = os.getenv("E2_TRACE") or "c"
-    debug.sethook(e2lib.tracer, traceflags)
+
+    trace.enable()
 
     local rc, re = e2lib.signal_reset()
     if not rc then
@@ -437,74 +437,6 @@ function e2lib.init2()
     end
 
     return true
-end
-
---- function call tracer
--- @param event string: type of event
--- @param line line number of event (unused)
-function e2lib.tracer(event, line)
-    local ftbl = debug.getinfo(2)
-    if ftbl == nil or ftbl.name == nil then
-        return
-    end
-
-    -- approximate module name, not always accurate but good enough
-    local module
-    if ftbl.source == nil or ftbl.source == "=[C]" then
-        module = "C."
-        -- DEBUG: comment this to see all C calls.
-        return
-    else
-        module = string.match(ftbl.source, "(%w+%.)lua$")
-        if module == nil then
-            module = "<unknown module>."
-            -- DEBUG: comment this to see all unknown calls.
-            return
-        end
-    end
-
-    if event == "call" then
-        local out = string.format("%s%s(", module, ftbl.name)
-        for lo = 1, 10 do
-            local name, value = debug.getlocal(2, lo)
-            if name == nil or name == "(*temporary)" then
-                break
-            end
-            if lo > 1 then
-                out = out .. ", "
-            end
-
-            if type(value) == "string" then
-                local isbinary = false
-
-                -- check the first 40 bytes for values common in binary data
-                for _,v in ipairs({string.byte(value, 1, 41)}) do
-                    if (v >= 0 and v < 9) or (v > 13 and v < 32) then
-                        isbinary = true
-                        break
-                    end
-                end
-
-                if isbinary then
-                    out = string.format("%s%s=<binary data>", out, name)
-                else
-                    local svalue = string.sub(value, 0, 800)
-                    if string.len(value) > string.len(svalue) then
-                        svalue = svalue .. "..."
-                    end
-
-                    out = string.format("%s%s=\"%s\"", out, name, svalue)
-                end
-            else
-                out = string.format("%s%s=%s", out, name, tostring(value))
-            end
-
-        end
-        out = out .. ")"
-        e2lib.log(4, out)
-    else
-        e2lib.logf(4, "< %s%s", module, ftbl.name)
-    end
 end
 
 --- Print a warning, composed by concatenating all arguments to a string.
