@@ -33,6 +33,7 @@ local e2lib = require("e2lib")
 local err = require("err")
 local leio = require("leio")
 local strict = require("strict")
+local trace = require("trace")
 
 --- Numeric constant for stdin.
 eio.STDIN = 0;
@@ -205,23 +206,23 @@ end
 function eio.readline(file)
     local rc, re, line, char
 
-    --rc, re = is_eio_object(file)
-    --if not rc then
-    --    return false, rc
-    --end
+    trace.disable() -- don't spam the logs with fgetc calls.
 
     line = ""
     while true do
         char, re = eio.fgetc(file)
         if not char then
+            trace.enable()
             return false, re
         elseif char == "\0" then
             -- fgets cannot handle embedded zeros, causing mayhem in C.
             -- We could do this in Lua, but lets signal an error till
             -- we have a use case.
+            trace.enable()
             return false, err.new("got NUL character while reading line")
         elseif char == "\n" or char == "" then
             line = line..char -- retain newline just like fgets does.
+            trace.enable()
             return line
         end
 

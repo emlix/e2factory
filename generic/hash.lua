@@ -32,6 +32,7 @@
 local hash = {}
 local err = require("err")
 local strict = require("strict")
+local trace = require("trace")
 require("sha1")
 
 --- create a hash context
@@ -90,6 +91,8 @@ function hash.hash_file(hc, path)
         return nil, err.new("could not open file '%s'", path)
     end
 
+    trace.disable()
+
     local buf = ""
     while true do
         buf = fd:read(64*1024)
@@ -99,6 +102,8 @@ function hash.hash_file(hc, path)
 
         hash.hash_append(hc, buf)
     end
+
+    trace.enable()
 
     fd:close()
 
