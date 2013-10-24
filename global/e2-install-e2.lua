@@ -30,6 +30,7 @@
 
 local e2lib = require("e2lib")
 local e2option = require("e2option")
+local eio = require("eio")
 local generic_git = require("generic_git")
 local err = require("err")
 local buildconfig = require("buildconfig")
@@ -50,10 +51,10 @@ local function e2_install_e2(arg)
         return false, err.new("can't locate project root.")
     end
 
-    -- try to get project specific config file paht
-    local config_file_config = string.format("%s/%s", root, e2lib.globals.e2config)
-    local config_file = e2lib.read_line(config_file_config)
+    -- try to get project specific config file path
     -- don't care if this succeeds, the parameter is optional.
+    local config_file_config = e2lib.join(root, e2lib.globals.e2config)
+    local config_file = eio.file_read_line(config_file_config)
 
     local rc, e = e2lib.read_global_config(config_file)
     if not rc then
@@ -97,7 +98,8 @@ local function e2_install_e2(arg)
     end
 
     -- read the version from the first line
-    local line, re = e2lib.read_line(e2lib.globals.global_interface_version_file)
+    local line, re = eio.file_read_line(
+        e2lib.globals.global_interface_version_file)
     if not line then
         return false, e:cat(re)
     end
@@ -132,10 +134,11 @@ local function e2_install_e2(arg)
         extensions = {}  -- empty list
     end
 
-    local s = e2lib.read_line(".e2/e2version")
+    local s, re = eio.file_read_line(".e2/e2version")
     local branch, tag = s:match("(%S+) (%S+)")
     if not branch or not tag then
-        return false, e:append("cannot parse e2 version")
+        e:cat(re)
+        return false, e:cat(err.new("cannot parse e2 version"))
     end
     local ref
     if tag == "^" then

@@ -348,6 +348,43 @@ function eio.cloexec(something, set)
     return leio.cloexec(something, set)
 end
 
+
+--- Read the first line from file pointed to by filename. End of file is
+-- considered to be an error.
+-- @param filename File name.
+-- @return First line of text, up to but not including the new-line character.
+-- False on error.
+-- @return Error object on failure.
+function eio.file_read_line(filename)
+    local file, re, line, rc
+
+    file, re = eio.fopen(filename, "r")
+    if not file then
+        return false, re
+    end
+
+    line, re = eio.readline(file)
+    if not line then
+        eio.fclose(file)
+        return false, re
+    end
+
+    rc, re = eio.fclose(file)
+    if not rc then
+        return false, re
+    end
+
+    if line == "" then
+        return false, err.new("unexpected end of file in %q", filename)
+    end
+
+    if string.sub(line, -1) == "\n" then
+        line = string.sub(line, 1, -2)
+    end
+
+    return line
+end
+
 return strict.lock(eio)
 
 -- vim:sw=4:sts=4:et:

@@ -30,6 +30,7 @@
 
 local e2tool = {}
 local e2lib = require("e2lib")
+local eio = require("eio")
 local err = require("err")
 local scm = require("scm")
 local tools = require("tools")
@@ -754,7 +755,7 @@ end
 -- @return an error object on failure
 local function check_config_syntax_compat(info)
     local e = err.new("checking configuration syntax compatibilitly failed")
-    local l, re = e2lib.read_line(info.config_syntax_file)
+    local l, re = eio.file_read_line(info.config_syntax_file)
     if not l then
         return false, e:cat(re)
     end
@@ -765,16 +766,16 @@ local function check_config_syntax_compat(info)
         end
     end
     local s = [[
-    Your configuration syntax is incompatible with this tool version.
-    Please read the configuration Changelog, update your project configuration
-    and finally insert the new configuration syntax version into %s
+Your configuration syntax is incompatible with this tool version.
+Please read the configuration Changelog, update your project configuration
+and finally insert the new configuration syntax version into %s
 
-    Configuration syntax versions supported by this version of the tools are:
-    ]]
+Configuration syntax versions supported by this version of the tools are:]]
     e2lib.logf(2, s, info.config_syntax_file)
     for _,m in ipairs(info.config_syntax_compat) do
-        e2lib.logf(2, "    %s", m)
+        e2lib.logf(2, "%s", m)
     end
+    e2lib.logf(2, "Currently configured configuration syntax is: %q", l)
     return false, e:append("configuration syntax mismatch")
 end
 
@@ -1271,10 +1272,10 @@ function e2tool.collect_project_info(info, skip_load_config)
         e2lib.finish(1)
     end
 
-    -- try to get project specific config file paht
-    local config_file_config = e2lib.join(info.root, e2lib.globals.e2config)
-    local config_file = e2lib.read_line(config_file_config)
+    -- try to get project specific config file path
     -- don't care if this succeeds, the parameter is optional.
+    local config_file_config = e2lib.join(info.root, e2lib.globals.e2config)
+    local config_file = eio.file_read_line(config_file_config)
 
     local rc, re = e2lib.read_global_config(config_file)
     if not rc then
@@ -1424,7 +1425,7 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     -- read .e2/proj-location
     info.project_location_config = e2lib.join(info.root, ".e2/project-location")
-    local line, re = e2lib.read_line(info.project_location_config)
+    local line, re = eio.file_read_line(info.project_location_config)
     if not line then
         return false, e:cat(re)
     end
@@ -1438,7 +1439,7 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     -- read global interface version and check if this version of the local
     -- tools supports the version used for the project
-    local line, re = e2lib.read_line(e2lib.globals.global_interface_version_file)
+    local line, re = eio.file_read_line(e2lib.globals.global_interface_version_file)
     if not line then
         return false, e:cat(re)
     end
@@ -1826,25 +1827,6 @@ end
 --     information.
 function e2tool.dsort(info)
     return e2tool.dlist_recursive(info, info.project.default_results)
-end
-
---- read hash file.
-local function read_hash_file(info, server, location)
-    local e = err.new("error reading hash file")
-    local cs = nil
-    local cache_flags = { cache = true }
-    local rc, re = info.cache:cache_file(server, location, cache_flags)
-    if not rc then
-        return nil, e:cat(re)
-    end
-    local path = info.cache:file_path(server, location, cache_flags)
-    if path then
-        cs = e2lib.read_line(path)
-        if cs then
-            return cs, nil
-        end
-    end
-    return nil, e:append("can't open checksum file")
 end
 
 --- hash a file

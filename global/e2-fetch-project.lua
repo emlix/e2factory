@@ -30,6 +30,7 @@
 
 local e2lib = require("e2lib")
 local e2option = require("e2option")
+local eio = require("eio")
 local generic_git = require("generic_git")
 local cache = require("cache")
 local err = require("err")
@@ -122,7 +123,7 @@ local function e2_fetch_project(arg)
 
     -- read the version from the first line
     local version_file = string.format("%s/version", tmpdir)
-    local line, re = e2lib.read_line(version_file)
+    local line, re = eio.file_read_line(version_file)
     if not line then
         return false, e:cat(re)
     end

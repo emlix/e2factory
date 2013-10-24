@@ -33,6 +33,7 @@
 
 local generic_git = {}
 local e2lib = require("e2lib")
+local eio = require("eio")
 local cache = require("cache")
 local url = require("url")
 local tools = require("tools")
@@ -417,8 +418,9 @@ function generic_git.git_config(gitdir, query)
         e:append("git config failed")
         return nil, e
     end
-    local git_output = e2lib.read_line(tmpfile)
+    local git_output, re = eio.file_read_line(tmpfile)
     if not git_output then
+        e:cat(re)
         return nil, e:append("can't read git output from temporary file")
     end
     e2lib.rmtempfile(tmpfile)

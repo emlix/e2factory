@@ -796,28 +796,6 @@ function e2lib.tartype_by_suffix(filename)
     return tartype
 end
 
---- Read the first line from the given file and return it.
--- Beware that end of file is considered an error.
--- @param path Path to file (string).
--- @return The first line or false on error.
--- @return Error object on failure.
-function e2lib.read_line(path)
-    local f, msg = io.open(path)
-    if not f then
-        return false, err.new("%s: %s", path, msg)
-    end
-    local l, msg = f:read("*l")
-    f:close()
-    if not l then
-        if not msg then
-            msg = "end of file"
-        end
-
-        return false, err.new("%s: %s", path, msg)
-    end
-    return l
-end
-
 --- Use the global parameters from the global configuration.
 -- @return True on success, false on error.
 -- @return Error object on failure.
