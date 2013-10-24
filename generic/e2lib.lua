@@ -2168,36 +2168,6 @@ function e2lib.write_file(file, data)
     return true, nil
 end
 
---- read a file into a string
--- @param file string: filename
--- @return string: the file content
--- @return nil, or an error object
-function e2lib.read_file(file)
-    local f, msg = io.open(file, "r")
-    if not f then
-        return nil, err.new("%s", msg)
-    end
-    local s, msg = f:read("*a")
-    f:close()
-    if not s then
-        return nil, err.new("%s", msg)
-    end
-    return s, nil
-end
-
---- read a template file, located relative to the current template directory
--- @param file string: relative filename
--- @return string: the file content
--- @return an error object on failure
-function e2lib.read_template(file)
-    local e = err.new("error reading template file")
-    local filename = string.format("%s/%s", e2lib.globals.template_path, file)
-    local template, re = e2lib.read_file(filename)
-    if not template then
-        return nil, e:cat(re)
-    end
-    return template, nil
-end
 
 --- parse a server:location string, taking a default server into account
 -- @param serverloc string: the string to parse

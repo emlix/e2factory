@@ -29,12 +29,49 @@
 ]]
 
 local e2lib = require("e2lib")
+local eio = require("eio")
 local cache = require("cache")
 local generic_git = require("generic_git")
 local err = require("err")
 local e2option = require("e2option")
 local buildconfig = require("buildconfig")
 
+--- Read a template file, located relative to the current template directory.
+-- @param path Filename relative to the template directory.
+-- @return File contents as a string, or false on error.
+-- @return Error object on failure.
+local function read_template(path)
+    local e, rc, re, file, filename, template, buf
+    e = err.new("error reading template file")
+
+    filename = e2lib.join(e2lib.globals.template_path, path)
+    file, re = eio.fopen(filename, "r")
+    if not file then
+        return false, e:cat(re)
+    end
+
+    template = ""
+    repeat
+        buf, re = eio.fread(file)
+        if not buf then
+            eio.fclose(file)
+            return false, e:cat(re)
+        end
+        template = template .. buf
+    until buf == ""
+
+    rc, re = eio.fclose(file)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return template
+end
+
+--- Create a new project.
+-- @param arg Commandline arguments.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function e2_create_project(arg)
     local rc, re = e2lib.init()
     if not rc then
@@ -148,23 +185,23 @@ local function e2_create_project(arg)
         return false, e:cat(re)
     end
 
-    local gitignore = e2lib.read_template("gitignore")
+    local gitignore, re = read_template("gitignore")
     if not gitignore then
         return false, re
     end
-    local chroot, re = e2lib.read_template("proj/chroot")
+    local chroot, re = read_template("proj/chroot")
     if not chroot then
         return false, re
     end
-    local licences, re = e2lib.read_template("proj/licences")
+    local licences, re = read_template("proj/licences")
     if not licences then
         return false, re
     end
-    local env, re = e2lib.read_template("proj/env")
+    local env, re = read_template("proj/env")
     if not env then
         return false, re
     end
-    local pconfig, re = e2lib.read_template("proj/config")
+    local pconfig, re = read_template("proj/config")
     if not pconfig then
         return false, re
     end
