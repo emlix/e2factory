@@ -36,6 +36,42 @@ local err = require("err")
 local e2option = require("e2option")
 local buildconfig = require("buildconfig")
 
+--- Create a extensions config.
+-- @param extensions Table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function write_extension_config(extensions)
+    local e, rc, re, file, out
+
+    e = err.new("writing extensions config: %s", e2lib.globals.extension_config)
+    file, re = eio.fopen(e2lib.globals.extension_config, "w")
+    if not file then
+        return false, e:cat(re)
+    end
+
+    out = "extensions {\n"
+    for _,ex in ipairs(extensions) do
+        out = out .. "  {\n"
+        for k,v in pairs(ex) do
+            out = out .. string.format("    %s=\"%s\",\n", k, v)
+        end
+        out = out .. "  },\n"
+    end
+    out = out .. "}\n"
+
+    rc, re = eio.fwrite(file, out)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = eio.fclose(file)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return true
+end
+
 --- Read a template file, located relative to the current template directory.
 -- @param path Filename relative to the template directory.
 -- @return File contents as a string, or false on error.
@@ -243,7 +279,7 @@ local function e2_create_project(arg)
             return false, e:cat(re)
         end
     end
-    rc, re = e2lib.write_extension_config(config.site.default_extensions)
+    rc, re = write_extension_config(config.site.default_extensions)
     if not rc then
         return false, e:cat(re)
     end

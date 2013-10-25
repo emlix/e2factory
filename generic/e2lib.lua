@@ -930,26 +930,6 @@ function e2lib.read_global_config(e2_config_file)
     return false, err.new("no config file available")
 end
 
---- Create a extensions config.
-function e2lib.write_extension_config(extensions)
-    local e = err.new("writing extensions config: %s", e2lib.globals.extension_config)
-    local f, re = io.open(e2lib.globals.extension_config, "w")
-    if not f then
-        return false, e:cat(re)
-    end
-    f:write(string.format("extensions {\n"))
-    for _,ex in ipairs(extensions) do
-        f:write(string.format("  {\n"))
-        for k,v in pairs(ex) do
-            f:write(string.format("    %s=\"%s\",\n", k, v))
-        end
-        f:write(string.format("  },\n"))
-    end
-    f:write(string.format("}\n"))
-    f:close()
-    return true, nil
-end
-
 --- read the local extension configuration
 -- This function must run while being located in the projects root directory
 -- @return the extension configuration table
