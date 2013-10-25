@@ -44,10 +44,6 @@ local function write_extension_config(extensions)
     local e, rc, re, file, out
 
     e = err.new("writing extensions config: %s", e2lib.globals.extension_config)
-    file, re = eio.fopen(e2lib.globals.extension_config, "w")
-    if not file then
-        return false, e:cat(re)
-    end
 
     out = "extensions {\n"
     for _,ex in ipairs(extensions) do
@@ -59,12 +55,7 @@ local function write_extension_config(extensions)
     end
     out = out .. "}\n"
 
-    rc, re = eio.fwrite(file, out)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    rc, re = eio.fclose(file)
+    rc, re = eio.file_write(e2lib.globals.extension_config, out)
     if not rc then
         return false, e:cat(re)
     end
@@ -182,7 +173,7 @@ local function e2_create_project(arg)
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = e2lib.write_file(f.filename, f.content)
+        rc, re = eio.file_write(f.filename, f.content)
         if not rc then
             return false, e:cat(re)
         end
@@ -270,7 +261,7 @@ local function e2_create_project(arg)
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = e2lib.write_file(f.filename, f.content)
+        rc, re = eio.file_write(f.filename, f.content)
         if not rc then
             return false, e:cat(re)
         end

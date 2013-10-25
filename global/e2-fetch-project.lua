@@ -183,14 +183,17 @@ local function e2_fetch_project(arg)
     -- write project location file
     local file = ".e2/project-location"
     local data = string.format("%s\n", p.location)
-    local rc, re = e2lib.write_file(file, data)
+    rc, re = eio.file_write(file, data)
     if not rc then
         return false, e:cat(re)
     end
 
     -- write version file
-    local rc, re = e2lib.write_file(e2lib.globals.global_interface_version_file,
-    string.format("%d\n", v))
+    rc, re = eio.file_write(e2lib.globals.global_interface_version_file,
+        string.format("%d\n", v))
+    if not rc then
+        return false, e:cat(re)
+    end
 
     -- call e2-install-e2
     local e2_install_e2 = string.format("%s %s/e2-install-e2",

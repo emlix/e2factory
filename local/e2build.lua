@@ -1159,7 +1159,7 @@ local function collect_project(info, r, return_flags)
                     "%s/%s.sha1", destdir,
                     e2lib.basename(file.location))
                 local filename = e2lib.basename(file.location)
-                rc, re = e2lib.write_file(checksum_file,
+                rc, re = eio.file_write(checksum_file,
                     string.format("%s  %s", file.sha1, filename))
                 if not rc then
                     return false, e:cat(re)
@@ -1291,7 +1291,7 @@ local function collect_project(info, r, return_flags)
     end
     local tsorted_results_string = table.concat(tsorted_results, "\n")
     local resultlist = e2lib.join(destdir, "resultlist")
-    rc, re = e2lib.write_file(resultlist, tsorted_results_string .. "\n")
+    rc, re = eio.file_write(resultlist, tsorted_results_string .. "\n")
     if not rc then
         return false, e:cat(re)
     end

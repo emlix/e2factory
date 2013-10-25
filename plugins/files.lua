@@ -34,6 +34,7 @@ local hash = require("hash")
 local err = require("err")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
+local eio = require("eio")
 local strict = require("strict")
 local tools = require("tools")
 
@@ -545,9 +546,9 @@ function files.toresult(info, sourcename, sourceset, directory)
         if file.sha1 then
             local filename = e2lib.basename(file.location)
             local checksum_file = string.format("%s/%s.sha1",
-            destdir, filename)
-            rc, re = e2lib.write_file(checksum_file,
-            string.format("%s  %s", file.sha1, filename))
+                destdir, filename)
+            rc, re = eio.file_write(checksum_file,
+                string.format("%s  %s", file.sha1, filename))
             if not rc then
                 return false, e:cat(re)
             end
@@ -629,7 +630,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = e2lib.write_file(fname, licence_list)
+        rc, re = eio.file_write(fname, licence_list)
         if not rc then
             return false, e:cat(re)
         end

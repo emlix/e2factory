@@ -30,6 +30,7 @@
 
 local cvs = {}
 local e2lib = require("e2lib")
+local eio = require("eio")
 local scm = require("scm")
 local hash = require("hash")
 local url = require("url")
@@ -445,7 +446,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.write_file(fname, licence_list)
+    rc, re = eio.file_write(fname, licence_list)
     if not rc then
         return false, e:cat(re)
     end

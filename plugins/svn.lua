@@ -35,6 +35,7 @@ local url = require("url")
 local tools = require("tools")
 local err = require("err")
 local e2lib = require("e2lib")
+local eio = require("eio")
 local strict = require("strict")
 
 plugin_descriptor = {
@@ -358,7 +359,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.write_file(fname, licence_list)
+    rc, re = eio.file_write(fname, licence_list)
     if not rc then
         return false, e:cat(re)
     end

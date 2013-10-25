@@ -2130,24 +2130,6 @@ function e2lib.parentdirs(path)
     return t
 end
 
---- write a string to a file
--- @param file string: filename
--- @param data string: data
--- @return bool
--- @return nil, or an error string
-function e2lib.write_file(file, data)
-    local f, msg = io.open(file, "w")
-    if not f then
-        return false, string.format("open failed: %s", msg)
-    end
-    local rc, msg = f:write(data)
-    f:close()
-    if not rc then
-        return false, string.format("write failed: %s", msg)
-    end
-    return true, nil
-end
-
 
 --- parse a server:location string, taking a default server into account
 -- @param serverloc string: the string to parse

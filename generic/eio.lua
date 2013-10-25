@@ -385,6 +385,32 @@ function eio.file_read_line(filename)
     return line
 end
 
+--- Create or truncate a file pointed to by filename, and fill it with data.
+-- @param filename File name.
+-- @param data String of data, may contain embedded zeros.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function eio.file_write(filename, data)
+    local rc, re, file
+
+    file, re = eio.fopen(filename, "w")
+    if not file then
+        return false, re
+    end
+
+    rc, re = eio.fwrite(file, data)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = eio.fclose(file)
+    if not rc then
+        return false, re
+    end
+
+    return true
+end
+
 return strict.lock(eio)
 
 -- vim:sw=4:sts=4:et:
