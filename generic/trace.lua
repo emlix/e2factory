@@ -39,7 +39,7 @@ local function tracer(event, line)
         -- DEBUG: comment this to see all C calls.
         return
     else
-        module = string.match(ftbl.source, "(%w+%.)lua$")
+        module = string.match(ftbl.source, "([^/]+%.)lua$")
         if module == nil then
             module = "<unknown module>."
             -- DEBUG: comment this to see all unknown calls.
