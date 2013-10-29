@@ -46,18 +46,32 @@ local intf = {}
 -- @return bool
 -- @return an error object on failure
 function scm.register(scmname, mod)
-    local e = err.new("error registering scm")
+    local e, rc, re, func
+
+    e = err.new("error registering scm")
     if scms[scmname] then
         return false, e:append("scm with that name exists")
     end
     scms[scmname] = {}
-    for name,func in pairs(intf) do
-        local rc, re = scm.register_function(scmname, name, mod[name])
-        if not rc then
-            return false, e:cat(re)
+    for name,_ in pairs(intf) do
+        -- interface function may not exist in this particular module,
+        -- resulting in a generic error message if called.
+        if strict.islocked(mod) then
+            strict.unlock(mod)
+            func = mod[name]
+            strict.lock(mod)
+        else
+            func = mod[name]
+        end
+
+        if func then
+            rc, re = scm.register_function(scmname, name, func)
+            if not rc then
+                return false, e:cat(re)
+            end
         end
     end
-    return true, nil
+    return true
 end
 
 --- register a new scm interface
@@ -71,7 +85,6 @@ function scm.register_interface(name)
         "interface with that name exists: %s", name)
     end
 
-    -- closure: name
     local function func(info, sourcename, ...)
         local src = info.sources[sourcename]
         local rc, re, e
@@ -81,13 +94,14 @@ function scm.register_interface(name)
         end
         local f = scms[src.type][name]
         if not f then
-            e:append("%s is not implemented for source type: %s", src.type)
+            e:append("%s() is not implemented for source type: %s",
+                name, src.type)
             return false, e
         end
         return f(info, sourcename, ...)
     end
 
-    intf[name] = func
+    intf[name] = true
 
     -- we have lots of calls like scm.<function>(...). Register the interface
     -- function in the scm module to support those calls.
@@ -96,28 +110,33 @@ function scm.register_interface(name)
     end
     scm[name] = func
 
-    return true, nil
+    return true
 end
 
---- register a new scm function (accessible through a scm interface)
--- @param type string: scm type
+--- Register a new SCM function (accessible through the scm interface).
+-- @param scmtype SCM type (string).
 -- @param name string: interface name
 -- @param func function: interface function
--- @return bool
--- @return an error object on failure
-function scm.register_function(type, name, func)
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function scm.register_function(scmtype, name, func)
     local e = err.new("registering scm function failed")
-    if not scms[type] then
+    if not scms[scmtype] then
         return false, e:append("no scm type by that name: %s", type)
     end
     if not intf[name] then
         return false, e:append("no scm interface by that name: %s", name)
     end
-    if scms[type][name] then
+    if scms[scmtype][name] then
         return false, e:append("scm function exists: %s.%s", type, name)
     end
-    scms[type][name] = func
-    return true, nil
+    if type(func) ~= "function" then
+        return false, e:append("scm function argument is not a function")
+    end
+
+    scms[scmtype][name] = func
+
+    return true
 end
 
 --- apply default values where possible and a source configuration is
