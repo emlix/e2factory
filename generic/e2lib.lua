@@ -1204,10 +1204,12 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
     return true
 end
 
---- call a command with stdin redirected from /dev/null, stdout/stderr
--- captured via a pipe
--- the capture function is called for every chunk of output that
--- is captured from the pipe.
+--- Call a command with stdin redirected to /dev/null, stdout and stderr
+-- are captured  via a pipe.
+-- @param cmd Command string passed to a shell for execution.
+--            Escape appropriately.
+-- @param capture Function taking a string argument. Called on every chunk of
+--                stdout and stderr output captured from the program.
 -- @return Return status code of the command (number) or false on error.
 -- @return Error object on failure.
 function e2lib.callcmd_capture(cmd, capture)
