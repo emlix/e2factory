@@ -1,5 +1,5 @@
 --- CVS Plugin
--- @module local.cvs
+-- @module plugins.cvs
 
 --[[
    e2factory, the emlix embedded build system

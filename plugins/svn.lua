@@ -1,5 +1,5 @@
 --- Subversion Plugin
--- @module local.svn
+-- @module plugins.svn
 
 --[[
    e2factory, the emlix embedded build system

@@ -1,5 +1,5 @@
 --- Git Plugin
--- @module local.git
+-- @module plugins.git
 
 --[[
    e2factory, the emlix embedded build system

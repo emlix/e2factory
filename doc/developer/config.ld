@@ -5,6 +5,7 @@ all = true
 file = { "../../generic",
 	"../../local",
 	"../../global",
+	"../../plugins",
 	exclude = {
 		"../../generic/test_sha1.lua",
 		"../../generic/leio.c",

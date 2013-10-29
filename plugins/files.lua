@@ -1,5 +1,5 @@
 --- Files Plugin
--- @module local.files
+-- @module plugins.files
 
 --[[
    e2factory, the emlix embedded build system
