@@ -38,18 +38,21 @@ local strict = require("strict")
 function url.parse(url)
     assert(type(url) == "string" and string.len(url) > 0)
 
-    local u = strict.lock({})
-    --- url
+    --- URL object holding all URL parts. Any part but 'url' and
+    -- 'transport' is optional and may be nil.
     -- @class table
     -- @name url
-    -- @field url the original url as passed to the parse() function
-    -- @field transport the transport type
-    -- @field server the server part
-    -- @field path the path relative to the server
-    -- @field servername the server name from the server part
-    -- @field user the user name from the server part (optional)
-    -- @field pass the password from the server part (optional)
-    -- @field port given server port (optional)
+    -- @field url Original URL string before parsing.
+    -- @field transport Transport (protocol) type as a string eg. http, ssh.
+    -- @field server The server part in the form: server, server:port,
+    --        user@server, user:pass@server, etc.
+    -- @field path Path component of URL. All leading slashes are removed.
+    -- @field servername Server name without any other components.
+    -- @field user User name from the server part.
+    -- @field pass Password from the server part.
+    -- @field port Server port.
+    local u = strict.lock({})
+
     local url_members = {
         "url",
         "transport",
