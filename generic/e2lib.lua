@@ -1975,6 +1975,49 @@ function e2lib.ssh(argv)
     return e2lib.call_tool_argv("ssh", argv)
 end
 
+--- Run command on remote server via SSH.
+-- @param u URL object pointing to the remote server.
+-- @param argv Command vector to run on the remote server.
+-- @return True on success, false on error.
+-- @retrun Error object on failure.
+function e2lib.ssh_remote_cmd(u, argv)
+    local v, command
+
+    if u.pass then
+        return false, err.new("ssh_remote_cmd does not support password URL's")
+    end
+
+    v = {}
+    if u.port then
+        table.insert(v, "-p")
+        table.insert(v, u.port)
+    end
+
+    if u.user then
+        table.insert(v, "-l")
+        table.insert(v, u.user)
+    end
+
+    if not u.server then
+        return false,
+            err.new("ssh_remote_cmd: no server component in URL %q", u.url)
+    end
+
+    table.insert(v, u.server)
+
+    command = ""
+    for i, arg in ipairs(argv) do
+        if i ~= 1 then
+            command = command .. " "
+        end
+        command = command .. e2lib.shquote(arg)
+    end
+
+    table.insert(v, command)
+
+    return e2lib.ssh(v)
+end
+
 --- call the scp command
 -- @param argv table: argument vector
 -- @return bool
