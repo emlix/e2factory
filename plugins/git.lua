@@ -42,9 +42,35 @@ local eio = require("eio")
 local strict = require("strict")
 local tools = require("tools")
 
+--- Initialize git plugin.
+-- @param ctx Plugin context. See plugin module.
+-- @return True on succes, false on error.
+-- @return Error object on failure.
+local function git_plugin_init(ctx)
+    local rc, re
+
+    rc, re = scm.register("git", git)
+    if not rc then
+        return false, re
+    end
+
+    -- Additional interfaces only available with git sources.
+    rc, re = scm.register_interface("git_commit_id")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = scm.register_function("git", "git_commit_id", git.git_commit_id)
+    if not rc then
+        return false, re
+    end
+
+    return true
+end
+
 plugin_descriptor = {
     description = "Git SCM Plugin",
-    init = function (ctx) scm.register("git", git) return true end,
+    init = git_plugin_init,
     exit = function (ctx) return true end,
 }
 
@@ -77,60 +103,70 @@ local function git_branch_get(gitdir)
     return branch, nil
 end
 
---- return a value suitable for buildid computation, i.e. the commit-id
--- @param info the info table
--- @param source string: the source name
+--- Return the git commit ID of the specified source configuration. Specific to
+-- sources of type git, useful for writing plugins.
+-- @param info Info table.
+-- @param sourcename Source name.
 -- @param sourceset string: the sourceset
 -- @param check_remote bool: in tag mode: make sure the tag is available remote
--- @return string: the commit id, nil on error
--- @return nil on success, an error string on error
-local function get_revision_id(info, source, sourceset, check_remote)
-    local sourcename = source
-    local rc, re
-    local e = err.new("getting revision id failed for source: %s", source)
-    local s = info.sources[source]
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Commit ID (string) on success.
+function git.git_commit_id(info, sourcename, sourceset, check_remote)
+    local rc, re, e, src, id, fr, gitdir, ref
+
+    e = err.new("getting commit ID failed for source: %s", sourcename)
+    src = info.sources[sourcename]
+
     rc, re = git.validate_source(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
+
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then
         return false, e:append("working copy is not available")
     end
+
     rc, re = scm.check_workingcopy(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
-    local p = info.root .. "/" .. s.working .. "/.git/refs/"
-    local id, fr, gitdir, ref
-    gitdir = string.format("%s/%s/.git", info.root, s.working)
-    if sourceset == "branch" or
-        (sourceset == "lazytag" and s.tag == "^") then
-        ref = string.format("refs/heads/%s", s.branch)
-        id, re = generic_git.git_rev_list1(gitdir, ref)
-        -- error checking delayed to end of function
-    elseif sourceset == "tag" or
-        (sourceset == "lazytag" and s.tag ~= "^") then
-        gitdir = string.format("%s/%s/.git", info.root, s.working)
-        ref = string.format("refs/tags/%s", s.tag)
-        id, re = generic_git.git_rev_list1(gitdir, ref)
-        -- error checking delayed to end of function
-        if id and check_remote then
-            e2lib.logf(4, "%s: check for remote tag", s.name)
-            rc, re = generic_git.verify_remote_tag(gitdir, s.tag)
+
+    gitdir = e2lib.join(info.root, src.working, ".git")
+
+    if sourceset == "branch" or (sourceset == "lazytag" and src.tag == "^") then
+        ref = string.format("refs/heads/%s", src.branch)
+
+        rc, re, id = generic_git.git_rev_list1(gitdir, ref)
+        if not rc then
+            return false, e:cat(re)
+        end
+    elseif sourceset == "tag" or (sourceset == "lazytag" and src.tag ~= "^") then
+        ref = string.format("refs/tags/%s", src.tag)
+
+        rc, re, id = generic_git.git_rev_list1(gitdir, ref)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        if id ~= "" and check_remote then
+            rc, re = generic_git.verify_remote_tag(gitdir, src.tag)
             if not rc then
                 return false, e:cat(re)
             end
-            e2lib.logf(4, "%s: check for remote tag: match", s.name)
         end
     else
         return false, err.new("not an scm sourceset: %s", sourceset)
     end
-    if not id then
-        fr = string.format("can't get commit id for ref %s from repository %s",
-        ref, s.working)
+
+    if id == "" then
+        re = err.new("can't get git commit ID for ref %q from repository %q",
+            ref, src.working)
+        return false, e:cat(re)
     end
-    return id, not id and fr
+
+    return true, nil, id
 end
 
 --- validate source configuration, log errors to the debug log
@@ -298,8 +334,8 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     local gitdir = info.root .. "/" .. src.working .. "/.git/"
     if sourceset == "branch" or
         (sourceset == "lazytag" and src.tag == "^") then
-        local rev, re = get_revision_id(info, sourcename, sourceset)
-        if not rev then
+        rc, re = git.git_commit_id(info, sourcename, sourceset)
+        if not rc then
             return false, e:cat(re)
         end
         gitdir = string.format("%s/%s/.git", info.root, src.working)
@@ -314,8 +350,8 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         end
     elseif sourceset == "tag" or
         (sourceset == "lazytag" and src.tag ~= "^") then
-        local rev, re = get_revision_id(info, sourcename, sourceset)
-        if not rev then
+        rc, re = git.git_commit_id(info, sourcename, sourceset)
+        if not rc then
             return false, e:cat(re)
         end
         gitdir = string.format("%s/%s/.git", info.root, src.working)
@@ -475,7 +511,7 @@ end
 -- @return an error string
 function git.sourceid(info, sourcename, sourceset)
     local src = info.sources[sourcename]
-    local e
+    local rc, re, e, id
     if not src.sourceid then
         src.sourceid = {}
         src.sourceid["working-copy"] = "working-copy"
@@ -484,11 +520,14 @@ function git.sourceid(info, sourcename, sourceset)
     if src.sourceid[sourceset] then
         return true, nil, src.sourceid[sourceset]
     end
-    src.commitid[sourceset], e = get_revision_id(info, sourcename,
-    sourceset, e2option.opts["check-remote"])
-    if not src.commitid[sourceset] then
-        return false, e
+
+    rc, re, id = git.git_commit_id(info, sourcename, sourceset,
+        e2option.opts["check-remote"])
+    if not rc then
+        return false, re
     end
+
+    src.commitid[sourceset] = id
     local hc = hash.hash_start()
     hash.hash_line(hc, src.name)
     hash.hash_line(hc, src.type)
