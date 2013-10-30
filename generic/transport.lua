@@ -361,12 +361,11 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
             user = string.format("%s@", u.user)
         end
 
-        local argv = { user..u.servername, "mkdir", "-p",
-        e2lib.shquote(destdir) }
-        rc, re = e2lib.ssh(argv)
+        rc, re = e2lib.ssh_remote_cmd(u, { "mkdir", "-p", destdir })
         if not rc then
             return false, re
         end
+
         local destserv = string.format("%s%s:", user, u.servername)
         local destfile = string.format("%s/%s", destdir, destname)
         destfile = e2lib.shquote(destfile)
