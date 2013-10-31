@@ -97,6 +97,17 @@ local function e2_fetch_project(arg)
     else
         p.destdir = p.name
     end
+
+    -- Make destdir an absolute path.
+    if string.sub(p.destdir, 1) ~= "/" then
+        rc, re = e2lib.cwd()
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        p.destdir = e2lib.join(rc, p.destdir)
+    end
+
     if opts["branch"] then
         p.branch = opts["branch"]
     else
@@ -139,9 +150,8 @@ local function e2_fetch_project(arg)
     -- clone the git repository
     local location = string.format("%s/proj/%s.git", p.location, p.name)
     local skip_checkout = false
-    local destdir = p.destdir
     local rc, re = generic_git.git_clone_from_server(scache, p.server, location,
-    p.destdir, skip_checkout)
+        p.destdir, skip_checkout)
     if not rc then
         return false, e:cat(re)
     end
