@@ -1,4 +1,6 @@
---- Git
+--- Generic git interface. Not to be confused with the git plugin which is
+-- only responsible for dealing with sources. Functions with '1' postfix
+-- take url strings as parameter. The others take server / location.
 -- @module generic.generic_git
 
 --[[
@@ -28,9 +30,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
---- functions with '1' postfix take url strings as parameter. the others
--- take server / location
-
 local generic_git = {}
 local e2lib = require("e2lib")
 local eio = require("eio")
@@ -40,70 +39,176 @@ local tools = require("tools")
 local err = require("err")
 local strict = require("strict")
 
+--- Trim off whitespaces and newline at the front and back of a string.
+-- @param str String to trim.
+-- @return Trimmed string.
+local function trim(str)
+    return string.match(str, "^%s*(.-)%s*$")
+end
+
 --- Clone a git repository.
 -- @param surl URL to the git repository (string).
 -- @param destdir Destination on file system (string). Must not exist.
--- @param skip_checkout Pass -n to git clone? (boolean)
--- @return True on success, false on error
--- @return Error object on failure
+-- @param skip_checkout Pass -n to git clone? (boolean).
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function git_clone_url(surl, destdir, skip_checkout)
-    local rc, re
-    local e = err.new("cloning git repository")
+    local rc, re, e, u, src, argv
 
-    if (not surl) or (not destdir) then
+    e = err.new("cloning git repository")
+
+    if not surl or not destdir then
         return false, err.new("git_clone_url(): missing parameter")
     end
 
-    local u, re = url.parse(surl)
+    u, re = url.parse(surl)
     if not u then
         return false, e:cat(re)
     end
 
-    local src, re = generic_git.git_url1(u)
+    src, re = generic_git.git_url1(u)
     if not src then
         return false, e:cat(re)
     end
 
-    local flags = ""
+    argv = { "clone" }
+
     if skip_checkout then
-        flags = "-n"
+        table.insert(argv, "-n")
     end
 
-    local cmd = string.format("git clone %s --quiet %s %s", flags,
-        e2lib.shquote(src), e2lib.shquote(destdir))
+    table.insert(argv, "--quiet")
+    table.insert(argv, src)
+    table.insert(argv, destdir)
 
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
+    rc, re = generic_git.git(argv)
+    if not rc then
         return false, e:cat(re)
     end
 
-    return true, nil
+    return true
 end
 
---- git branch wrapper
--- @param gitwc string: path to the git repository
--- @param track bool: use --track or --no-track
--- @param branch string: name of the branch to create
--- @param start_point string: where to start the branch
--- @return bool
--- @return nil, an error object on failure
-function generic_git.git_branch_new1(gitwc, track, branch, start_point)
-    local rc, re, e
-    local f_track
-    local cmd
+--- Create argument vector for calling git.
+-- Defaults: If git_dir is given and the default for work_tree is requested,
+-- it's assumed to be one directory level up. If work_tree is given and the
+-- default for git_dir is requested, it's work_tree/.git. If neither are given,
+-- git_dir defaults to '.git' and work_tree to '.'.
+-- @param gitdir Git repository directory, nil for the default and false to omit.
+-- @param gitwc Git working copy directory, nil for the default and false to omit.
+-- @param ... Further arguments are added to the end of the argument vector.
+-- @return Argument vector table.
+local function git_new_argv2(git_dir, work_tree, ...)
+    local argv = {...}
 
-    if track == true then
-        f_track = "--track"
-    else
-        f_track = "--no-track"
+    if git_dir == nil and work_tree == nil then
+        e2lib.abort("git_new_argv2: git_dir == nil and work_tree == nil")
     end
 
-    -- git branch [--track|--no-track] <branch> <start_point>
-    cmd = string.format( "cd %s && git branch %s %s %s",
-        e2lib.shquote(gitwc), f_track, e2lib.shquote(branch),
-        e2lib.shquote(start_point))
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
+    if git_dir == nil then
+        if work_tree then
+            git_dir = e2lib.join(work_tree, ".git")
+        else
+            git_dir = ".git"
+        end
+    end
+    if work_tree == nil then
+        if git_dir then
+            work_tree = e2lib.dirname(git_dir)
+        else
+            work_tree = "."
+        end
+    end
+
+    if work_tree then
+        table.insert(argv, 1, "--work-tree="..work_tree)
+    end
+    if git_dir then
+        table.insert(argv, 1, "--git-dir="..git_dir)
+    end
+
+    return argv
+end
+
+function generic_git.git_new_argv(git_dir, work_tree, ...)
+    return git_new_argv2(git_dir, work_tree, ...)
+end
+
+--- Call out to git. XXX: replace e2lib.git with this.
+-- @param argv Array of arguments to git.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Any captured git output or the empty string if nothing was captured.
+function generic_git.git(argv)
+    local rc, re, e, git, cmd, fifo, out
+
+    git, re = tools.get_tool("git")
+    if not git then
+        return false, re
+    end
+
+    cmd = e2lib.shquote(git)
+    for _,arg in ipairs(argv) do
+        cmd = cmd .. " "
+        cmd = cmd .. e2lib.shquote(arg)
+    end
+
+    -- fifo contains the last 4 lines, out everything - it's simpler that way.
+    fifo = {}
+    out = {}
+
+    local function capture(msg)
+        if msg == "" then
+            return
+        end
+
+        if #fifo > 4 then
+            table.remove(fifo, 1)
+        end
+
+        e2lib.log(3, msg)
+        table.insert(fifo, msg)
+        table.insert(out, msg)
+    end
+
+    rc, re = e2lib.callcmd_capture(cmd, capture)
+    if not rc then
+        e = new.new("git command %q failed", cmd)
+        return false, e:cat(re), table.concat(out)
+    elseif rc ~= 0 then
+        e = err.new("git command %q failed with exit status %d", cmd, rc)
+        for _,v in ipairs(fifo) do
+            e:append("%s", v)
+        end
+        return false, e, table.concat(out)
+    end
+
+    return true, nil, table.concat(out)
+end
+
+--- Git branch wrapper. Sets up a branch, but does not switch to it.
+-- @param gitwc Path to the git repository.
+-- @param track Use --track if true, otherwise use --no-track.
+-- @param branch Name of the branch to create.
+-- @param start_point Start of the branch (string).
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function generic_git.git_branch_new1(gitwc, track, branch, start_point)
+    local rc, re, e, argv
+
+    argv = git_new_argv2(nil, gitwc, "branch")
+
+    if track == true then
+        table.insert(argv, "--track")
+    else
+        table.insert(argv, "--no-track")
+    end
+
+    table.insert(argv, branch)
+    table.insert(argv, start_point)
+
+    rc, re = generic_git.git(argv)
+    if not rc then
         e = err.new("creating new branch failed")
         return false, e:cat(re)
     end
@@ -111,20 +216,17 @@ function generic_git.git_branch_new1(gitwc, track, branch, start_point)
     return true
 end
 
---- git checkout wrapper
--- @param gitwc string: path to the git repository
--- @param branch name of the branch to checkout
--- @return bool
--- @return an error object on failure
+--- Git checkout wrapper.
+-- @param gitwc Path to the git working directory.
+-- @param branch Branch name to check out.
+-- @return True on success, false on error.
+-- @return An error object on failure.
 function generic_git.git_checkout1(gitwc, branch)
-    local rc, re, e
-    local cmd
+    local rc, re, e, argv
 
-    e2lib.logf(3, "checking out branch: %s", branch)
-    cmd = string.format("cd %s && git checkout %s", e2lib.shquote(gitwc),
-        e2lib.shquote(branch))
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
+    argv = git_new_argv2(nil, gitwc, "checkout", branch)
+    rc, re = generic_git.git(argv)
+    if not rc then
         e = err.new("git checkout failed")
         return false, e:cat(re)
     end
@@ -132,54 +234,47 @@ function generic_git.git_checkout1(gitwc, branch)
     return true
 end
 
---- git rev-list wrapper function
--- @param gitdir string: GIT_DIR
--- @param ref string: a reference, according to the git manual
--- @return string: the commit id matching the ref parameter, or nil on error
--- @return an error object on failure
+--- Git rev-list wrapper.
+-- @param gitdir Path to the git repository directory (GIT_DIR).
+-- @param ref Git reference, see git-rev-list(1).
+-- @return True on success, false on error.
+-- @return Error object on failure
+-- @return Hexadecimal commit ID string or empty string if there was no match.
 function generic_git.git_rev_list1(gitdir, ref)
-    local e = err.new("git rev-list failed")
-    local rc, re
+    local e, rc, re, argv, id
 
-    local tmpfile, re = e2lib.mktempfile()
-    if not tmpfile then
+    e = err.new("git rev-list failed")
+
+    argv = git_new_argv2(gitdir, nil, "rev-list", "--max-count=1", ref, "--")
+
+    rc, re, id = generic_git.git(argv)
+    if not rc then
         return false, e:cat(re)
     end
 
-    local args = string.format("--max-count=1 '%s' -- >'%s'", ref, tmpfile)
-    rc, re = e2lib.git(gitdir, "rev-list", args)
-    if not rc then
-        return false, e -- do not include the low-level error here
+    id = trim(id)
+    if string.match(id, "^%x+$") or id == "" then
+        return true, nil, id
     end
-    local f, msg = io.open(tmpfile, "r")
-    if not f then
-        return nil, e:cat(msg)
-    end
-    local rev = f:read()
-    f:close()
-    e2lib.rmtempfile(tmpfile)
-    if (not rev) or (not rev:match("^%S+$")) then
-        return nil, err.new("can't parse git rev-list output")
-    end
-    if rev then
-        e2lib.logf(4, "git_rev_list: %s", rev)
-    else
-        e2lib.logf(4, "git_rev_list: unknown ref: %s", ref)
-    end
-    return rev, nil
+
+    return false, err.new("can't parse git rev-list output")
 end
 
---- initialize a git repository
--- @param rurl string: remote url
--- @return bool
--- @return an error object on failure
-function generic_git.git_init_db1(rurl)
-    local rc, re, e
-    local u
-    local gitdir, gitcmd
-    local cmd
+--- Initialize a git repository.
+-- @param rurl URL string where the repository should be created.
+-- @param shared Should the repository be shared with other users or not.
+--               Defaults to true.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function generic_git.git_init_db1(rurl, shared)
+    local rc, re, e, u, gitdir, gitargv, argv
 
-    if (not rurl) then
+    -- XXX: Remove the default behaviour and require a choice
+    if shared == nil then
+        shared = true
+    end
+
+    if not rurl then
         return false, err.new("git_init_db1(): missing parameter")
     end
 
@@ -191,42 +286,53 @@ function generic_git.git_init_db1(rurl)
     end
 
     gitdir = e2lib.join("/", u.path);
-    gitcmd = string.format("mkdir -p %s && GIT_DIR=%s git init-db --shared",
-        e2lib.shquote(gitdir), e2lib.shquote(gitdir))
+    gitargv = { "--git-dir="..gitdir, "init-db" }
+    if shared then
+        table.insert(gitargv, "--shared")
+    end
 
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
-        local ssh, re = tools.get_tool("ssh")
-        if not ssh then
-            return false, re
-        end
-        cmd = string.format("%s %s %s", e2lib.shquote(ssh),
-            e2lib.shquote(u.server), e2lib.shquote(gitcmd))
-    elseif u.transport == "file" then
-        cmd = gitcmd
-    else
-        return false, err.new("git_init_db: can not initialize git repository"..
-            " on this transport: %s", u.transport)
-    end
 
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
-        return false, e:cat(re)
+        argv = { "mkdir", "-p", gitdir }
+        rc, re = e2lib.ssh_remote_cmd(u, argv)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        table.insert(gitargv, 1, "git")
+        rc, re = e2lib.ssh_remote_cmd(u, gitargv)
+        if not rc then
+            return false, e:cat(re)
+        end
+    elseif u.transport == "file" then
+        rc, re = e2lib.mkdir_recursive(gitdir)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        rc, re = generic_git.git(gitargv)
+        if not rc then
+            return false, e:cat(re)
+        end
+    else
+        return false, err.new("git_init_db: initializing git repository"..
+            " on transport %q is not supported", u.transport)
     end
 
     return true
 end
 
---- do a git push
--- @param gitdir string: absolute path to a gitdir
--- @param rurl string: remote url
+--- Git push.
+-- @param gitdir Absolute path to git-dir
+-- @param rurl URL string to repository.
 -- @param refspec string: a git refspec
--- @return bool
--- @return an error object on failure
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function generic_git.git_push1(gitdir, rurl, refspec)
-    local rc, re, e, u, remote_git_url, cmd
+    local rc, re, e, u, remote_git_url, argv
 
-    if (not rurl) or (not gitdir) or (not refspec) then
+    if not rurl or not gitdir or not refspec then
         return false, err.new("git_push1(): missing parameter")
     end
 
@@ -241,28 +347,26 @@ function generic_git.git_push1(gitdir, rurl, refspec)
         return false, e:cat(re)
     end
 
-    -- GIT_DIR=gitdir git push remote_git_url refspec
-    cmd = string.format("GIT_DIR=%s git push %s %s", e2lib.shquote(gitdir),
-        e2lib.shquote(remote_git_url), e2lib.shquote(refspec))
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
+    argv = { "--git-dir=" .. gitdir, "push", remote_git_url, refspec }
+    rc, re = generic_git.git(argv)
+    if not rc then
         return false, e:cat(re)
     end
 
     return true
 end
 
---- do a git remote-add
+--- Git remote add. XXX: local to generic_git
 -- @param lurl string: local git repo
 -- @param rurl string: remote url
 -- @param name string: remote name
--- @return bool
--- @return an error object on failure
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function generic_git.git_remote_add1(lurl, rurl, name)
-    local rc, re, e, lrepo, rrepo, giturl, cmd
+    local rc, re, e, lrepo, rrepo, giturl, gitdir, argv
 
-    if (not lurl) or (not rurl) or (not name) then
-        return false, err.new("missing parameter")
+    if not lurl or not rurl or not name then
+        return false, err.new("git_remote_add1: missing parameter")
     end
 
     e = err.new("git remote-add failed")
@@ -280,19 +384,19 @@ function generic_git.git_remote_add1(lurl, rurl, name)
     if not giturl then
         return false, e:cat(re)
     end
-    -- git remote add <name> <giturl>
-    cmd = string.format("cd %s && git remote add %s %s",
-        e2lib.shquote("/"..lrepo.path), e2lib.shquote(name),
-        e2lib.shquote(giturl))
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
-        return false, e:cat(re)
+
+    gitdir = e2lib.join("/", lrepo.path)
+    argv = { "--git-dir="..gitdir, "remote", "add", name, giturl }
+
+    rc, re = generic_git.git(argv)
+    if not rc then
+        return false, re
     end
 
     return true
 end
 
---- Add git remote.
+--- Add git remote. XXX: Local to to generic_git
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
@@ -316,12 +420,13 @@ function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocat
     return true
 end
 
---- translate a url to a git url
--- @param u url table
--- @return string: the git url
--- @return an error object on failure
+--- Generate git URL string from URL object.
+-- @param u URL object
+-- @return Git URL string or false on error.
+-- @return Error object on failure.
 function generic_git.git_url1(u)
     local giturl
+
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
         giturl = string.format("git+ssh://%s/%s", u.server, u.path)
@@ -331,9 +436,11 @@ function generic_git.git_url1(u)
         u.transport == "git" then
         giturl = string.format("%s://%s/%s", u.transport, u.server, u.path)
     else
-        return nil, err.new("git_url1: transport not supported: %s", u.transport)
+        return false,
+            err.new("git_url1: transport not supported: %s", u.transport)
     end
-    return giturl, nil
+
+    return giturl
 end
 
 --- clone a git repository by server and location
@@ -397,230 +504,208 @@ function generic_git.git_push(c, gitdir, server, location, refspec)
     return generic_git.git_push1(gitdir, rurl, refspec)
 end
 
---- do a git config query
+--- Git config query. XXX: used only in git plugin
 -- @param gitdir string: gitdir
 -- @param query string: query to pass to git config
--- @return string: the value printed to stdout by git config, or nil
--- @return an error object on failure
+-- @return Value printed to stdout by git config, or false on error.
+-- @return Error object on failure.
 function generic_git.git_config(gitdir, query)
-    local rc, re
-    local e = err.new("running git config")
+    local e, rc, re, argv, out
 
-    local tmpfile, re = e2lib.mktempfile()
-    if not tmpfile then
+    argv = git_new_argv2(gitdir, false, "config", query)
+    rc, re, out = generic_git.git(argv)
+    if not rc then
+        e = err.new("git config failed")
         return false, e:cat(re)
     end
 
-    local cmd = string.format("GIT_DIR=%s git config %s > %s",
-        e2lib.shquote(gitdir), e2lib.shquote(query), e2lib.shquote(tmpfile))
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
-        e:append("git config failed")
-        return nil, e
-    end
-    local git_output, re = eio.file_read_line(tmpfile)
-    if not git_output then
-        e:cat(re)
-        return nil, e:append("can't read git output from temporary file")
-    end
-    e2lib.rmtempfile(tmpfile)
-    return git_output, nil
+    return trim(out)
 end
 
---- do a git add
--- @param gitdir string: gitdir (optional, default: .git)
--- @param args string: args to pass to git add
--- @return bool
--- @return an error object on failure
-function generic_git.git_add(gitdir, args)
-    local rc, re
-    local e = err.new("running git add")
-    if not gitdir then
-        gitdir = ".git"
+--- Git add.
+-- @param gitdir Path to GIT_DIR.
+-- @param argv Argument vector to pass to git add, usually the files to add.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function generic_git.git_add(gitdir, argv)
+    local rc, re, e, v
+
+    v = git_new_argv2(gitdir, nil, "add", unpack(argv))
+
+    rc, re = generic_git.git(v)
+    if not rc then
+        e = err.new("git add failed")
+        return false, e:cat(re)
     end
-    local cmd = string.format("GIT_DIR=%s git add %s",
-    e2lib.shquote(gitdir), e2lib.shquote(args))
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
-        return nil, e:cat(re)
-    end
-    return true, nil
+
+    return true
 end
 
---- do a git commit
--- @param gitdir string: gitdir (optional, default: .git)
--- @param args string: args to pass to git add
--- @return bool
--- @return an error object on failure
-function generic_git.git_commit(gitdir, args)
-    local rc, re
-    local e = err.new("git commit failed")
-    return e2lib.git("commit", gitdir, args)
+--- Git commit.
+-- @param gitdir Path to GIT_DIR.
+-- @param argv Argument vector to pass to git commit, like a comment.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function generic_git.git_commit(gitdir, argv)
+    local e, rc, re, v
+
+    v = git_new_argv2(gitdir, false, "commit", unpack(argv))
+
+    rc, re = generic_git.git(v)
+    if not rc then
+        e = err.new("git commit failed")
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
---- compare a local tag and the remote tag with the same name
--- @param gitdir string: gitdir (optional, default: .git)
--- @param tag string: tag name
--- @return bool, or nil on error
--- @return an error object on failure
+--- Check local tag and the remote tag point to the same commit.
+-- @param gitdir Path to GIT_DIR.
+-- @param tag Git tag name.
+-- @return True on success, false on error or mismatch.
+-- @return Error object on failure.
 function generic_git.verify_remote_tag(gitdir, tag)
     local e = err.new("verifying remote tag")
-    local rc, re
+    local rc, re, rtag, argv
 
-    -- fetch the remote tag
-    -- TODO: escape args, tag, rtag
-    local rtag = string.format("%s.remote", tag)
-    local args = string.format("origin refs/tags/%s:refs/tags/%s",
-    tag, rtag)
-    rc, re = e2lib.git(gitdir, "fetch", args)
+    -- temporary local name for remote tag
+    rtag = string.format("%s.remote", tag)
+
+    -- fetch the remote tag as rtag
+    argv = git_new_argv2(gitdir, false, "fetch", "origin")
+    table.insert(argv, string.format("refs/tags/%s:refs/tags/%s", tag, rtag))
+
+    rc, re = generic_git.git(argv)
     if not rc then
-        return false, err.new("remote tag is not available: %s", tag)
+        e = err.new("remote tag %q is not available", tag)
+        return false, e:cat(re)
     end
 
-    -- store commit ids for use in the error message, if any
-    local lrev = generic_git.git_rev_list1(gitdir, tag)
-    if not lrev then
-        return nil, e:cat(re)
-    end
-    local rrev = generic_git.git_rev_list1(gitdir, rtag)
-    if not rrev then
-        return nil, e:cat(re)
+    -- before leaving, remove the temporary rtag
+    local function cleanup_rtag(gitdir, rtag)
+        local argv = git_new_argv2(gitdir, false, "tag", "-d", rtag)
+        generic_git.git(argv)
     end
 
-    -- check that local and remote tags point to the same revision
-    local args = string.format("--quiet '%s' '%s'", rtag, tag)
-    local equal, re = e2lib.git(gitdir, "diff", args)
-
-    -- delete the remote tag again, before evaluating the return code
-    -- of 'git diff'
-    local args = string.format("-d '%s'", rtag)
-    rc, re = e2lib.git(gitdir, "tag", args)
+    local rc, re, lid = generic_git.git_rev_list1(gitdir, tag)
     if not rc then
-        return nil, e:cat(re)
+        cleanup_rtag(rtag)
+        return false, e:cat(re)
+    elseif lid == "" then
+        cleanup_rtag(rtag)
+        re = err.new("can not find commit ID for local tag %q in %q",
+            gitdir, tag)
+        return false, e:cat(re)
     end
-    if not equal then
+
+    local rc, re, rid = generic_git.git_rev_list1(gitdir, rtag)
+    if not rc then
+        cleanup_rtag(rtag)
+        return false, e:cat(re)
+    elseif rid == "" then
+        cleanup_rtag(rtag)
+        re = err.new("can not find commit ID for remote tag %q in %q",
+            gitdir, tag --[[ not rtag]])
+        return false, e:cat(re)
+    end
+
+    cleanup_rtag(rtag)
+
+    if lid ~= rid then
         return false, e:append(
         "local tag differs from remote tag\n"..
         "tag name: %s\n"..
         "local:  %s\n"..
-        "remote: %s\n", tag, lrev, rrev)
+        "remote: %s\n", tag, lid, rid)
     end
-    return true, nil
+
+    return true
 end
 
---- verify that the working copy is clean and matches HEAD
--- @param gitwc string: path to a git working tree (default: .)
--- @return bool, or nil on error
--- @return an error object on failure
+--- Verify that the working copy is clean and matches HEAD. XXX: only in e2tool
+-- @param gitwc Path to git working tree.
+-- @return True if the working copy is clean, false on any error.
+-- @return Error object on failure.
+-- @return True if the error is because the work tree is dirty.
 function generic_git.verify_clean_repository(gitwc)
-    gitwc = gitwc or "."
-    local e = err.new("verifying that repository is clean")
-    local rc, re
+    local e, rc, re, out, argv, files
 
-    local tmp, re = e2lib.mktempfile()
-    if not tmp then
-        return false, e:cat(re)
-    end
+    e = err.new("verifying that repository is clean failed")
 
-    rc, re = e2lib.chdir(gitwc)
-    if not rc then
-        return nil, e:cat(re)
-    end
     -- check for unknown files in the filesystem
-    local args = string.format(
-    "--exclude-standard --directory --others >%s", tmp)
-    rc, re = e2lib.git(nil, "ls-files", args)
-    if not rc then
-        return nil, e:cat(re)
-    end
-    local x, msg = io.open(tmp, "r")
-    if not x then
-        return nil, e:cat(msg)
-    end
-    local files = x:read("*a")
-    x:close()
-    if #files > 0 then
-        local msg = "the following files are not checked into the repository:\n"
-        msg = msg .. files
-        return false, err.new("%s", msg)
-    end
-    -- verify that the working copy matches HEAD
-    local args = string.format("--name-only HEAD >%s", tmp)
-    rc, re = e2lib.git(nil, "diff-index", args)
-    if not rc then
-        return nil, e:cat(re)
-    end
-    local x, msg = io.open(tmp, "r")
-    if not x then
-        return nil, e:cat(msg)
-    end
-    local files = x:read("*a")
-    x:close()
-    if #files > 0 then
-        msg = "the following files are modified:\n"
-        msg = msg..files
-        return false, err.new("%s", msg)
-    end
-    -- verify that the index matches HEAD
-    local args = string.format("--name-only --cached HEAD >%s", tmp)
-    rc, re = e2lib.git(nil, "diff-index", args)
-    if not rc then
-        return nil, e:cat(re)
-    end
-    local x, msg = io.open(tmp, "r")
-    if not x then
-        return nil, e:cat(msg)
-    end
-    local files = x:read("*a")
-    x:close()
-    if #files > 0 then
-        msg = "the following files in index are modified:\n"
-        msg = msg..files
-        return false, err.new("%s", msg)
-    end
-    return true
-end
+    argv = git_new_argv2(nil, gitwc, "ls-files", "--exclude-standard",
+        "--directory", "--others")
 
---- verify that HEAD matches the given tag
--- @param gitwc string: gitdir (optional, default: .git)
--- @param verify_tag string: tag name
--- @return bool, or nil on error
--- @return an error object on failure
-function generic_git.verify_head_match_tag(gitwc, verify_tag)
-    assert(verify_tag)
-    gitwc = gitwc or "."
-    local e = err.new("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
-    local rc, re
-
-    local tmp, re = e2lib.mktempfile()
-    if not tmp then
+    rc, re, files = generic_git.git(argv)
+    if not rc then
         return false, e:cat(re)
     end
 
-    local args = string.format("--tags --match '%s' >%s", verify_tag, tmp)
-    rc, re = e2lib.chdir(gitwc)
+    if string.len(files) > 0 then
+        re = err.new("the following files are not checked in:\n%s", files)
+        return false, e:cat(re), true
+    end
+
+    -- verify that the working copy matches HEAD
+    argv = git_new_argv2(nil, gitwc, "diff-index", "--name-only", "HEAD")
+
+    rc, re, files = generic_git.git(argv)
     if not rc then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
-    rc, re = e2lib.git(nil, "describe", args)
+
+    if string.len(files) > 0 then
+        re = err.new("the following files are modified:\n%s", files)
+        return false, e:cat(re), true
+    end
+
+    -- verify that the index matches HEAD
+    argv = git_new_argv2(nil, gitwc, "diff-index", "--name-only",
+        "--cached", "HEAD")
+    rc, re, files = generic_git.git(argv)
     if not rc then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
-    local x, msg = io.open(tmp, "r")
-    if not x then
-        return nil, e:cat(msg)
+
+    if string.len(files) > 0 then
+        re =
+            err.new("the following files in the index are modified:\n%s", files)
+        return false, e:cat(re), true
     end
-    local tag, msg = x:read()
-    x:close()
-    if tag == nil then
-        return nil, e:cat(msg)
-    end
-    if tag ~= verify_tag then
-        return false
-    end
+
     return true
 end
 
+--- verify that HEAD matches the given tag. XXX: only used in e2tool
+-- @param gitwc Path to git work tree.
+-- @param verify_tag Git tag to verify.
+-- @return True on success, false on error and mismatch.
+-- @return Error object on failure.
+-- @return True on mismatch.
+function generic_git.verify_head_match_tag(gitwc, verify_tag)
+    local rc, re, e, argv, tag
+
+    e = err.new("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
+
+    argv = git_new_argv2(nil, gitwc, "describe", "--tags",
+        "--match", verify_tag)
+
+    rc, re, tag = generic_git.git(argv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    tag = trim(tag)
+    if tag ~= verify_tag then
+        return false, err.new("tag %q does not match expected tag %q",
+            tag, verify_tag), true
+    end
+
+    return true
+end
+
+---
 function generic_git.sourceset2ref(sourceset, branch, tag)
     if sourceset == "branch" or
         (sourceset == "lazytag" and tag == "^") then
@@ -632,58 +717,67 @@ function generic_git.sourceset2ref(sourceset, branch, tag)
     return nil, "invalid sourceset"
 end
 
---- create a new git source repository
+--- Create a new git source repository. XXX: only used in e2-new-source
 -- @param c cache table
 -- @param lserver string: local server
 -- @param llocation string: working copy location on local server
 -- @param rserver string: remote server
 -- @param rlocation string: repository location on remote server
--- @param flags table of flags
--- @return bool
--- @return nil, or an error string on error
+-- @param flags table of flags XXX: unused
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, flags)
-    local rc, re
-    local e = err.new("setting up new git repository failed")
-    local lserver_url, re = cache.remote_url(c, lserver, llocation)
+    local rc, re, e, lserver_url, lurl, targs, gitdir, argv
+
+    e = err.new("setting up new git repository failed")
+
+    lserver_url, re = cache.remote_url(c, lserver, llocation)
     if not lserver_url then
         return false, e:cat(re)
     end
-    local lurl, re = url.parse(lserver_url)
+
+    lurl, re = url.parse(lserver_url)
     if not lurl then
         return false, e:cat(re)
     end
-    local rc = e2lib.mkdir_recursive(e2lib.join("/", lurl.path))
+
+    gitdir = e2lib.join("/", lurl.path)
+    rc, re = e2lib.mkdir_recursive(gitdir)
     if not rc then
-        return false, e:cat("can't create path to local git repository")
+        e:cat("can't create path to local git repository")
+        return false, e:cat(re)
     end
-    rc = generic_git.git_init_db(c, lserver, llocation)
+
+    rc, re = generic_git.git_init_db(c, lserver, llocation)
     if not rc then
-        return false, e:cat("can't initialize local git repository")
+        e:cat("can't initialize local git repository")
+        return false, e:cat(re)
     end
-    rc = generic_git.git_remote_add(c, lserver, llocation, "origin",
-    rserver, rlocation)
-    if not rc then
-        return false, e:cat("git remote add failed")
-    end
-    rc = e2lib.chdir("/"..lurl.path)
+
+    rc, re = generic_git.git_remote_add(c, lserver, llocation, "origin", rserver, rlocation)
     if not rc then
         return false, e:cat(re)
     end
-    local targs = {
-        string.format("'branch.master.remote' 'origin'"),
-        string.format("'branch.master.merge' 'refs/heads/master'"),
-    }
-    for _,args in ipairs(targs) do
-        rc, re = e2lib.git(".", "config", args)
-        if not rc then
-            return false, e:cat(re)
-        end
+
+    argv = { "--git-dir="..gitdir, "config", "branch.master.remote", "origin" }
+    rc, re = generic_git.git(argv)
+    if not rc then
+        return false, e:cat(re)
     end
+
+    argv = { "--git-dir="..gitdir, "config", "branch.master.merge",
+        "refs/heads/master" }
+    rc, re = generic_git.git(argv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
     rc, re = generic_git.git_init_db(c, rserver, rlocation)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+
+    return true
 end
 
 return strict.lock(generic_git)
