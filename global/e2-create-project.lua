@@ -35,6 +35,7 @@ local generic_git = require("generic_git")
 local err = require("err")
 local e2option = require("e2option")
 local buildconfig = require("buildconfig")
+local url = require("url")
 
 --- Create a extensions config.
 -- @param extensions Table.
@@ -206,8 +207,18 @@ local function e2_create_project(arg)
     -- works up to this point
 
     -- create the initial (git) repository
-    local url = string.format("file://%s/.git", tmpdir)
-    rc, re = e2lib.git(nil, "init-db")
+    local tmp_repo_url, tmp_repo_path
+
+    tmp_repo_url, re = url.parse(string.format("file://%s/.git", tmpdir))
+    if not tmp_repo_url then
+        return false, e:cat(re)
+    end
+    tmp_repo_path, re = url.to_file_path(tmp_repo_url)
+    if not tmp_repo_path then
+        return false, e:cat(re)
+    end
+
+    rc, re = generic_git.git_init_db1(tmp_repo_url.url, false)
     if not rc then
         return false, e:cat(re)
     end
@@ -265,7 +276,7 @@ local function e2_create_project(arg)
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = e2lib.git(nil, "add", f.filename)
+        rc, re = generic_git.git_add(tmp_repo_path, { f.filename })
         if not rc then
             return false, e:cat(re)
         end
@@ -274,18 +285,20 @@ local function e2_create_project(arg)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.git(nil, "add", e2lib.globals.extension_config)
+    rc, re = generic_git.git_add(tmp_repo_path,
+        { e2lib.globals.extension_config })
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.git(nil, "commit", "-m \"project setup\"")
+    rc, re = generic_git.git_commit(tmp_repo_path, { "-m", "project setup" })
     if not rc then
         return false, e:cat(re)
     end
 
     local refspec = "master:refs/heads/master"
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
-    rc, re = generic_git.git_push(scache, ".git", p.server, rlocation, refspec)
+    rc, re = generic_git.git_push(scache, tmp_repo_path, p.server,
+        rlocation, refspec)
     if not rc then
         return false, e:cat(re)
     end
