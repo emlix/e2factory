@@ -160,10 +160,10 @@ local function e2_install_e2(arg)
     -- checkout e2factory itself
     local server = config.site.e2_server
     local location = config.site.e2_location
-    local destdir = "e2"
+    local destdir = e2lib.join(root, ".e2/e2")
     e2lib.logf(2, "fetching e2factory (ref %s)", ref)
     rc, re = generic_git.git_clone_from_server(scache, server, location,
-    destdir, false)
+        destdir, false)
     if not rc then
         return false, e:cat(re)
     end
@@ -191,7 +191,7 @@ local function e2_install_e2(arg)
         e2lib.logf(2, "fetching extension: %s (%s)", ex.name, ref)
         local server = config.site.e2_server
         local location = string.format("%s/%s.git", config.site.e2_base, ex.name)
-        local destdir = ex.name
+        local destdir = e2lib.join(root, ".e2/e2/extensions", ex.name)
 
         if e2lib.exists(destdir) then
             rc, re = e2lib.unlink_recursive(destdir)
