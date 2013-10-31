@@ -1965,21 +1965,11 @@ function e2lib.curl(argv)
     return e2lib.call_tool_argv("curl", argv)
 end
 
---- call the ssh command
--- @param argv table: argument vector
--- @return bool
--- @return an error object on failure
-function e2lib.ssh(argv)
-    assert(type(argv) == "table")
-
-    return e2lib.call_tool_argv("ssh", argv)
-end
-
 --- Run command on remote server via SSH.
 -- @param u URL object pointing to the remote server.
 -- @param argv Command vector to run on the remote server.
 -- @return True on success, false on error.
--- @retrun Error object on failure.
+-- @return Error object on failure.
 function e2lib.ssh_remote_cmd(u, argv)
     local v, command
 
@@ -1998,24 +1988,20 @@ function e2lib.ssh_remote_cmd(u, argv)
         table.insert(v, u.user)
     end
 
-    if not u.server then
+    if not u.servername then
         return false,
-            err.new("ssh_remote_cmd: no server component in URL %q", u.url)
+            err.new("ssh_remote_cmd: no server name in URL %q", u.url)
     end
+    table.insert(v, u.servername)
 
-    table.insert(v, u.server)
-
-    command = ""
+    command = {}
     for i, arg in ipairs(argv) do
-        if i ~= 1 then
-            command = command .. " "
-        end
-        command = command .. e2lib.shquote(arg)
+        table.insert(command, e2lib.shquote(arg))
     end
 
-    table.insert(v, command)
+    table.insert(v, table.concat(command, " "))
 
-    return e2lib.ssh(v)
+    return e2lib.call_tool_argv("ssh", v)
 end
 
 --- call the scp command
