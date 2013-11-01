@@ -169,9 +169,8 @@ local function e2_install_e2(arg)
     end
     e2lib.chdir(destdir)
 
-    -- checkout ref
-    local args = string.format("%s --", ref)
-    rc, re = e2lib.git(nil, "checkout", args)
+    -- change to requested branch or tag
+    rc, re = generic_git.git_checkout1(destdir, ref)
     if not rc then
         return false, e:cat(re)
     end
@@ -207,8 +206,7 @@ local function e2_install_e2(arg)
         end
         e2lib.chdir(destdir)
 
-        -- checkout ref
-        rc, re = e2lib.git(nil, "checkout", ref)
+        rc, re = generic_git.git_checkout1(destdir, ref)
         if not rc then
             return false, e:cat(re)
         end
