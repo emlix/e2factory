@@ -74,35 +74,6 @@ plugin_descriptor = {
     exit = function (ctx) return true end,
 }
 
---- git branch wrapper
--- get the current branch
--- @param gitdir
--- @return string: the branch name, nil on error
--- @return string: nil, or an error string on error
-local function git_branch_get(gitdir)
-    -- git branch
-    local cmd = string.format("GIT_DIR=\"%s\" git branch", gitdir)
-    local p = io.popen(cmd, "r")
-    local branch = nil
-    while true do
-        local line = p:read()
-        if not line then
-            break
-        end
-        local x
-        -- search for a line matching '* <branchname>'
-        x, branch = line:match("^(\* )(%S*)$")
-        if x and branch then
-            break
-        end
-    end
-    p:close()
-    if not branch then
-        return branch, nil, "git branch: can't get current branch"
-    end
-    return branch, nil
-end
-
 --- Return the git commit ID of the specified source configuration. Specific to
 -- sources of type git, useful for writing plugins.
 -- @param info Info table.
@@ -224,55 +195,70 @@ end
 -- @return bool
 -- @return an error object
 function git.update(info, sourcename)
-    local src = info.sources[ sourcename ]
-    local rc, re
-    local e = err.new("updating source '%s' failed", sourcename)
+    local e, rc, re, src, gitwc, gitdir, argv, id, branch, remote
+
+    src = info.sources[sourcename]
+    e = err.new("updating source '%s' failed", sourcename)
+
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
-    local gitwc  = string.format("%s/%s", info.root, src.working)
-    local gitdir = string.format("%s/%s/.git", info.root, src.working)
+
     e2lib.logf(2, "updating %s [%s]", src.working, src.branch)
-    rc, re = e2tool.lcd(info, src.working)
-    if not rc then
-        return false, e:append("working copy not available")
-    end
-    rc, re = e2lib.git(nil, "fetch")  -- git fetch is safe
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = e2lib.git(nil, "fetch", "--tags")
-    if not rc then
-        return false, e:cat(re)
-    end
-    e:append("fetch succeeded")
 
-    -- setup the branch tracking its remote. This fails if the branch exists,
-    -- but that's fine.
-    local args
-    args = string.format("--track '%s' 'origin/%s'", src.branch, src.branch)
-    rc, re = e2lib.git(nil, "branch", args)
+    gitwc  = e2lib.join(info.root, src.working)
+    gitdir = e2lib.join(gitwc, ".git")
 
-    -- sanity checks:
-    --  must be on configured branch
-    local branch, re = git_branch_get(gitdir)
-    if not branch then
-        return false, e:cat(re)
-    end
-    if branch ~= src.branch then
-        e2lib.warnf("WOTHER", "not on configured branch. Skipping 'git pull'")
-        return true, nil
-    end
-    rc, re = e2tool.lcd(info, src.working)
-    if not rc then
-        return false, e:append("working copy not available")
-    end
-    rc, re = e2lib.git(nil, "pull", "--ff-only")
+    argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
+    rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+
+    argv = generic_git.git_new_argv(gitdir, gitwc, "fetch", "--tags")
+    rc, re = generic_git.git(argv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- Use HEAD commit ID to find the branch we're on
+    rc, re, id = generic_git.lookup_id(gitdir, false, "HEAD")
+    if not rc then
+        return false, e:cat(re)
+    elseif not id then
+        return false, e:cat(err.new("can not find commit ID for HEAD"))
+    end
+
+    rc, re, branch = generic_git.lookup_ref(gitdir, false, id, "refs/heads/")
+    if not rc then
+        return false, e:cat(re)
+    elseif not branch then
+        e2lib.warnf("WOTHER", "HEAD is not on a branch (detached?). Skipping")
+        return true
+    end
+
+    if branch ~= "refs/heads/" .. src.branch then
+        e2lib.warnf("WOTHER", "not on configured branch. Skipping.")
+        return true
+    end
+
+    rc, re, remote = generic_git.git_config(
+        gitdir, "branch."..src.branch.."remote")
+    if not rc or string.len(remote) == 0  then
+        e2lib.warnf("WOTHER", "no remote configured for branch %q. Skipping.",
+            src.branch)
+        return true
+    end
+
+    branch = remote .. "/" .. src.branch
+    argv = generic_git.git_new_argv(gitdir, gitwc, "merge", "--ff-only", branch)
+    rc, re = generic_git.git(argv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
 --- fetch a git source
