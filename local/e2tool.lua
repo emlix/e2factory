@@ -1505,8 +1505,19 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     if e2option.opts["check"] then
-        e2tool.lcd(info, ".")
-        rc, re = generic_git.verify_head_match_tag(nil, info.project.release_id)
+        local dirty, mismatch
+
+        rc, re, mismatch = generic_git.verify_head_match_tag(info.root,
+            info.project.release_id)
+        if not rc then
+            if mismatch then
+                e:append("project repository tag does not match " ..
+                    "the ReleaseId given in proj/config")
+            else
+                return false, e:cat(re)
+            end
+        end
+
         if rc == nil then
             return false, e:cat(re)
         end
@@ -1515,18 +1526,20 @@ function e2tool.collect_project_info(info, skip_load_config)
                 " given in proj/config")
             return false, e:cat(re)
         end
-        rc, re = generic_git.verify_clean_repository(nil)
-        if rc == nil then
-            return false, e:cat(re)
-        end
+        rc, re, dirty = generic_git.verify_clean_repository(info.root)
         if not rc then
-            e = err.new("project repository is not clean")
-            return false, e:cat(re)
+            if dirty then
+                e = err.new("project repository is not clean")
+                return false, e:cat(re)
+            else
+                return false, e:cat(re)
+            end
         end
     end
 
     if e2option.opts["check-remote"] then
-        rc, re = generic_git.verify_remote_tag(nil, info.project.release_id)
+        rc, re = generic_git.verify_remote_tag(
+            e2lib.join(info.root, ".git"), info.project.release_id)
         if not rc then
             e:append("verifying remote tag failed")
             return false, e:cat(re)
