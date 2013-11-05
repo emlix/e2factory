@@ -186,6 +186,125 @@ function generic_git.git(argv)
     return true, nil, table.concat(out)
 end
 
+--- Return a table containing pairs of commit id and refs of the local
+-- or remote repository.
+-- @param git_dir Path to GIT_DIR.
+-- @param remote True for the remote default repository (usually "origin"),
+--               false for the local repository.
+-- @return Table containing tables of "id", "ref" pairs, or false on error.
+-- @return Error object on failure.
+local function get_refs(git_dir, remote)
+    local rc, re, e, argv, out, t, emsg
+
+    emsg = "error in get_refs()"
+
+    if type(remote) ~= "boolean" then
+        return false, err.new("%s: remote is not of type boolean", emsg)
+    end
+
+    argv = git_new_argv2(git_dir, false)
+    if remote then
+        table.insert(argv, "ls-remote")
+        table.insert(argv, "origin")
+    else
+        table.insert(argv, "show-ref")
+        table.insert(argv, "--head") -- ls-remote does this by default
+    end
+
+    rc, re, out = generic_git.git(argv)
+    if not rc then
+        e = err.new(emsg)
+        return false, e:cat(re)
+    end
+
+    t = {}
+    for id, ref in string.gmatch(out, "(%x+)%s+(%S+)%s+") do
+        if string.len(id) ~= 40 then
+            return false, err.new("%s: malformed commit ID", emsg)
+        end
+        if string.len(ref) == 0 then
+            return false, err.new("%s: empty ref", emsg)
+        end
+        table.insert(t, { id=id, ref=ref })
+    end
+
+    if #t == 0 then
+        return false,
+            err.new("%s: no references found in git output", emsg)
+    end
+
+    return true, nil, t
+end
+
+--- Search id for a given ref (tags, branches) in either local or remote
+-- repository.
+-- @param git_dir Path to GIT_DIR.
+-- @param remote True for remote repository, false for local repository.
+-- @param ref Full ref string.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Commit ID string on successful lookup, false otherwise.
+function generic_git.lookup_id(git_dir, remote, ref)
+    local rc, re, t
+
+    rc, re, t = get_refs(git_dir, remote)
+    if not rc then
+        return false, re
+    end
+
+    for _,r in ipairs(t) do
+        if r.ref == ref then
+            return true, nil, r.id
+        end
+    end
+
+    return true, nil, false
+end
+
+--- Search ref for a given commit id in either local or remote repository.
+-- The first matching ref is returned. Use filter to check for specific refs.
+
+-- @param git_dir Path to GIT_DIR.
+-- @param remote True for remote repository, false for local repository.
+-- @param id Full commit ID string, must be 40 chars long.
+-- @param filter Filter string to select specific refs. Filter is passed to
+--               string.match(), and is always anchored (^) to the start of
+--               the ref. False disables filtering.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Pathspec ref string on successful lookup, false otherwise.
+function generic_git.lookup_ref(git_dir, remote, id, filter)
+    local rc, re, t
+
+    if string.len(id) ~= 40 then
+        return false, err.new("error in lookup_ref(): malformed commit ID")
+    end
+
+    if not (filter == false or type(filter) == "string") then
+        return false,
+            err.new("error in lookup_ref(): filter argument of wrong type")
+    end
+
+    rc, re, t = get_refs(git_dir, remote)
+    if not rc then
+        return false, re
+    end
+
+    if filter == false then
+        filter = ".*"
+    end
+
+    for _,r in ipairs(t) do
+        if string.match(r.ref, "^" .. filter) then
+            if r.id == id then
+                return true, nil, r.ref
+            end
+        end
+    end
+
+    return true, nil, false
+end
+
 --- Git branch wrapper. Sets up a branch, but does not switch to it.
 -- @param gitwc Path to the git repository.
 -- @param track Use --track if true, otherwise use --no-track.
