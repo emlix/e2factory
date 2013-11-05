@@ -160,13 +160,25 @@ local function e2_fetch_project(arg)
 
     -- checkout the desired branch, if a branch was given
     if p.branch then
+        local id
         local e = e:append("checking out branch failed: %s", p.branch)
-        local args = string.format("-n1 refs/heads/%s", p.branch)
-        local rc, re = e2lib.git(nil, "rev-list", args)
+
+        -- Because the repository is freshly cloned, we can assume that when a
+        -- ref for the requested branch exists, HEAD is at that branch.
+        rc, re, id = generic_git.lookup_id(e2lib.join(p.destdir, ".git"),
+            false, "refs/heads/" .. p.branch)
         if not rc then
-            local args = string.format(
-            "--track -b '%s' 'origin/%s'", p.branch, p.branch)
-            local rc, re = e2lib.git(nil, "checkout", args)
+            return false, e:cat(re)
+        end
+        if not id then
+            rc, re = generic_git.git_branch_new1(p.destdir, true, p.branch,
+                "origin/" .. p.branch)
+            if not rc then
+                return false, e:cat(re)
+            end
+
+            rc, re = generic_git.git_checkout1(p.destdir,
+                "refs/heads/" .. p.branch)
             if not rc then
                 return false, e:cat(re)
             end
@@ -183,8 +195,8 @@ local function e2_fetch_project(arg)
             "switching to tag '%s' after checking out branch '%s'",
             p.tag, p.branch)
         end
-        local args = string.format("'refs/tags/%s'", p.tag)
-        local rc, re = e2lib.git(nil, "checkout", args)
+
+        rc, re = generic_git.git_checkout1(p.destdir, "refs/tags/" .. p.tag)
         if not rc then
             return false, e:cat(re)
         end
@@ -206,8 +218,8 @@ local function e2_fetch_project(arg)
     end
 
     -- call e2-install-e2
-    local e2_install_e2 = string.format("%s %s/e2-install-e2",
-    e2lib.shquote(buildconfig.LUA), e2lib.shquote(buildconfig.TOOLDIR))
+    local e2_install_e2 = string.format("%s %s", e2lib.shquote(buildconfig.LUA),
+        e2lib.shquote(e2lib.join(buildconfig.TOOLDIR, "e2-install-e2")))
     rc, re = e2lib.callcmd_log(e2_install_e2)
     if not rc or rc ~= 0 then
         local e = err.new("installing local e2 failed")
