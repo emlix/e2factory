@@ -138,19 +138,19 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
     if sourceset == "branch" or (sourceset == "lazytag" and src.tag == "^") then
         ref = string.format("refs/heads/%s", src.branch)
 
-        rc, re, id = generic_git.git_rev_list1(gitdir, ref)
+        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "tag" or (sourceset == "lazytag" and src.tag ~= "^") then
         ref = string.format("refs/tags/%s", src.tag)
 
-        rc, re, id = generic_git.git_rev_list1(gitdir, ref)
+        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
             return false, e:cat(re)
         end
 
-        if id ~= "" and check_remote then
+        if id and check_remote then
             rc, re = generic_git.verify_remote_tag(gitdir, src.tag)
             if not rc then
                 return false, e:cat(re)
@@ -160,7 +160,7 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
         return false, err.new("not an scm sourceset: %s", sourceset)
     end
 
-    if id == "" then
+    if not id then
         re = err.new("can't get git commit ID for ref %q from repository %q",
             ref, src.working)
         return false, e:cat(re)
