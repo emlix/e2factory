@@ -686,50 +686,29 @@ end
 -- @return Error object on failure.
 function generic_git.verify_remote_tag(gitdir, tag)
     local e = err.new("verifying remote tag")
-    local rc, re, rtag, argv
+    local rc, re, rtag, argv, rid, lid
 
-    -- temporary local name for remote tag
-    rtag = string.format("%s.remote", tag)
-
-    -- fetch the remote tag as rtag
-    argv = git_new_argv2(gitdir, false, "fetch", "origin")
-    table.insert(argv, string.format("refs/tags/%s:refs/tags/%s", tag, rtag))
-
-    rc, re = generic_git.git(argv)
+    rc, re, rid = generic_git.lookup_id(gitdir, true, "refs/tags/" .. tag)
     if not rc then
-        e = err.new("remote tag %q is not available", tag)
         return false, e:cat(re)
     end
 
-    -- before leaving, remove the temporary rtag
-    local function cleanup_rtag(gitdir, rtag)
-        local argv = git_new_argv2(gitdir, false, "tag", "-d", rtag)
-        generic_git.git(argv)
-    end
-
-    local rc, re, lid = generic_git.git_rev_list1(gitdir, tag)
-    if not rc then
-        cleanup_rtag(rtag)
-        return false, e:cat(re)
-    elseif lid == "" then
-        cleanup_rtag(rtag)
-        re = err.new("can not find commit ID for local tag %q in %q",
+    if not rid then
+        re = err.new("can not find commit ID for remote tag %q in %q",
             gitdir, tag)
         return false, e:cat(re)
     end
 
-    local rc, re, rid = generic_git.git_rev_list1(gitdir, rtag)
+    rc, re, lid = generic_git.lookup_id(gitdir, false, "refs/tags/" .. tag)
     if not rc then
-        cleanup_rtag(rtag)
-        return false, e:cat(re)
-    elseif rid == "" then
-        cleanup_rtag(rtag)
-        re = err.new("can not find commit ID for remote tag %q in %q",
-            gitdir, tag --[[ not rtag]])
         return false, e:cat(re)
     end
 
-    cleanup_rtag(rtag)
+    if rid ~= lid then
+        re = err.new("can not find commit ID for local tag %q in %q",
+            gitdir, tag)
+        return false, e:cat(re)
+    end
 
     if lid ~= rid then
         return false, e:append(
