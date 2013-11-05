@@ -635,11 +635,13 @@ function git.check_workingcopy(info, sourcename)
     local src = info.sources[sourcename]
     local gitdir = e2lib.join(info.root, src.working, ".git")
     local ref = string.format("refs/heads/%s", src.branch)
+    local id
 
-    rc, re = generic_git.git_rev_list1(gitdir, ref)
+    rc, re, id = generic_git.lookup_id(gitdir, false, ref)
     if not rc then
-        e:append("branch \"%s\" does not exist", src.branch)
         return false, e:cat(re)
+    elseif not id then
+        return false, e:cat(err.new("branch %q does not exist", src.branch))
     end
 
     -- git config branch.<branch>.remote == "origin"
