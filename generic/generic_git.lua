@@ -353,32 +353,6 @@ function generic_git.git_checkout1(gitwc, branch)
     return true
 end
 
---- Git rev-list wrapper.
--- @param gitdir Path to the git repository directory (GIT_DIR).
--- @param ref Git reference, see git-rev-list(1).
--- @return True on success, false on error.
--- @return Error object on failure
--- @return Hexadecimal commit ID string or empty string if there was no match.
-function generic_git.git_rev_list1(gitdir, ref)
-    local e, rc, re, argv, id
-
-    e = err.new("git rev-list failed")
-
-    argv = git_new_argv2(gitdir, nil, "rev-list", "--max-count=1", ref, "--")
-
-    rc, re, id = generic_git.git(argv)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    id = trim(id)
-    if string.match(id, "^%x+$") or id == "" then
-        return true, nil, id
-    end
-
-    return false, err.new("can't parse git rev-list output")
-end
-
 --- Initialize a git repository.
 -- @param rurl URL string where the repository should be created.
 -- @param shared Should the repository be shared with other users or not.
