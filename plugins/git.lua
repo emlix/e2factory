@@ -267,39 +267,46 @@ end
 -- @return bool
 -- @return nil on success, an error string on error
 function git.fetch_source(info, sourcename)
-    local src = info.sources[ sourcename ]
-    local rc, re
-    local e = err.new("fetching source failed: %s", sourcename)
+    local e, rc, re, src, git_dir, work_tree, id
+
+    src = info.sources[sourcename]
+    e = err.new("fetching source failed: %s", sourcename)
+
     rc, re = git.validate_source(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
-    local wrk = info.root .. "/" .. src.working
+
+    work_tree = e2lib.join(info.root, src.working)
+    git_dir = e2lib.join(work_tree, ".git")
+
     e2lib.logf(2, "cloning %s:%s [%s]", src.server, src.location, src.branch)
-    local skip_checkout = e2lib.globals.git_skip_checkout
+
     rc, re = generic_git.git_clone_from_server(info.cache, src.server,
-        src.location, wrk, false)
+        src.location, work_tree, false --[[always checkout]])
     if not rc then
         return false, e:cat(re)
     end
-    -- check for the branch, and checkout if it's not yet there after cloning.
-    local ref = string.format("refs/heads/%s", src.branch)
-    local gitdir = string.format("%s/.git", wrk)
-    local rc, re = generic_git.git_rev_list1(gitdir, ref)
+
+    rc, re, id = generic_git.lookup_id(git_dir, false,
+        "refs/heads/" .. src.branch)
     if not rc then
-        local track = true
-        local start_point = string.format("origin/%s", src.branch)
-        local rc, re = generic_git.git_branch_new1(wrk, track, src.branch,
-        start_point)
+        return false, e:cat(re)
+    elseif not id then
+        rc, re = generic_git.git_branch_new1(work_tree, true, src.branch,
+            "origin/" .. src.branch)
         if not rc then
             return false, e:cat(re)
         end
-        local rc, re = generic_git.git_checkout1(wrk, src.branch)
+
+        rc, re = generic_git.git_checkout1(work_tree,
+            "refs/heads/" .. src.branch)
         if not rc then
             return false, e:cat(re)
         end
     end
-    return true, nil
+
+    return true
 end
 
 --- prepare a git source
