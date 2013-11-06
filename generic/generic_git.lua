@@ -122,7 +122,7 @@ function generic_git.git_new_argv(git_dir, work_tree, ...)
     return argv
 end
 
---- Call out to git. XXX: replace e2lib.git with this.
+--- Call out to git.
 -- @param argv Array of arguments to git.
 -- @return True on success, false on error.
 -- @return Error object on failure.
