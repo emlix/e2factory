@@ -344,18 +344,12 @@ end
 --- Initialize a git repository.
 -- @param rurl URL string where the repository should be created.
 -- @param shared Should the repository be shared with other users or not.
---               Defaults to true.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function generic_git.git_init_db1(rurl, shared)
     local rc, re, e, u, gitdir, gitargv, argv
 
-    -- XXX: Remove the default behaviour and require a choice
-    if shared == nil then
-        shared = true
-    end
-
-    if not rurl then
+    if not rurl or type(shared) ~= "boolean" then
         return false, err.new("git_init_db1(): missing parameter")
     end
 
@@ -560,7 +554,7 @@ function generic_git.git_init_db(c, server, location)
     if not rurl then
         return false, e:cat(re)
     end
-    local rc, re = generic_git.git_init_db1(rurl)
+    local rc, re = generic_git.git_init_db1(rurl, true)
     if not rc then
         return false, re
     end
