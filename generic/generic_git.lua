@@ -92,32 +92,24 @@ end
 --- Create argument vector for calling git.
 -- Defaults: If git_dir is given and the default for work_tree is requested,
 -- it's assumed to be one directory level up. If work_tree is given and the
--- default for git_dir is requested, it's work_tree/.git. If neither are given,
--- git_dir defaults to '.git' and work_tree to '.'.
+-- default for git_dir is requested, it's work_tree/.git. If both are nil,
+-- it behaves as if both are set to false.
 -- @param gitdir Git repository directory, nil for the default and false to omit.
 -- @param gitwc Git working copy directory, nil for the default and false to omit.
 -- @param ... Further arguments are added to the end of the argument vector.
 -- @return Argument vector table.
-local function git_new_argv2(git_dir, work_tree, ...)
+function generic_git.git_new_argv(git_dir, work_tree, ...)
     local argv = {...}
 
     if git_dir == nil and work_tree == nil then
-        e2lib.abort("git_new_argv2: git_dir == nil and work_tree == nil")
+        e2lib.log(4, "generic_git.git_new_argv: git_dir and work_tree are nil")
     end
 
-    if git_dir == nil then
-        if work_tree then
-            git_dir = e2lib.join(work_tree, ".git")
-        else
-            git_dir = ".git"
-        end
+    if git_dir == nil and work_tree then
+        git_dir = e2lib.join(work_tree, ".git")
     end
-    if work_tree == nil then
-        if git_dir then
-            work_tree = e2lib.dirname(git_dir)
-        else
-            work_tree = "."
-        end
+    if work_tree == nil and git_dir then
+        work_tree = e2lib.dirname(git_dir)
     end
 
     if work_tree then
@@ -128,10 +120,6 @@ local function git_new_argv2(git_dir, work_tree, ...)
     end
 
     return argv
-end
-
-function generic_git.git_new_argv(git_dir, work_tree, ...)
-    return git_new_argv2(git_dir, work_tree, ...)
 end
 
 --- Call out to git. XXX: replace e2lib.git with this.
@@ -202,7 +190,7 @@ local function get_refs(git_dir, remote)
         return false, err.new("%s: remote is not of type boolean", emsg)
     end
 
-    argv = git_new_argv2(git_dir, false)
+    argv = generic_git.git_new_argv(git_dir, false)
     if remote then
         table.insert(argv, "ls-remote")
         table.insert(argv, "origin")
@@ -315,7 +303,7 @@ end
 function generic_git.git_branch_new1(gitwc, track, branch, start_point)
     local rc, re, e, argv
 
-    argv = git_new_argv2(nil, gitwc, "branch")
+    argv = generic_git.git_new_argv(nil, gitwc, "branch")
 
     if track == true then
         table.insert(argv, "--track")
@@ -343,7 +331,7 @@ end
 function generic_git.git_checkout1(gitwc, branch)
     local rc, re, e, argv
 
-    argv = git_new_argv2(nil, gitwc, "checkout", branch)
+    argv = generic_git.git_new_argv(nil, gitwc, "checkout", branch)
     rc, re = generic_git.git(argv)
     if not rc then
         e = err.new("git checkout failed")
@@ -605,7 +593,7 @@ end
 function generic_git.git_config(gitdir, query)
     local e, rc, re, argv, out
 
-    argv = git_new_argv2(gitdir, false, "config", query)
+    argv = generic_git.git_new_argv(gitdir, false, "config", query)
     rc, re, out = generic_git.git(argv)
     if not rc then
         e = err.new("git config failed")
@@ -623,7 +611,7 @@ end
 function generic_git.git_add(gitdir, argv)
     local rc, re, e, v
 
-    v = git_new_argv2(gitdir, nil, "add", unpack(argv))
+    v = generic_git.git_new_argv(gitdir, nil, "add", unpack(argv))
 
     rc, re = generic_git.git(v)
     if not rc then
@@ -642,7 +630,7 @@ end
 function generic_git.git_commit(gitdir, argv)
     local e, rc, re, v
 
-    v = git_new_argv2(gitdir, false, "commit", unpack(argv))
+    v = generic_git.git_new_argv(gitdir, false, "commit", unpack(argv))
 
     rc, re = generic_git.git(v)
     if not rc then
@@ -706,8 +694,8 @@ function generic_git.verify_clean_repository(gitwc)
     e = err.new("verifying that repository is clean failed")
 
     -- check for unknown files in the filesystem
-    argv = git_new_argv2(nil, gitwc, "ls-files", "--exclude-standard",
-        "--directory", "--others")
+    argv = generic_git.git_new_argv(nil, gitwc, "ls-files",
+        "--exclude-standard", "--directory", "--others")
 
     rc, re, files = generic_git.git(argv)
     if not rc then
@@ -720,7 +708,8 @@ function generic_git.verify_clean_repository(gitwc)
     end
 
     -- verify that the working copy matches HEAD
-    argv = git_new_argv2(nil, gitwc, "diff-index", "--name-only", "HEAD")
+    argv = generic_git.git_new_argv(nil, gitwc, "diff-index",
+        "--name-only", "HEAD")
 
     rc, re, files = generic_git.git(argv)
     if not rc then
@@ -733,7 +722,7 @@ function generic_git.verify_clean_repository(gitwc)
     end
 
     -- verify that the index matches HEAD
-    argv = git_new_argv2(nil, gitwc, "diff-index", "--name-only",
+    argv = generic_git.git_new_argv(nil, gitwc, "diff-index", "--name-only",
         "--cached", "HEAD")
     rc, re, files = generic_git.git(argv)
     if not rc then
@@ -760,7 +749,7 @@ function generic_git.verify_head_match_tag(gitwc, verify_tag)
 
     e = err.new("verifying that HEAD matches 'refs/tags/%s'", verify_tag)
 
-    argv = git_new_argv2(nil, gitwc, "describe", "--tags",
+    argv = generic_git.git_new_argv(nil, gitwc, "describe", "--tags",
         "--match", verify_tag)
 
     rc, re, tag = generic_git.git(argv)
