@@ -73,6 +73,73 @@ local function mksvnurl(surl)
     return string.format("%s://%s/%s", transport, u.server, u.path)
 end
 
+--- Call the svn command.
+-- @param argv table: vector with arguments for svn
+-- @return True on success, false on error or when svn returned with exit
+--         status other than 0.
+-- @return Error object on failure.
+local function svn_tool(argv, workdir)
+    assert(type(argv) == "table")
+    assert(workdir == nil or type(workdir) == "string")
+
+    local rc, re
+    local svn, flags, svncmd, out, fifo
+
+    svncmd = {}
+    out = {}
+    fifo = {}
+
+    svn, re = tools.get_tool("svn")
+    if not svn then
+        return false, re
+    end
+
+    table.insert(svncmd, svn)
+
+    flags, re = tools.get_tool_flags("svn")
+    if not flags then
+        return false, re
+    end
+
+    for _,flag in ipairs(flags) do
+        table.insert(svncmd, flag)
+    end
+
+    for _,arg in ipairs(argv) do
+        table.insert(svncmd, arg)
+    end
+
+    local function capture(msg)
+        if msg == "" then
+            return
+        end
+
+        if #fifo > 4 then
+            table.remove(fifo, 1)
+        end
+
+        e2lib.log(3, msg)
+        table.insert(fifo, msg)
+        table.insert(out, msg)
+    end
+
+    rc, re = e2lib.callcmd_capture(svncmd, capture, workdir)
+    if not rc then
+        return false, err.new("svn command %q failed to execute",
+            table.concat(svncmd, " ")):cat(re)
+
+    elseif rc ~= 0 then
+        local e = err.new("svn command %q failed with exit status %d",
+            table.concat(svncmd, " "), rc)
+        for _,v in ipairs(fifo) do
+            e:append("%s", v)
+        end
+        return false, e
+    end
+
+    return true, nil, table.concat(out)
+end
+
 function svn.fetch_source(info, sourcename)
     local rc, re = svn.validate_source(info, sourcename)
     if not rc then
@@ -93,7 +160,7 @@ function svn.fetch_source(info, sourcename)
 
     local argv = { "checkout", svnurl, info.root .. "/" .. src.working }
 
-    rc, re = e2lib.svn(argv)
+    rc, re = svn_tool(argv)
     if not rc then
         return false, e:cat(re)
     end
@@ -126,7 +193,7 @@ function svn.prepare_source(info, sourcename, source_set, build_path)
         end
         local argv = { "export", svnurl .. "/" .. rev,
         build_path .. "/" .. sourcename }
-        rc, re = e2lib.svn(argv)
+        rc, re = svn_tool(argv)
         if not rc then
             return false, e:cat(re)
         end
@@ -277,19 +344,10 @@ function svn.sourceid(info, sourcename, source_set)
             err.new("svn sourceid can't handle source_set %q", source_set)
     end
 
-    local function cfn(data)
-        e2lib.logf(3, "%s", data)
-        if out then
-            out = out .. data
-        else
-            out = data
-        end
-    end
-
-    rc, re = e2lib.call_tool_argv_capture("svn", argv, cfn)
+    rc, re, out = svn_tool(argv)
     if not rc then
-        re = err.new("retrieving revision for tag or branch failed")
-        return false, re:append("%s", out)
+        return false,
+            err.new("retrieving revision for tag or branch failed"):cat(re)
     end
 
     svnrev = string.match(out, "Last Changed Rev: (%d+)")
@@ -379,7 +437,7 @@ function svn.update(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.svn({ "update", })
+    rc, re = svn_tool({ "update", })
     if not rc then
         return false, e:cat(re)
     end
