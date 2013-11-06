@@ -22,11 +22,14 @@ local trace = {}
 local e2lib = require("e2lib")
 local strict = require("strict")
 
+local module_blacklist = {}
+local function_blacklist = {}
+
 --- Function call tracer. Logs all function calls at debug level while active.
 -- @param event string: type of event
 -- @param line line number of event (unused)
 local function tracer(event, line)
-    local ftbl, module, out, name, value, isbinary, svalue
+    local ftbl, module, out, name, value, isbinary, svalue, fnbl
 
     ftbl = debug.getinfo(2)
     if ftbl == nil or ftbl.name == nil then
@@ -36,13 +39,20 @@ local function tracer(event, line)
     -- approximate module name, not always accurate but good enough
     if ftbl.source == nil or ftbl.source == "=[C]" then
         module = "C."
-        -- DEBUG: comment this to see all C calls.
-        return
     else
         module = string.match(ftbl.source, "([^/]+%.)lua$")
         if module == nil then
             module = "<unknown module>."
-            -- DEBUG: comment this to see all unknown calls.
+        end
+    end
+
+    if module_blacklist[module] then
+        return
+    end
+
+    fnbl = function_blacklist[ftbl.name]
+    if fnbl then
+        if fnbl[module] then
             return
         end
     end
@@ -101,6 +111,41 @@ end
 --- Disable function call tracer.
 function trace.disable()
     debug.sethook()
+end
+
+--- Exclude entire module from being logged by the tracer.
+-- @param module_name Module name.
+function trace.filter_module(module_name)
+    module_name = module_name.."."
+    module_blacklist[module_name] = true
+end
+
+--- Exclude function in a module from being logged by the tracer.
+-- @param module_name Module name.
+-- @param function_name Function name.
+function trace.filter_function(module_name, function_name)
+    local fnbl
+
+    module_name = module_name.."."
+    if not function_blacklist[function_name] then
+        function_blacklist[function_name] = {}
+    end
+
+    function_blacklist[function_name][module_name] = true
+end
+
+--- Default filter setup.
+function trace.default_filter()
+    trace.filter_module("C")
+    trace.filter_module("<unknown module>")
+    trace.filter_module("err")
+    trace.filter_function("e2lib", "log")
+    trace.filter_function("e2lib", "logf")
+    trace.filter_function("e2lib", "getlog")
+    trace.filter_function("e2lib", "warnf")
+    trace.filter_function("e2lib", "(for generator)")
+    trace.filter_function("eio", "new")
+    trace.filter_function("eio", "is_eio_object")
 end
 
 return strict.lock(trace)

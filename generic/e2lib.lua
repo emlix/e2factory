@@ -321,6 +321,7 @@ function e2lib.init()
     e2lib.log(4, "e2lib.init()")
 
     trace.enable()
+    trace.default_filter()
 
     local rc, re = e2lib.signal_reset()
     if not rc then
