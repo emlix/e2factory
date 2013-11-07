@@ -58,7 +58,7 @@ local function tracer(event, line)
     end
 
     if event == "call" then
-        out = string.format("%s%s(", module, ftbl.name)
+        out = string.format("(%d) %s%s(", e2lib.getpid(), module, ftbl.name)
         for lo = 1, 10 do
             name, value = debug.getlocal(2, lo)
             if name == nil or name == "(*temporary)" then
