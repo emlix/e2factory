@@ -573,7 +573,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         e2lib.shquote(info.root), e2lib.shquote(src.working),
         e2lib.shquote(sourcename), e2lib.shquote(ref),
         e2lib.shquote(sourcedir), e2lib.shquote(archive))
-    elseif sourceset == "working-copy" or sourceset == "mmm" then
+    elseif sourceset == "working-copy" then
         cmd = string.format("tar -C %s/%s " ..
         "--transform=s,^./,./%s/, "..
         "--exclude=.git "..
