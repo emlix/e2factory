@@ -73,7 +73,6 @@ e2lib.globals = {
     -- variables initialized in init()
     username = nil,
     homedir = nil,
-    env = {},
     tmpdirs = {},
     tmpfiles = {},
     default_projects_server = "projects",
