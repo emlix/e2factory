@@ -81,7 +81,6 @@ e2lib.globals = {
     -- variables initialized in init()
     username = nil,
     homedir = nil,
-    hostname = nil,
     env = {},
     tmpdirs = {},
     tmpfiles = {},
@@ -372,18 +371,6 @@ function e2lib.init()
         e2lib.globals.tmpdir = e2lib.globals.osenv["E2TMPDIR"]
     else
         e2lib.globals.tmpdir = e2lib.globals.osenv["TMPDIR"]
-    end
-
-    -- get the host name
-    local hostname = io.popen("hostname")
-    if not hostname then
-        return false, err.new("execution of \"hostname\" failed")
-    end
-
-    e2lib.globals.hostname = hostname:read("*a")
-    hostname:close()
-    if not e2lib.globals.hostname then
-        return false, err.new("hostname ist not set")
     end
 
     e2lib.globals.lock = lock.new()
