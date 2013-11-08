@@ -58,13 +58,6 @@ local eio = require("eio")
 local le2lib = require("le2lib")
 local trace = require("trace")
 
--- Module-level global variables
---
---   globals.interactive -> BOOL
---
---     True, when lua was started in interactive mode (either by giving
---     the "-i" option or by starting lua and loading the e2 files
---     manually).
 local global_config = false
 
 e2lib.globals = {
@@ -77,7 +70,6 @@ e2lib.globals = {
     log_debug = false,
     debug = false,
     playground = false,
-    interactive = arg and (arg[ -1 ] == "-i"),
     -- variables initialized in init()
     username = nil,
     homedir = nil,
