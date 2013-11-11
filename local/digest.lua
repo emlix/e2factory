@@ -198,7 +198,7 @@ local function compute_checksum_entry(pos, entry, directory, verify)
         if not computedcs then
             return false, re
         end
-    elseif entry.digest.MD5 then
+    elseif entry.digest == digest.MD5 then
         -- XXX: Fix this for backwards compat.
         return false, err.new("Computing MD5 checksums is currently not "..
             "supported")
