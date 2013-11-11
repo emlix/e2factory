@@ -41,32 +41,28 @@ require("sha1")
 function hash.hash_start()
     local hc = {}
 
-    for k,v in pairs(hash) do
-        hc[k] = v
-    end
+    hc._ctx = sha1.sha1_init()
+    hc._data = ""
+    hc._datalen = 0
 
-    hc.ctx = sha1.sha1_init()
-    hc.data = ""
-    hc.datalen = 0
-
-    return hc
+    return strict.lock(hc)
 end
 
 --- add hash data
 -- @param hc the hash context
 -- @param data string: data
 function hash.hash_append(hc, data)
-    assert(type(hc) == "table" and type(hc.ctx) == "userdata")
+    assert(type(hc) == "table" and type(hc._ctx) == "userdata")
     assert(type(data) == "string")
 
-    hc.data = hc.data .. data
-    hc.datalen = hc.datalen + string.len(data)
+    hc._data = hc._data .. data
+    hc._datalen = hc._datalen + string.len(data)
 
     -- Consume data and update hash whenever 64KB are available
-    if hc.datalen >= 64*1024 then
-        hc.ctx:update(hc.data)
-        hc.data = ""
-        hc.datalen = 0
+    if hc._datalen >= 64*1024 then
+        hc._ctx:update(hc._data)
+        hc._data = ""
+        hc._datalen = 0
     end
 end
 
@@ -83,7 +79,7 @@ end
 -- @return true on success, nil on error
 -- @return nil, error object on failure
 function hash.hash_file(hc, path)
-    assert(type(hc) == "table" and type(hc.ctx) == "userdata")
+    assert(type(hc) == "table" and type(hc._ctx) == "userdata")
     assert(type(path) == "string")
 
     local fd = io.open(path, "r")
@@ -115,11 +111,11 @@ end
 -- @return the hash value, or nil on error
 -- @return an error string on error
 function hash.hash_finish(hc)
-    assert(type(hc) == "table" and type(hc.ctx) == "userdata")
+    assert(type(hc) == "table" and type(hc._ctx) == "userdata")
 
-    hc.ctx:update(hc.data)
+    hc._ctx:update(hc._data)
 
-    local cs = string.lower(hc.ctx:final())
+    local cs = string.lower(hc._ctx:final())
     assert(string.len(cs) == 40)
 
     -- Destroy the hash context to catch errors
