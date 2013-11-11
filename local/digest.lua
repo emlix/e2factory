@@ -32,6 +32,7 @@
 local digest = {}
 
 local e2lib = require("e2lib")
+local eio = require("eio")
 local hash = require("hash")
 local err = require("err")
 local strict = require("strict")
@@ -81,47 +82,51 @@ digest.SHA1_LEN = 40
 -- @see dt_entry
 function digest.parse(filename)
     assert(type(filename) == "string")
+    local e, rc, re, fh
 
-    local e = err.new("error parsing message digest file '%s'", filename)
+    e = err.new("error parsing message digest file %q", filename)
 
-    local fd, re = io.open(filename, "r")
-    if not fd then
-        return false, e:append("%s", e)
+    fh, re = eio.fopen(filename, "r")
+    if not fh then
+        return false, e:cat(re)
     end
 
-    local dt = {}
-    local linenr = 0
+    local dt, line, linenr, checksum, filenm
 
+    dt = digest.new()
+    linenr = 0
     while true do
         linenr = linenr + 1
-        local line = fd:read("*l")
+        line, re = eio.readline(fh)
         if not line then
+            eio.fclose(fh)
+            return false, e:cat(re)
+        elseif line == "" then
             break
         end
 
         -- XXX: This is a pretty naive way to parse the file format.
         -- Replace it with something more robust.
-        local checksum, filenm = line:match("^([0-9a-z]+)  (%S+)$")
+        checksum, filenm = line:match("^([0-9a-z]+)  (%S+)%s*$")
         if not checksum or not filenm then
-            fd:close()
+            eio.fclose(fh)
             return false, e:append("could not parse file format in line %d",
-            linenr)
+                linenr)
         end
-
-        local entry = {}
-        entry.checksum = checksum
-        entry.name = filenm
 
         if string.len(checksum) == digest.MD5_LEN then
-            entry.digest = digest.MD5
+            digest.new_entry(dt, digest.MD5, checksum, filenm)
         elseif string.len(checksum) == digest.SHA1_LEN then
-            entry.digest = digest.SHA1
+            digest.new_entry(dt, digest.SHA1, checksum, filenm)
         else
-            fd:close()
+            eio.fclose(fh)
             return false, e:append("unknown digest type in line %d", linenr)
         end
+    end
 
-        table.insert(dt, entry)
+    rc, re = eio.fclose(fh)
+    if not rc then
+        return false, e:cat(re)
     end
 
     fd:close()
