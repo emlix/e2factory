@@ -828,7 +828,7 @@ int luaopen_le2lib(lua_State *lua)
 	luaL_Reg *next;
 
 	lua_newtable(lua);
-	for (next = &lib; next->name != NULL; next++) {
+	for (next = lib; next->name != NULL; next++) {
 		lua_pushcfunction(lua, next->func);
 		lua_setfield(lua, -2, next->name);
 	}
