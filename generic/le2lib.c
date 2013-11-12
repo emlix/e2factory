@@ -39,6 +39,7 @@
 #include <string.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #include <lua.h>
 #include <lualib.h>
