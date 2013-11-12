@@ -756,6 +756,34 @@ do_chmod(lua_State *L)
 	return 1;
 }
 
+static int
+do_mkdtemp(lua_State *L)
+{
+	const char *template_in = luaL_checkstring(L, 1);
+	char template[PATH_MAX];
+
+	if (snprintf(template, PATH_MAX, "%s", template_in)
+	    >= PATH_MAX) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "template does not fit in PATH_MAX");
+
+		return 2;
+	}
+
+	if (mkdtemp(template) == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	lua_pushstring(L, template);
+
+	return 3;
+}
+
 /*
  * Hook that gets called once an interrupt has been requested.
  * Calls e2lib.interrupt_hook() to deal with any cleanup that might be required.
@@ -807,6 +835,7 @@ static luaL_Reg lib[] = {
 	{ "hardlink", do_hardlink },
 	{ "kill", do_kill },
 	{ "mkdir", do_mkdir },
+	{ "mkdtemp", do_mkdtemp },
 	{ "parse_mode", do_parse_mode },
 	{ "poll", poll_fd },
 	{ "rmdir", do_rmdir },
