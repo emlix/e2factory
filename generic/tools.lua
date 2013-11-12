@@ -30,6 +30,7 @@
 
 local tools = {}
 local e2lib = require("e2lib")
+local err = require("err")
 local strict = require("strict")
 local buildconfig = require("buildconfig")
 
@@ -151,21 +152,33 @@ end
 --         error, if the second return value is not nil.
 -- @return Error object on failure.
 function tools.check_tool(name)
-    local tool, which, p
+    local rc, re, tool, which, p, out
     if not toollist[name] then
         return false, err.new("tool '%s' is not registered in tool list", name)
     end
 
     tool = toollist[name]
     if not tool.path then
-        which = string.format("which \"%s\"", tool.name)
-        p = io.popen(which, "r")
-        tool.path = p:read()
-        p:close()
-        if not tool.path then
-            return false
+        out = {}
+        local function capture(msg)
+            table.insert(out, msg)
+        end
+
+        which = { e2lib.shquote("which"), e2lib.shquote(tool.name) }
+        rc, re = e2lib.callcmd_capture(table.concat(which, " "), capture)
+        if not rc then
+            return false, re
+        elseif rc ~= 0 then
+            return false, err.new("tool %q not found in PATH", tool.name)
+        end
+
+        tool.path = string.sub(table.concat(out), 1, -2)
+        if not e2lib.exists(tool.path, true) then
+            return false,
+                err.new("tool %q not found at %q", tool.name, tool.path)
         end
     end
+
     return true
 end
 
