@@ -1468,24 +1468,34 @@ end
 -- @return Name of the file or false on error.
 -- @return Error object on failure.
 function e2lib.mktempfile(template)
+    local rc, re, errstring, tmpfile, tmpfd, tmpfo
+
     if not template then
         template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.globals.tmpdir,
             e2lib.getpid())
     end
-    local cmd = string.format("mktemp '%s'", template)
-    local mktemp = io.popen(cmd, "r")
-    if not mktemp then
-        return false, err.new("can't mktemp")
+
+    rc, errstring, tmpfile, tmpfd = le2lib.mkstemp(template)
+    if not rc then
+        return false, err.new("could not create temporary file: %s", errstring)
     end
-    local tmp = mktemp:read()
-    if not tmp then
-        return false, err.new("can't mktemp")
+
+    -- Currently we do not use the file descriptor, close it.
+    tmpfo, re = eio.fdopen(tmpfd, "w")
+    if not tmpfo then
+        return false, re
     end
-    mktemp:close()
+
+    rc, re = eio.fclose(tmpfo)
+    if not rc then
+        return false, re
+    end
+
     -- register tmp for removing with rmtempfiles() later on
-    table.insert(e2lib.globals.tmpfiles, tmp)
-    e2lib.logf(4, "creating temporary file: %s", tmp)
-    return tmp
+    table.insert(e2lib.globals.tmpfiles, tmpfile)
+    e2lib.logf(4, "e2lib.mktempfile: created %s", tmpfile)
+
+    return tmpfile
 end
 
 --- Delete the temporary file and remove it from the builtin list of
