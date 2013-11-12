@@ -372,7 +372,7 @@ function cvs.sourceid(info, sourcename, source_set)
     -- cvs specific
     if source_set == "tag" and src.tag ~= "^" then
         -- we rely on tags being unique with cvs
-        hc:hash_line(src.tag)
+        hash.hash_line(hc, src.tag)
     else
         -- the old function took a hash of the CVS/Entries file, but
         -- forgot the subdirecties' CVS/Entries files. We might
@@ -385,7 +385,6 @@ function cvs.sourceid(info, sourcename, source_set)
     hash.hash_line(hc, src.cvsroot)
     hash.hash_line(hc, src.module)
     -- skip src.working
-    e2lib.logf(4, "hash data for source %s\n%s", src.name, hc.data)
     src.sourceid[source_set] = hash.hash_finish(hc)
     return true, nil, src.sourceid[source_set]
 end

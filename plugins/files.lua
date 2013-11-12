@@ -497,7 +497,6 @@ function files.sourceid(info, sourcename, sourceset)
         hash.hash_line(hc, tostring(f.patch))
         hash.hash_line(hc, tostring(f.copy))
     end
-    e2lib.logf(4, "hash data for source %s\n%s", src.name, hc.data)
     src.sourceid = hash.hash_finish(hc)
     return true, nil, src.sourceid
 end

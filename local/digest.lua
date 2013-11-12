@@ -189,12 +189,12 @@ local function compute_checksum_entry(pos, entry, directory, verify)
             return false, re
         end
 
-        rc, re = hc:hash_file(filename)
+        rc, re = hash.hash_file(hc, filename)
         if not rc then
             return false, re
         end
 
-        computedcs, re = hc:hash_finish()
+        computedcs, re = hash.hash_finish(hc)
         if not computedcs then
             return false, re
         end

@@ -60,9 +60,9 @@ end
 function environment.id(env)
     local hc = hash.hash_start()
     for var, val in env:iter() do
-        hc:hash_append(string.format("%s=%s", var, val))
+        hash.hash_append(hc, string.format("%s=%s", var, val))
     end
-    return hc:hash_finish()
+    return hash.hash_finish(hc)
 end
 
 --- merge environment from merge into env.

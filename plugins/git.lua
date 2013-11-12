@@ -540,7 +540,6 @@ function git.sourceid(info, sourcename, sourceset)
     hash.hash_line(hc, src.location)
     hash.hash_line(hc, src.working)
     hash.hash_line(hc, src.commitid[sourceset])
-    e2lib.logf(4, "hash data for source %s\n%s", src.name, hc.data)
     src.sourceid[sourceset] = hash.hash_finish(hc)
     return true, nil, src.sourceid[sourceset]
 end

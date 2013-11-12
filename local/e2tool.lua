@@ -1854,12 +1854,12 @@ function e2tool.hash_path(path)
 
     local ctx = hash.hash_start()
 
-    local rc, re = ctx:hash_file(path)
+    local rc, re = hash.hash_file(ctx, path)
     if not rc then
         return nil, e:cat(re)
     end
 
-    return ctx:hash_finish()
+    return hash.hash_finish(ctx)
 end
 
 --- hash a file addressed by server name and location.
@@ -1929,15 +1929,15 @@ local function projid(info)
             if not fileid then
                 return false, e
             end
-            hc:hash_line(location)	-- the filename
-            hc:hash_line(fileid)	-- the file content
+            hash.hash_line(hc, location)	-- the filename
+            hash.hash_line(hc, fileid)	-- the file content
         end
     end
-    hc:hash_line(info.project.release_id)
-    hc:hash_line(info.project.name)
-    hc:hash_line(info.project.chroot_arch)
-    hc:hash_line(buildconfig.VERSION)
-    info.projid = hc:hash_finish()
+    hash.hash_line(hc, info.project.release_id)
+    hash.hash_line(hc, info.project.name)
+    hash.hash_line(hc, info.project.chroot_arch)
+    hash.hash_line(hc, buildconfig.VERSION)
+    info.projid = hash.hash_finish(hc)
     return info.projid
 end
 
@@ -2157,17 +2157,17 @@ function e2tool.licenceid(info, licence)
         return lic.licenceid
     end
     local hc = hash.hash_start()
-    hc:hash_line(licence)			-- licence name
+    hash.hash_line(hc, licence)			-- licence name
     for _,f in ipairs(lic.files) do
-        hc:hash_line(f.server)
-        hc:hash_line(f.location)
+        hash.hash_line(hc, f.server)
+        hash.hash_line(hc, f.location)
         local fileid, re = e2tool.fileid(info, f)
         if not fileid then
             return false, e:cat(re)
         end
-        hc:hash_line(fileid)
+        hash.hash_line(hc, fileid)
     end
-    lic.licenceid, re = hc:hash_finish()
+    lic.licenceid, re = hash.hash_finish(hc)
     if not lic.licenceid then
         return nil, e:cat(re)
     end
@@ -2193,8 +2193,8 @@ function e2tool.buildid(info, resultname)
         return false, e
     end
     local hc = hash.hash_start()
-    hc:hash_line(r.pbuildid)
-    r.buildid = hc:hash_finish()
+    hash.hash_line(hc, r.pbuildid)
+    r.buildid = hash.hash_finish(hc)
     return r.build_mode.buildid(r.buildid)
 end
 
@@ -2207,18 +2207,17 @@ local function chrootgroupid(info, groupname)
         return g.groupid
     end
     local hc = hash.hash_start()
-    hc:hash_line(g.name)
+    hash.hash_line(hc, g.name)
     for _,f in ipairs(g.files) do
-        hc:hash_line(f.server)
-        hc:hash_line(f.location)
+        hash.hash_line(hc, f.server)
+        hash.hash_line(hc, f.location)
         local fileid, re = e2tool.fileid(info, f)
         if not fileid then
             return false, e:cat(re)
         end
-        hc:hash_line(fileid)
+        hash.hash_line(hc, fileid)
     end
-    e2lib.logf(4, "hash data for chroot group %s\n%s", groupname, hc.data)
-    g.groupid = hc:hash_finish()
+    g.groupid = hash.hash_finish(hc)
     return g.groupid
 end
 
@@ -2287,7 +2286,7 @@ function e2tool.pbuildid(info, resultname)
         end
     end
     r.envid = envid(info, resultname)
-    hc:hash_line(r.envid)
+    hash.hash_line(hc, r.envid)
     if not r.pseudo_result then
         local location = e2tool.resultbuildscript(info.results[resultname].directory)
         local f = {
@@ -2298,20 +2297,19 @@ function e2tool.pbuildid(info, resultname)
         if not fileid then
             return false, e:cat(re)
         end
-        hc:hash_line(fileid)			-- build script hash
+        hash.hash_line(hc, fileid)			-- build script hash
     end
     -- call the list of functions in info.ftab.resultid
     for _,f in ipairs(info.ftab.resultid) do
-        local hash, re = f(info, resultname)
+        local rhash, re = f(info, resultname)
         -- nil -> error
         -- false -> don't modify the hash
-        if hash == nil then
+        if rhash == nil then
             return false, e:cat(re)
-        elseif hash ~= false then
-            hc:hash_line(hash)
+        elseif rhash ~= false then
+            hash.hash_line(hc, rhash)
         end
     end
-    e2lib.logf(4, "hash data for resultid %s\n%s", resultname, hc.data)
     r.resultid = hash.hash_finish(hc)	-- result id (without deps)
 
     local projid, re = projid(info)
@@ -2319,7 +2317,7 @@ function e2tool.pbuildid(info, resultname)
         return false, e:cat(re)
     end
     hc = hash.hash_start()
-    hc:hash_line(projid)		-- project id
+    hash.hash_line(hc, projid)		-- project id
     hash.hash_line(hc, r.resultid)	-- result id
     for _,d in ipairs(r.depends) do
         local id, re = e2tool.pbuildid(info, d)
@@ -2339,16 +2337,15 @@ function e2tool.pbuildid(info, resultname)
     end
     -- call the list of functions in info.ftab.pbuildid
     for _,f in ipairs(info.ftab.pbuildid) do
-        local hash, re = f(info, resultname)
+        local rhash, re = f(info, resultname)
         -- nil -> error
         -- false -> don't modify the hash
-        if hash == nil then
+        if rhash == nil then
             return false, e:cat(re)
-        elseif hash ~= false then
-            hc:hash_line(hash)
+        elseif rhash ~= false then
+            hash.hash_line(hc, rhash)
         end
     end
-    e2lib.logf(4, "hash data for buildid %s\n%s", resultname, hc.data)
     r.pbuildid = hash.hash_finish(hc)	-- buildid (with deps)
     return r.build_mode.buildid(r.pbuildid)
 end
