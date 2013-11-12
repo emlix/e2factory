@@ -784,6 +784,37 @@ do_mkdtemp(lua_State *L)
 	return 3;
 }
 
+static int
+do_mkstemp(lua_State *L)
+{
+	char template[PATH_MAX];
+	const char *template_in = luaL_checkstring(L, 1);
+	int fd;
+
+	if (snprintf(template, PATH_MAX, "%s", template_in)
+	    >= PATH_MAX) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "template does not fit in PATH_MAX");
+
+		return 2;
+	}
+
+	fd = mkstemp(template);
+	if (fd < 0)  {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+
+		return 2;
+	}
+
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	lua_pushstring(L, template);
+	lua_pushnumber(L, fd);
+
+	return 4;
+}
+
 /*
  * Hook that gets called once an interrupt has been requested.
  * Calls e2lib.interrupt_hook() to deal with any cleanup that might be required.
@@ -836,6 +867,7 @@ static luaL_Reg lib[] = {
 	{ "kill", do_kill },
 	{ "mkdir", do_mkdir },
 	{ "mkdtemp", do_mkdtemp },
+	{ "mkstemp", do_mkstemp },
 	{ "parse_mode", do_parse_mode },
 	{ "poll", poll_fd },
 	{ "rmdir", do_rmdir },
