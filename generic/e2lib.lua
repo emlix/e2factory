@@ -1508,30 +1508,29 @@ function e2lib.rmtempfile(tmpfile)
     end
 end
 
---- Create a temporary directory.
--- The template string is passed to the mktemp tool, which replaces
--- trailing X characters by some random string to create a unique name.
--- @param template string: template name (optional)
+--- Create a unique temporary directory.
+-- The template string must contain at least six trailing "X" characters
+-- which are replaced with a random and unique string.
+-- @param template Template string or nil for the default.
 -- @return Name of the directory (string) or false on error.
 -- @return Error object on failure.
 function e2lib.mktempdir(template)
+    local rc, errstring, tmpdir
     if not template then
         template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.globals.tmpdir,
-        e2lib.getpid())
+            e2lib.getpid())
     end
-    local cmd = string.format("mktemp -d '%s'", template)
-    local mktemp = io.popen(cmd, "r")
-    if not mktemp then
-        return false, err.new("can't mktemp")
+
+    rc, errstring, tmpdir = le2lib.mkdtemp(template)
+    if not rc then
+        return false, err.new("could not create temporary directory: %s",
+            errstring)
     end
-    local tmpdir = mktemp:read()
-    if not tmpdir then
-        return false, err.new("can't mktemp")
-    end
-    mktemp:close()
-    -- register tmpdir for removing with rmtempdirs() later on
+
+    -- register tmpdir for removal with rmtempdirs() later on
     table.insert(e2lib.globals.tmpdirs, tmpdir)
-    e2lib.logf(4, "creating temporary directory: %s", tmpdir)
+    e2lib.logf(4, "e2lib.mktempdir: created %q", tmpdir)
+
     return tmpdir
 end
 
