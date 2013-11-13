@@ -148,36 +148,46 @@ eio_fwrite(lua_State *lua)
 static int
 eio_fread(lua_State *lua)
 {
-	char buf[16384];
-	size_t ret;
+	char *buf;
 	FILE *f;
+	size_t ret, sz;
 
 	f = lua_touserdata(lua, 1);
-	if (f == NULL) {
+	sz = lua_tointeger(lua, 2);
+	if (f == NULL || sz == 0) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua,
 		    "eio_fread: one or more arguments of wrong type/missing");
 		return 2;
 	}
 
+	buf = malloc(sz);
+	if (buf == NULL) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		return 2;
+	}
 
-	ret = fread(buf, 1, sizeof(buf), f);
-	if (ret != sizeof(buf)) {
+	ret = fread(buf, 1, sz, f);
+	if (ret != sz) {
 		if (ferror(f)) {
-		    lua_pushboolean(lua, 0);
-		    lua_pushstring(lua, strerror(errno));
-		    return 2;
+			free(buf);
+			lua_pushboolean(lua, 0);
+			lua_pushstring(lua, strerror(errno));
+			return 2;
 		}
 
 		if (ret <= 0 && feof(f)) {
 			/* ret <= 0: do not discard data on short reads,
 			 * only signal EOF when all data is returned. */
+			free(buf);
 			lua_pushstring(lua, "");
 			return 1;
 		}
 	}
 
 	lua_pushlstring(lua, buf, ret);
+	free(buf);
 	return 1;
 }
 

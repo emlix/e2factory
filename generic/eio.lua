@@ -135,10 +135,11 @@ end
 
 --- Read a file.
 -- @param file File object.
--- @return File data as a string, or false on error. May be up to 16K bytes
--- large and contain embedded zero's. On EOF an empty string is returned.
+-- @param size Positive number specifying how many bytes to read.
+-- @return File data as a string, or false on error. May be *up to* 'size' bytes
+-- large and contain embedded zero's. On EOF the empty string is returned.
 -- @return Error object on failure.
-function eio.fread(file)
+function eio.fread(file, size)
     local rc, re, errstring, buffer
 
     rc, re = is_eio_object(file)
@@ -146,7 +147,15 @@ function eio.fread(file)
         return false, re
     end
 
-    buffer, errstring = leio.fread(file.handle)
+    if type(size) ~= "number" then
+        return false, err.new("error reading file: size argument has wrong type")
+    end
+
+    if size <= 0 or size > 2147483648 --[[2GB]] then
+        return false, err("error reading file: size argument out of range")
+    end
+
+    buffer, errstring = leio.fread(file.handle, size)
     if not buffer then
         return false, err.new("error reading file: %s", errstring)
     end
