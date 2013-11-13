@@ -30,6 +30,7 @@
 ]]
 
 local hash = {}
+local eio = require("eio")
 local err = require("err")
 local strict = require("strict")
 local trace = require("trace")
@@ -73,26 +74,31 @@ function hash.hash_line(hc, data)
     hash.hash_append(hc, data .. "\n")
 end
 
---- hash a file
+--- Hash a file.
 -- @param hc the hash context
 -- @param path string: the full path to the file
--- @return true on success, nil on error
--- @return nil, error object on failure
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function hash.hash_file(hc, path)
     assert(type(hc) == "table" and type(hc._ctx) == "userdata")
     assert(type(path) == "string")
 
-    local fd = io.open(path, "r")
-    if not fd then
-        return nil, err.new("could not open file '%s'", path)
+    local f, rc, re, buf
+
+    f, re = eio.fopen(path, "r")
+    if not f then
+        return false, re
     end
 
     trace.disable()
 
-    local buf = ""
     while true do
-        buf = fd:read(64*1024)
-        if buf == nil then
+        buf, re = eio.fread(f, 64*1024)
+        if not buf then
+            trace.enable()
+            eio.fclose(f)
+            return false, re
+        elseif buf == "" then
             break
         end
 
@@ -101,7 +107,10 @@ function hash.hash_file(hc, path)
 
     trace.enable()
 
-    fd:close()
+    rc, re = eio.fclose(f)
+    if not rc then
+        return false, re
+    end
 
     return true
 end
