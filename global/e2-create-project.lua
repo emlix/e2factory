@@ -80,7 +80,7 @@ local function read_template(path)
 
     template = ""
     repeat
-        buf, re = eio.fread(file)
+        buf, re = eio.fread(file, 4096)
         if not buf then
             eio.fclose(file)
             return false, e:cat(re)
