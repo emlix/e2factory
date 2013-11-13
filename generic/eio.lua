@@ -70,6 +70,8 @@ end
 function eio.new()
     local file = {}
     file.handle = false
+    file.finfo = false -- purely informative file name or descriptor string
+                       -- for better error messages.
     return strict.lock(file)
 end
 
@@ -89,6 +91,7 @@ function eio.fopen(path, mode)
 
     file = eio.new()
     file.handle = handle
+    file.finfo = string.format("file %q", path)
     return file
 end
 
@@ -103,12 +106,13 @@ function eio.fdopen(fd, mode)
     handle, errstring = leio.fdopen(fd, mode)
     if not handle then
         return false,
-            err.new("could not open file descriptor %d with mode %q: %s",
+            err.new("could not open file descriptor #%d with mode %q: %s",
                 fd, mode, errstring)
     end
 
     file = eio.new()
     file.handle = handle
+    file.finfo = string.format("file descriptor #%d", fd)
     return file
 end
 
@@ -127,7 +131,7 @@ function eio.fclose(file)
     rc, errstring = leio.fclose(file.handle)
     file.handle = false
     if not rc then
-        return false, err.new("error closing file: %s", errstring)
+        return false, err.new("error closing %s: %s", file.finfo, errstring)
     end
 
     return true
@@ -148,16 +152,16 @@ function eio.fread(file, size)
     end
 
     if type(size) ~= "number" then
-        return false, err.new("error reading file: size argument has wrong type")
+        return false, err.new("eio.fread: size argument has wrong type")
     end
 
     if size <= 0 or size > 2147483648 --[[2GB]] then
-        return false, err("error reading file: size argument out of range")
+        return false, err("eio.fread: size argument out of range")
     end
 
     buffer, errstring = leio.fread(file.handle, size)
     if not buffer then
-        return false, err.new("error reading file: %s", errstring)
+        return false, err.new("error reading %s: %s", file.finfo, errstring)
     end
 
     return buffer
@@ -177,8 +181,8 @@ function eio.fgetc(file)
 
     char, errstring = leio.fgetc(file.handle)
     if not char then
-        return false, err.new("error reading character from file: %s",
-            errstring)
+        return false, err.new("error reading character from %s: %s",
+            file.finfo, errstring)
     end
 
 
@@ -200,7 +204,7 @@ function eio.fwrite(file, buffer)
 
     rc, errstring = leio.fwrite(file.handle, buffer)
     if not rc then
-        return false, err.new("error writing file: %s", errstring)
+        return false, err.new("error writing %s: %s", file.finfo, errstring)
     end
 
     return true
