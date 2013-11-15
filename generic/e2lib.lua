@@ -213,8 +213,9 @@ end
 -- Only indicates first selected file descriptor.
 -- @param timeout Timeout in milliseconds (number).
 -- @param fdvec Vector of file descriptors (table of numbers).
--- @return Returns 0 on timeout, < 0 on error and > 0 to indicate which file
---         descriptor triggered.
+-- @return Returns 0 on timeout, < 0 on error and > 0 for the position in fdvec
+-- that has an event waiting.
+
 -- @return True if it's a POLLIN event.
 -- @return True if it's a POLLOUT event.
 function e2lib.poll(timeout, fdvec)
