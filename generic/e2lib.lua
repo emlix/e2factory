@@ -200,14 +200,13 @@ end
 -- @return Exit status of process (WEXITSTATUS), or false on error.
 -- @return Process ID of the terminated child or error object on failure.
 function e2lib.wait(pid)
-    local rc, pid = le2lib.wait(pid)
+    local rc, childpid = le2lib.wait(pid)
 
     if not rc then
-        local errstring = pid
-        return false, err.new("waiting for child %d failed: %s", pid, errstring)
+        return false, err.new("waiting for child %d failed: %s", pid, childpid)
     end
 
-    return rc, pid
+    return rc, childpid
 end
 
 --- Poll input output multiplexing.
