@@ -1095,8 +1095,28 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
             end
 
             eio.fclose(errin)
-            rc = callcmd(input, output, errout, cmds[cmdidx])
-            os.exit(rc)
+
+            -- redirect stdin
+            io.stdin:close()
+            rc, re = eio.dup2(eio.fileno(input), eio.STDIN)
+            if not rc then
+                e2lib.abort(re)
+            end
+            -- redirect stdout
+            io.stdout:close()
+            rc, re = eio.dup2(eio.fileno(output), eio.STDOUT)
+            if not rc then
+                e2lib.abort(re)
+            end
+            -- redirect stderr
+            io.stderr:close()
+            rc, re = eio.dup2(eio.fileno(errout), eio.STDERR)
+            if not rc then
+                e2lib.abort(re)
+            end
+            -- run the command
+            rc = os.execute(cmds[cmdidx])
+            os.exit(rc/256)
         end
 
         pids[pid] = cmdidx
