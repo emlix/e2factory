@@ -1867,18 +1867,21 @@ function e2lib.mv(src, dst)
     return e2lib.call_tool_argv("mv", { src, dst })
 end
 
---- call the cp command
+--- Call the cp command.
 -- @param src string: source name
 -- @param dst string: destination name
--- @param flags string: additional flags
+-- @param recursive True enables recursive copying. The default is false.
 -- @return bool
 -- @return the last line ouf captured output
-function e2lib.cp(src, dst, flags)
-    if not flags then
-        flags = ""
+function e2lib.cp(src, dst, recursive)
+    local argv
+
+    argv = { src, dst }
+    if recursive then
+        table.insert(argv, 1, "-R")
     end
-    local args = string.format("%s '%s' '%s'", flags, src, dst)
-    return e2lib.call_tool("cp", args)
+
+    return e2lib.call_tool_argv("cp", argv)
 end
 
 --- call the curl command

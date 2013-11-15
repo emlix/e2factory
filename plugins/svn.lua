@@ -201,7 +201,7 @@ function svn.prepare_source(info, sourcename, source_set, build_path)
         -- cp -R info.root/src.working/src.workingcopy_subdir build_path
         local s = e2lib.join(info.root, src.working, src.workingcopy_subdir)
         local d = e2lib.join(build_path, src.name)
-        rc, re = e2lib.cp(s, d, "-R")
+        rc, re = e2lib.cp(s, d, true)
         if not rc then
             return false, e:cat(re)
         end
