@@ -654,7 +654,7 @@ do_parse_mode(lua_State *lua)
 static mode_t
 calc_mode(mode_t mode, int owners, int op, mode_t protection)
 {
-	int i, shift;
+	int i, shift = 0;
 
 	/* Loop over all possible owners and calc shift */
 	for (i = OWN_USER; i <= OWN_OTHER ; i <<= 1) {
