@@ -373,6 +373,7 @@ do_setenv(lua_State *lua)
 
 }
 
+#if 0
 static int
 do_unsetenv(lua_State *lua)
 {
@@ -383,6 +384,7 @@ do_unsetenv(lua_State *lua)
 
 	return 1;
 }
+#endif
 
 static int
 do_exec(lua_State *lua)
