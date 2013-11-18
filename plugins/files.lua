@@ -314,6 +314,14 @@ local function gen_unpack_command(physpath, virtpath, destdir)
     return tool, toolargv
 end
 
+--- Call the patch command
+-- @param argv Vector of arguments supplied to patch tool.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function patch_tool(argv)
+    return e2lib.call_tool_argv("patch", argv)
+end
+
 --- Prepare a files source.
 -- @param info The info table.
 -- @param sourcename The source name (string)
@@ -392,9 +400,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 if not path then
                     return false, e:append(re)
                 end
-                local args = string.format("-p '%s' -d '%s' -i '%s'", file.patch,
-                symlink, path)
-                rc, re = e2lib.patch(args)
+                local argv = { "-p", file.patch, "-d", symlink, "-i", path }
+                rc, re = patch_tool(argv)
                 if not rc then
                     e:append("applying patch: \"%s:%s\"", file.server, file.location)
                     return false, e:cat(re)

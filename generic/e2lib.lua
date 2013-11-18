@@ -1746,15 +1746,6 @@ function e2lib.mkdir_recursive(path, mode)
     return true
 end
 
---- call the patch command
--- @param dir string: the directory name
--- @param flags string: flags to pass to mkdir
--- @return bool
--- @return the last line ouf captured output
-function e2lib.patch(args)
-    return e2lib.call_tool("patch", args)
-end
-
 --- Call a tool.
 -- @param tool Tool name as registered in the tools library (string).
 -- @param args Arguments as a string. Caller is responsible for safe escaping.
