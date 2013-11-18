@@ -545,7 +545,7 @@ function git.sourceid(info, sourcename, sourceset)
 end
 
 function git.toresult(info, sourcename, sourceset, directory)
-    local rc, re
+    local rc, re, argv
     local e = err.new("converting result")
     rc, re = scm.generic_source_check(info, sourcename, true)
     if not rc then
@@ -564,29 +564,54 @@ function git.toresult(info, sourcename, sourceset, directory)
     end
 
     if sourceset == "tag" or sourceset == "branch" then
-        local ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
-        -- git archive --format=tar <ref> | gzip > <tarball>
-        cmd = string.format(
-        "cd %s/%s && git archive --format=tar --prefix=%s/ %s"..
-        " | gzip > %s/%s",
-        e2lib.shquote(info.root), e2lib.shquote(src.working),
-        e2lib.shquote(sourcename), e2lib.shquote(ref),
-        e2lib.shquote(sourcedir), e2lib.shquote(archive))
+        local ref, tmpfn
+
+        ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
+
+        tmpfn, re = e2lib.mktempfile()
+        if not tmpfn then
+            return false, e:cat(re)
+        end
+
+        argv = generic_git.git_new_argv(nil, e2lib.join(info.root, src.working))
+        table.insert(argv, "archive")
+        table.insert(argv, "--format=tar") -- older versions don't have "tar.gz"
+        table.insert(argv, string.format("--prefix=%s/", sourcename))
+        table.insert(argv, "-o")
+        table.insert(argv, tmpfn)
+        table.insert(argv, ref)
+
+        rc, re = generic_git.git(argv)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        rc, re = e2lib.gzip({ "-n", tmpfn })
+        if not rc then
+            return false, re
+        end
+
+        rc, re = e2lib.mv(tmpfn..".gz", e2lib.join(sourcedir, archive))
+        if not rc then
+            return false, re
+        end
     elseif sourceset == "working-copy" then
-        cmd = string.format("tar -C %s/%s " ..
-        "--transform=s,^./,./%s/, "..
-        "--exclude=.git "..
-        "-czf %s/%s .",
-        e2lib.shquote(info.root), e2lib.shquote(src.working),
-        e2lib.shquote(sourcename), e2lib.shquote(sourcedir),
-        e2lib.shquote(archive))
+        argv = {
+            "-C", e2lib.join(info.root, src.working),
+            string.format("--transform=s,^./,./%s/,", sourcename),
+            "--exclude=.git",
+            "-czf",
+            e2lib.join(sourcedir, archive),
+            "."
+        }
+
+        rc, re = e2lib.tar(argv)
+        if not rc then
+            return false, e:cat(re)
+        end
     else
         return false, e:append("sourceset not supported: %s",
         sourceset)
-    end
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
-        return false, e:cat(re)
     end
     local fname  = string.format("%s/%s", directory, makefile)
     local f, msg = io.open(fname, "w")
