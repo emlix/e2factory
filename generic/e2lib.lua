@@ -254,9 +254,18 @@ end
 -- @param val Variable content (string).
 -- @param overwrite True to overwrite existing variable of same name.
 -- @return True on success, false on error.
+-- @return Error object on failure.
 function e2lib.setenv(var, val, overwrite)
-    -- used in only once, questionable
-    return le2lib.setenv(var, val, overwrite)
+    local rc, errstring
+
+    rc, errstring = le2lib.setenv(var, val, overwrite)
+    if not rc then
+        return false,
+            err.new("setting environmenv variable %q to $q failed: %s",
+            var, val, errstring)
+    end
+
+    return true
 end
 
 --- Reset signal handlers back to their default.

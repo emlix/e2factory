@@ -367,10 +367,15 @@ do_setenv(lua_State *lua)
 	const char *val = luaL_checkstring(lua, 2);
 	int overwrite = lua_toboolean(lua, 3);
 	int rc;
-	rc = setenv(var, val, overwrite != 0);
-	lua_pushboolean(lua, rc == 0);
-	return 1;
+	rc = setenv(var, val, overwrite);
+	if (rc != 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		return 2;
+	}
 
+	lua_pushboolean(lua, 1);
+	return 1;
 }
 
 #if 0
