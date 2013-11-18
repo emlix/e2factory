@@ -387,26 +387,56 @@ do_unsetenv(lua_State *lua)
 #endif
 
 static int
-do_exec(lua_State *lua)
+do_execvp(lua_State *L)
 {
-	const int max_args = 256;
-	const char *args[max_args+1];
-	int rc, i;
-	for (i=0; i<max_args+1; i++) {
-		args[i] = luaL_optlstring(lua, i+1, NULL, NULL);
-		if (!args[i]) {
-			break;
-		}
-	}
-	if( i > max_args) {
-		lua_pushboolean(lua, 0);
-		return 1;
-	}
-	args[i] = NULL;
-	rc = execvp(args[0], (char * const*)args);
-	lua_pushboolean(lua, rc == 0);
+	const char *file;
+	char **argv;
+	size_t argc;
+	int i = 0;
 
-	return 1;
+	file = lua_tostring(L, 1);
+	if (file == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "do_execvp: missing/wrong file argument");
+		return 2;
+	}
+
+	if (!lua_istable(L, 2)) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "do_execvp: missing/wrong argv argument");
+		return 2;
+	}
+
+	argc = lua_objlen(L, 2);
+	if (argc == 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "do_execvp: 1+ argv arguments required");
+		return 2;
+	}
+
+	argv = malloc(argc * sizeof(char *));
+	if (argv == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "do_execvp: 1+ argv arguments required");
+		return 2;
+	}
+
+	for (; i < argc; i++) {
+		lua_rawgeti(L, 2, i+1); /* table index starts at 1 */
+		argv[i] = (char *)lua_tostring(L, lua_gettop(L));
+	}
+	argv[i] = NULL;
+
+
+
+	execvp(file, argv);
+
+	/* If it returns at all something is wrong */
+	free(argv);
+	lua_pushboolean(L, 0);
+	lua_pushstring(L, strerror(errno));
+
+	return 2;
 }
 
 static int
@@ -862,6 +892,7 @@ static luaL_Reg lib[] = {
 	{ "closefrom", closefrom },
 	{ "cwd", get_working_directory },
 	{ "directory", get_directory },
+	{ "execvp", do_execvp },
 	{ "exists", file_exists },
 	{ "fork", lua_fork },
 	{ "getpid", do_getpid },

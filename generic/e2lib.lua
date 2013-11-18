@@ -296,6 +296,21 @@ function e2lib.kill(pid, sig)
     return true
 end
 
+--- Execute a process image and replace the current process.
+-- See execvp(3) for more information.
+-- @param file File name or path to execute. PATH is searched.
+-- @param argv Vector containing arguments for the process. First argument
+--             should be the file name itself.
+-- @return False on error. It does not return on success.
+-- @return Error object on failure.
+function e2lib.execvp(filenm, argv)
+    local rc, errstring
+
+    rc, errstring = le2lib.execvp(filenm, argv)
+
+    return false, err.new("executing process %q failed: %s", filenm, errstring)
+end
+
 --- Interrupt handling.
 --
 -- le2lib sets up a SIGINT handler that calls back into this function.
