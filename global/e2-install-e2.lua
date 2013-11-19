@@ -218,8 +218,14 @@ local function e2_install_e2(arg)
     if not rc then
        return false, e:cat(re)
     end
-    local cmd = string.format("make PREFIX=%s BINDIR=%s local install-local",
-    e2lib.shquote(buildconfig.PREFIX), e2lib.shquote(buildconfig.BINDIR))
+    local cmd = {
+        "make",
+        "PREFIX="..buildconfig.PREFIX,
+        "BINDIR="..buildconfig.BINDIR,
+        "local",
+        "install-local",
+    }
+
     rc, re = e2lib.callcmd_log(cmd)
     if not rc or rc ~= 0 then
         return false, e:cat(re)
