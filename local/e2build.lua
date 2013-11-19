@@ -29,6 +29,7 @@
 ]]
 
 local e2build = {}
+local digest = require("digest")
 local transport = require("transport")
 local tools = require("tools")
 local err = require("err")
@@ -513,6 +514,7 @@ function e2build.unpack_result(info, r, dep, destdir)
     local rc, re
     local e = err.new("unpacking result failed: %s", dep)
     local d = info.results[dep]
+    local dt
 
     local buildid, re = e2tool.buildid(info, dep)
     if not buildid then
@@ -550,11 +552,18 @@ function e2build.unpack_result(info, r, dep, destdir)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.call_tool("sha1sum", "-c checksums")
+
+    dt, re = digest.parse("checksums")
+    if not dt then
+        return false, e:cat(re)
+    end
+
+    rc, re = digest.verify(dt, e2lib.cwd())
     if not rc then
         e:append("checksum mismatch in dependency: %s", dep)
         return false, e:cat(re)
     end
+
     rc, re = e2lib.chdir("files")
     if not rc then
         return false, e:cat(re)
@@ -904,6 +913,7 @@ local function store_result(info, r, return_flags)
     local res = info.results[r]
     local rc, re
     local e = err.new("fetching build results from chroot")
+    local dt
 
     -- create a temporary directory to build up the result
     local tmpdir, re = e2lib.mktempdir()
@@ -953,11 +963,26 @@ local function store_result(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    local args = "files/* >checksums"
-    rc, re = e2lib.call_tool("sha1sum", args)
+
+    dt = digest.new()
+    for f,re in e2lib.directory("files", false, true) do
+        if not f then
+            return false, e:cat(re)
+        end
+
+        digest.new_entry(dt, digest.SHA1, nil, e2lib.join("files", f), nil)
+    end
+
+    rc, re = digest.checksum(dt, e2lib.cwd())
     if not rc then
         return false, e:cat(re)
     end
+
+    rc, re = digest.write(dt, "checksums")
+    if not rc then
+        return false, e:cat(re)
+    end
+
     -- include compressed build logfile into the result tarball
     rc, re = e2lib.cp(res.build_config.buildlog, "build.log")
     if not rc then
