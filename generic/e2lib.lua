@@ -1992,19 +1992,22 @@ function e2lib.call_tool_argv(tool, argv)
         return false, re
     end
 
+    cmd = { cmd }
+
     flags, re = tools.get_tool_flags(tool)
     if not flags then
         return false, re
     end
 
-    call = string.format("%s %s", e2lib.shquote(cmd), flags)
-
-    for _,arg in ipairs(argv) do
-        assert(type(arg) == "string")
-        call = call .. " " .. e2lib.shquote(arg)
+    for _,flag in ipairs(flags) do
+        table.insert(cmd, flag)
     end
 
-    rc, re = e2lib.callcmd_log(call)
+    for _,arg in ipairs(argv) do
+        table.insert(cmd, arg)
+    end
+
+    rc, re = e2lib.callcmd_log(cmd)
     if not rc or rc ~= 0 then
         return false, re
     end
