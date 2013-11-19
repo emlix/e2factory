@@ -1978,33 +1978,6 @@ function e2lib.mkdir_recursive(path, mode)
     return true
 end
 
---- Call a tool.
--- @param tool Tool name as registered in the tools library (string).
--- @param args Arguments as a string. Caller is responsible for safe escaping.
--- @return True when the tool returned 0, false on error.
--- @return Error object on failure
-function e2lib.call_tool(tool, args)
-    local rc, re, cmd, flags, call
-
-    cmd, re = tools.get_tool(tool)
-    if not cmd then
-        return false, re
-    end
-
-    flags, re = tools.get_tool_flags(tool)
-    if not flags then
-        return false, re
-    end
-
-    call = string.format("%s %s %s", cmd, flags, args)
-    rc, re = e2lib.callcmd_log(call)
-    if not rc or rc ~= 0 then
-        return false, re
-    end
-
-    return true
-end
-
 --- Call a tool with an argument vector.
 -- @param tool Tool name as registered in the tools library (string).
 -- @param argv Vector of arguments, escaping is handled by the function
