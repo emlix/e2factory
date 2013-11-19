@@ -307,7 +307,7 @@ end
 
 --- Execute a process image and replace the current process.
 -- See execvp(3) for more information.
--- @param file File name or path to execute. PATH is searched.
+-- @param filenm File name or path to execute. PATH is searched.
 -- @param argv Vector containing arguments for the process. First argument
 --             should be the file name itself.
 -- @return False on error. It does not return on success.
