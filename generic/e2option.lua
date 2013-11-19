@@ -464,7 +464,10 @@ function e2option.showtoolmanpage()
         viewerflags = tools.get_tool_flags(s)
         if viewer then
             table.insert(cmd, e2lib.shquote(viewer))
-            if viewerflags and viewerflags ~= "" then
+            if viewerflags then
+                viewerflags = table.concat(viewerflags, " ")
+            end
+            if viewerflags ~= "" then
                 table.insert(cmd, viewerflags)
             end
 

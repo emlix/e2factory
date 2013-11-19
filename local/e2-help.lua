@@ -179,8 +179,8 @@ local function display_man_page(doc)
     table.insert(cmd, e2lib.shquote(viewer))
 
     local viewerflags = tools.get_tool_flags("man")
-    if viewerflags and viewerflags ~= "" then
-        table.insert(cmd, viewerflags)
+    if viewerflags and #viewerflags > 0 then
+        table.insert(cmd, table.concat(viewerflags, " "))
     end
 
     table.insert(cmd, e2lib.shquote(e2lib.join(doc.path, doc.filename)))

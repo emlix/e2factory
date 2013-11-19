@@ -70,6 +70,8 @@ local function rsync_ssh(opts, src, dest)
         return false, re
     end
 
+    rshflags = table.concat(rshflags, " ")
+
     if rshflags ~= "" then
         rsh = string.format("%s %s", rsh, rshflags)
     end

@@ -385,6 +385,9 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         if not tarflags then
             return false, e:cat(re)
         end
+
+        tarflags = table.concat(tarflags, " ")
+
         local cmd1 = string.format("%s %s -c -C %s/%s --exclude '.git' .",
             e2lib.shquote(tar), tarflags, e2lib.shquote(info.root),
             e2lib.shquote(src.working))

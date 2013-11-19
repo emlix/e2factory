@@ -2206,6 +2206,8 @@ function e2lib.sha1sum(path)
         return false, e:cat(re)
     end
 
+    sha1sum_flags = table.concat(sha1sum_flags, " ")
+
     cmd = string.format("%s %s %s", e2lib.shquote(sha1sum), sha1sum_flags,
         e2lib.shquote(path))
 
