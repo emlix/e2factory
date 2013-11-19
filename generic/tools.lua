@@ -71,15 +71,94 @@ function tools.get_tool(name)
     return toollist[name].path
 end
 
+--- Split tool flags into a vector of arguments.
+-- @param flags Tool flags.
+-- @return Vector containing tool arguments or false on error.
+-- @return Error object on failure.
+local function parse_tool_flags(flags)
+    local tokens, c, fields, field, state, esc
+
+    state = 0 -- 0 default, 1 doublequote, 2 singlequote string
+    esc = false -- previous character was a escape \ if true
+    field = ""
+    fields = {}
+
+    for i=1,string.len(flags) do
+        c = string.sub(flags, i, i)
+        if state == 0 and (c == " " or c == "\t" or c == "\n") then
+            if field ~= "" then
+                table.insert(fields, field)
+                field = ""
+            end
+            -- skip all IFS
+        elseif c == '\\' then
+            esc = true
+            -- may add \ back later
+        elseif not esc and c == '"' and (state == 0 or state == 1) then
+            if state == 1 then
+                state = 0
+            else
+                state = 1
+            end
+            -- double quotes get removed
+        elseif c == "'" and (state == 0 or state == 2) then
+            if state == 2 then
+                state = 0
+            else
+                state = 2
+            end
+            -- single quotes get removed
+        else
+            if esc and (state == 0 or state == 1) then
+                if c == "\\" then
+                    field = field .. "\\"
+                elseif c == '"' then
+                    field = field .. '"'
+                elseif c == "'" then
+                    field = field .. "'"
+                else
+                    field = field .. "\\" .. c
+                end
+                esc = false
+            elseif esc and state == 2 then
+                -- no escape from the single quote
+                field = field .. "\\" .. c
+                esc = false
+            else
+                field = field .. c
+            end
+        end
+    end
+
+    if field ~= "" then
+        table.insert(fields, field)
+    end
+
+    if state ~= 0 or esc ~= false then
+        return false,
+            err.new("escape or quoting missmatch in tool flags %q", flags)
+    end
+
+    return fields
+end
+
 --- Get tool flags.
 -- @param name Tool name (string).
--- @return Tool flags as a string, potentially empty - or false on error.
+-- @return Vector containing tool flags. Vector may be empty for no flags,
+--         or false if an error occured.
 -- @return Error object on failure.
 function tools.get_tool_flags(name)
+    local flags, re
     if not toollist[name] then
         return false, err.new("tool '%s' is not registered in tool list", name)
     end
-    return toollist[name].flags or ""
+
+    flags, re = parse_tool_flags(toollist[name].flags or "")
+    if not flags then
+        return false, re
+    end
+
+    return flags
 end
 
 --- Get tool name.
