@@ -330,7 +330,9 @@ end
 --
 -- @param dt A digest table with digest table entries.
 -- @param filename Filename to write digest entries into. The file will be
--- created or overwritten in case it already exists.
+--                 created or overwritten in case it already exists.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function digest.write(dt, filename)
     assert(type(dt) == "table")
     assert(type(filename) == "string")
