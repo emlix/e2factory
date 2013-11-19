@@ -164,8 +164,8 @@ function tools.check_tool(name)
             table.insert(out, msg)
         end
 
-        which = { e2lib.shquote("which"), e2lib.shquote(tool.name) }
-        rc, re = e2lib.callcmd_capture(table.concat(which, " "), capture)
+        which = { "which", tool.name }
+        rc, re = e2lib.callcmd_capture(which, capture)
         if not rc then
             return false, re
         elseif rc ~= 0 then
