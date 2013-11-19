@@ -418,18 +418,10 @@ local function runbuild(info, r, return_flags)
     local rc, re
     local e = err.new("build failed")
     e2lib.logf(3, "building %s ...", r)
-    local runbuild = string.format("/bin/bash -e -x %s/%s/%s",
-        e2lib.shquote(res.build_config.Tc),
-        e2lib.shquote(res.build_config.scriptdir),
-        e2lib.shquote(res.build_config.build_driver_file))
     local e2_su, re = tools.get_tool("e2-su-2.2")
     if not e2_su then
         return false, e:cat(re)
     end
-    local cmd = string.format("%s %s chroot_2_3 %s %s",
-        res.build_config.chroot_call_prefix,
-        e2lib.shquote(e2_su),
-        e2lib.shquote(res.build_config.base), runbuild)
     -- the build log is written to an external logfile
     rc, re = e2lib.rotate_log(res.build_config.buildlog)
     if not rc then
@@ -445,6 +437,18 @@ local function runbuild(info, r, return_flags)
         out:flush()
     end
     e2tool.set_umask(info)
+
+    local cmd = {
+        res.build_config.chroot_call_prefix,
+        e2_su,
+        "chroot_2_3",
+        res.build_config.base,
+        "/bin/bash",
+        "-e", "-x",
+        e2lib.join(res.build_config.Tc, res.build_config.scriptdir,
+            res.build_config.build_driver_file)
+    }
+
     rc, re = e2lib.callcmd_capture(cmd, logto)
     if not rc then
         return false, e:cat(re)
