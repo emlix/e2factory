@@ -2162,16 +2162,6 @@ function e2lib.gzip(argv)
     return e2lib.call_tool_argv("gzip", argv)
 end
 
---- call the catcommand
--- @param argv table: argument vector
--- @return bool
--- @return an error object on failure
-function e2lib.cat(argv)
-    assert(type(argv) == "table")
-
-    return e2lib.call_tool_argv("cat", argv)
-end
-
 --- check if dir is a directory
 -- @param dir string: path
 -- @return bool
