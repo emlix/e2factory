@@ -2054,7 +2054,7 @@ function e2lib.closefrom(fd)
     return true
 end
 
---- call the mv command
+--- Call the mv command. For more defails see mv(1).
 -- @param src string: source name
 -- @param dst string: destination name
 -- @return bool
@@ -2066,7 +2066,7 @@ function e2lib.mv(src, dst)
     return e2lib.call_tool_argv("mv", { src, dst })
 end
 
---- Call the cp command.
+--- Call the cp command. For more details, see cp(1)
 -- @param src string: source name
 -- @param dst string: destination name
 -- @param recursive True enables recursive copying. The default is false.
