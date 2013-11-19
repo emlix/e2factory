@@ -1013,51 +1013,6 @@ function e2lib.directory(path, dotfiles, noerror)
     end
 end
 
---- Call a command, connecting stdin, stdout, stderr to EIO
---  objects. This function is running in the child process. It may call
---  e2lib.abort() in case of error, which should be caught by the parent
---  process.
---  @param infile File object to be used as stdin.
---  @param outfile File object to be used as stdout.
---  @param errfile File object to be used as stderr.
---  @param cmd Command string, passed to os.execute().
---  @return Return code (number) in case of os.execute() failure. This function
---  does not return on success.
-local function callcmd(infile, outfile, errfile, cmd)
-    local rc, re
-
-    -- redirect stdin
-    io.stdin:close()
-    rc, re = eio.dup2(eio.fileno(infile), eio.STDIN)
-    if not rc then
-        e2lib.abort(re)
-    end
-    if luafile.fileno(infile) ~= 0 then
-        luafile.cloexec(infile)
-    end
-    -- redirect stdout
-    io.stdout:close()
-    rc, re = eio.dup2(eio.fileno(outfile), eio.STDOUT)
-    if not rc then
-        e2lib.abort(re)
-    end
-    if luafile.fileno(outfile) ~= 1 then
-        luafile.cloexec(outfile)
-    end
-    -- redirect stderr
-    io.stderr:close()
-    rc, re = eio.dup2(eio.fileno(errfile), eio.STDERR)
-    if not rc then
-        e2lib.abort(re)
-    end
-    if luafile.fileno(errfile) ~= 2 then
-        luafile.cloexec(errfile)
-    end
-    -- run the command
-    rc = os.execute(cmd)
-    return (rc/256)
-end
-
 --- Call several commands in a pipe.
 -- @param cmds Table of shell commands.
 -- @param infile Luafile that is readable, or nil.
@@ -1227,87 +1182,340 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
     return true
 end
 
+--- File descriptor config table vector. This vector simply holds file
+-- descriptor config tables.
+-- @table fdctv
+-- @field 1..n File descriptor config table
+-- @see fdct
+
+--- File descriptor configuration table.
+-- @table fdct
+-- @field dup File descriptor in the child process that should be replaced by
+--            this configuration.
+-- @field istype "readfo" denotes
+-- @see fdct_readfo
+
+--- File descriptor configuration table - readfo. This is an extension to
+-- fdct for documentation purposes. It's not a separate table. When istype is
+--"readfo", the following field are expected in addition to ones in fdct.
+-- The file object is used as an input to the child.
+-- @table fdct_readfo
+-- @field file Readable file object.
+-- @see fdct
+
+--- File descriptor configuration table - writefunc. This is an extension to
+-- fdct for documentation purposes. It's not a separate table. When istype is
+-- "writefunc", the following field are expected in addition to ones in fdct.
+-- A function is called whenever output from dup is available or once a line
+-- has been collected.
+-- @table fdct_writefunc
+-- @field linebuffer True to request line buffering, false otherwise.
+-- @field callfn Function that is called when data is available.
+--               Declared as "function (data)", no return value.
+-- @field _p Private field, do not use.
+-- @see fdct
+
+--- Call a command. Forks a child and uses exec to directly run the command.
+-- @param argv Argument vector to execute.
+-- @param fdctv File descriptor config table vector. This determines
+--              the file descriptor setup in parent and child. If none
+--              is supplied, no changes to the file descriptors are done.
+--              See fdctv and fdct tables for more detail.
+-- @param workdir Working directory to start the new process in.
+-- @param envdict Dictionary of (name, value) pairs to be added to the
+--                environment of the new process. Existing variables are
+--                overwritten.
+-- @return Return code of the child is returned. It's the callers responsibility
+--         to make sense of the value. If the return code is false, an error
+--         within the function occurred and an error object is returned
+-- @return Error object on failure.
+-- @see fdctv
+-- @see fdct
+function e2lib.callcmd(argv, fdctv, workdir, envdict)
+
+    -- To keep this large mess somewhat grokable, split into multiple functions.
+
+    local function fd_parent_setup(fdctv)
+        local rc, re
+        for _,fdct in ipairs(fdctv) do
+            if fdct.istype == "writefunc" then
+                rc, re = eio.pipe()
+                if not rc then
+                    return false, re
+                end
+
+                fdct._p = {}
+                fdct._p.readfo = rc
+                fdct._p.writefo = re
+                fdct._p.buffer = ""
+            elseif fdct.istype == "readfo" then
+            else
+                return false, err.new("while setting up parent file " ..
+                    "descriptors: unknown istype (%q)", tostring(fdct.istype))
+            end
+        end
+
+        return true
+    end
+
+    local function fd_child_setup(fdctv)
+        local rc, re
+        for _,fdct in ipairs(fdctv) do
+            if fdct.istype == "writefunc" then
+                rc, re = eio.fclose(fdct._p.readfo)
+                if not rc then
+                    e2lib.abort(re)
+                end
+
+                rc, re = eio.dup2(eio.fileno(fdct._p.writefo), fdct.dup)
+                if not rc then
+                    e2lib.abort(re)
+                end
+            elseif fdct.istype == "readfo" then
+                rc, re = eio.dup2(eio.fileno(fdct.file), fdct.dup)
+                if not rc then
+                    e2lib.abort(re)
+                end
+            end
+        end
+    end
+
+    local function fd_parent_after_fork(fdctv)
+        local rc, re
+        for _,fdct in ipairs(fdctv) do
+            if fdct.istype == "writefunc" then
+                rc, re = eio.fclose(fdct._p.writefo)
+                if not rc then
+                    return false, re
+                end
+            end
+        end
+
+        return true
+    end
+
+    local function fd_find_writefunc_by_readfd(fdctv, fd)
+        for _,fdct in ipairs(fdctv) do
+            if fdct.istype == "writefunc" and
+                eio.fileno(fdct._p.readfo) == fd then
+                return fdct
+            end
+        end
+
+        return false
+    end
+
+    local function fd_parent_poll(fdctv)
+
+        local function fd_linebuffer(fdct, data)
+            local linepos
+
+            fdct._p.buffer = fdct._p.buffer..data
+            repeat
+                linepos = string.find(fdct._p.buffer, "\n")
+                if linepos then
+                    fdct.callfn(string.sub(fdct._p.buffer, 1, linepos))
+                    fdct._p.buffer = string.sub(fdct._p.buffer, linepos + 1)
+                end
+            until not linepos
+        end
+
+        local function fd_linebuffer_final(fdct, data)
+            if fdct.linebuffer and fdct._p.buffer ~= "" then
+                fdct.callfn(fdct._p.buffer)
+                fdct._p.buffer = ""
+            end
+        end
+
+        local rc, re, fdvec, fdpos, pollin, pollout, fdvec, fdct
+
+        fdvec = {}
+        for _,fdct in ipairs(fdctv) do
+            if fdct.istype == "writefunc" then
+                table.insert(fdvec, eio.fileno(fdct._p.readfo))
+            end
+        end
+
+        while #fdvec > 0 do
+            fdpos, pollin, pollout = e2lib.poll(-1, fdvec)
+            if fdpos == 0 then
+                return false, err.new("poll timeout")
+            elseif fdpos < 0 then
+                return false, err.new("poll error %d", fdpos)
+            end
+
+            if pollin then
+                fdct = fd_find_writefunc_by_readfd(fdctv, fdvec[fdpos])
+                if fdct then
+                    local data, readsz
+
+                    while true do
+                        readsz = 64*1024
+                        data, re = eio.fread(fdct._p.readfo, readsz)
+                        if not data then
+                            return false, re
+                        elseif data == "" then
+                            break
+                        end
+
+                        if fdct.linebuffer then
+                            fd_linebuffer(fdct, data)
+                        else
+                            fdct.callfn(data)
+                        end
+                    end
+                end
+            elseif pollout then
+                return false, err.new("poll returned POLLOUT")
+            else
+                -- Neither POLLIN or POLLOUT are set. Probably
+                -- because POLLHUP occured. On Linux it indicates
+                -- the pipe was closed by the child.
+
+                -- Flush remaining buffers if linebuffer is enabled
+                -- and the last fread did not end with \n.
+                fdct = fd_find_writefunc_by_readfd(fdctv, fdvec[fdpos])
+                if fdct then
+                    fd_linebuffer_final(fdct)
+                end
+
+                table.remove(fdvec, fdpos)
+            end
+        end
+
+        return true
+    end
+
+    local function fd_parent_cleanup(fdctv)
+        local rc, re
+        for _,fdct in ipairs(fdctv) do
+            if fdct.istype == "writefunc" then
+                rc, re = eio.fclose(fdct._p.readfo)
+                if not rc then
+                    return false, re
+                end
+            end
+        end
+
+        return true
+    end
+
+    -- start of callcmd() proper
+
+    local rc, re, pid
+
+    rc, re = fd_parent_setup(fdctv)
+    if not rc then
+        return false, re
+    end
+
+    pid, re = e2lib.fork()
+    if not pid then
+        return false, re
+    elseif pid == 0 then
+        -- disable debug logging to console in the child because output mixes
+        e2lib.setlog(4, false)
+
+        fd_child_setup(fdctv)
+
+        if workdir then
+            rc, re = e2lib.chdir(workdir)
+            if not rc then
+                e2lib.abort(re)
+            end
+        end
+
+        if envdict then
+            for var,val in pairs(envdict) do
+                rc, re = e2lib.setenv(var, val, true)
+                if not rc then
+                    e2lib.abort(re)
+                end
+            end
+        end
+
+        rc, re = e2lib.execvp(argv[1], argv)
+        e2lib.abort(re)
+    end
+
+    rc, re = fd_parent_after_fork(fdctv)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = fd_parent_poll(fdctv)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = fd_parent_cleanup(fdctv)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = e2lib.wait(pid)
+    if not rc then
+        return false, re
+    end
+
+    return rc
+end
+
 --- Call a command with stdin redirected to /dev/null, stdout and stderr
 -- are captured  via a pipe.
--- @param cmd Command string passed to a shell for execution.
---            Escape appropriately.
--- @param capture Function taking a string argument. Called on every chunk of
+-- @param cmd Argument vector holding the command.
+-- @param capture Function taking a string argument. Called on every line of
 --                stdout and stderr output captured from the program.
+-- @param workdir Workdir of the command. Optional.
+-- @param envdict Dictionary to add to the environment of the command. Optional.
 -- @return Return status code of the command (number) or false on error.
 -- @return Error object on failure.
-function e2lib.callcmd_capture(cmd, capture)
-    local rc, re, oread, owrite, devnull, pid, ret
+-- @see callcmd
+function e2lib.callcmd_capture(cmd, capture, workdir, envdict)
+    local rc, re, devnull
 
     local function autocapture(msg)
         e2lib.log(3, msg)
     end
 
     capture = capture or autocapture
-    oread, owrite = eio.pipe()
-    if not oread then
-        return false, owrite
-    end
+
     devnull, re = eio.fopen("/dev/null", "r")
     if not devnull then
         return false, re
     end
 
-    eio.setlinebuf(owrite)
-    eio.setlinebuf(oread)
+    local fdctv = {
+        { dup = eio.STDIN, istype = "readfo", file = devnull },
+        { dup = eio.STDOUT, istype = "writefunc",
+            linebuffer = true, callfn=capture },
+        { dup = eio.STDERR, istype = "writefunc",
+            linebuffer = true, callfn=capture },
+    }
 
-    e2lib.logf(4, "+ %s", cmd)
-    pid, re = e2lib.fork()
-    if not pid then
-        return false, re
-    elseif pid == 0 then
-        eio.fclose(oread)
-        rc = callcmd(devnull, owrite, owrite, cmd)
-        os.exit(rc)
-    else
-        rc, re = eio.fclose(owrite)
-        if not rc then
-            return false, re
-        end
-
-        local line
-        while true do
-            line, re  = eio.readline(oread)
-            if not line then
-                return false, re
-            elseif line == "" then
-                break
-            end
-
-            capture(line)
-        end
-
-        rc, re = eio.fclose(oread)
-        if not rc then
-            return false, re
-        end
-
-        rc, re = e2lib.wait(pid)
-        if not rc then
-            eio.fclose(devnull)
-            return false, re
-        end
-        ret = rc
-
+    rc, re = e2lib.callcmd(cmd, fdctv, workdir, envdict)
+    if not rc then
         eio.fclose(devnull)
+        return false, re
     end
 
-    return ret
+    eio.fclose(devnull)
+    return rc
 end
 
 --- Call a command, log its output and catch the last lines for error reporting.
--- @param cmd string: the command
+-- See callcmd() for details.
+-- @param cmd Argument vector holding the command.
+-- @param workdir Workdir of the command. Optional.
+-- @param envdict Dictionary to add to the environment of the command. Optional.
 -- @return Return code of the command (number), or false on error.
 -- @return Error object containing command line and last lines of output. It's
 --         the callers responsibility to determine whether an error occured
 --         based on the return code. If the return code is false, an error
 --         within the function occured and a normal error object is returned.
-function e2lib.callcmd_log(cmd)
-    local e = err.new("command %s failed:", cmd)
+-- @see callcmd
+function e2lib.callcmd_log(cmd, workdir, envdict)
+    local e = err.new("command %q failed", table.concat(cmd, " "))
     local fifo = {}
 
     local function logto(msg)
@@ -1321,7 +1529,7 @@ function e2lib.callcmd_log(cmd)
         end
     end
 
-    local rc, re = e2lib.callcmd_capture(cmd, logto)
+    local rc, re = e2lib.callcmd_capture(cmd, logto, workdir, envdict)
     if not rc then
         return false, e:cat(re)
     end
