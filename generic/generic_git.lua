@@ -128,18 +128,14 @@ end
 -- @return Error object on failure.
 -- @return Any captured git output or the empty string if nothing was captured.
 function generic_git.git(argv)
-    local rc, re, e, git, cmd, fifo, out
+    local rc, re, e, git, fifo, out
 
     git, re = tools.get_tool("git")
     if not git then
         return false, re
     end
 
-    cmd = e2lib.shquote(git)
-    for _,arg in ipairs(argv) do
-        cmd = cmd .. " "
-        cmd = cmd .. e2lib.shquote(arg)
-    end
+    table.insert(argv, 1, git)
 
     -- fifo contains the last 4 lines, out everything - it's simpler that way.
     fifo = {}
@@ -159,12 +155,13 @@ function generic_git.git(argv)
         table.insert(out, msg)
     end
 
-    rc, re = e2lib.callcmd_capture(cmd, capture)
+    rc, re = e2lib.callcmd_capture(argv, capture)
     if not rc then
-        e = new.new("git command %q failed", cmd)
+        e = new.new("git command %q failed", table.concat(argv, " "))
         return false, e:cat(re), table.concat(out)
     elseif rc ~= 0 then
-        e = err.new("git command %q failed with exit status %d", cmd, rc)
+        e = err.new("git command %q failed with exit status %d",
+            table.concat(argv, " "), rc)
         for _,v in ipairs(fifo) do
             e:append("%s", v)
         end
