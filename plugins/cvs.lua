@@ -44,6 +44,37 @@ plugin_descriptor = {
     exit = function (ctx) return true end,
 }
 
+local function cvs_tool(argv, workdir)
+    local rc, re, cvscmd, cvsflags, rsh
+
+    cvscmd, re = tools.get_tool("cvs")
+    if not cvscmd then
+        return false, re
+    end
+
+    cvscmd = { cvscmd }
+
+    cvsflags, re = tools.get_tool_flags("cvs")
+    if not cvsflags then
+        return false, re
+    end
+
+    for _,flag in ipairs(cvsflags) do
+        table.insert(cvscmd, flag)
+    end
+
+    for _,arg in ipairs(argv) do
+        table.insert(cvscmd, arg)
+    end
+
+    rsh, re = tools.get_tool("ssh")
+    if not rsh then
+        return false, re
+    end
+
+    return e2lib.callcmd_log(cvscmd, workdir, { CVS_RSH=rsh })
+end
+
 --- validate source configuration, log errors to the debug log
 -- @param info the info table
 -- @param sourcename the source name
@@ -105,187 +136,150 @@ function cvs.validate_source(info, sourcename)
     return true, nil
 end
 
---- build the cvsroot string
--- @param u url table
--- @return string: cvsroot, nil on error
--- @return an error object on failure
-local function mkcvsroot(u)
-    local cvsroot = nil
+--- Build the cvsroot string.
+-- @param info Info table.
+-- @param sourcename Source name.
+-- @return CVSROOT string or false on error.
+-- @return Error object on failure.
+local function mkcvsroot(info, sourcename)
+    local cvsroot, src, surl, u, re
+
+    src = info.sources[sourcename]
+
+    surl, re = info.cache:remote_url(src.server, src.cvsroot)
+    if not surl then
+        return false, e:cat(re)
+    end
+
+    u, re = url.parse(surl)
+    if not u then
+        return false, e:cat(re)
+    end
+
     if u.transport == "file" then
         cvsroot = string.format("/%s", u.path)
-    elseif (u.transport == "ssh") or
-        (u.transport == "rsync+ssh") or
+    elseif (u.transport == "ssh") or (u.transport == "rsync+ssh") or
         u.transport == "scp" then
         cvsroot = string.format("%s:/%s", u.server, u.path)
     elseif u.transport == "cvspserver" then
         cvsroot = string.format(":pserver:%s:/%s", u.server, u.path)
     else
-        return nil, err.new("cvs: unhandled transport: %s", u.transport)
+        return false, err.new("cvs: unhandled transport: %s", u.transport)
     end
-    return cvsroot, nil
-end
 
---- build the revision string containing branch or tag name
--- @param src table: source table
--- @param source_set string: source set
--- @return string: cvsroot, nil on error
--- @return an error object on failure
-local function mkrev(src, source_set)
-    local rev = nil
-    if source_set == "branch" or
-        (source_set == "lazytag" and src.tag == "^") then
-        rev = src.branch
-    elseif (source_set == "tag" or source_set == "lazytag") and
-        src.tag ~= "^" then
-        rev = src.tag
-    end
-    if not rev then
-        return nil, err.new("source set not allowed")
-    end
-    return rev, nil
+    return cvsroot
 end
 
 function cvs.fetch_source(info, sourcename)
-    local rc, re = cvs.validate_source(info, sourcename)
+    local rc, re, e, src, cvsroot, workdir, argv
+
+    rc, re = cvs.validate_source(info, sourcename)
     if not rc then
         return false, re
     end
-    local e = err.new("fetching source failed: %s", sourcename)
-    local src = info.sources[ sourcename ]
-    local location = src.cvsroot
-    local server = src.server
-    local surl, re = info.cache:remote_url(server, location)
-    if not surl then
-        return false, e:cat(re)
-    end
-    local u, re = url.parse(surl)
-    if not u then
-        return false, e:cat(re)
-    end
-    local cmd = nil
-    local cvsroot, re = mkcvsroot(u)
+
+    e = err.new("fetching source failed: %s", sourcename)
+    src = info.sources[sourcename]
+
+    cvsroot, re = mkcvsroot(info, sourcename)
     if not cvsroot then
         return false, e:cat(re)
     end
-    -- always fetch the configured branch, as we don't know the build mode here.
-    local rev = src.branch
-    local rsh, re = tools.get_tool("ssh")
-    if not rsh then
-        return false, e:cat(re)
-    end
-    local cvstool, re = tools.get_tool("cvs")
-    if not cvstool then
-        return false, e:cat(re)
-    end
-    local cvsflags, re = tools.get_tool_flags("cvs")
-    if not cvsflags then
-        return false, e:cat(re)
-    end
+
     -- split the working directory into dirname and basename as some cvs clients
     -- don't like slashes (e.g. in/foo) in their checkout -d<path> argument
-    local dir = e2lib.dirname(src.working)
-    local base = e2lib.basename(src.working)
-    -- cd info.root && cvs -d cvsroot checkout -R [-r rev] -d working module
-    if rev == "HEAD" then
-        -- HEAD is a special case in cvs: do not pass -r 'HEAD' to cvs checkout
-        rev = ""
-    else
-        rev = string.format("-r %s", e2lib.shquote(rev))
+    workdir = e2lib.dirname(e2lib.join(info.root, src.working))
+
+    argv = {
+        "-d", cvsroot,
+        "checkout",
+        "-R",
+        "-d", e2lib.basename(src.working),
+    }
+
+    -- always fetch the configured branch, as we don't know the build mode here.
+    -- HEAD has special meaning to cvs
+    if src.branch ~= "HEAD" then
+        table.insert(argv, "-r")
+        table.insert(argv, src.branch)
     end
-    cmd = string.format("cd %s/%s && CVS_RSH=%s " ..
-    "%s %s -d %s checkout -R %s -d %s %s",
-    e2lib.shquote(info.root), e2lib.shquote(dir), e2lib.shquote(rsh),
-    e2lib.shquote(cvstool), cvsflags, e2lib.shquote(cvsroot),
-    rev, e2lib.shquote(base), e2lib.shquote(src.module))
-    local rc, re = e2lib.callcmd_log(cmd)
+
+    table.insert(argv, src.module)
+
+    rc, re = cvs_tool(argv, workdir)
     if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 function cvs.prepare_source(info, sourcename, source_set, buildpath)
-    local rc, re = cvs.validate_source(info, sourcename)
+    local rc, re, e, src, cvsroot, argv
+
+    rc, re = cvs.validate_source(info, sourcename)
     if not rc then
         return false, re
     end
-    local e = err.new("cvs.prepare_source failed")
-    local src = info.sources[ sourcename ]
-    local location = src.cvsroot
-    local server = src.server
-    local surl, re = info.cache:remote_url(server, location)
-    if not surl then
-        return false, e:cat(re)
-    end
-    local u, re = url.parse(surl)
-    if not u then
-        return false, e:cat(re)
-    end
-    local cvsroot, re = mkcvsroot(u)  -- XXX error checking
+
+    e = err.new("cvs.prepare_source failed")
+    src = info.sources[sourcename]
+
+    cvsroot, re = mkcvsroot(info, sourcename)
     if not cvsroot then
         return false, re
     end
-    local cmd = nil
+
     if source_set == "tag" or source_set == "branch" then
-        local rev = mkrev(src, source_set)
-        local rsh, re = tools.get_tool("ssh")
-        if not rsh then
-            return false, e:cat(re)
-        end
-        local cvstool, re = tools.get_tool("cvs")
-        if not cvstool then
-            return false, e:cat(re)
-        end
-        local cvsflags, re = tools.get_tool_flags("cvs")
-        if not cvsflags then
-            return false, e:cat(re)
+        argv = {
+            "-d", cvsroot,
+            "export", "-R",
+            "-d", src.name,
+            "-r",
+        }
+
+        if source_set == "branch" or
+            (source_set == "lazytag" and src.tag == "^") then
+            table.insert(argv, src.branch)
+        elseif (source_set == "tag" or source_set == "lazytag") and
+            src.tag ~= "^" then
+            table.insert(argv, src.tag)
+        else
+            return false, e:cat(err.new("source set not allowed"))
         end
 
-        -- cd buildpath && cvs -d cvsroot export -R -r rev module
-        cmd = string.format("cd %s && CVS_RSH=%s " ..
-        "%s %s -d %s export -R -r %s -d %s %s",
-        e2lib.shquote(buildpath), e2lib.shquote(rsh), e2lib.shquote(cvstool),
-        cvsflags, e2lib.shquote(cvsroot), e2lib.shquote(rev),
-        e2lib.shquote(src.name), e2lib.shquote(src.module))
+        table.insert(argv, src.module)
+
+        rc, re = cvs_tool(argv, buildpath)
+        if not rc or rc ~= 0 then
+            return false, e:cat(re)
+        end
     elseif source_set == "working-copy" then
-        -- cp -R info.root/src.working buildpath
-        cmd = string.format("cp -R %s/%s %s/%s",
-        e2lib.shquote(info.root), e2lib.shquote(src.working),
-        e2lib.shquote(buildpath), e2lib.shquote(src.name))
+        rc, re = e2lib.cp(e2lib.join(info.root, src.working),
+            e2lib.join(buildpath, src.name), true)
+        if not rc then
+            return false, e:cat(re)
+        end
     else
         return false, err.new("invalid build mode")
-    end
-    rc, re = e2lib.callcmd_log(cmd)
-    if not rc or rc ~= 0 then
-        return false, e:cat(re)
     end
     return true, nil
 end
 
 function cvs.update(info, sourcename)
-    local rc, re = cvs.validate_source(info, sourcename)
+    local rc, re, e, src, workdir, argv
+
+    rc, re = cvs.validate_source(info, sourcename)
     if not rc then
         return false, re
     end
-    local e = err.new("updating source '%s' failed", sourcename)
-    local src = info.sources[ sourcename ]
-    local working = string.format("%s/%s", info.root, src.working)
-    local rsh, re = tools.get_tool("ssh")
-    if not rsh then
-        return false, e:cat(re)
-    end
-    local cvstool, re = tools.get_tool("cvs")
-    if not cvstool then
-        return false, e:cat(re)
-    end
-    local cvsflags = tools.get_tool_flags("cvs")
-    if cvsflags then
-        return false, e:cat(re)
-    end
-    local cmd = string.format("cd %s && CVS_RSH=%s %s %s update -R",
-        e2lib.shquote(working), e2lib.shquote(rsh), e2lib.shquote(cvstool),
-        cvsflags)
-    rc, re = e2lib.callcmd_log(cmd)
+
+    e = err.new("updating source '%s' failed", sourcename)
+    src = info.sources[sourcename]
+
+    workdir = e2lib.join(info.root, src.working)
+
+    argv = { "update", "-R" }
+    rc, re = cvs_tool(argv, workdir)
     if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
