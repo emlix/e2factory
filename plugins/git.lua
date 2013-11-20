@@ -569,7 +569,10 @@ function git.toresult(info, sourcename, sourceset, directory)
     if sourceset == "tag" or sourceset == "branch" then
         local ref, tmpfn
 
-        ref = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
+        ref, re = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
+        if not ref then
+            return false, e:cat(re)
+        end
 
         tmpfn, re = e2lib.mktempfile()
         if not tmpfn then
