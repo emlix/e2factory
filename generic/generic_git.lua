@@ -757,16 +757,21 @@ function generic_git.verify_head_match_tag(gitwc, verify_tag)
     return true
 end
 
----
+--- Translate sourceset, branch and tag into a git ref.
+-- @param sourceset Source setting.
+-- @param branch Source branch.
+-- @param tag Source tag.
+-- @return git refs string, or false on error.
+-- @return Error object on failure.
 function generic_git.sourceset2ref(sourceset, branch, tag)
-    if sourceset == "branch" or
-        (sourceset == "lazytag" and tag == "^") then
+    if sourceset == "branch" or (sourceset == "lazytag" and tag == "^") then
         return string.format("refs/heads/%s", branch)
-    elseif sourceset == "tag" or
-        (sourceset == "lazytag" and tag ~= "^") then
+    elseif sourceset == "tag" or (sourceset == "lazytag" and tag ~= "^") then
         return string.format("refs/tags/%s", tag)
     end
-    return nil, "invalid sourceset"
+
+    return false, err.new("not a valid sourceset combination: %q %q %q",
+        sourceset, branch, tag)
 end
 
 --- Create a new git source repository.
