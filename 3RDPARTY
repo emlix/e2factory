@@ -8,3 +8,6 @@ LDoc and dependencies is used to generate developer documentation:
 
 Lua is used for e2factory as well as LDoc:
  - lua/lua-5.1.3
+
+SHA-1 implementation by Steve Reid:
+ - generic/sha1.c
