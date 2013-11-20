@@ -428,7 +428,7 @@ function generic_git.git_push1(gitdir, rurl, refspec)
     return true
 end
 
---- Git remote add. XXX: local to generic_git
+--- Git remote add.
 -- @param lurl string: local git repo
 -- @param rurl string: remote url
 -- @param name string: remote name
@@ -468,7 +468,7 @@ function generic_git.git_remote_add1(lurl, rurl, name)
     return true
 end
 
---- Add git remote. XXX: Local to to generic_git
+--- Add git remote.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
@@ -576,7 +576,7 @@ function generic_git.git_push(c, gitdir, server, location, refspec)
     return generic_git.git_push1(gitdir, rurl, refspec)
 end
 
---- Git config query. XXX: used only in git plugin
+--- Git config query.
 -- @param gitdir string: gitdir
 -- @param query string: query to pass to git config
 -- @return Value printed to stdout by git config, or false on error.
@@ -674,7 +674,7 @@ function generic_git.verify_remote_tag(gitdir, tag)
     return true
 end
 
---- Verify that the working copy is clean and matches HEAD. XXX: only in e2tool
+--- Verify that the working copy is clean and matches HEAD.
 -- @param gitwc Path to git working tree.
 -- @return True if the working copy is clean, false on any error.
 -- @return Error object on failure.
@@ -729,7 +729,7 @@ function generic_git.verify_clean_repository(gitwc)
     return true
 end
 
---- verify that HEAD matches the given tag. XXX: only used in e2tool
+--- verify that HEAD matches the given tag.
 -- @param gitwc Path to git work tree.
 -- @param verify_tag Git tag to verify.
 -- @return True on success, false on error and mismatch.
@@ -769,16 +769,15 @@ function generic_git.sourceset2ref(sourceset, branch, tag)
     return nil, "invalid sourceset"
 end
 
---- Create a new git source repository. XXX: only used in e2-new-source
+--- Create a new git source repository.
 -- @param c cache table
 -- @param lserver string: local server
 -- @param llocation string: working copy location on local server
 -- @param rserver string: remote server
 -- @param rlocation string: repository location on remote server
--- @param flags table of flags XXX: unused
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function generic_git.new_repository(c, lserver, llocation, rserver, rlocation, flags)
+function generic_git.new_repository(c, lserver, llocation, rserver, rlocation)
     local rc, re, e, lserver_url, lurl, targs, gitdir, argv
 
     e = err.new("setting up new git repository failed")
