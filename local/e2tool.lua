@@ -2023,7 +2023,7 @@ end
 -- @return bool
 -- @return an error object on failure
 local function verify_remote_fileid(info, file, fileid)
-    local rc, re
+    local rc, re, hc
     local e = err.new("error calculating remote file id for file: %s:%s",
     file.server, file.location)
     if not info.cache:cache_enabled(file.server) or
@@ -2075,7 +2075,15 @@ local function verify_remote_fileid(info, file, fileid)
             return nil, e:cat("parsing sha1sum output failed")
         end
     elseif u.transport == "file" then
-        remote_fileid, re = e2lib.sha1sum("/" .. u.path)
+        hc, re = hash.hash_start()
+        if not hc then
+            return false, e:cat(re)
+        end
+        rc, re = hash.hash_file(hc, e2lib.join("/", u.path))
+        if not rc then
+            return false, e:cat(re)
+        end
+        remote_fileid, re = hash.hash_finish(hc)
         if not remote_fileid then
             return false, e:cat(re)
         end
@@ -2096,7 +2104,15 @@ local function verify_remote_fileid(info, file, fileid)
             return false, e:cat(re)
         end
 
-        remote_fileid, re = e2lib.sha1sum(tmpfile)
+        hc, re = hash.hash_start()
+        if not hc then
+            return false, e:cat(re)
+        end
+        rc, re = hash.hash_file(hc, tmpfile)
+        if not rc then
+            return false, e:cat(re)
+        end
+        remote_fileid, re = hash.hash_finish(hc)
         if not remote_fileid then
             return false, e:cat(re)
         end
