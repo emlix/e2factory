@@ -1192,12 +1192,14 @@ end
 -- @table fdct
 -- @field dup File descriptor in the child process that should be replaced by
 --            this configuration.
--- @field istype "readfo" denotes
+-- @field istype Describes the type of fdct. Can be either "readfo" or
+--               "writefunc". For details, check their respective pseudo-tables.
 -- @see fdct_readfo
+-- @see fdct_writefunc
 
 --- File descriptor configuration table - readfo. This is an extension to
 -- fdct for documentation purposes. It's not a separate table. When istype is
---"readfo", the following field are expected in addition to ones in fdct.
+-- "readfo", the following field are expected in addition to ones in fdct.
 -- The file object is used as an input to the child.
 -- @table fdct_readfo
 -- @field file Readable file object.
