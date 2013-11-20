@@ -258,9 +258,8 @@ local function e2_new_source(arg)
         -- local
         local lserver = info.root_server_name
         local llocation = string.format("in/%s/.git", name)
-        local flags = {}
         local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
-        rserver, rlocation, flags)
+            rserver, rlocation)
         if not rc then
             return false, re
         end
