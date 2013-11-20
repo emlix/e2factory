@@ -219,7 +219,7 @@ local function e2_install_e2(arg)
        return false, e:cat(re)
     end
     local cmd = {
-        "make",
+        buildconfig.MAKE,
         "PREFIX="..buildconfig.PREFIX,
         "BINDIR="..buildconfig.BINDIR,
         "local",

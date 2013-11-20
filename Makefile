@@ -51,6 +51,7 @@ buildconfig.lua: Makefile make.vars
 	echo 'buildconfig.SYSCONFDIR="$(SYSCONFDIR)"' >>$@
 	echo 'buildconfig.E2="$(E2)"' >>$@
 	echo 'buildconfig.LUA="$(LUA)"' >>$@
+	echo 'buildconfig.MAKE="$(MAKE)"' >> $@
 	echo 'buildconfig.MAJOR="$(MAJOR)"' >>$@
 	echo 'buildconfig.MINOR="$(MINOR)"' >>$@
 	echo 'buildconfig.PATCHLEVEL="$(PATCHLEVEL)"' >>$@
