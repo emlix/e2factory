@@ -34,44 +34,54 @@ local eio = require("eio")
 local err = require("err")
 local strict = require("strict")
 local trace = require("trace")
-require("sha1")
+local lsha1 = require("lsha1")
 
---- create a hash context
--- @return a hash context object, or nil on error
--- @return nil, an error string on error
+--- Create a hash context.
+-- @return Hash context object or false on error.
+-- @return Error object on failure.
 function hash.hash_start()
-    local hc = {}
+    local errstring, hc
+    hc = {}
 
-    hc._ctx = sha1.sha1_init()
+    hc._ctx, errstring = lsha1.init()
+    if not hc._ctx then
+        return false, err.new("initializing SHA1 context failed: %s", errstring)
+    end
     hc._data = ""
-    hc._datalen = 0
 
     return strict.lock(hc)
 end
 
---- add hash data
+--- Add data to hash context.
 -- @param hc the hash context
 -- @param data string: data
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function hash.hash_append(hc, data)
-    assert(type(hc) == "table" and type(hc._ctx) == "userdata")
-    assert(type(data) == "string")
+    local rc, errstring
 
     hc._data = hc._data .. data
-    hc._datalen = hc._datalen + string.len(data)
 
     -- Consume data and update hash whenever 64KB are available
-    if hc._datalen >= 64*1024 then
-        hc._ctx:update(hc._data)
+    if #hc._data >= 64*1024 then
+        rc, errstring = lsha1.update(hc._ctx, hc._data)
+        if not rc then
+            return false, err.new("%s", re)
+        end
         hc._data = ""
-        hc._datalen = 0
     end
+
+    return true
 end
 
---- hash a line
+--- Hash a line.
 -- @param hc the hash context
 -- @param data string: data to hash, a newline is appended
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @see hash_append
 function hash.hash_line(hc, data)
-    hash.hash_append(hc, data .. "\n")
+    return hash.hash_append(hc, data .. "\n")
 end
 
 --- Hash a file.
@@ -80,9 +90,6 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function hash.hash_file(hc, path)
-    assert(type(hc) == "table" and type(hc._ctx) == "userdata")
-    assert(type(path) == "string")
-
     local f, rc, re, buf
 
     f, re = eio.fopen(path, "r")
@@ -102,7 +109,12 @@ function hash.hash_file(hc, path)
             break
         end
 
-        hash.hash_append(hc, buf)
+        rc, re = hash.hash_append(hc, buf)
+        if not rc then
+            trace.enable()
+            eio.fclose(f)
+            return false, re
+        end
     end
 
     trace.enable()
@@ -115,17 +127,22 @@ function hash.hash_file(hc, path)
     return true
 end
 
---- add hash data
+--- Get checksum and release hash context.
 -- @param hc the hash context
--- @return the hash value, or nil on error
--- @return an error string on error
+-- @return SHA1 Checksum, or false on error.
+-- @return Error object on failure.
 function hash.hash_finish(hc)
-    assert(type(hc) == "table" and type(hc._ctx) == "userdata")
+    local rc, errstring, cs
 
-    hc._ctx:update(hc._data)
+    rc, errstring = lsha1.update(hc._ctx, hc._data)
+    if not rc then
+        return false, err.new("%s", errstring)
+    end
 
-    local cs = string.lower(hc._ctx:final())
-    assert(string.len(cs) == 40)
+    cs, errstring = lsha1.final(hc._ctx)
+    if not cs then
+        return false, err.new("%s", errstring)
+    end
 
     -- Destroy the hash context to catch errors
     for k,_ in pairs(hc) do
