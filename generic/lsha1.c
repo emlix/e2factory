@@ -23,6 +23,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,101 +34,92 @@
 
 #include "sha1.h"
 
-#define MODULE_NAME	"sha1"
-#define MODULE_VERSION	"1"
-#define LUA_OBJECT_ID	"sha1_ctx"
-
-/*
- * __tostring(sha1_ctx) generate a string representation
- * returns a string
- */
-static int sha1_tostring(lua_State *L)
+static int
+init(lua_State *L)
 {
-	SHA1_CTX *ctx;
-	ctx = luaL_checkudata(L, 1, LUA_OBJECT_ID);
-	lua_pushfstring(L, "%s (%p)", LUA_OBJECT_ID, ctx);
+	SHA1_CTX *ctx = malloc(sizeof(SHA1_CTX));
+	if (ctx == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		return 2;
+	}
+
+	SHA1Init(ctx);
+	lua_pushlightuserdata(L, ctx);
 	return 1;
 }
 
-/*
- * update(sha1_ctx, string) update a sha1 context with data from string
- * returns bool
- */
-static int sha1_update(lua_State *L)
+static int
+update(lua_State *L)
 {
 	const char *s;
 	size_t len;
 	SHA1_CTX *ctx;
-	ctx = luaL_checkudata(L, 1, LUA_OBJECT_ID);
-	s = luaL_checklstring(L, 2, &len);
+
+	ctx = lua_touserdata(L, 1);
+	if (ctx == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "lsha1.update: missing sha1 context");
+		return 2;
+	}
+
+	s = lua_tolstring(L, 2, &len);
+	if (s == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "lsha1.update: data missing or of wrong type");
+		return 2;
+	}
+
 	SHA1Update(ctx, (unsigned char *)s, len);
-	return 0;
+	lua_pushboolean(L, 1);
+
+	return 1;
 }
 
-/*
- * final(sha1_ctx) finalizes the sha1 context
- * returns string: the digest
- */
-static int sha1_final(lua_State *L)
+static int
+final(lua_State *L)
 {
 	SHA1_CTX *ctx;
 	unsigned char digest[20];
 	char s[41];
 	int i;
-	ctx = luaL_checkudata(L, 1, LUA_OBJECT_ID);
-	memset(digest, 0, sizeof(digest));
+
+	ctx = lua_touserdata(L, 1);
+	if (ctx == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "lsha1.final: missing sha1 context");
+		return 2;
+	}
+
 	SHA1Final(digest, ctx);
-	for(i=0; i<20; i++) {
-		sprintf(&s[2*i], "%02X", digest[i]);
+
+	memset(ctx, 0, sizeof(SHA1_CTX));
+	free(ctx);
+
+	for (i = 0; i < 20; i++) {
+		snprintf(s + i*2, 2+1,  "%02x", digest[i]);
 	}
 	lua_pushstring(L, s);
+
 	return 1;
 }
 
-static const luaL_reg sha1_methods[] =
-{
-	{"update",		sha1_update},
-	{"final",		sha1_final},
-	{NULL,			NULL}
+static luaL_reg lib[] = {
+	{ "init",	init },
+	{ "update",	update },
+	{ "final",	final },
+	{ NULL,		NULL }
 };
 
-static const luaL_reg sha1_meta[] =
+int luaopen_lsha1(lua_State *L)
 {
-	{"__tostring",    sha1_tostring},
-	{NULL,			NULL}
-};
+	luaL_Reg *next;
 
-/*
- * init() initialize a sha1 context
- * returns sha1_ctx
- */
-static int sha1_init(lua_State *L)
-{
-	SHA1_CTX *ctx = (SHA1_CTX *)lua_newuserdata(L, sizeof(SHA1_CTX));
-	SHA1Init(ctx);
-
-	if(luaL_newmetatable(L, LUA_OBJECT_ID)) {
-		luaL_register(L, 0, sha1_meta);
-		lua_pushliteral(L, "__index");
-		lua_newtable(L);
-		luaL_register(L, 0, sha1_methods);
-		lua_rawset(L, -3);
+	lua_newtable(L);
+	for (next = lib; next->name != NULL; next++) {
+		lua_pushcfunction(L, next->func);
+		lua_setfield(L, -2, next->name);
 	}
-	lua_setmetatable(L, -2);
-	return 1;
-}
 
-static const luaL_reg R[] =
-{
-	{"sha1_init",		sha1_init},
-	{NULL,			NULL}
-};
-
-LUALIB_API int luaopen_sha1(lua_State *L)
-{
-	luaL_register(L, MODULE_NAME, R);
-	lua_pushliteral(L, "version");
-	lua_pushliteral(L, MODULE_VERSION);
-	lua_settable(L,-3);
 	return 1;
 }
