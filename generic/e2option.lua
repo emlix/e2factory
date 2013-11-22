@@ -194,7 +194,7 @@ local function defaultoptions()
             e2lib.abort(re)
         end
 
-        e2lib.finish(0)
+        e2lib.finish(rc)
     end,
     category)
 
@@ -416,8 +416,9 @@ function e2option.usage(rc)
     e2lib.finish(rc)
 end
 
---- Show the manpage of the current tool and exit the process.
--- @return This function does not return.
+--- Show the manpage for the current tool
+-- @return Return code of man viewer, or false on error.
+-- @return Error object on failure.
 function e2option.showtoolmanpage()
     local tool = toolname()
     local mpage = e2lib.join('man', 'man1', string.format('%s.1', tool))
@@ -481,9 +482,9 @@ function e2option.showtoolmanpage()
 
     table.insert(cmd, e2lib.shquote(mpage))
 
-    os.execute(table.concat(cmd, ' '))
+    local rc = os.execute(table.concat(cmd, ' '))
 
-    return true
+    return rc/256 -- XXX: os.execute
 end
 
 return strict.lock(e2option)
