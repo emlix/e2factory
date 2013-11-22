@@ -295,8 +295,18 @@ process_wait(lua_State *lua)
 		return 2;
 	}
 
+	if (!(WIFEXITED(status) || WIFSIGNALED(status))) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, "process terminated(?) due to unknown cause");
+		return 2;
+	}
+
 	lua_pushnumber(lua, WEXITSTATUS(status));
 	lua_pushnumber(lua, rc);
+	if (WIFSIGNALED(status)) {
+		lua_pushnumber(lua, WTERMSIG(status));
+		return 3;
+	}
 
 	return 2;
 }
