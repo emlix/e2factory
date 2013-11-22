@@ -50,14 +50,9 @@ local function e2(arg)
     local e2call = {}
     e2call.basename = e2lib.basename(arg[0])
 
-    local function quoteargs(argstr) -- probably has to do escaping?
-        if #argstr == 0 then return ""
-        else return "'" .. argstr .. "'" end
-    end
-
     if e2call.basename == "e2" and arg[1] and string.sub(arg[1], 1, 1) ~= "-" then
         e2call.toolname = "e2-" .. arg[1]
-        e2call.arg_string = quoteargs(table.concat(arg, "' '", 2))
+        e2call.argindex = 2
     elseif e2call.basename == "e2" then
         e2call.toolname = "e2"
         local opts, re = e2option.parse(arg)
@@ -71,7 +66,7 @@ local function e2(arg)
         return 0
     else
         e2call.toolname = e2call.basename
-        e2call.arg_string = quoteargs(table.concat(arg, "' '", 1))
+        e2call.argindex = 1
     end
 
     e2call.globaltool = buildconfig.TOOLDIR .. "/" .. e2call.toolname
@@ -80,42 +75,43 @@ local function e2(arg)
     end
 
     local env, cmd
+    cmd = { buildconfig.LUA }
+    env = {}
+
     if e2lib.stat(e2call.globaltool) then
         e2call.tool = e2call.globaltool
-        env = string.format("LUA_PATH='%s/?.lua' LUA_CPATH='%s/?.so'",
-        buildconfig.LIBDIR, buildconfig.LIBDIR)
-        cmd = string.format("%s %s %s %s", env, buildconfig.LUA, e2call.tool,
-        e2call.arg_string)
-    elseif not root then
-        return false, err.new("%s is not a global tool and we're not in a project environment", e2call.toolname)
+        env.LUA_PATH = string.format("%s/?.lua", buildconfig.LIBDIR)
+        env.LUA_CPATH= string.format("%s/?.so", buildconfig.LIBDIR)
     elseif root and e2lib.stat(e2call.localtool) then
         e2call.tool = e2call.localtool
         -- Search for .lc files, the local e2 may be of an older version
-        env = "LUA_PATH='" .. root .. "/.e2/lib/e2/?.lc;" ..
-        root .. "/.e2/lib/e2/?.lua' " ..
-        "LUA_CPATH=" .. root .. "/.e2/lib/e2/?.so"
-        cmd = env .. " " ..
-        root .. "/.e2/bin/e2-lua " ..
-        e2call.tool .. " " .. e2call.arg_string
+        env.LUA_PATH = string.format("%s/.e2/lib/e2/?.lc;%s/.e2/lib/e2/?.lua",
+            root, root)
+        env.LUA_CPATH = string.format("%s/.e2/lib/e2/?.so", root)
+    elseif not root then
+        return false,
+            err.new("%s is not a global tool and we're not in a "..
+                "project environment", e2call.toolname)
     else
         return false,
             err.new("%s is neither local nor global tool", e2call.toolname)
     end
 
-    local function table_log(loglevel, t)
-        e2lib.log(loglevel, tostring(t))
-        for k,v in pairs(t) do
-            e2lib.log(loglevel, k .. "\t->\t" .. v)
+    table.insert(cmd, e2call.tool)
+    for i,a in ipairs(arg) do
+        if i >= e2call.argindex then
+            table.insert(cmd, a)
         end
     end
 
-    table_log(3, e2call)
-
     e2lib.log(3, "calling " .. e2call.tool)
-    e2lib.log(4, cmd)
-    local rc = os.execute(cmd)
 
-    return rc/256
+    rc, re = e2lib.callcmd(cmd, {}, nil, env)
+    if not rc then
+        return false, re
+    end
+
+    return rc
 end
 
 local rc, re = e2(arg)
