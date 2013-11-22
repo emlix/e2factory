@@ -48,7 +48,7 @@ local function editor(file)
 
     local rc
     rc = os.execute(cmd)
-    rc = rc / 256
+    rc = rc/256 -- XXX: os.execute
     if rc ~= 0 then
         return false, err.new("Editor finished with exit status %d", rc)
     end

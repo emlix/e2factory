@@ -186,7 +186,7 @@ local function display_man_page(doc)
     table.insert(cmd, e2lib.shquote(e2lib.join(doc.path, doc.filename)))
 
     rc = os.execute(table.concat(cmd, ' '))
-    rc = rc / 256
+    rc = rc/256 -- XXX: os.execute
     if rc ~= 0 then
         return false,
             err.new("man page viewer terminated with exit code %d", rc)

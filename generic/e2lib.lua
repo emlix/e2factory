@@ -1096,7 +1096,7 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
             end
             -- run the command
             rc = os.execute(cmds[cmdidx])
-            os.exit(rc/256)
+            os.exit(rc/256) -- XXX: os.execute
         end
 
         pids[pid] = cmdidx
