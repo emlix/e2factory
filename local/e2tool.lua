@@ -1952,22 +1952,29 @@ local function projid(info)
     return info.projid
 end
 
---- hashcache write.
+--- Write out hashcache file.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function hashcache_write(info)
-    local e = err.new("writing hash cache file")
-    local f, msg = io.open(info.hashcache_file, "w")
-    if not f then
-        return false, e:append(msg)
-    end
-    f:write("return {\n")
+    local rc, re, e, out
+
+    out = { "return {\n" }
     for k,hce in pairs(info.hashcache) do
-        f:write(string.format(
-            "[%q] = { hash=%q, mtime=%d, mtime_nsec=%d, ctime=%d, ctime_nsec=%d, size=%d, dev=%d, ino=%d },\n",
+        table.insert(out, string.format(
+            "[%q] = { hash=%q, mtime=%d, mtime_nsec=%d, ctime=%d, " ..
+            "ctime_nsec=%d, size=%d, dev=%d, ino=%d },\n",
             k, hce.hash, hce.mtime, hce.mtime_nsec,
             hce.ctime, hce.ctime_nsec, hce.size, hce.dev, hce.ino))
     end
-    f:write("}\n")
-    f:close()
+    table.insert(out, "}\n")
+
+    rc, re = eio.file_write(info.hashcache_file, table.concat(out))
+    if not rc then
+        e = err.new("writing hash cache file")
+        return false, e:cat(re)
+    end
+
     return true
 end
 
