@@ -32,6 +32,7 @@ local e2tool = {}
 local e2lib = require("e2lib")
 local eio = require("eio")
 local err = require("err")
+local digest = require("digest")
 local scm = require("scm")
 local tools = require("tools")
 local environment = require("environment")
@@ -2063,34 +2064,29 @@ local function verify_remote_fileid(info, file, fileid)
 
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
-        local cmd = "sha1sum"
-        local ssh, re = tools.get_tool("ssh")
-        if not ssh then
+        local argv, stdout, dt, sha1sum_remote
+
+        sha1sum_remote =  { "sha1sum", e2lib.join("/", u.path) }
+        rc, re, stdout = e2lib.ssh_remote_cmd(u, sha1sum_remote)
+        if not rc then
             return false, e:cat(re)
         end
 
-        local retcmd = string.format("%s %s ",
-        e2lib.shquote(ssh), e2lib.shquote(u.server))
-
-        retcmd = retcmd .. e2lib.shquote(string.format("%s /%s",
-        e2lib.shquote(cmd), e2lib.shquote(u.path)))
-
-        local p = io.popen(retcmd, "r")
-        if not p then
+        dt, re = digest.parsestring(stdout)
+        if not dt then
             return false, e:cat(re)
         end
 
-        local out = p:read("*l")
-        p:close()
-        if not out then
-            return false, e:cat(re)
+        for k,dt_entry in ipairs(dt) do
+            if dt_entry.name == e2lib.join("/", u.path) then
+                remote_fileid = dt_entry.checksum
+                break;
+            end
         end
 
-        local filename
-        remote_fileid, filename = out:match("(%S+)  (%S+)")
-        e2lib.logf(1, "remote_fileid=%s filename=%s", remote_fileid, tostring(filename))
-        if type(remote_fileid) ~= "string" then
-            return nil, e:cat("parsing sha1sum output failed")
+        if #remote_fileid ~= digest.SHA1_LEN then
+            return false,
+                e:cat(err.new("Could not extract digest from digest table"))
         end
     elseif u.transport == "file" then
         hc, re = hash.hash_start()
