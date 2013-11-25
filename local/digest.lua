@@ -81,8 +81,7 @@ digest.SHA1_LEN = 40
 -- @see dt
 -- @see dt_entry
 function digest.parse(filename)
-    assert(type(filename) == "string")
-    local e, rc, re, fh
+    local rc, re, e, fh, buf, data, dt
 
     e = err.new("error parsing message digest file %q", filename)
 
@@ -91,27 +90,132 @@ function digest.parse(filename)
         return false, e:cat(re)
     end
 
-    local dt, line, linenr, checksum, filenm
-
-    dt = digest.new()
-    linenr = 0
+    data = ""
     while true do
-        linenr = linenr + 1
-        line, re = eio.readline(fh)
-        if not line then
+        buf, re = eio.fread(fh, 64*1024)
+        if not buf then
             eio.fclose(fh)
             return false, e:cat(re)
-        elseif line == "" then
+        elseif buf == "" then
             break
         end
 
-        -- XXX: This is a pretty naive way to parse the file format.
-        -- Replace it with something more robust.
-        checksum, filenm = line:match("^([0-9a-z]+)  (%S+)%s*$")
-        if not checksum or not filenm then
-            eio.fclose(fh)
-            return false, e:append("could not parse file format in line %d",
-                linenr)
+        data = data .. buf
+    end
+
+    rc, re = eio.fclose(fh)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    dt, re = digest.parsestring(data)
+    if not dt then
+        return false, e:cat(re)
+    end
+
+    return dt
+end
+
+--- Parse a digest line, respecting spaces in file name.
+-- @param line Digest line, including newline at the end.
+-- @return Checksum string or false on error.
+-- @return Filename string or error object on failure.
+local function parse_line(line)
+    local function ishex(c)
+        if c >= "0" and c <= "9" then
+            return true
+        elseif c >= "a" and c <= "f" then
+            return true
+        elseif c >= "A" and c <= "F" then
+            return true
+        end
+        return false
+    end
+
+    local char, state, cs, fn
+
+    state = "checksum"
+    cs = ""
+    fn = ""
+    for pos = 1,#line do
+        char = string.sub(line, pos, pos)
+
+        if state == "checksum" then
+            if pos == 1 and char == "\\" then
+                return false,
+                    err.new("parser does not support escaped digests yet")
+            elseif ishex(char) then
+                cs = cs .. char
+            elseif char == " " then
+                state = "space"
+            else
+                return false,
+                    err.new("unexpected character %q at position %d in %q",
+                    char, pos, line)
+            end
+        elseif state == "space" then
+            -- we expect two spaces total
+            if char == " " then
+                state = "filename"
+            else
+                return false,
+                    err.new("unexpected character %q at position %d in %q",
+                    char, pos, line)
+            end
+        elseif state == "filename" then
+            if char == "\n" then
+                state = "finish"
+                break
+            else
+                fn = fn .. char
+            end
+        end
+    end
+
+    if state ~= "finish" then
+        return false, err.new("digest line parsing incomplete")
+    end
+
+    if #cs ~= digest.MD5_LEN and #cs ~= digest.SHA1_LEN then
+        return false, err.new("checksum of unknown length, unknown digest type")
+    end
+
+    if #fn == 0 then
+        return false, err.new("no filename found")
+    end
+
+    return cs, fn
+end
+
+--- Parse a digest buffer.
+-- Returns a new digest table filled with digest entries.
+--
+-- @param data String with contents of digest file.
+-- @return A digest table; false when an error is encountered.
+-- @return An error object on failure.
+-- @see dt
+-- @see dt_entry
+function digest.parsestring(data)
+    local init, pos, linenr, dt, line, checksum, filenm, e
+
+    init = 1
+    linenr = 1
+    dt = digest.new()
+    while true do
+        pos = string.find(data, "\n", init, true)
+        if not pos and init <= #data then
+            return false, err.new("under-terminated data at end of digest")
+        elseif not pos then
+            break
+        else
+            line = string.sub(data, init, pos)
+            init = pos + 1
+        end
+
+        checksum, filenm = parse_line(line)
+        if not checksum then
+            e = err.new("could not parse digest in line %d", linenr)
+            return false, e:cat(filenm)
         end
 
         if string.len(checksum) == digest.MD5_LEN then
@@ -119,14 +223,10 @@ function digest.parse(filename)
         elseif string.len(checksum) == digest.SHA1_LEN then
             digest.new_entry(dt, digest.SHA1, checksum, filenm)
         else
-            eio.fclose(fh)
-            return false, e:append("unknown digest type in line %d", linenr)
+            return false, err.new("unknown digest type in line %d", linenr)
         end
-    end
 
-    rc, re = eio.fclose(fh)
-    if not rc then
-        return false, e:cat(re)
+        linenr = linenr + 1
     end
 
     return dt
