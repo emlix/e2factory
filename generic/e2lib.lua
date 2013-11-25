@@ -2104,38 +2104,94 @@ end
 -- @param argv Command vector to run on the remote server.
 -- @return True on success, false on error.
 -- @return Error object on failure.
+-- @return Captured standard output of the command as a string.
 function e2lib.ssh_remote_cmd(u, argv)
-    local v, command
+    local command, rc, re, e, flags, args, stdout, stderr, devnull, fdctv
+
+    command, re = tools.get_tool("ssh")
+    if not command then
+        return false, re
+    end
+
+    command = { command }
+
+    flags, re = tools.get_tool_flags("ssh")
+    if not flags then
+        return false, re
+    end
+
+    for _,flag in ipairs(flags) do
+        table.insert(command, flag)
+    end
 
     if u.pass then
         return false, err.new("ssh_remote_cmd does not support password URL's")
     end
 
-    v = {}
     if u.port then
-        table.insert(v, "-p")
-        table.insert(v, u.port)
+        table.insert(command, "-p")
+        table.insert(command, u.port)
     end
 
     if u.user then
-        table.insert(v, "-l")
-        table.insert(v, u.user)
+        table.insert(command, "-l")
+        table.insert(command, u.user)
     end
 
     if not u.servername then
         return false,
             err.new("ssh_remote_cmd: no server name in URL %q", u.url)
     end
-    table.insert(v, u.servername)
+    table.insert(command, u.servername)
 
-    command = {}
+    args = {}
     for i, arg in ipairs(argv) do
-        table.insert(command, e2lib.shquote(arg))
+        table.insert(args, e2lib.shquote(arg))
+    end
+    table.insert(command, table.concat(args, " "))
+
+    stdout = {}
+    stderr = {}
+    local function capture_stdout(data)
+        table.insert(stdout, data)
     end
 
-    table.insert(v, table.concat(command, " "))
+    local function capture_stderr(data)
+        table.insert(stderr, data)
+    end
 
-    return e2lib.call_tool_argv("ssh", v)
+    devnull, re = eio.fopen("/dev/null", "r")
+    if not devnull then
+        return false, re
+    end
+
+    fdctv = {
+        { dup = eio.STDIN, istype = "readfo", file = devnull },
+        { dup = eio.STDOUT, istype = "writefunc",
+            linebuffer = true, callfn = capture_stdout },
+        { dup = eio.STDERR, istype = "writefunc",
+            linebuffer = true, callfn = capture_stderr },
+    }
+
+    rc, re = e2lib.callcmd(command, fdctv)
+    eio.fclose(devnull)
+    if not rc then
+        return false, re
+    end
+
+    if rc ~= 0 then
+        e = err.new("%q returned with exit code %d:",
+            table.concat(command, " "), rc)
+        for i = #stderr-3,#stderr do
+            if stderr[i] then
+                e:append("%s", stderr[i])
+            end
+        end
+
+        return false, e
+    end
+
+    return true, nil, table.concat(stdout)
 end
 
 --- call the scp command
