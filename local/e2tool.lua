@@ -2233,6 +2233,10 @@ function e2tool.buildid(info, resultname)
 end
 
 --- chroot group id.
+-- @param info Info table.
+-- @param groupname
+-- @return Chroot group ID or false on error.
+-- @return Error object on failure.
 local function chrootgroupid(info, groupname)
     local e = err.new("calculating chroot group id failed for group %s",
         groupname)
@@ -2314,7 +2318,10 @@ function e2tool.pbuildid(info, resultname)
 
     if r.chroot then
         for _,g in ipairs(r.chroot) do
-            local groupid = chrootgroupid(info, g)
+            local groupid, re = chrootgroupid(info, g)
+            if not groupid then
+                return false, e:cat(re)
+            end
             hash.hash_line(hc, g)
             hash.hash_line(hc, groupid)
         end
@@ -2403,13 +2410,6 @@ function e2tool.flush_buildids(info)
     for r, res in pairs(info.results) do
         res.buildid = nil
         res.pbuildid = nil
-    end
-end
-
---- calculate chrootids.
-local function calc_chrootids(info)
-    for _,grp in pairs(info.chroot.groups) do
-        chrootgroupid(info, grp.name)
     end
 end
 
