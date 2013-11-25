@@ -415,7 +415,7 @@ end
 
 local function runbuild(info, r, return_flags)
     local res = info.results[r]
-    local rc, re
+    local rc, re, out
     local e = err.new("build failed")
     e2lib.logf(3, "building %s ...", r)
     local e2_su, re = tools.get_tool("e2-su-2.2")
@@ -427,15 +427,17 @@ local function runbuild(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    local out, msg = io.open(res.build_config.buildlog, "w")
+
+    out, re = eio.fopen(res.build_config.buildlog, "w")
     if not out then
-        return false, e:cat(msg)
+        return false, e:cat(re)
     end
+
     local function logto(output)
         e2lib.log(3, output)
-        out:write(output)
-        out:flush()
+        eio.fwrite(out, output)
     end
+
     e2tool.set_umask(info)
 
     local cmd = {
@@ -451,16 +453,23 @@ local function runbuild(info, r, return_flags)
 
     rc, re = e2lib.callcmd_capture(cmd, logto)
     if not rc then
+        eio.fclose(out)
         return false, e:cat(re)
     end
     e2tool.reset_umask(info)
-    out:close()
     if rc ~= 0 then
+        eio.fclose(out)
         e = err.new("build script for %s failed with exit status %d", r, rc)
         e:append("see %s for more information", res.build_config.buildlog)
         return false, e
     end
-    return true, nil
+
+    rc, re = eio.fclose(out)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
 local function chroot_remove(info, r, return_flags)
@@ -601,54 +610,58 @@ end
 -- @return bool
 -- @return an error object on failure
 local function write_build_driver(info, r, destdir)
-    local res = info.results[r]
-    local rc, re
-    local e = err.new("generating build driver script failed")
-    local buildrc_file = e2lib.join(destdir, res.build_config.buildrc_file)
-    local buildrc_noinit_file =
-        e2lib.join(destdir, res.build_config.buildrc_noinit_file)
-    local build_driver_file =
-        e2lib.join(destdir, res.build_config.build_driver_file)
-    local bd = ""
-    bd=bd..string.format("source %s/env/builtin\n", res.build_config.Tc)
-    bd=bd..string.format("source %s/env/env\n", res.build_config.Tc)
-    local brc_noinit = bd
-    for x, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
-        if not x then
+    local rc, re, e, res, bd, buildrc_noinit_file, buildrc_file
+    local build_driver_file
+
+    e = err.new("generating build driver script failed")
+
+    res = info.results[r]
+
+    bd = {
+        string.format("source %s/env/builtin\n", res.build_config.Tc),
+        string.format("source %s/env/env\n", res.build_config.Tc)
+    }
+
+    -- write buildrc file (for interactive use, without sourcing init files)
+    buildrc_noinit_file = e2lib.join(destdir,
+        res.build_config.buildrc_noinit_file)
+    rc, re = eio.file_write(buildrc_noinit_file, table.concat(bd))
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    for fn, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
+        if not fn then
             return false, e:cat(re)
         end
 
-        if not e2lib.is_backup_file(x) then
-            bd=bd..string.format("source %s/init/%s\n", res.build_config.Tc, x)
+        if not e2lib.is_backup_file(fn) then
+            table.insert(bd, string.format("source %s/init/%s\n",
+                res.build_config.Tc, fn))
         end
     end
-    bd=bd..string.format("cd %s/build\n", res.build_config.Tc)
-    local brc = bd  -- the buildrc file
-    bd=bd..string.format("set\n")
-    bd=bd..string.format("cd %s/build\n", res.build_config.Tc)
-    bd=bd..string.format("source %s/script/build-script\n", res.build_config.Tc)
+    table.insert(bd, string.format("cd %s/build\n", res.build_config.Tc))
+
     -- write buildrc file (for interactive use)
-    local f, re = io.open(buildrc_file, "w")
-    if not f then
+    buildrc_file = e2lib.join(destdir, res.build_config.buildrc_file)
+    rc, re = eio.file_write(buildrc_file, table.concat(bd))
+    if not rc then
         return false, e:cat(re)
     end
-    f:write(brc)
-    f:close()
-    -- write buildrc file (for interactive use, without sourcing init files)
-    local f, re = io.open(buildrc_noinit_file, "w")
-    if not f then
-        return false, e:cat(re)
-    end
-    f:write(brc_noinit)
-    f:close()
+
+    table.insert(bd, "set\n")
+    table.insert(bd, string.format("cd %s/build\n", res.build_config.Tc))
+    table.insert(bd, string.format("source %s/script/build-script\n",
+        res.build_config.Tc))
+
     -- write the build driver
-    local f, re = io.open(build_driver_file, "w")
-    if not f then
+    build_driver_file = e2lib.join(destdir, res.build_config.build_driver_file)
+    rc, re = eio.file_write(build_driver_file, table.concat(bd))
+    if not rc then
         return false, e:cat(re)
     end
-    f:write(bd)
-    f:close()
-    return true, nil
+
+    return true
 end
 
 --- write the environment script for a result into a file
@@ -657,17 +670,20 @@ end
 -- @return bool
 -- @return an error object on failure
 local function write_environment_script(env, file)
-    local e = err.new("writing environment script")
-    local f, msg = io.open(file, "w")
-    if not f then
-        e:append("%s: %s", file, msg)
-        return false, e
-    end
+    local rc, re, e, out
+
+    out = {}
     for var, val in env:iter() do
-        f:write(string.format("%s=\"%s\"\n", var, val))
+        table.insert(out, string.format("%s=%s\n", var, e2lib.shquote(val)))
     end
-    f:close()
-    return true, nil
+
+    rc, re = eio.file_write(file, table.concat(out))
+    if not rc then
+        e = err.new("writing environment script")
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
 local function sources(info, r, return_flags)
@@ -1107,6 +1123,7 @@ end
 -- @return bool
 -- @return an error object on failure
 local function collect_project(info, r, return_flags)
+    local out
     local res = info.results[r]
     if not res.collect_project then
         -- nothing to be done here...
@@ -1137,24 +1154,26 @@ local function collect_project(info, r, return_flags)
             return false, e:cat(re)
         end
     end
+
     -- write project configuration
+    out = {
+        string.format("name='%s'\n", info.project.name),
+        string.format("release_id='%s'\n", info.project.release_id),
+        string.format("default_results='%s'\n",
+            res.collect_project_default_result),
+        string.format("chroot_arch='%s'\n", info.project.chroot_arch)
+    }
+
     local file, destdir
-    local lines = ""
     destdir = e2lib.join(res.build_config.T, "project/proj")
     file = e2lib.join(destdir, "config")
-    local f, msg = io.open(file, "w")
-    if not f then
+    rc, re = eio.file_write(file, table.concat(out))
+    if not rc then
         return false, e:cat(re)
     end
-    f:write(string.format("name='%s'\n", info.project.name))
-    f:write(string.format("release_id='%s'\n", info.project.release_id))
-    f:write(string.format("default_results='%s'\n",
-    res.collect_project_default_result))
-    f:write(string.format("chroot_arch='%s'\n",
-    info.project.chroot_arch))
-    f:close()
+
     -- files from the project
-    local destdir = e2lib.join(res.build_config.T, "project/.e2/bin")
+    destdir = e2lib.join(res.build_config.T, "project/.e2/bin")
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
@@ -1171,11 +1190,8 @@ local function collect_project(info, r, return_flags)
             return false, e:cat(re)
         end
 
-        local makefile, msg = io.open(e2lib.join(destdir, "Makefile"), "w")
-        if not makefile then
-            return false, e:cat(msg)
-        end
-        makefile:write(string.format("place:\n"))
+        out = { "place:\n" }
+
         for _,file in pairs(grp.files) do
             local cache_flags = {}
             rc, re = info.cache:fetch_file(file.server,
@@ -1193,7 +1209,7 @@ local function collect_project(info, r, return_flags)
                 if not rc then
                     return false, e:cat(re)
                 end
-                makefile:write(string.format("\tsha1sum -c '%s'\n",
+                table.insert(out, string.format("\tsha1sum -c '%s'\n",
                     e2lib.basename(checksum_file)))
             end
             local tartype
@@ -1201,12 +1217,16 @@ local function collect_project(info, r, return_flags)
             if not tartype then
                 return false, e:cat(re)
             end
-            makefile:write(string.format(
-                "\te2-su-2.2 extract_tar_2_3 $(chroot_base) "..
-                "\"%s\" '%s'\n",
+            table.insert(out, string.format(
+                "\te2-su-2.2 extract_tar_2_3 $(chroot_base) \"%s\" '%s'\n",
                 tartype, e2lib.basename(file.location)))
         end
-        makefile:close()
+
+        local makefile = e2lib.join(destdir, "Makefile")
+        rc, re = eio.file_write(makefile, table.concat(out))
+        if not rc then
+            return false, e:cat(re)
+        end
     end
     -- project/licences/<licence>/<files>
     for _,l in ipairs(res.collect_project_licences) do
@@ -1282,17 +1302,18 @@ local function collect_project(info, r, return_flags)
             return false, e:cat(re)
         end
         -- generate config
+        out = {
+            string.format("### generated by e2 for result %s ###\n", n),
+            string.format("CHROOT='%s'\n", table.concat(rn.chroot, " ")),
+            string.format("DEPEND='%s'\n", table.concat(rn.depends, " ")),
+            string.format("SOURCE='%s'\n", table.concat(rn.sources, " ")),
+        }
+
         local config = e2lib.join(destdir, "config")
-        local f, msg = io.open(config, "w")
-        if not f then
-            e:cat(err.new("%s: %s", config, msg))
-            return false, e
+        rc, re = eio.file_write(config, table.concat(out))
+        if not rc then
+            return false, e:cat(re)
         end
-        f:write(string.format("### generated by e2 for result %s ###\n", n))
-        f:write(string.format("CHROOT='%s'\n", table.concat(rn.chroot, " ")))
-        f:write(string.format("DEPEND='%s'\n", table.concat(rn.depends, " ")))
-        f:write(string.format("SOURCE='%s'\n", table.concat(rn.sources, " ")))
-        f:close()
     end
     for _,s in ipairs(info.results[r].collect_project_sources) do
         local src = info.sources[s]
