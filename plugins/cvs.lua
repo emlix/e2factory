@@ -387,7 +387,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     -- <directory>/source/<sourcename>.tar.gz
     -- <directory>/makefile
     -- <directory>/licences
-    local rc, re
+    local rc, re, out
     local e = err.new("converting result")
     rc, re = scm.generic_source_check(info, sourcename, true)
     if not rc then
@@ -395,7 +395,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     end
     local src = info.sources[sourcename]
     -- write makefile
-    local makefile = "makefile"
+    local makefile = "Makefile"
     local source = "source"
     local sourcedir = string.format("%s/%s", directory, source)
     local archive = string.format("%s.tar.gz", sourcename)
@@ -404,16 +404,16 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    local f, msg = io.open(fname, "w")
-    if not f then
-        return false, e:cat(msg)
+
+    out = string.format(
+        ".PHONY:\tplace\n\n"..
+        "place:\n"..
+        "\ttar xzf \"%s/%s\" -C \"$(BUILD)\"\n", source, archive)
+
+    rc, re = eio.file_write(fname, out)
+    if not rc then
+        return false, e:cat(re)
     end
-    f:write(string.format(
-    ".PHONY:\tplace\n\n"..
-    "place:\n"..
-    "\ttar xzf \"%s/%s\" -C \"$(BUILD)\"\n",
-    source, archive))
-    f:close()
     -- export the source tree to a temporary directory
     local tmpdir, re = e2lib.mktempdir()
     if not tmpdir then

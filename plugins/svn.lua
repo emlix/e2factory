@@ -373,7 +373,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     end
     local src = info.sources[sourcename]
     -- write makefile
-    local makefile = "makefile"
+    local makefile = "Makefile"
     local source = "source"
     local sourcedir = e2lib.join(directory, source)
     local archive = string.format("%s.tar.gz", sourcename)
@@ -382,16 +382,11 @@ function svn.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    local f, msg = io.open(fname, "w")
-    if not f then
-        return false, e:cat(msg)
-    end
-    f:write(string.format(
-    ".PHONY:\tplace\n\n"..
-    "place:\n"..
-    "\ttar xzf \"%s/%s\" -C \"$(BUILD)\"\n",
-    source, archive))
-    f:close()
+    local out = string.format(
+        ".PHONY:\tplace\n\n"..
+        "place:\n"..
+        "\ttar xzf \"%s/%s\" -C \"$(BUILD)\"\n", source, archive)
+    rc, re = eio.file_write(fname, out)
     -- export the source tree to a temporary directory
     local tmpdir, re = e2lib.mktempdir()
     if not tmpdir then

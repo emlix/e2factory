@@ -555,7 +555,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         return false, e:cat(re)
     end
     local src = info.sources[sourcename]
-    local makefile = "makefile"
+    local makefile = "Makefile"
     local source = "source"
     local sourcedir = string.format("%s/%s", directory, source)
     local archive = string.format("%s.tar.gz", src.name)
@@ -620,16 +620,14 @@ function git.toresult(info, sourcename, sourceset, directory)
         sourceset)
     end
     local fname  = string.format("%s/%s", directory, makefile)
-    local f, msg = io.open(fname, "w")
-    if not f then
-        return false, e:cat(msg)
+    local out = string.format(
+        ".PHONY:\tplace\n\n"..
+        "place:\n"..
+        "\ttar xzf \"%s/%s\" -C \"$(BUILD)\"\n", source, archive)
+    rc, re = eio.file_write(fname, out)
+    if not rc then
+        return false, e:cat(re)
     end
-    f:write(string.format(
-    ".PHONY:\tplace\n\n"..
-    "place:\n"..
-    "\ttar xzf \"%s/%s\" -C \"$(BUILD)\"\n",
-    source, archive))
-    f:close()
     -- write licences
     local destdir = string.format("%s/licences", directory)
     local fname = string.format("%s/%s.licences", destdir, archive)

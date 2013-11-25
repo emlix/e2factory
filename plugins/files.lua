@@ -519,22 +519,17 @@ end
 -- @return Boolean, true on success.
 -- @return An error object on failure.
 function files.toresult(info, sourcename, sourceset, directory)
-    local rc, re
+    local rc, re, out
     local e = err.new("converting result failed")
     rc, re = files.validate_source(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
     local s = info.sources[sourcename]
-    local makefile = "makefile" -- name of the makefile
     local source = "source"     -- directory to store source files in
-    local fname = string.format("%s/%s", directory, makefile)
-    local f, msg = io.open(fname, "w")
-    if not f then
-        return false, e:cat(msg)
-    end
+    local makefile = e2lib.join(directory, "Makefile")
 
-    f:write(string.format(".PHONY: place\n\nplace:\n"))
+    out = { ".PHONY: place\n\nplace:\n" }
     for _,file in ipairs(s.file) do
         e2lib.logf(4, "export file: %s", file.location)
         local destdir = string.format("%s/%s", directory, source)
@@ -558,9 +553,8 @@ function files.toresult(info, sourcename, sourceset, directory)
             if not rc then
                 return false, e:cat(re)
             end
-            f:write(string.format(
-            "\tcd source && sha1sum -c '%s'\n",
-            e2lib.basename(checksum_file)))
+            table.insert(out, string.format("\tcd source && sha1sum -c '%s'\n",
+                e2lib.basename(checksum_file)))
         end
         if file.unpack then
             local physpath = e2lib.join(destdir, e2lib.basename(file.location))
@@ -577,16 +571,15 @@ function files.toresult(info, sourcename, sourceset, directory)
                 return false, e:cat(re)
             end
 
-            f:write(string.format("\t%s", toolname))
+            table.insert(out, string.format("\t%s", toolname))
             for _,v in ipairs(toolargv) do
-                f:write(string.format(" %s", e2lib.shquote(v)))
+                table.insert(out, string.format(" %s", e2lib.shquote(v)))
             end
-            f:write("\n")
+            table.insert(out, "\n")
 
             if file.unpack ~= sourcename then
-                f:write(string.format(
-                "\tln -s %s $(BUILD)/%s\n", file.unpack,
-                sourcename))
+                table.insert(out, string.format("\tln -s %s $(BUILD)/%s\n",
+                    file.unpack, sourcename))
             end
         end
         if file.copy then
@@ -600,12 +593,12 @@ function files.toresult(info, sourcename, sourceset, directory)
             -- is a directory?
             --
             to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
-            f:write(string.format('\tif [ test -d %s ]; then \\\n', to))
+            table.insert(out, string.format('\tif [ test -d %s ]; then \\\n', to))
 
             to = string.format('"$(BUILD)"%s',
                 e2lib.shquote(e2lib.join(destdir, destname)))
-            f:write(string.format('\t\tcp %s %s; \\\n', from, to))
-            f:write(string.format('\telse \\\n'))
+            table.insert(out, string.format('\t\tcp %s %s; \\\n', from, to))
+            table.insert(out, string.format('\telse \\\n'))
             --
             -- not a directory
             --
@@ -613,19 +606,17 @@ function files.toresult(info, sourcename, sourceset, directory)
                 file.location, "no")
 
             to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
-            f:write(string.format('\t\tmkdir -p %s; \\\n', to))
+            table.insert(out, string.format('\t\tmkdir -p %s; \\\n', to))
 
             to = string.format('"$(BUILD)"%s',
                 e2lib.shquote(e2lib.join(destdir, destname)))
-            f:write(string.format('\t\tcp %s %s; \\\n', from, to))
-            f:write('\tfi\n')
+            table.insert(out, string.format('\t\tcp %s %s; \\\n', from, to))
+            table.insert(out, '\tfi\n')
         end
         if file.patch then
-            f:write(string.format(
-            "\tpatch -p%s -d \"$(BUILD)/%s\" "..
-            "-i \"$(shell pwd)/%s/%s\"\n",
-            file.patch, sourcename, source,
-            e2lib.basename(file.location)))
+            table.insert(out, string.format(
+                "\tpatch -p%s -d \"$(BUILD)/%s\" -i \"$(shell pwd)/%s/%s\"\n",
+                file.patch, sourcename, source, e2lib.basename(file.location)))
         end
         -- write licences
         local destdir = string.format("%s/licences", directory)
@@ -642,8 +633,13 @@ function files.toresult(info, sourcename, sourceset, directory)
         end
         e2lib.logf(4, "export file: %s done", file.location)
     end
-    f:close()
-    return true, nil
+
+    rc, re = eio.file_write(makefile, table.concat(out))
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
 --- Check for working copy availability.
