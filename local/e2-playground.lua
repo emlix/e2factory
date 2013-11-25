@@ -33,6 +33,7 @@
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local e2build = require("e2build")
+local eio = require("eio")
 local err = require("err")
 local e2option = require("e2option")
 local policy = require("policy")
@@ -99,21 +100,24 @@ local function e2_playground(arg)
     local res = info.results[r]
     local bc = res.build_config
     local profile = string.format("%s/%s", bc.c, bc.profile)
-    local f, msg = io.open(profile, "w")
-    if not f then
-        return false, e:cat(msg)
-    end
-    f:write(string.format("export TERM='%s'\n", e2lib.globals.osenv["TERM"]))
-    f:write(string.format("export HOME=/root\n"))
+    local out = {}
+    table.insert(out, string.format("export TERM='%s'\n",
+        e2lib.globals.osenv["TERM"]))
+    table.insert(out, string.format("export HOME=/root\n"))
     if opts.runinit then
-        f:write(string.format("source %s/script/%s\n", bc.Tc, bc.buildrc_file))
-    else
-        f:write(string.format("function runinit() { source %s/script/%s; }\n",
+        table.insert(out, string.format("source %s/script/%s\n",
             bc.Tc, bc.buildrc_file))
-            f:write(string.format("source %s/script/%s\n", bc.Tc,
-            bc.buildrc_noinit_file))
+    else
+        table.insert(out, string.format(
+            "function runinit() { source %s/script/%s; }\n",
+            bc.Tc, bc.buildrc_file))
+        table.insert(out, string.format("source %s/script/%s\n",
+            bc.Tc, bc.buildrc_noinit_file))
     end
-    f:close()
+    rc, re = eio.file_write(profile, table.concat(out))
+    if not rc then
+        return false, e:cat(re)
+    end
     local command = nil
     if opts.command then
         command = string.format("/bin/bash --rcfile '%s' -c '%s'", bc.profile,
