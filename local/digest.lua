@@ -129,8 +129,6 @@ function digest.parse(filename)
         return false, e:cat(re)
     end
 
-    fd:close()
-
     return dt
 end
 
@@ -336,32 +334,23 @@ end
 function digest.write(dt, filename)
     assert(type(dt) == "table")
     assert(type(filename) == "string")
+    local rc, re, e, out
 
-    local e = err.new("error writing message digest file '%s'", filename)
+    e = err.new("error writing message digest file '%s'", filename)
 
-    local rc, re = digest.sanity_check(dt)
+    rc, re = digest.sanity_check(dt)
     if not rc then
         return false, e:cat(re)
     end
 
-    local fd, re = io.open(filename, "w")
-    if not fd then
-        return false, e:append("%s", re)
-    end
-
-    local line = ""
+    out = {}
     for pos, entry in ipairs(dt) do
-        line = string.format("%s  %s\n", entry.checksum, entry.name)
-        rc, re = fd:write(line)
-        if not rc then
-            fd:close()
-            return false, e:append("%s", re)
-        end
+        table.insert(out, string.format("%s  %s\n", entry.checksum, entry.name))
     end
 
-    rc, re = fd:close()
+    rc, re = eio.file_write(filename, table.concat(out))
     if not rc then
-        return false, e:append("%s", re)
+        return false, e:cat(re)
     end
 
     return true
