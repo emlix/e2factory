@@ -248,21 +248,32 @@ local function check_tab(tab, keys, inherit)
 end
 
 --- Open debug logfile.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function opendebuglogfile(info)
-    local rc, re = e2lib.mkdir_recursive(e2lib.join(info.root, "log"))
+    local rc, re, e, logfile, debuglogfile
+
+    rc, re = e2lib.mkdir_recursive(e2lib.join(info.root, "log"))
     if not rc then
-        local e = err.new("error making log directory")
+        e = err.new("error making log directory")
         return false, e:cat(re)
     end
-    local logfile = info.root .. "/log/debug.log"
-    local rc, re = e2lib.rotate_log(logfile)
-    local debuglogfile, msg = io.open(logfile, "w")
-    if not debuglogfile then
-        local e = err.new("error opening debug logfile")
-        return false, e:append(msg)
+    logfile = e2lib.join(info.root, "log/debug.log")
+    rc, re = e2lib.rotate_log(logfile)
+    if not rc then
+        return false, re
     end
+
+    debuglogfile, re = eio.fopen(logfile, "w")
+    if not debuglogfile then
+        e = err.new("error opening debug logfile")
+        return false, e:cat(re)
+    end
+
     e2lib.globals.debuglogfile = debuglogfile
-    return true, nil
+
+    return true
 end
 
 --- Load user configuration file.

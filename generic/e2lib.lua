@@ -583,12 +583,11 @@ function e2lib.log(level, msg)
 
         -- write out buffered messages first
         for _,m in ipairs(e2lib.globals.debuglogfilebuffer) do
-            e2lib.globals.debuglogfile:write(m)
+            eio.fwrite(e2lib.globals.debuglogfile, m)
         end
         e2lib.globals.debuglogfilebuffer = {}
 
-        e2lib.globals.debuglogfile:write(log_prefix .. msg .. "\n")
-        e2lib.globals.debuglogfile:flush()
+        eio.fwrite(e2lib.globals.debuglogfile, log_prefix .. msg .. "\n")
     else
         table.insert(e2lib.globals.debuglogfilebuffer, log_prefix .. msg .. "\n")
     end
@@ -671,6 +670,10 @@ function e2lib.cleanup()
     e2lib.rmtempfiles()
     if e2lib.globals.lock then
         e2lib.globals.lock:cleanup()
+    end
+
+    if e2lib.globals.debuglogfile then
+        eio.fclose(e2lib.globals.debuglogfile)
     end
 end
 
