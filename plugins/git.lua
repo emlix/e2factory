@@ -324,84 +324,91 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     if not rc then
         return false, e:cat(re)
     end
-    local gitdir = info.root .. "/" .. src.working .. "/.git/"
+    local gitdir = e2lib.join(info.root, src.working, ".git")
     if sourceset == "branch" or
         (sourceset == "lazytag" and src.tag == "^") then
+        local argv, work_tree
+
         rc, re = git.git_commit_id(info, sourcename, sourceset)
         if not rc then
             return false, e:cat(re)
         end
-        gitdir = string.format("%s/%s/.git", info.root, src.working)
-        local git = string.format("GIT_DIR=%s "..
-        "git archive --format=tar --prefix=%s/ refs/heads/%s",
-        e2lib.shquote(gitdir), e2lib.shquote(sourcename),
-        e2lib.shquote(src.branch))
-        local tar = string.format("tar -C %s -xf -", e2lib.shquote(buildpath))
-        rc, re = e2lib.callcmd_pipe({git, tar})
+
+        work_tree = e2lib.join(buildpath, sourcename)
+        rc, re = e2lib.mkdir_recursive(work_tree)
+        if not rc then
+            return e:cat(re)
+        end
+
+        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout")
+        table.insert(argv, "refs/heads/" .. src.branch)
+        table.insert(argv, "--")
+
+        rc, re = generic_git.git(argv)
         if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "tag" or
         (sourceset == "lazytag" and src.tag ~= "^") then
+        local argv, work_tree
+
         rc, re = git.git_commit_id(info, sourcename, sourceset)
         if not rc then
             return false, e:cat(re)
         end
-        gitdir = string.format("%s/%s/.git", info.root, src.working)
-        local git = string.format("GIT_DIR=%s "..
-        "git archive --format=tar --prefix=%s/ refs/tags/%s",
-        e2lib.shquote(gitdir), e2lib.shquote(sourcename), e2lib.shquote(src.tag))
-        local tar = string.format("tar -C %s -xf -", e2lib.shquote(buildpath))
-        rc, re = e2lib.callcmd_pipe({git, tar})
+
+        work_tree = e2lib.join(buildpath, sourcename)
+        rc, re = e2lib.mkdir_recursive(work_tree)
+        if not rc then
+            return e:cat(re)
+        end
+
+        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout")
+        table.insert(argv, "refs/tags/" .. src.tag)
+        table.insert(argv, "--")
+
+        rc, re = generic_git.git(argv)
         if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
-        -- warn for empty working-copy
-        local working = string.format("%s/%s", info.root, src.working)
-        local empty = true
-        for f, re in e2lib.directory(working, false) do
+        local working, destdir, empty
+
+        working = e2lib.join(info.root, src.working)
+        destdir = e2lib.join(buildpath, sourcename)
+
+        rc, re = e2lib.mkdir_recursive(destdir)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        empty = true
+        for f, re in e2lib.directory(working, true) do
             if not f then
                 return false, e:cat(re)
             end
 
-            empty = false
-            break
+            if string.sub(f, 1, 1) ~= "." then
+                empty = false
+            end
+
+            if f ~= ".git" then
+                rc, re = e2lib.cp(e2lib.join(working, f), destdir, true)
+                if not rc then
+                    return false, e:cat(re)
+                end
+            end
         end
+
         if empty then
             e2lib.warnf("WOTHER", "in result: %s", src.name)
             e2lib.warnf("WOTHER", "working copy seems empty")
-        end
-        local dir = string.format("%s/%s", buildpath, sourcename)
-        local rc, re = e2lib.mkdir_recursive(dir)
-        if not rc then
-            return false, re
-        end
-        local tar, re = tools.get_tool("tar")
-        if not tar then
-            return false, e:cat(re)
-        end
-        local tarflags, re = tools.get_tool_flags("tar")
-        if not tarflags then
-            return false, e:cat(re)
-        end
-
-        tarflags = table.concat(tarflags, " ")
-
-        local cmd1 = string.format("%s %s -c -C %s/%s --exclude '.git' .",
-            e2lib.shquote(tar), tarflags, e2lib.shquote(info.root),
-            e2lib.shquote(src.working))
-        local cmd2 = string.format("%s %s -x -C %s/%s", e2lib.shquote(tar),
-            tarflags, e2lib.shquote(buildpath), e2lib.shquote(sourcename))
-        rc, re = e2lib.callcmd_pipe({ cmd1, cmd2 })
-        if not rc then
-            return false, e:cat(re)
         end
     else
         return false, err.new("invalid sourceset: %s", sourceset)
     end
 
-    return true, nil
+    return true
 end
 
 --- check if a working copy for a git repository is available
