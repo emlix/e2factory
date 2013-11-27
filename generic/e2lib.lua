@@ -444,6 +444,7 @@ function e2lib.init2()
 end
 
 --- Print a warning, composed by concatenating all arguments to a string.
+-- @param category
 -- @param ... any number of strings
 -- @return nil
 function e2lib.warn(category, ...)
@@ -452,6 +453,7 @@ function e2lib.warn(category, ...)
 end
 
 --- Print a warning.
+-- @param category
 -- @param format string: a format string
 -- @param ... arguments required for the format string
 -- @return nil
