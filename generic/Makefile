@@ -29,7 +29,7 @@ TOPLEVEL = ..
 
 include $(TOPLEVEL)/make.vars
 
-LUA_LIBS = strict.lua plugin.lua e2lib.lua
+LUA_LIBS = strict.lua plugin.lua e2lib.lua console.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
 LUA_LIBS += generic_git.lua eio.lua err.lua lock.lua errno.lua trace.lua
 SO_LIBS = lsha1.so leio.so le2lib.so
