@@ -574,32 +574,35 @@ function e2lib.log(level, msg)
     if level < 1 or level > 4 then
         e2lib.log(1, "Internal error: invalid log level")
     end
+
     if not msg then
         e2lib.log(1, "Internal error: calling log() without log message")
     end
+
     local log_prefix = "[" .. level .. "] "
-    -- remove end of line if it exists
-    if msg:match("\n$") then
-        msg = msg:sub(1, msg:len() - 1)
+
+    if string.sub(msg, -1) ~= "\n"  then
+        msg = msg.."\n"
     end
 
     if e2lib.globals.debuglogfile then
-
         -- write out buffered messages first
         for _,m in ipairs(e2lib.globals.debuglogfilebuffer) do
             eio.fwrite(e2lib.globals.debuglogfile, m)
         end
         e2lib.globals.debuglogfilebuffer = {}
 
-        eio.fwrite(e2lib.globals.debuglogfile, log_prefix .. msg .. "\n")
+        eio.fwrite(e2lib.globals.debuglogfile, log_prefix .. msg)
     else
-        table.insert(e2lib.globals.debuglogfilebuffer, log_prefix .. msg .. "\n")
+        table.insert(e2lib.globals.debuglogfilebuffer, log_prefix .. msg)
     end
+
     if e2lib.getlog(level) then
         if e2lib.globals.log_debug then
-            io.stderr:write(log_prefix)
+            console.eout(log_prefix .. msg)
+        else
+            console.eout(msg)
         end
-        io.stderr:write(msg .. "\n")
     end
 end
 

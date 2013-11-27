@@ -28,10 +28,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local buildconfig = require("buildconfig")
+local console = require("console")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 local err = require("err")
-local buildconfig = require("buildconfig")
 
 local function e2(arg)
     local rc, re = e2lib.init()
@@ -41,8 +42,8 @@ local function e2(arg)
 
     e2option.flag("prefix", "print installation prefix",
     function()
-        print(buildconfig.PREFIX)
-        os.exit(0)
+        console.infonl(buildconfig.PREFIX)
+        e2lib.finish(0)
     end)
 
     local root = e2lib.locate_project_root()

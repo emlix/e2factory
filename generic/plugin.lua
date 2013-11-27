@@ -30,6 +30,7 @@
 ]]
 
 local plugin = {}
+local console = require("console")
 local err = require("err")
 local e2lib = require("e2lib")
 local strict = require("strict")
@@ -260,11 +261,10 @@ function plugin.exit_plugins()
 end
 
 --- print a description for each plugin. This is for use with the --version
--- option. This version always succeeds.
--- @return nil
+-- option. This function always succeeds.
 function plugin.print_descriptions()
     for i,pd in ipairs(plugins) do
-        print(pd.description)
+        console.infonl(pd.description)
     end
 end
 

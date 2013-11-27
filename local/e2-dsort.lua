@@ -28,6 +28,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local console = require("console")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local e2option = require("e2option")
@@ -55,7 +56,9 @@ local function e2_dsort(arg)
 
     local d = e2tool.dsort(info)
     if d then
-        for i = 1, #d do print(d[i]) end
+        for _,dep in ipairs(d) do
+            console.infonl(dep)
+        end
     end
 
     return true

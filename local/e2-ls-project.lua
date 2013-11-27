@@ -30,6 +30,7 @@
 
 -- ls-project - show project information -*- Lua -*-
 
+local console = require("console")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
@@ -114,16 +115,16 @@ local function e2_ls_project(arg)
     table.sort(sources)
 
     local function pempty(s1, s2, s3)
-        print(string.format("   %s  %s  %s", s1, s2, s3))
+        console.infof("   %s  %s  %s\n", s1, s2, s3)
     end
     local function p0(s1, s2, v)
-        print(string.format("%s", v))
+        console.infonl(v)
     end
     local function p1(s1, s2, v)
-        print(string.format("   o--%s", v))
+        console.infof("   o--%s\n", v)
     end
     local function p2(s1, s2, v)
-        print(string.format("   %s  o--%s", s1, v))
+        console.infof("   %s  o--%s\n", s1, v)
     end
     local function p3(s1, s2, k, v)
         if v then
@@ -133,9 +134,9 @@ local function e2_ls_project(arg)
 
                 v = v:sub(2)
             end
-            print(string.format("   %s  %s  o--%-10s = %s", s1, s2, k, v))
+            console.infof("   %s  %s  o--%-10s = %s\n", s1, s2, k, v)
         else
-            print(string.format("   %s  %s  o--%s", s1, s2, k))
+            console.infof("   %s  %s  o--%s\n", s1, s2, k)
         end
     end
 
@@ -150,7 +151,7 @@ local function e2_ls_project(arg)
             i = i + 1
             if l then
                 if (l:len() + v:len() + 1) > col then
-                    print(l)
+                    console.infonl(l)
                     l = nil
                 end
             end
@@ -162,44 +163,44 @@ local function e2_ls_project(arg)
             header = header2
         end
         if l then
-            print(l)
+            console.infonl(l)
         end
     end
 
     if opts.dot or opts["dot-sources"] then
         local arrow = "->"
-        print("digraph \"" .. info.project.name .. "\" {")
+        console.infof("digraph \"%s\" {\n", info.project.name)
         for _, r in pairs(results) do
             local res = info.results[r]
             local deps = e2tool.dlist(info, r)
             if #deps > 0 then
                 for _, dep in pairs(deps) do
                     if opts.swap then
-                        print(string.format("  \"%s\" %s \"%s\"", dep, arrow, r))
+                        console.infof("  \"%s\" %s \"%s\"\n", dep, arrow, r)
                     else
-                        print(string.format("  \"%s\" %s \"%s\"", r, arrow, dep))
+                        console.infof("  \"%s\" %s \"%s\"\n", r, arrow, dep)
                     end
                 end
             else
-                print(string.format("  \"%s\"", r))
+                console.infof("  \"%s\"\n", r)
             end
             if opts["dot-sources"] then
                 for _, src in ipairs(res.sources) do
                     if opts.swap then
-                        print(string.format("  \"%s-src\" %s \"%s\"", src, arrow, r))
+                        console.infof("  \"%s-src\" %s \"%s\"\n", src, arrow, r)
                     else
-                        print(string.format("  \"%s\" %s \"%s-src\"", r, arrow, src))
+                        console.infof("  \"%s\" %s \"%s-src\"\n", r, arrow, src)
                     end
                 end
             end
         end
         if opts["dot-sources"] then
             for _, s in pairs(sources) do
-                print(string.format("  \"%s-src\" [label=\"%s\", shape=box]", s, s))
+                console.infof("  \"%s-src\" [label=\"%s\", shape=box]\n", s, s)
             end
         end
-        print("}")
-        e2lib.finish()
+        console.infonl("}")
+        e2lib.finish(0)
     end
 
     --------------- project name
@@ -230,7 +231,7 @@ local function e2_ls_project(arg)
             p3(s1, s2, k, tostring(ce.flags[k]))
         end
     end
-    print("   |")
+    console.infonl("   |")
 
     --------------------- sources
     local s1 = "|"

@@ -31,12 +31,13 @@
 -- Parsing of command-line options
 
 local e2option = {}
+local buildconfig = require("buildconfig")
+local console = require("console")
 local e2lib = require("e2lib")
 local plugin = require("plugin")
 local err = require("err")
 local strict = require("strict")
 local tools = require("tools")
-local buildconfig = require("buildconfig")
 
 local options = {}
 local aliases = {}
@@ -200,7 +201,7 @@ local function defaultoptions()
 
     e2option.flag("version", "show version number",
     function()
-        print(buildconfig.VERSIONSTRING)
+        console.infonl(buildconfig.VERSIONSTRING)
         plugin.print_descriptions()
         e2lib.finish(0)
     end,
@@ -208,9 +209,9 @@ local function defaultoptions()
 
     e2option.flag("licence", "show licence information",
     function()
-        print(e2lib.globals._version)
-        print()
-        print(e2lib.globals._licence)
+        console.infonl(e2lib.globals._version)
+        console.infonl()
+        console.infonl(e2lib.globals._licence)
         e2lib.finish(0)
     end,
     category)
@@ -404,15 +405,15 @@ end
 -- @return This function does not return.
 function e2option.usage(rc)
     local out
-    if rc == 0 then
-        out = io.stdout
-    else
-        out = io.stderr
-    end
-
     local m = string.format("usage: %s --help for more information\n",
         toolname())
-    out:write(m)
+
+    if rc == 0 then
+        console.info(m)
+    else
+        console.eout(m)
+    end
+
     e2lib.finish(rc)
 end
 

@@ -28,6 +28,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local console = require("console")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local e2build = require("e2build")
@@ -223,7 +224,7 @@ local function e2_build(arg)
             if not bid then
                 return false, re
             end
-            print(string.format("%-20s [%s]", r, bid))
+            console.infof("%-20s [%s]\n", r, bid)
         end
 
         return true

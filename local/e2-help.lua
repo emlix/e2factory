@@ -28,6 +28,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local console = require("console")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
@@ -71,11 +72,11 @@ local function list_manpage_section(documentation, header, section)
     end
     table.sort(sorted)
 
-    print(header)
+    console.infonl(header)
     for _,displayname in ipairs(sorted) do
-            print(string.format("  %s", displayname))
+            console.infof("  %s\n", displayname)
     end
-    print()
+    console.infonl()
     return true
 end
 

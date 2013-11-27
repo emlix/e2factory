@@ -30,6 +30,7 @@
 
 -- playground - enter existing chroot(1) environment -*- Lua -*-
 
+local console = require("console")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local e2build = require("e2build")
@@ -93,7 +94,7 @@ local function e2_playground(arg)
         return false, err.new("playground does not exist")
     end
     if opts.showpath then
-        print(info.results[r].build_config.c)
+        console.infonl(info.results[r].build_config.c)
         e2lib.finish(0)
     end
     -- interactive mode, use bash profile
