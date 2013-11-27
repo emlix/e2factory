@@ -62,7 +62,7 @@ local function e2_dlist(arg)
     end
 
     if not info.results[ result ] then
-        return false, err.new("no such result: ", result)
+        return false, err.new("no such result: %s", result)
     end
 
     local dep, re
