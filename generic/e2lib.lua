@@ -48,6 +48,7 @@ local e2lib = {}
 package.loaded["e2lib"] = e2lib
 
 local buildconfig = require("buildconfig")
+local console = require("console")
 local lock = require("lock")
 local err = require("err")
 local errno = require("errno")
@@ -334,6 +335,7 @@ end
 -- @return Error object on failure.
 function e2lib.init()
     e2lib.log(4, "e2lib.init()")
+    console.open()
 
     trace.enable()
     trace.default_filter()
@@ -690,6 +692,7 @@ function e2lib.finish(returncode)
     if e2lib.globals.debuglogfile then
         eio.fclose(e2lib.globals.debuglogfile)
     end
+    console.close()
     os.exit(returncode)
 end
 
