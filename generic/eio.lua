@@ -29,6 +29,8 @@
 ]]
 
 local eio = {}
+package.loaded["eio"] = eio -- prevent module loading loop
+
 local e2lib = require("e2lib")
 local err = require("err")
 local leio = require("leio")
