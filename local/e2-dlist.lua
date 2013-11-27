@@ -31,6 +31,7 @@
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local e2option = require("e2option")
+local err = require("err")
 
 local function e2_dlist(arg)
     local rc, re = e2lib.init()
