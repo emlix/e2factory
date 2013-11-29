@@ -68,7 +68,7 @@ e2lib.globals = {
         { "v3", false },   -- verbose-build
         { "v4", false }    -- tooldebug
     },
-    log_debug = false,
+    log_debug = false, -- debug log/warning level
     debug = false,
     playground = false,
     -- variables initialized in init()

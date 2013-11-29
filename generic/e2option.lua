@@ -172,7 +172,7 @@ local function defaultoptions()
     end,
     category)
 
-    e2option.flag("log-debug", "enable logging of debugging output",
+    e2option.flag("log-debug", "enable debugging of log levels and warnings",
     function()
         e2lib.globals.log_debug = true
         return true

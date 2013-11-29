@@ -97,7 +97,7 @@ Enable log level 3 (show user debug information).
 Enable log level 4 (show tool debug information).
 .TP
 .BR \-\-log-debug
-Enable logging of debugging output.
+Enable debugging of log levels and warnings.
 .TP
 .BR \-\-Wall
 Enable all warnings
