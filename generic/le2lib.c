@@ -429,7 +429,7 @@ do_execvp(lua_State *L)
 		return 2;
 	}
 
-	argv = malloc(argc * sizeof(char *));
+	argv = malloc((argc+1) * sizeof(char *));
 	if (argv == NULL) {
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "do_execvp: 1+ argv arguments required");
@@ -442,11 +442,9 @@ do_execvp(lua_State *L)
 	}
 	argv[i] = NULL;
 
-
-
 	execvp(file, argv);
 
-	/* If it returns at all something is wrong */
+	/* If it returns, something is wrong */
 	free(argv);
 	lua_pushboolean(L, 0);
 	lua_pushstring(L, strerror(errno));
