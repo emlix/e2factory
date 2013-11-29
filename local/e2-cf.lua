@@ -39,17 +39,12 @@ local commands = {}
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function editor(file)
-    local e = e2lib.globals.osenv["EDITOR"]
-    e2lib.shquote(e)
-    file = e2lib.shquote(file)
+    local rc, re
 
-    local cmd = string.format("%s %s", e, file)
-
-
-    local rc
-    rc = os.execute(cmd)
-    rc = rc/256 -- XXX: os.execute
-    if rc ~= 0 then
+    rc, re = e2lib.callcmd({ e2lib.globals.osenv["EDITOR"] , file }, {})
+    if not rc then
+        return false, re
+    elseif rc ~= 0 then
         return false, err.new("Editor finished with exit status %d", rc)
     end
 
