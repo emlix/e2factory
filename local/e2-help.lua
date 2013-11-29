@@ -173,22 +173,27 @@ local function display_man_page(doc)
     local rc, re, e
     local cmd = {}
 
-    local viewer = tools.get_tool("man")
+    local viewer, re = tools.get_tool("man")
     if not viewer then
         return false, err.new("no man page viewer is available")
     end
-    table.insert(cmd, e2lib.shquote(viewer))
+    table.insert(cmd, viewer)
 
-    local viewerflags = tools.get_tool_flags("man")
-    if viewerflags and #viewerflags > 0 then
-        table.insert(cmd, table.concat(viewerflags, " "))
+    local viewerflags, re = tools.get_tool_flags("man")
+    if not viewerflags then
+        return false, re
     end
 
-    table.insert(cmd, e2lib.shquote(e2lib.join(doc.path, doc.filename)))
+    for _,flag in ipairs(viewerflags) do
+        table.insert(cmd, flag)
+    end
 
-    rc = os.execute(table.concat(cmd, ' '))
-    rc = rc/256 -- XXX: os.execute
-    if rc ~= 0 then
+    table.insert(cmd, e2lib.join(doc.path, doc.filename))
+
+    rc, re = e2lib.callcmd(cmd, {})
+    if not rc then
+        return false, re
+    elseif rc ~= 0 then
         return false,
             err.new("man page viewer terminated with exit code %d", rc)
     end

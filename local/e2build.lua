@@ -355,10 +355,6 @@ end
 function e2build.enter_playground(info, r, chroot_command)
     local rc, re, e, res, e2_su, cmd
 
-    if not chroot_command then
-        chroot_command = "/bin/bash"
-    end
-
     res = info.results[r]
     e = err.new("entering playground")
 
@@ -367,12 +363,29 @@ function e2build.enter_playground(info, r, chroot_command)
         return false, e:cat(re)
     end
 
-    cmd = string.format("%s %s chroot_2_3 '%s' %s",
-        res.build_config.chroot_call_prefix, e2_su,
-        res.build_config.base, chroot_command)
+    cmd = {
+        res.build_config.chroot_call_prefix,
+        e2_su,
+        "chroot_2_3",
+        res.build_config.base,
+    }
+
+    if chroot_command then
+        table.insert(cmd, "/bin/sh")
+        table.insert(cmd, "-c")
+        table.insert(cmd, chroot_command)
+    else
+        table.insert(cmd, "/bin/bash")
+    end
+
     e2tool.set_umask(info)
+    rc, re = e2lib.callcmd(cmd, {})
+    if not rc then
+        e2tool.reset_umask(info)
+        return false, e:cat(re)
+    end
     -- return code depends on user commands. Ignore.
-    os.execute(cmd)
+
     e2tool.reset_umask(info)
 
     return true
