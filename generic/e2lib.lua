@@ -531,28 +531,6 @@ function e2lib.maxloglevel()
     return level
 end
 
---- get log flags for calling subtools with the same log settings
--- @return string: a string holding command line flags
-function e2lib.getlogflags()
-    local logflags = ""
-    if e2lib.getlog(1) then
-        logflags = "--v1"
-    end
-    if e2lib.getlog(2) then
-        logflags = logflags .. " --v2"
-    end
-    if e2lib.getlog(3) then
-        logflags = logflags .. " --v3"
-    end
-    if e2lib.getlog(4) then
-        logflags = logflags .. " --v4"
-    end
-    if e2lib.globals.log_debug then
-        logflags = logflags .. " --log-debug"
-    end
-    return " " .. logflags
-end
-
 --- log to the debug logfile, and log to console if getlog(level)
 -- @param level number: loglevel
 -- @param format string: format string
