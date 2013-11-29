@@ -69,8 +69,6 @@ e2lib.globals = {
         { "v4", false }    -- tooldebug
     },
     log_debug = false, -- debug log/warning level
-    debug = false,
-    playground = false,
     -- variables initialized in init()
     username = nil,
     homedir = nil,
