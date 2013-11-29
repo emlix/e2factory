@@ -459,33 +459,32 @@ function e2option.showtoolmanpage()
     end
 
     local cmd = {}
-    for _,s in ipairs({"man"}) do
-        local viewer, viewerflags
+    local viewer, viewerflags
 
-        viewer = tools.get_tool(s)
-        viewerflags = tools.get_tool_flags(s)
-        if viewer then
-            table.insert(cmd, e2lib.shquote(viewer))
-            if viewerflags then
-                viewerflags = table.concat(viewerflags, " ")
-            end
-            if viewerflags ~= "" then
-                table.insert(cmd, viewerflags)
-            end
+    viewer = tools.get_tool("man")
+    if viewer then
+        table.insert(cmd, viewer)
 
-            break
+        viewerflags = tools.get_tool_flags("man")
+        if viewerflags then
+            for _,flag in ipairs(viewerflags) do
+                table.insert(cmd, flag)
+            end
         end
     end
 
-    if #cmd < 1 then
+    if #cmd == 0 then
         return false, err.new("Could not find manual viewer to display help")
     end
 
-    table.insert(cmd, e2lib.shquote(mpage))
+    table.insert(cmd, mpage)
 
-    local rc = os.execute(table.concat(cmd, ' '))
+    local rc, re = e2lib.callcmd(cmd, {})
+    if not rc then
+        return false, re
+    end
 
-    return rc/256 -- XXX: os.execute
+    return rc
 end
 
 return strict.lock(e2option)
