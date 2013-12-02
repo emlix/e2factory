@@ -1,8 +1,8 @@
 .\" General man page for e2
 .\"
-.\" (c)20012 emlix GmbH
+.\" (c)2012-2013 emlix GmbH
 .\"
-.TH e2factory 1 "2012" "@VERSION@"
+.TH e2factory 1 "2013" "@VERSION@"
 
 .SH NAME
 e2factory \- the emlix embedded build system
@@ -35,7 +35,7 @@ Create and modify configuration files.
 .TP
 .BR e2-dlist(1)
 Show a list of the dependencies.
-.TP 
+.TP
 .BR e2-dsort(1)
 Show the sorted list of results.
 .TP
@@ -108,10 +108,11 @@ Warn when default values are applied.
 .BR \-\-Wdeprecated
 Warn if deprecated options are used.
 .TP
-.BR \-\-Wither
-Disable all warnings not mentioned (enabled by default).
+.BR \-\-Wnoother
+Disable all other warnings not mentioned.
+Other warnings are on by default.
 .TP
-.BR \-\-Pols
+.BR \-\-Wpolicy
 Warn when hurting policies.
 .TP
 .BR \-\-Whint
@@ -145,7 +146,7 @@ Filename: \fBproj/chroot\fR
 .BR e2licence(5)
 Licence configuration file of an e2factory project.
 .br
-Filename: \fBproj/licence\fR 
+Filename: \fBproj/licence\fR
 .TP
 .BR e2env(5)
 Optional configuration file for environment variable of build processes.
@@ -193,4 +194,4 @@ Path to the config file.
 ssh-tool to be use instead of \fBssh\fR(1).
 
 .SH COPYRIGHT
-(c)2013 emlix GmbH
+(c)2012-2013 emlix GmbH
