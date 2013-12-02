@@ -55,9 +55,14 @@ function e2option.flag(name, doc, func, category)
     if options[name] then
         return false, err.new("option exists: %s", name)
     end
-    options[name] = {type = "flag", documentation = doc or "", name = name,
-    proc=func, default = true,
-    category = category}
+    options[name] = {
+        type = "flag",
+        documentation = doc or "",
+        name = name,
+        proc=func,
+        default = true,
+        category = category
+    }
     table.insert(optionlist, name)
 end
 
@@ -72,9 +77,13 @@ function e2option.option(name, doc, default, func, argname)
     if options[name] then
         return false, err.new("option exists: %s", name)
     end
-    options[name] = {type = "option", documentation = doc or "", name = name,
-    proc=func, default=default or true,
-    argumentname=argname or "ARGUMENT"}
+    options[name] = {
+        type = "option",
+        documentation = doc or "", name = name,
+        proc=func,
+        default=default or true,
+        argumentname=argname or "ARGUMENT"
+    }
     table.insert(optionlist, name)
 end
 
