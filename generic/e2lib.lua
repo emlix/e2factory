@@ -61,19 +61,26 @@ local trace = require("trace")
 
 local global_config = false
 
-e2lib.globals = {
+e2lib.globals = strict.lock({
     logflags = {
         { "v1", true },    -- minimal
         { "v2", true },    -- verbose
         { "v3", false },   -- verbose-build
         { "v4", false }    -- tooldebug
     },
-    log_debug = false, -- debug log/warning level
-    -- variables initialized in init()
-    username = nil,
-    homedir = nil,
-    tmpdirs = {},
-    tmpfiles = {},
+    warn_category = {
+        WDEFAULT = false,
+        WDEPRECATED = false,
+        WOTHER = true,
+        WPOLICY = false,
+        WHINT = false,
+    },
+    log_debug = false,  -- debug log/warning level
+    osenv = {},         -- environment variable dictionary
+    tmpdir = false,     -- base temp dir, defaults to /tmp
+    tmpdirs = {},       -- vector of temp dirs created by e2
+    tmpfiles = {},      -- vector of temp files created by e2
+    lock = false,       -- lock object
     default_projects_server = "projects",
     default_project_version = "2",
     --- command line arguments that influence global settings are stored here
@@ -84,7 +91,6 @@ e2lib.globals = {
     extension_config = ".e2/extensions",
     e2config = ".e2/e2config",
     global_interface_version_file = ".e2/global-version",
-    lock = nil,
     logrotate = 5,   -- configurable via config.log.logrotate
     _version = "e2factory, the emlix embedded build system, version " ..
     buildconfig.VERSION,
@@ -101,9 +107,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.]],
-    debuglogfile = nil,
+    debuglogfile = false,
     debuglogfilebuffer = {},
-}
+})
 
 --- Get current working directory.
 -- @return Current working directory (string) or false on error.
@@ -367,7 +373,6 @@ function e2lib.init()
         { name = "E2_SSH", required = false },
     }
 
-    local osenv = {}
     for _, var in pairs(getenv) do
         var.val = os.getenv(var.name)
         if var.required and not var.val then
@@ -376,13 +381,9 @@ function e2lib.init()
         if var.default and not var.val then
             var.val = var.default
         end
-        osenv[var.name] = var.val
+        e2lib.globals.osenv[var.name] = var.val
     end
-    e2lib.globals.osenv = osenv
 
-    -- assign some frequently used environment variables
-    e2lib.globals.homedir = e2lib.globals.osenv["HOME"]
-    e2lib.globals.username = e2lib.globals.osenv["USER"]
     if e2lib.globals.osenv["E2TMPDIR"] then
         e2lib.globals.tmpdir = e2lib.globals.osenv["E2TMPDIR"]
     else
@@ -862,7 +863,7 @@ end
 -- @return bool
 -- @return error string on error
 function e2lib.read_global_config(e2_config_file)
-    local cf
+    local cf, home
     local rc, re
     if type(e2lib.globals.cmdline["e2-config"]) == "string" then
         cf = e2lib.globals.cmdline["e2-config"]
@@ -876,13 +877,14 @@ function e2lib.read_global_config(e2_config_file)
     elseif e2_config_file then
         cf_path = { e2_config_file }
     else
+        home = e2lib.globals.osenv["HOME"]
         cf_path = {
             -- this is ordered by priority
-            string.format("%s/.e2/e2.conf-%s.%s.%s", e2lib.globals.homedir,
+            string.format("%s/.e2/e2.conf-%s.%s.%s", home,
             buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
-            string.format("%s/.e2/e2.conf-%s.%s", e2lib.globals.homedir, buildconfig.MAJOR,
+            string.format("%s/.e2/e2.conf-%s.%s", home, buildconfig.MAJOR,
             buildconfig.MINOR),
-            string.format("%s/.e2/e2.conf", e2lib.globals.homedir),
+            string.format("%s/.e2/e2.conf", home),
             string.format("%s/e2.conf-%s.%s.%s", buildconfig.SYSCONFDIR,
             buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
             string.format("%s/e2.conf-%s.%s", buildconfig.SYSCONFDIR,
@@ -2155,7 +2157,7 @@ function e2lib.setup_cache()
         return false, e:append("invalid cache configuration: config.cache.path")
     end
 
-    local replace = { u=e2lib.globals.username }
+    local replace = { u = e2lib.globals.osenv["USER"] }
     local cache_path = e2lib.format_replace(config.cache.path, replace)
     local cache_url = string.format("file://%s", cache_path)
     local c, re = cache.new_cache("local cache", cache_url)

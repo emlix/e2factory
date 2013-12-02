@@ -218,7 +218,7 @@ local function defaultoptions()
 end
 
 local function userdefaultoptions(opts)
-    local home = e2lib.globals.homedir
+    local home = e2lib.globals.osenv["HOME"]
     if not home then
         return true
     end

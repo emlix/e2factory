@@ -209,7 +209,7 @@ function e2build.build_config(info, r)
 
     local tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
         e2lib.globals.tmpdir, buildconfig.MAJOR, buildconfig.MINOR,
-        buildconfig.PATCHLEVEL, e2lib.globals.username)
+        buildconfig.PATCHLEVEL, e2lib.globals.osenv["USER"])
     local builddir = "tmp/e2"
 
     bc.base = e2lib.join(tmpdir, info.project.name, r)
