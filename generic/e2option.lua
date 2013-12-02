@@ -102,7 +102,7 @@ local function defaultoptions()
     local category = "Verbosity Control Options"
     e2option.option("e2-config", "specify configuration file", nil,
     function(arg)
-        e2lib.sete2config(arg)
+        e2lib.globals.e2config = arg
     end,
     "FILE")
 

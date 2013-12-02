@@ -59,8 +59,6 @@ local eio = require("eio")
 local le2lib = require("le2lib")
 local trace = require("trace")
 
-local global_config = false
-
 e2lib.globals = strict.lock({
     logflags = {
         { "v1", true },    -- minimal
@@ -83,13 +81,9 @@ e2lib.globals = strict.lock({
     lock = false,       -- lock object
     default_projects_server = "projects",
     default_project_version = "2",
-    --- command line arguments that influence global settings are stored here
-    -- @class table
-    -- @name cmdline
-    cmdline = {},
     template_path = string.format("%s/templates", buildconfig.SYSCONFDIR),
     extension_config = ".e2/extensions",
-    e2config = ".e2/e2config",
+    e2config = false,
     global_interface_version_file = ".e2/global-version",
     logrotate = 5,   -- configurable via config.log.logrotate
     _version = "e2factory, the emlix embedded build system, version " ..
@@ -334,7 +328,8 @@ function e2lib.interrupt_hook()
 end
 
 --- Make sure the environment variables inside the globals table are
--- initialized properly.
+-- initialized properly, set up output channels etc. Must be called before
+-- anything else.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2lib.init()
@@ -395,7 +390,8 @@ function e2lib.init()
     return true
 end
 
---- init2.
+--- Initialize e2factory further, past parsing options. Reads global config
+-- and sets up tools module.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2lib.init2()
@@ -495,14 +491,6 @@ function e2lib.abort(...)
         e2lib.log(1, "Error: " .. msg)
     end
     e2lib.finish(1)
-end
-
---- Set E2_CONFIG in the environment to file. Also sets commandline option.
--- @param file Config file name (string).
-function e2lib.sete2config(file)
-    e2lib.setenv("E2_CONFIG", file, 1)
-    e2lib.globals.osenv["E2_CONFIG"] = file
-    e2lib.globals.cmdline["e2-config"] = file
 end
 
 --- Enable or disable logging for level.
@@ -788,10 +776,11 @@ function e2lib.tartype_by_suffix(filename)
     return tartype
 end
 
---- Use the global parameters from the global configuration.
+--- Check the global configuration for existance of fields and their types.
+-- @param config e2config table to check.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-local function use_global_config()
+local function verify_global_config(config)
     local rc, re
 
     local function assert_type(x, d, t1)
@@ -805,10 +794,6 @@ local function use_global_config()
         return true
     end
 
-    local config = global_config
-    if not config then
-        return false, err.new("global config not available")
-    end
     if config.log then
         rc, re = assert_type(config.log, "config.log", "table")
         if not rc then
@@ -856,26 +841,39 @@ local function use_global_config()
     return true
 end
 
---- read the global config file
--- local tools call this function inside collect_project_info()
--- global tools must call this function after parsing command line options
--- @param e2_config_file string: config file path (optional)
--- @return bool
--- @return error string on error
-function e2lib.read_global_config(e2_config_file)
-    local cf, home
-    local rc, re
-    if type(e2lib.globals.cmdline["e2-config"]) == "string" then
-        cf = e2lib.globals.cmdline["e2-config"]
+--- Cache for global config table.
+local get_global_config_cache = false
+
+--- Selects and read the global config file on first call, returns cached table
+-- on further calls. Local tools call this function inside
+-- collect_project_info(). Global tools must call this function after parsing
+-- command line options.
+-- @return Global config table on success, false on error.
+-- @return Error object on failure.
+function e2lib.get_global_config()
+    local rc, re, cf, cf2, cf_path, home, root
+
+    if get_global_config_cache then
+        return get_global_config_cache
+    end
+
+    if type(e2lib.globals.e2config) == "string" then
+        cf = e2lib.globals.e2config
     elseif type(e2lib.globals.osenv["E2_CONFIG"]) == "string" then
         cf = e2lib.globals.osenv["E2_CONFIG"]
     end
 
-    local cf_path
+    -- e2config contains path to e2.conf. Optional, errors are ignored.
+    root, re = e2lib.locate_project_root()
+    if root then
+        local e2_e2config = e2lib.join(root, ".e2/e2config")
+        cf2, re = eio.file_read_line(e2_e2config)
+    end
+
     if cf then
         cf_path = { cf }
-    elseif e2_config_file then
-        cf_path = { e2_config_file }
+    elseif cf2 then
+        cf_path = { cf2 }
     else
         home = e2lib.globals.osenv["HOME"]
         cf_path = {
@@ -909,13 +907,13 @@ function e2lib.read_global_config(e2_config_file)
             if not c.data then
                 return false, err.new("invalid configuration")
             end
-            global_config = c.data
-            rc, re = use_global_config()
+            rc, re = verify_global_config(c.data)
             if not rc then
                 return false, re
             end
 
-            return true
+            get_global_config_cache = strict.lock(c.data)
+            return get_global_config_cache
         else
             e2lib.logf(4, "global config file does not exist: %s", path)
         end
@@ -948,18 +946,6 @@ function e2lib.read_extension_config()
         return false, e:append("invalid extension configuration")
     end
     return extension, nil
-end
-
---- Get the global configuration.
--- @return The global configuration, or false on error.
--- @return Error object on failure.
-function e2lib.get_global_config()
-    local config = global_config
-    if not config then
-        return false, err.new("global config not available")
-    end
-
-    return config
 end
 
 --- Successively returns the file names in the directory.

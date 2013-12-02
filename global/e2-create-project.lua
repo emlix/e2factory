@@ -111,11 +111,6 @@ local function e2_create_project(arg)
         return false, arguments
     end
 
-    local rc, e = e2lib.read_global_config()
-    if not rc then
-        return false, e
-    end
-
     rc, re = e2lib.init2()
     if not rc then
         return false, re

@@ -41,6 +41,11 @@ local function e2_install_e2(arg)
         return false, re
     end
 
+    -- When called from e2-fetch-project, we inherit its arg vector.
+    -- Parse the options but do nothing with them.
+    e2option.option("branch", "ignored option, do not document")
+    e2option.option("tag", "ignored option, do not document")
+
     local opts, arguments = e2option.parse(arg)
     if not opts then
         return false, arguments
@@ -49,16 +54,6 @@ local function e2_install_e2(arg)
     local root = e2lib.locate_project_root()
     if not root then
         return false, err.new("can't locate project root.")
-    end
-
-    -- try to get project specific config file path
-    -- don't care if this succeeds, the parameter is optional.
-    local config_file_config = e2lib.join(root, e2lib.globals.e2config)
-    local config_file = eio.file_read_line(config_file_config)
-
-    local rc, e = e2lib.read_global_config(config_file)
-    if not rc then
-        return false, e
     end
 
     rc, re = e2lib.init2()
@@ -88,8 +83,6 @@ local function e2_install_e2(arg)
     if #arguments > 0 then
         e2option.usage(1)
     end
-
-    local rc, re
 
     -- change to the project root directory
     rc, re = e2lib.chdir(root)

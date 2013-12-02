@@ -1284,16 +1284,6 @@ function e2tool.collect_project_info(info, skip_load_config)
         e2lib.finish(1)
     end
 
-    -- try to get project specific config file path
-    -- don't care if this succeeds, the parameter is optional.
-    local config_file_config = e2lib.join(info.root, e2lib.globals.e2config)
-    local config_file = eio.file_read_line(config_file_config)
-
-    local rc, re = e2lib.read_global_config(config_file)
-    if not rc then
-        return false, e:cat(re)
-    end
-
     info.local_template_path = e2lib.join(info.root, ".e2/lib/e2/templates")
 
     rc, re = e2lib.init2() -- configuration must be available

@@ -43,6 +43,9 @@ local function e2_fetch_project(arg)
     end
 
     local e = err.new("fetching project failed")
+
+    -- e2-install-e2 (called below) uses the same arg vector. Update
+    -- e2-install-e2 to ignore any options specific to e2-fetch-project.
     e2option.option("branch", "retrieve a specific project branch")
     e2option.option("tag", "retrieve a specific project tag")
 
@@ -51,20 +54,9 @@ local function e2_fetch_project(arg)
         return false, arguments
     end
 
-    rc, re = e2lib.read_global_config()
-    if not rc then
-        return false, e:cat(re)
-    end
-
     rc, re = e2lib.init2()
     if not rc then
         return false, re
-    end
-
-    -- get the global configuration
-    local config, re = e2lib.get_global_config()
-    if not config then
-        return false, e:cat(re)
     end
 
     -- setup cache
@@ -217,9 +209,24 @@ local function e2_fetch_project(arg)
         return false, e:cat(re)
     end
 
-    -- call e2-install-e2
     local e2_install_e2 =
         { buildconfig.LUA, e2lib.join(buildconfig.TOOLDIR, "e2-install-e2") }
+
+    -- pass flags and options to e2-install-e2, but skip the arguments.
+    for _,v in ipairs(arg) do
+        for _,a in ipairs(arguments) do
+            if v == a then
+                v = nil
+                break
+            end
+        end
+
+        if v then
+            table.insert(e2_install_e2, v)
+        end
+    end
+
+    -- call e2-install-e2
     rc, re = e2lib.callcmd_log(e2_install_e2)
     if not rc or rc ~= 0 then
         local e = err.new("installing local e2 failed")
