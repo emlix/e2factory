@@ -270,9 +270,9 @@ local function e2_new_source(arg)
         end
 
         local location = arguments[1]
-        local sl, e = e2lib.parse_server_location(location, info.default_files_server)
+        local sl, re = e2lib.parse_server_location(location, info.default_files_server)
         if not sl then
-            return false, e
+            return false, re
         end
         local server = sl.server
         local location = sl.location

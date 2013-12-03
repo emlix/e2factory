@@ -75,7 +75,7 @@ local function e2_fetch_project(arg)
     end
 
     local sl, re = e2lib.parse_server_location(arguments[1],
-    e2lib.globals.default_projects_server)
+        e2lib.globals.default_projects_server)
     if not sl then
         return false, e:cat(re)
     end

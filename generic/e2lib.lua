@@ -2104,28 +2104,37 @@ function e2lib.parentdirs(path)
     return t
 end
 
-
---- parse a server:location string, taking a default server into account
+--- Parse a server:location string, taking a default server into account.
 -- @param serverloc string: the string to parse
--- @param default_server string: the default server name
--- @return a table with fields server and location, nil on error
--- @return nil, an error string on error
+-- @param default_server Default server name used when serverloc contains none.
+-- @return Locked server location table, false on error
+-- @return Error object on failure.
+-- @see server_location
 function e2lib.parse_server_location(serverloc, default_server)
     assert(type(serverloc) == 'string' and type(default_server) == 'string')
+
+    --- Server location table.
+    -- @table server_location
+    -- @field server Server name, defaults to default_server if not supplied.
+    -- @field location Path location relative to the server.
+    -- @see parse_server_location
     local sl = {}
+
     sl.server, sl.location = serverloc:match("(%S+):(%S+)")
     if not (sl.server and sl.location) then
         sl.location = serverloc:match("(%S+)")
         if not (sl.location and default_server) then
-            return nil, "can't parse location"
+            return false, err.new("can't parse location in %q", serverloc)
         end
         sl.server = default_server
     end
+
     if sl.location:match("[.][.]") or
         sl.location:match("^/") then
-        return nil, "invalid location"
+        return false, err.new("invalid location: %q", serverloc)
     end
-    return sl
+
+    return strict.lock(sl)
 end
 
 --- setup cache from the global server configuration
