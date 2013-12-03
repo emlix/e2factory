@@ -29,6 +29,7 @@
 ]]
 
 local url = {}
+local e2lib = require("e2lib")
 local strict = require("strict")
 
 --- parse
@@ -97,6 +98,29 @@ function url.parse(url)
     end
 
     return u
+end
+
+--- Returns a file path from an URL object.
+-- @param u URL object.
+-- @param transport Transport of URL object must match this transport. Optional.
+-- @param relative Return a relative path if true, otherwise absolute. Optional.
+-- @return Path on success, false on error.
+-- @return Error object on failure.
+function url.to_file_path(u, transport, relative)
+    if transport and u.transport ~= transport then
+        return false, err.new("converting URL to file path: transport mismatch")
+    end
+
+    if type(u.path) ~= "string" then
+        return false,
+            err.new("converting URL to file path: path component in URL empty")
+    end
+
+    if relative then
+        return u.path
+    end
+
+    return e2lib.join("/", u.path)
 end
 
 return strict.lock(url)
