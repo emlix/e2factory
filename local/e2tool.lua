@@ -1426,15 +1426,14 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- read .e2/proj-location
-    info.project_location_config = e2lib.join(info.root, ".e2/project-location")
-    local line, re = eio.file_read_line(info.project_location_config)
+    local plf = e2lib.join(info.root, e2lib.globals.project_location_file)
+    local line, re = eio.file_read_line(plf)
     if not line then
         return false, e:cat(re)
     end
     local _, _, l = string.find(line, "^%s*(%S+)%s*$")
     if not l then
-        return false, e:append("%s: can't parse project location",
-        info.project_location_config)
+        return false, e:append("%s: can't parse project location", plf)
     end
     info.project_location = l
     e2lib.logf(4, "project location is %s", info.project_location)

@@ -85,6 +85,7 @@ e2lib.globals = strict.lock({
     extension_config = ".e2/extensions",
     e2config = false,
     global_interface_version_file = ".e2/global-version",
+    project_location_file = ".e2/project-location",
     logrotate = 5,   -- configurable via config.log.logrotate
     _version = "e2factory, the emlix embedded build system, version " ..
     buildconfig.VERSION,

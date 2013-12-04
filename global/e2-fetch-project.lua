@@ -195,9 +195,9 @@ local function e2_fetch_project(arg)
     end
 
     -- write project location file
-    local file = ".e2/project-location"
+    local plf = e2lib.join(p.destdir, e2lib.globals.project_location_file)
     local data = string.format("%s\n", p.location)
-    rc, re = eio.file_write(file, data)
+    rc, re = eio.file_write(plf, data)
     if not rc then
         return false, e:cat(re)
     end
