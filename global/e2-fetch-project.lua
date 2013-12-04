@@ -119,7 +119,7 @@ local function e2_fetch_project(arg)
 
     local location = string.format("%s/version", p.location)
     local rc, re = cache.fetch_file(scache, p.server, location, tmpdir, nil,
-    { cache = false })
+        { cache = false })
     if not rc then
         return false, e:cat(re)
     end
@@ -147,8 +147,6 @@ local function e2_fetch_project(arg)
     if not rc then
         return false, e:cat(re)
     end
-
-    e2lib.chdir(p.destdir)
 
     -- checkout the desired branch, if a branch was given
     if p.branch then
@@ -227,7 +225,7 @@ local function e2_fetch_project(arg)
     end
 
     -- call e2-install-e2
-    rc, re = e2lib.callcmd_log(e2_install_e2)
+    rc, re = e2lib.callcmd_log(e2_install_e2, p.destdir)
     if not rc or rc ~= 0 then
         local e = err.new("installing local e2 failed")
         return false, e:cat(re)
