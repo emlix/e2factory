@@ -122,22 +122,21 @@ local function e2_install_e2(arg)
     end
 
     local ef = e2lib.join(root, e2lib.globals.e2version_file)
-    local s, re = eio.file_read_line(ef)
-    local branch, tag = s:match("(%S+) (%S+)")
-    if not branch or not tag then
-        e:cat(re)
-        return false, e:cat(err.new("cannot parse e2 version"))
+    local e2version, re = e2lib.parse_e2versionfile(ef)
+    if not e2version then
+        return false, e:cat(re)
     end
+
     local ref
-    if tag == "^" then
+    if e2version.tag == "^" then
         e2lib.warnf("WOTHER", "using e2 version by branch")
-        if branch:match("/") then
-            ref = branch
+        if e2version.branch:match("/") then
+            ref = e2version.branch
         else
-            ref = string.format("remotes/origin/%s", branch)
+            ref = string.format("remotes/origin/%s", e2version.branch)
         end
     else
-        ref = string.format("refs/tags/%s", tag)
+        ref = string.format("refs/tags/%s", e2version.tag)
     end
 
     rc, re = e2lib.chdir(".e2")
