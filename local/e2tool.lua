@@ -1342,7 +1342,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     if e2option.opts["check"] then
-        local f = ".e2/e2version"
+        local f = e2lib.join(info.root, e2lib.globals.e2version_file)
         local v, re = e2lib.parse_e2versionfile(f)
         if not v then
             return false, re

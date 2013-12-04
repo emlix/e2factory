@@ -127,7 +127,8 @@ local function e2_install_e2(arg)
         extensions = {}  -- empty list
     end
 
-    local s, re = eio.file_read_line(".e2/e2version")
+    local ef = e2lib.join(root, e2lib.globals.e2version_file)
+    local s, re = eio.file_read_line(ef)
     local branch, tag = s:match("(%S+) (%S+)")
     if not branch or not tag then
         e:cat(re)

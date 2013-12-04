@@ -199,7 +199,7 @@ local function e2_build(arg)
 
     if opts.release then
         local version_table, re = e2lib.parse_e2versionfile(
-            e2lib.join(info.root, ".e2/e2version"))
+            e2lib.join(info.root, e2lib.globals.e2version_file))
         if not version_table then
             return false, re
         end
