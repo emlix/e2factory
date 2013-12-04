@@ -41,10 +41,10 @@ local url = require("url")
 -- @param extensions Table.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-local function write_extension_config(extensions)
+local function write_extension_config(extension_config, extensions)
     local e, rc, re, file, out
 
-    e = err.new("writing extensions config: %s", e2lib.globals.extension_config)
+    e = err.new("writing extensions config: %s", extension_config)
 
     out = "extensions {\n"
     for _,ex in ipairs(extensions) do
@@ -56,7 +56,7 @@ local function write_extension_config(extensions)
     end
     out = out .. "}\n"
 
-    rc, re = eio.file_write(e2lib.globals.extension_config, out)
+    rc, re = eio.file_write(extension_config, out)
     if not rc then
         return false, e:cat(re)
     end
@@ -101,7 +101,9 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function e2_create_project(arg)
-    local rc, re = e2lib.init()
+    local rc, re, e
+
+    rc, re = e2lib.init()
     if not rc then
         return false, re
     end
@@ -116,12 +118,13 @@ local function e2_create_project(arg)
         return false, re
     end
 
-    local e = err.new("creating project failed")
+    e = err.new("creating project failed")
 
     local config, re = e2lib.get_global_config()
     if not config then
         return false, e:cat(re)
     end
+
     local scache, re = e2lib.setup_cache()
     if not scache then
         return false, e:cat(re)
@@ -151,8 +154,6 @@ local function e2_create_project(arg)
         return false, re
     end
 
-    e2lib.chdir(tmpdir)
-
     local version = string.format("%d\n", p.version)
     local empty = ""
     local files = {
@@ -164,37 +165,37 @@ local function e2_create_project(arg)
         { filename = "svn/.keep", content=empty },
     }
     for _,f in ipairs(files) do
-        local dir = e2lib.dirname(f.filename)
-        rc, re = e2lib.mkdir_recursive(dir)
+        local sourcefile, flocation
+
+        sourcefile = e2lib.join(tmpdir, f.filename)
+
+        rc, re = e2lib.mkdir_recursive(e2lib.dirname(sourcefile))
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = eio.file_write(f.filename, f.content)
+
+        rc, re = eio.file_write(sourcefile, f.content)
         if not rc then
             return false, e:cat(re)
         end
-        local sourcefile = string.format("%s/%s", tmpdir, f.filename)
-        local flocation = string.format("%s/%s", p.location, f.filename)
-        local cache_flags = {}
-        rc, re = cache.push_file(scache, sourcefile, p.server, flocation,
-        cache_flags)
+
+        flocation = e2lib.join(p.location, f.filename)
+        rc, re = cache.push_file(scache, sourcefile, p.server, flocation, {})
         if not rc then
             return false, e:cat(re)
         end
     end
-    e2lib.chdir("/")
     e2lib.rmtempdir(tmpdir)
 
-    local tmpdir, re = e2lib.mktempdir()
+    tmpdir, re = e2lib.mktempdir()
     if not tmpdir then
         return false, re
     end
 
-    e2lib.chdir(tmpdir)
-
     -- create the initial repository on server side
+
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
-    local rc, re = generic_git.git_init_db(scache, p.server, rlocation)
+    rc, re = generic_git.git_init_db(scache, p.server, rlocation)
     if not rc then
         return false, e:cat(re)
     end
@@ -262,12 +263,14 @@ local function e2_create_project(arg)
         { filename = ".gitignore", content=gitignore },
     }
     for _,f in ipairs(files) do
-        local dir = e2lib.dirname(f.filename)
-        rc, re = e2lib.mkdir_recursive(dir)
+        local sourcefile
+
+        sourcefile = e2lib.join(tmpdir, f.filename)
+        rc, re = e2lib.mkdir_recursive(e2lib.dirname(sourcefile))
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = eio.file_write(f.filename, f.content)
+        rc, re = eio.file_write(sourcefile, f.content)
         if not rc then
             return false, e:cat(re)
         end
@@ -276,7 +279,8 @@ local function e2_create_project(arg)
             return false, e:cat(re)
         end
     end
-    rc, re = write_extension_config(config.site.default_extensions)
+    local ec = e2lib.join(tmpdir, e2lib.globals.extension_config)
+    rc, re = write_extension_config(ec, config.site.default_extensions)
     if not rc then
         return false, e:cat(re)
     end
@@ -298,7 +302,6 @@ local function e2_create_project(arg)
         return false, e:cat(re)
     end
 
-    e2lib.chdir("/")
     e2lib.rmtempdir(tmpdir)
 
     return true
