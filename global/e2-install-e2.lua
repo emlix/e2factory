@@ -84,12 +84,6 @@ local function e2_install_e2(arg)
         e2option.usage(1)
     end
 
-    -- change to the project root directory
-    rc, re = e2lib.chdir(root)
-    if not rc then
-        return false, e:cat(re)
-    end
-
     -- read the version from the first line
     local givf = e2lib.join(root, e2lib.globals.global_interface_version_file)
     local line, re = eio.file_read_line(givf)
@@ -106,6 +100,7 @@ local function e2_install_e2(arg)
 
     -- remove the old e2 source, installation and plugins, if it exists
     for _,dir in ipairs({".e2/e2",  ".e2/bin", ".e2/lib", ".e2/plugins"}) do
+        dir = e2lib.join(root, dir)
         if e2lib.exists(dir) then
             rc, re = e2lib.unlink_recursive(dir)
             if not rc then
@@ -139,11 +134,6 @@ local function e2_install_e2(arg)
         ref = string.format("refs/tags/%s", e2version.tag)
     end
 
-    rc, re = e2lib.chdir(".e2")
-    if not rc then
-        return false, e:cat(re)
-    end
-
     -- checkout e2factory itself
     local server = config.site.e2_server
     local location = config.site.e2_location
@@ -154,7 +144,6 @@ local function e2_install_e2(arg)
     if not rc then
         return false, e:cat(re)
     end
-    e2lib.chdir(destdir)
 
     -- change to requested branch or tag
     rc, re = generic_git.git_checkout1(destdir, ref)
@@ -163,11 +152,6 @@ local function e2_install_e2(arg)
     end
 
     for _,ex in ipairs(extensions) do
-        -- change to the e2factory extensions directory
-        rc, re = e2lib.chdir(root .. "/.e2/e2/extensions")
-        if not rc then
-            return false, e:cat(re)
-        end
         local ref
         if ex.ref:match("/") then
             ref = ex.ref
@@ -191,7 +175,6 @@ local function e2_install_e2(arg)
         if not rc then
             return false, e:cat(re)
         end
-        e2lib.chdir(destdir)
 
         rc, re = generic_git.git_checkout1(destdir, ref)
         if not rc then
@@ -201,10 +184,7 @@ local function e2_install_e2(arg)
 
     -- build and install
     e2lib.logf(2, "building e2factory")
-    rc, re = e2lib.chdir(root .. "/.e2/e2")
-    if not rc then
-       return false, e:cat(re)
-    end
+
     local cmd = {
         buildconfig.MAKE,
         "PREFIX="..buildconfig.PREFIX,
@@ -213,7 +193,7 @@ local function e2_install_e2(arg)
         "install-local",
     }
 
-    rc, re = e2lib.callcmd_log(cmd)
+    rc, re = e2lib.callcmd_log(cmd, e2lib.join(root, ".e2/e2"))
     if not rc or rc ~= 0 then
         return false, e:cat(re)
     end
