@@ -923,31 +923,41 @@ function e2lib.get_global_config()
     return false, err.new("no config file available")
 end
 
---- read the local extension configuration
--- This function must run while being located in the projects root directory
--- @return the extension configuration table
--- @return an error object on failure
-function e2lib.read_extension_config()
-    local e = err.new("reading extension config file: %s",
-    e2lib.globals.extension_config)
-    local rc = e2lib.exists(e2lib.globals.extension_config)
+--- Read the local extension configuration. The extension configuration table
+-- may be empty if the extension config does not exist or only contains
+-- an empty configuration.
+-- @param root Project root directory.
+-- @return Extension configuration table (which may be empty), or false on error.
+-- @return Error object on failure.
+function e2lib.read_extension_config(root)
+    local rc, re, e, extension_config
+
+    extension_config = e2lib.join(root, e2lib.globals.extension_config)
+
+    e = err.new("reading extension config file: %s", extension_config)
+
+    rc = e2lib.exists(extension_config)
     if not rc then
-        return false, e:append("config file does not exist")
+        e2lib.warnf("WOTHER", "extension configuration not available")
+        return {}
     end
-    e2lib.logf(3, "reading extension file: %s", e2lib.globals.extension_config)
+
+    e2lib.logf(3, "reading extension file: %s", extension_config)
+
     local c = {}
     c.extensions = function(x)
         c.data = x
     end
-    local rc, re = e2lib.dofile2(e2lib.globals.extension_config, c, true)
+    rc, re = e2lib.dofile2(extension_config, c, true)
     if not rc then
         return false, e:cat(re)
     end
-    local extension = c.data
-    if not extension then
+
+    if not c.data then
         return false, e:append("invalid extension configuration")
     end
-    return extension, nil
+
+    return c.data
 end
 
 --- Successively returns the file names in the directory.

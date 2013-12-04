@@ -116,15 +116,9 @@ local function e2_install_e2(arg)
 
     e2lib.logf(2, "installing local tools")
 
-    local extensions
-    if e2lib.exists(e2lib.globals.extension_config) then
-        extensions, re = e2lib.read_extension_config()
-        if not extensions then
-            return false, e:cat(re)
-        end
-    else
-        e2lib.warnf("WOTHER", "extension configuration not available")
-        extensions = {}  -- empty list
+    local extensions, re = e2lib.read_extension_config(root)
+    if not extensions then
+        return false, e:cat(re)
     end
 
     local ef = e2lib.join(root, e2lib.globals.e2version_file)
