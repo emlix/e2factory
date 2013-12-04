@@ -203,8 +203,8 @@ local function e2_fetch_project(arg)
     end
 
     -- write version file
-    rc, re = eio.file_write(e2lib.globals.global_interface_version_file,
-        string.format("%d\n", v))
+    local givf = e2lib.join(p.destdir, e2lib.globals.global_interface_version_file)
+    rc, re = eio.file_write(givf, string.format("%d\n", v))
     if not rc then
         return false, e:cat(re)
     end

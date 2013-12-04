@@ -1445,7 +1445,8 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     -- read global interface version and check if this version of the local
     -- tools supports the version used for the project
-    local line, re = eio.file_read_line(e2lib.globals.global_interface_version_file)
+    local givf = e2lib.join(info.root, e2lib.globals.global_interface_version_file)
+    local line, re = eio.file_read_line(givf)
     if not line then
         return false, e:cat(re)
     end

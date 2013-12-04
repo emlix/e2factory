@@ -91,8 +91,8 @@ local function e2_install_e2(arg)
     end
 
     -- read the version from the first line
-    local line, re = eio.file_read_line(
-        e2lib.globals.global_interface_version_file)
+    local givf = e2lib.join(root, e2lib.globals.global_interface_version_file)
+    local line, re = eio.file_read_line(givf)
     if not line then
         return false, e:cat(re)
     end
