@@ -258,7 +258,7 @@ local function e2_create_project(arg)
         { filename = "proj/licences", content=licences },
         { filename = "proj/env", content=env },
         { filename = "proj/config", content=pconfig },
-        { filename = ".e2/syntax", content=syntax },
+        { filename = e2lib.globals.syntax_file, content=syntax },
         { filename = e2lib.globals.e2version_file, content=e2version },
         { filename = ".gitignore", content=gitignore },
     }

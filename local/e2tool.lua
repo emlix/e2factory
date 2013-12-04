@@ -766,24 +766,30 @@ end
 -- @return bool
 -- @return an error object on failure
 local function check_config_syntax_compat(info)
-    local e = err.new("checking configuration syntax compatibilitly failed")
-    local l, re = eio.file_read_line(info.config_syntax_file)
+    local re, e, sf, l
+
+    e = err.new("checking configuration syntax compatibilitly failed")
+    sf = e2lib.join(info.root, e2lib.globals.syntax_file)
+
+    l, re = eio.file_read_line(sf)
     if not l then
         return false, e:cat(re)
     end
+
     for _,m in ipairs(info.config_syntax_compat) do
         m = string.format("^%s$", m)
         if l:match(m) then
-            return true, nil
+            return true
         end
     end
+
     local s = [[
 Your configuration syntax is incompatible with this tool version.
 Please read the configuration Changelog, update your project configuration
 and finally insert the new configuration syntax version into %s
 
 Configuration syntax versions supported by this version of the tools are:]]
-    e2lib.logf(2, s, info.config_syntax_file)
+    e2lib.logf(2, s, sf)
     for _,m in ipairs(info.config_syntax_compat) do
         e2lib.logf(2, "%s", m)
     end
@@ -1278,7 +1284,6 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     -- check for configuration compatibility
     info.config_syntax_compat = buildconfig.SYNTAX
-    info.config_syntax_file = ".e2/syntax"
     rc, re = check_config_syntax_compat(info)
     if not rc then
         e2lib.finish(1)
