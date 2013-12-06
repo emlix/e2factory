@@ -52,14 +52,14 @@ local function editor(file)
 end
 
 --- Find whether upstream config files hide this source/result.
-local function shadow_config_up(src_res, pathname)
+local function shadow_config_up(info, src_res, pathname)
     local cf, cfdir
     if src_res == "src" then
-        cf = e2tool.sourceconfig(pathname)
-        cfdir = e2tool.sourcedir(pathname)
+        cf = e2tool.sourceconfig(pathname, info.root)
+        cfdir = e2tool.sourcedir(pathname, info.root)
     elseif src_res == "res" then
-        cf = e2tool.resultconfig(pathname)
-        cfdir = e2tool.resultdir(pathname)
+        cf = e2tool.resultconfig(pathname, info.root)
+        cfdir = e2tool.resultdir(pathname, info.root)
     else
         return false, err.new("unexpected value in src_res")
     end
@@ -78,19 +78,19 @@ local function shadow_config_up(src_res, pathname)
             err.new("config in %s would shadow the new %s", cfdir, thing)
     end
 
-    return shadow_config_up(src_res, e2lib.dirname(pathname))
+    return shadow_config_up(info, src_res, e2lib.dirname(pathname))
 end
 
 --- Find whether downstream sources/results would be hidden by creating
 -- config here.
-local function shadow_config_down(src_res, pathname)
+local function shadow_config_down(info, src_res, pathname)
     local cf, cfdir
     if src_res == "src" then
-        cf = e2tool.sourceconfig(pathname)
-        cfdir = e2tool.sourcedir(pathname)
+        cf = e2tool.sourceconfig(pathname, info.root)
+        cfdir = e2tool.sourcedir(pathname, info.root)
     elseif src_res == "res" then
-        cf = e2tool.resultconfig(pathname)
-        cfdir = e2tool.resultdir(pathname)
+        cf = e2tool.resultconfig(pathname, info.root)
+        cfdir = e2tool.resultdir(pathname, info.root)
     else
         return false, err.new("unexpected value in src_res")
     end
@@ -106,7 +106,7 @@ local function shadow_config_down(src_res, pathname)
         end
 
         if e2lib.isdir(e2lib.join(cfdir, f)) then
-            return shadow_config_down(src_res, e2lib.join(pathname, f))
+            return shadow_config_down(info, src_res, e2lib.join(pathname, f))
         end
     end
 
@@ -143,19 +143,19 @@ local function newsource(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.sourceconfig(pathname)
-    local cfdir = e2tool.sourcedir(pathname)
+    local cf = e2tool.sourceconfig(pathname, info.root)
+    local cfdir = e2tool.sourcedir(pathname, info.root)
 
     if e2lib.isfile(cf) then
         return false, e:append("refusing to overwrite config in %s", cfdir)
     end
 
-    rc, re = shadow_config_up("src", pathname)
+    rc, re = shadow_config_up(info, "src", pathname)
     if not rc then
         return false, e:cat(re)
     end
 
-    rc, re = shadow_config_down("src", pathname)
+    rc, re = shadow_config_down(info, "src", pathname)
     if not rc then
         return false, e:cat(re)
     end
@@ -194,7 +194,7 @@ local function editsource(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.sourceconfig(pathname)
+    local cf = e2tool.sourceconfig(pathname, info.root)
     return editor(cf)
 end
 
@@ -214,9 +214,9 @@ local function newresult(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cfdir = e2tool.resultdir(pathname)
-    local cf = e2tool.resultconfig(pathname)
-    local bs = e2tool.resultbuildscript(pathname)
+    local cfdir = e2tool.resultdir(pathname, info.root)
+    local cf = e2tool.resultconfig(pathname, info.root)
+    local bs = e2tool.resultbuildscript(pathname, info.root)
 
     local cftemplate = e2lib.join(info.local_template_path, "result")
     local bstemplate = e2lib.join(info.local_template_path, "build-script")
@@ -238,12 +238,12 @@ local function newresult(info, ...)
             e:append("refusing to overwrite build-script in %s", cfdir)
     end
 
-    rc, re = shadow_config_up("res", pathname)
+    rc, re = shadow_config_up(info, "res", pathname)
     if not rc then
         return false, e:cat(re)
     end
 
-    rc, re = shadow_config_down("res", pathname)
+    rc, re = shadow_config_down(info, "res", pathname)
     if not rc then
         return false, e:cat(re)
     end
@@ -292,7 +292,7 @@ local function editresult(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.resultconfig(pathname)
+    local cf = e2tool.resultconfig(pathname, info.root)
     return editor(cf)
 end
 
@@ -312,7 +312,7 @@ local function editbuildscript(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.resultbuildscript(pathname)
+    local cf = e2tool.resultbuildscript(pathname, info.root)
     return editor(cf)
 end
 
