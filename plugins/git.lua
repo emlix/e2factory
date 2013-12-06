@@ -425,7 +425,7 @@ function git.working_copy_available(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
-    local gitwc = info.root .. "/" .. src.working
+    local gitwc = e2lib.join(info.root, src.working)
     local rc = e2lib.isdir(gitwc)
     return rc, nil
 end
@@ -564,7 +564,7 @@ function git.toresult(info, sourcename, sourceset, directory)
     local src = info.sources[sourcename]
     local makefile = "Makefile"
     local source = "source"
-    local sourcedir = string.format("%s/%s", directory, source)
+    local sourcedir = e2lib.join(directory, source)
     local archive = string.format("%s.tar.gz", src.name)
     local cmd = nil
 
@@ -626,7 +626,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         return false, e:append("sourceset not supported: %s",
         sourceset)
     end
-    local fname  = string.format("%s/%s", directory, makefile)
+    local fname  = e2lib.join(directory, makefile)
     local out = string.format(
         ".PHONY:\tplace\n\n"..
         "place:\n"..
@@ -636,7 +636,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         return false, e:cat(re)
     end
     -- write licences
-    local destdir = string.format("%s/licences", directory)
+    local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licence_list = table.concat(src.licences, "\n") .. "\n"
     rc, re = e2lib.mkdir_recursive(destdir)
