@@ -159,17 +159,19 @@ local function rsync_ssh_mkdir(opts, user, server, dir)
     return true, nil
 end
 
---- fetch a file from a server
+--- Fetch a file from a server.
 -- @param surl url to the server
 -- @param location location relative to the server url
--- @param destdir where to store the file locally
--- @param destname filename of the fetched file
--- @return true on success, false on error
--- @return an error object on failure
+-- @param destdir Where to store the file locally.
+-- @param destname Filename of the fetched file (optional). If not specified,
+--                 the basename of location is used.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function transport.fetch_file(surl, location, destdir, destname)
     if not destname then
         destname = e2lib.basename(location)
     end
+
     local rc, re
     local e = err.new("transport: fetching file failed")
     local u, re = url.parse(surl)
@@ -201,7 +203,6 @@ function transport.fetch_file(surl, location, destdir, destname)
         u.transport == "https" then
         local curl_argv = {}
         local url_loc =  string.format("%s/%s",  u.url, location)
-        local dest_tmp = string.format("%s/%s",  destdir, tmpfile)
         -- use special flags here
         table.insert(curl_argv, "--create-dirs")
         table.insert(curl_argv, "--silent")
@@ -210,7 +211,7 @@ function transport.fetch_file(surl, location, destdir, destname)
 
         table.insert(curl_argv, url_loc)
         table.insert(curl_argv, "-o")
-        table.insert(curl_argv, dest_tmp)
+        table.insert(curl_argv, tmpfile_path)
 
         rc, re = e2lib.curl(curl_argv)
         if not rc then
@@ -218,16 +219,17 @@ function transport.fetch_file(surl, location, destdir, destname)
         end
     elseif u.transport == "file" then
         -- rsync "sourcefile" "destdir/destfile"
-        rc, re = rsync_ssh({}, e2lib.join("/", u.path, location),
-            destdir .. "/" .. tmpfile)
+        local argv = {}
+        table.insert(argv, e2lib.join("/", u.path, location))
+        table.insert(argv, tmpfile_path)
+        rc, re = e2lib.rsync(argv)
         if not rc then
             return false, e:cat(re)
         end
     elseif u.transport == "rsync+ssh" then
-        local sdir = "/" .. u.path .. "/" .. location
-        local ddir = destdir .. "/" .. tmpfile
+        local sdir = e2lib.join("/", u.path, location)
         local src =  rsync_quote_remote(u.user, u.servername, sdir)
-        rc, re = rsync_ssh({}, src, ddir)
+        rc, re = rsync_ssh({}, src, tmpfile_path)
         if not rc then
             return false, e:cat(re)
         end
@@ -242,9 +244,8 @@ function transport.fetch_file(surl, location, destdir, destname)
         local sourcefile = string.format("/%s/%s", u.path, location)
         sourcefile = e2lib.shquote(sourcefile)
         sourcefile = sourceserv .. sourcefile
-        local destfile = string.format("%s/%s", destdir, tmpfile)
 
-        rc, re = e2lib.scp({ sourcefile , destfile })
+        rc, re = e2lib.scp({ sourcefile , tmpfile_path })
         if not rc then
             return false, e:cat(re)
         end
@@ -260,7 +261,7 @@ function transport.fetch_file(surl, location, destdir, destname)
     end
     -- file was moved away above, but remove it from the list anyway
     e2lib.rmtempfile(tmpfile_path)
-    return true, nil
+    return true
 end
 
 --- push a file to a server
