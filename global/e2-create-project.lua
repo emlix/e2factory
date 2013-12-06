@@ -38,7 +38,8 @@ local buildconfig = require("buildconfig")
 local url = require("url")
 
 --- Create a extensions config.
--- @param extensions Table.
+-- @param extension_config Extension file name.
+-- @param extensions Extension table.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function write_extension_config(extension_config, extensions)
