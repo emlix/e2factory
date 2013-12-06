@@ -1804,9 +1804,12 @@ end
 -- @param tool Tool name as registered in the tools library (string).
 -- @param argv Vector of arguments, escaping is handled by the function
 --             (table of strings).
+-- @param workdir Working directory of tool (optional).
+-- @param envdict Environment dictionary of tool (optional).
 -- @return True when the tool returned 0, false on error.
 -- @return Error object on failure.
-function e2lib.call_tool_argv(tool, argv)
+-- @see callcmd_log
+function e2lib.call_tool_argv(tool, argv, workdir, envdict)
     local rc, re, cmd, flags, call
 
     cmd, re = tools.get_tool(tool)
@@ -1829,7 +1832,7 @@ function e2lib.call_tool_argv(tool, argv)
         table.insert(cmd, arg)
     end
 
-    rc, re = e2lib.callcmd_log(cmd)
+    rc, re = e2lib.callcmd_log(cmd, workdir, envdict)
     if not rc or rc ~= 0 then
         return false, re
     end
