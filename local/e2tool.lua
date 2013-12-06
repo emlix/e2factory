@@ -1860,26 +1860,6 @@ function e2tool.dsort(info)
     return e2tool.dlist_recursive(info, info.project.default_results)
 end
 
---- hash a file
--- @param path string: path to a file
--- @return string the hash value, nil on error
--- @return nil, an error string on error
-function e2tool.hash_path(path)
-    assert(type(path) == "string")
-    assert(string.len(path) > 0)
-
-    local e = err.new("error hashing path")
-
-    local ctx = hash.hash_start()
-
-    local rc, re = hash.hash_file(ctx, path)
-    if not rc then
-        return nil, e:cat(re)
-    end
-
-    return hash.hash_finish(ctx)
-end
-
 --- hash a file addressed by server name and location.
 -- @param info info structure
 -- @param server the server name
@@ -1897,7 +1877,7 @@ local function hash_file(info, server, location)
     if not path then
         return nil, e:cat(re)
     end
-    return e2tool.hash_path(path)
+    return hash.hash_file_once(path)
 end
 
 --- verify that a file addressed by server name and location matches the
