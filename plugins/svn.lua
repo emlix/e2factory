@@ -75,6 +75,7 @@ end
 
 --- Call the svn command.
 -- @param argv table: vector with arguments for svn
+-- @param workdir Directory where svn command starts executing (optional).
 -- @return True on success, false on error or when svn returned with exit
 --         status other than 0.
 -- @return Error object on failure.
@@ -427,12 +428,8 @@ function svn.update(info, sourcename)
     end
     local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
-    local working = e2lib.join(info.root, src.working)
-    rc, re = e2lib.chdir(working)
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = svn_tool({ "update", })
+    local workdir = e2lib.join(info.root, src.working)
+    rc, re = svn_tool({ "update" }, workdir)
     if not rc then
         return false, e:cat(re)
     end
