@@ -127,6 +127,27 @@ function hash.hash_file(hc, path)
     return true
 end
 
+--- Hash a file at once.
+-- @param path Full path to the file.
+-- @return Checksum string, or false on error.
+-- @return Error object on failure.
+function hash.hash_file_once(path)
+    local rc, re, hc, cs
+
+    hc, re = hash.hash_start()
+    if not hc then
+        return false, re
+    end
+
+    rc, re = hash.hash_file(hc, path)
+    if not rc then
+        hash.hash_finish(hc)
+        return false, re
+    end
+
+    return hash.hash_finish(hc)
+end
+
 --- Get checksum and release hash context.
 -- @param hc the hash context
 -- @return SHA1 Checksum, or false on error.
