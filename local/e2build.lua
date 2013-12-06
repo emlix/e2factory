@@ -562,56 +562,44 @@ function e2build.unpack_result(info, r, dep, destdir)
         return false, re
     end
 
-    rc, re = e2lib.chdir(tmpdir)
+    local resdir = e2lib.join(tmpdir, "result")
+
+    rc, re = e2lib.mkdir(resdir)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.mkdir("result")
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = e2lib.tar({ "-xf", path, "-C", "result" })
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = e2lib.chdir("result")
+    rc, re = e2lib.tar({ "-xf", path, "-C", resdir })
     if not rc then
         return false, e:cat(re)
     end
 
-    dt, re = digest.parse("checksums")
+    dt, re = digest.parse(e2lib.join(resdir, "checksums"))
     if not dt then
         return false, e:cat(re)
     end
 
-    rc, re = digest.verify(dt, e2lib.cwd())
+    rc, re = digest.verify(dt, resdir)
     if not rc then
         e:append("checksum mismatch in dependency: %s", dep)
         return false, e:cat(re)
     end
 
-    rc, re = e2lib.chdir("files")
-    if not rc then
-        return false, e:cat(re)
-    end
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
     end
-    for f, re in e2lib.directory(".") do
+    local filesdir = e2lib.join(resdir, "files")
+    for f, re in e2lib.directory(filesdir) do
         if not f then
             return false, e:cat(re)
         end
 
-        rc, re = e2lib.mv(f, destdir)
+        rc, re = e2lib.mv(e2lib.join(filesdir, f), destdir)
         if not rc then
             return false, e:cat(re)
         end
     end
-    rc, re = e2tool.lcd(info, ".")
-    if not rc then
-        return false, e:cat(re)
-    end
+
     e2lib.rmtempdir(tmpdir)
     return true, nil
 end
@@ -870,12 +858,12 @@ end
 --- deploy a result to the archive
 -- @param info
 -- @param r string: result name
--- @param return_flags table
+-- @param tmpdir Directory containing the result etc.
 -- @return bool
 -- @return an error object on failure
-local function deploy(info, r, return_flags)
+local function deploy(info, r, tmpdir)
     --[[
-    This function is called located in a temporary directory that contains
+    This function is given a temporary directory that contains
     the unpacked result structure and the result tarball itself as follows:
     ./result/build.log.gz
     ./result/checksums
@@ -899,7 +887,11 @@ local function deploy(info, r, return_flags)
     end
     local files = {}
     local re
-    for f, re in e2lib.directory("result/files") do
+
+    local filesdir = e2lib.join(tmpdir, "result/files")
+    local resdir = e2lib.join(tmpdir, "result")
+
+    for f, re in e2lib.directory(filesdir) do
         if not f then
             return false, re
         end
@@ -915,7 +907,7 @@ local function deploy(info, r, return_flags)
     local cache_flags = {
         cache = false,
     }
-    local rc, re = info.cache:fetch_file(server, location1, ".", nil, cache_flags)
+    local rc, re = info.cache:fetch_file(server, location1, tmpdir, nil, cache_flags)
     if rc then
         e2lib.warnf("WOTHER",
             "Skipping deployment. This release was already deployed.")
@@ -924,7 +916,7 @@ local function deploy(info, r, return_flags)
 
     e2lib.logf(1, "deploying %s to %s:%s", r, server, location)
     for _,f in ipairs(files) do
-        local sourcefile = e2lib.join("result", f)
+        local sourcefile = e2lib.join(resdir, f)
         local location1 = e2lib.join(location, r, f)
         local cache_flags = {}
         local rc, re = info.cache:push_file(sourcefile, server, location1,
@@ -956,11 +948,9 @@ local function store_result(info, r, return_flags)
 
     -- build a stored result structure and store
     local rfilesdir = e2lib.join(res.build_config.T, "out")
-    rc, re = e2lib.chdir(tmpdir)
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = e2lib.mkdir_recursive("result/files")
+    local filesdir = e2lib.join(tmpdir, "result/files")
+    local resdir = e2lib.join(tmpdir, "result")
+    rc, re = e2lib.mkdir_recursive(filesdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -968,7 +958,7 @@ local function store_result(info, r, return_flags)
     for f in e2lib.directory(rfilesdir, false, true) do
         e2lib.logf(3, "result file: %s", f)
         local s = e2lib.join(rfilesdir, f)
-        local d = "result/files"
+        local d = e2lib.join(filesdir, f)
         rc, re = e2lib.hardlink(s, d)
         if not rc then
             -- There are three reasons this might fail
@@ -992,13 +982,9 @@ local function store_result(info, r, return_flags)
         e:append("the output directory.")
         return false, e
     end
-    rc, re = e2lib.chdir("result")
-    if not rc then
-        return false, e:cat(re)
-    end
 
     dt = digest.new()
-    for f,re in e2lib.directory("files", false, true) do
+    for f,re in e2lib.directory(filesdir, false, true) do
         if not f then
             return false, e:cat(re)
         end
@@ -1006,30 +992,29 @@ local function store_result(info, r, return_flags)
         digest.new_entry(dt, digest.SHA1, nil, e2lib.join("files", f), nil)
     end
 
-    rc, re = digest.checksum(dt, e2lib.cwd())
+    rc, re = digest.checksum(dt, resdir)
     if not rc then
         return false, e:cat(re)
     end
 
-    rc, re = digest.write(dt, "checksums")
+    rc, re = digest.write(dt, e2lib.join(resdir, "checksums"))
     if not rc then
         return false, e:cat(re)
     end
 
     -- include compressed build logfile into the result tarball
-    rc, re = e2lib.cp(res.build_config.buildlog, "build.log")
+    rc, re = e2lib.cp(res.build_config.buildlog, e2lib.join(resdir, "build.log"))
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.gzip({ "build.log" })
+    rc, re = e2lib.gzip({ e2lib.join(resdir, "build.log") })
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2lib.chdir("..")
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = e2lib.tar({ "-cf", "result.tar", "-C", "result", "." })
+
+    rc, re = e2lib.tar({
+        "-cf",  e2lib.join(tmpdir, "result.tar"),
+        "-C", resdir, "." })
     if not rc then
         return false, e:cat(re)
     end
@@ -1050,14 +1035,11 @@ local function store_result(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = deploy(info, r, return_flags)
+    rc, re = deploy(info, r, tmpdir)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = e2tool.lcd(info, ".")
-    if not rc then
-        return false, e:cat(re)
-    end
+
     e2lib.rmtempdir(tmpdir)
     return true, nil
 end
@@ -1158,7 +1140,7 @@ local function collect_project(info, r, return_flags)
         end
 
         e2lib.logf(3, "init file: %s", f)
-        local server = "."
+        local server = info.root_server_name
         local location = e2lib.join("proj/init", f)
         local cache_flags = {}
         rc, re = info.cache:fetch_file(server, location,
@@ -1291,7 +1273,7 @@ local function collect_project(info, r, return_flags)
             local server = info.root_server_name
             local cache_flags = {}
             rc, re = info.cache:fetch_file(server, file,
-            destdir, nil, cache_flags)
+                destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
             end
@@ -1359,7 +1341,7 @@ local function collect_project(info, r, return_flags)
         return false, e:cat(re)
     end
     -- install the global Makefiles
-    local server = "."
+    local server = info.root_server_name
     local destdir = e2lib.join(res.build_config.T, "project")
     local cache_flags = {}
     local locations = {
