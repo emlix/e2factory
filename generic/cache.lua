@@ -315,16 +315,14 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = transport.fetch_file(ce.cache_url, location,
-        destdir, destname, flags)
+        rc, re = transport.fetch_file(ce.cache_url, location, destdir, destname)
         if not rc then
             return false, e:cat(re)
         end
     else
         -- cache is disabled:
         -- fetch from source to destination
-        rc, re = transport.fetch_file(ce.remote_url, location,
-        destdir, destname, flags)
+        rc, re = transport.fetch_file(ce.remote_url, location, destdir, destname)
         if not rc then
             return false, e:cat(re)
         end
@@ -441,8 +439,7 @@ function cache.cache_file(c, server, location, flags)
         -- file is in the cache and no refresh requested
         return true, nil
     end
-    local destdir = string.format("/%s/%s", ceurl.path,
-    e2lib.dirname(location))
+    local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
     -- fetch the file to the cache
     rc, re = transport.fetch_file(ce.remote_url, location, destdir, nil)
     if not rc then
