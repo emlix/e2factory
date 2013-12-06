@@ -604,8 +604,8 @@ local function check_result(info, resultname)
             break
         end
     end
-    local build_script = e2lib.join(info.root,
-        e2tool.resultbuildscript(info.results[resultname].directory))
+    local build_script =
+        e2tool.resultbuildscript(info.results[resultname].directory, info.root)
     if not e2lib.isfile(build_script) then
         e:append("build-script does not exist: %s", build_script)
     end
@@ -667,11 +667,6 @@ function e2tool.local_init(path, tool)
     info.root, re = e2lib.locate_project_root(path)
     if not info.root then
         return false, e:append("not located in a project directory")
-    end
-
-    rc, re = e2tool.lcd(info, ".")
-    if not rc then
-        return false, e:cat(re)
     end
 
     info.ftab = strict.lock({
@@ -877,7 +872,8 @@ local function read_chroot_config(info)
     local e = err.new("reading chroot config failed")
     local t = {}
     local rc, re =
-        load_user_config(info, "proj/chroot", t, "chroot", "e2chroot")
+        load_user_config(info, e2lib.join(info.root, "proj/chroot"),
+            t, "chroot", "e2chroot")
     if not rc then
         return false, e:cat(re)
     end
@@ -932,7 +928,7 @@ end
 local function gather_source_paths(info, basedir, sources)
     sources = sources or {}
 
-    local currdir = e2lib.join(info.root, e2tool.sourcedir(basedir))
+    local currdir = e2tool.sourcedir(basedir, info.root)
     for entry, re in e2lib.directory(currdir) do
         if not entry then
             return false, re
@@ -942,10 +938,11 @@ local function gather_source_paths(info, basedir, sources)
             entry = e2lib.join(basedir, entry)
         end
 
-        local fullentry = e2lib.join(info.root, e2tool.sourcedir(entry))
-        local s = e2lib.stat(fullentry, false)
+        local sdir = e2tool.sourcedir(entry, info.root)
+        local sconfig = e2tool.sourceconfig(entry, info.root)
+        local s = e2lib.stat(sdir, false)
         if s.type == "directory" then
-            if e2lib.exists(e2tool.sourceconfig(entry)) then
+            if e2lib.exists(sconfig) then
                 table.insert(sources, entry)
             else
                 -- try subfolder
@@ -1021,7 +1018,7 @@ local function load_source_config(info)
 
     for _,src in ipairs(sources) do
         local list, re
-        local path = e2tool.sourceconfig(src)
+        local path = e2tool.sourceconfig(src, info.root)
         local types = { "e2source", }
         local rc, re = e2tool.verify_src_res_pathname_valid_chars(src)
         if not rc then
@@ -1135,7 +1132,7 @@ end
 local function gather_result_paths(info, basedir, results)
     results = results or {}
 
-    local currdir = e2lib.join(info.root, e2tool.resultdir(basedir))
+    local currdir = e2tool.resultdir(basedir, info.root)
     for entry, re in e2lib.directory(currdir) do
         if not entry then
             return false, re
@@ -1145,10 +1142,11 @@ local function gather_result_paths(info, basedir, results)
             entry = e2lib.join(basedir, entry)
         end
 
-        local fullentry = e2lib.join(info.root, e2tool.resultdir(entry))
-        local s = e2lib.stat(fullentry, false)
+        local resdir = e2tool.resultdir(entry, info.root)
+        local resconfig = e2tool.resultconfig(entry, info.root)
+        local s = e2lib.stat(resdir, false)
         if s.type == "directory" then
-            if e2lib.exists(e2tool.resultconfig(entry)) then
+            if e2lib.exists(resconfig) then
                 table.insert(results, entry)
             else
                 -- try subfolder
@@ -1175,7 +1173,7 @@ local function load_result_config(info)
 
     for _,res in ipairs(results) do
         local list, re
-        local path = e2tool.resultconfig(res)
+        local path = e2tool.resultconfig(res, info.root)
         local types = { "e2result", }
 
         local rc, re = e2tool.verify_src_res_pathname_valid_chars(res)
@@ -1239,7 +1237,7 @@ local function read_project_config(info)
 
     local rc, re
 
-    local rc, re = load_user_config(info, info.root .. "/proj/config",
+    local rc, re = load_user_config(info, e2lib.join(info.root, "proj/config"),
         info, "project", "e2project")
     if not rc then
         return false, re
@@ -1402,7 +1400,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- licences
-    rc, re = load_user_config(info, info.root .. "/proj/licences",
+    rc, re = load_user_config(info, e2lib.join(info.root, "proj/licences"),
         info, "licences", "e2licence")
     if not rc then
         return false, e:cat(re)
@@ -2526,21 +2524,6 @@ function e2tool.print_selection(info, results)
         e2lib.logf(3, "Selected result: %-20s %s %s %s", r, s, f, p)
     end
     return true, nil
-end
-
---- chdir to a directory relative to info.root
--- @param info
--- @param dir string: directory
--- @return bool
--- @return an error object on failure
-function e2tool.lcd(info, dir)
-    local e = err.new("chdir failed")
-    local abspath = e2lib.join(info.root, dir)
-    local rc, re = e2lib.chdir(abspath)
-    if not rc then
-        return false, e:cat(re)
-    end
-    return true
 end
 
 --- register collect project info.
