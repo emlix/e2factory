@@ -1067,49 +1067,62 @@ local function load_source_config(info)
     return true, nil
 end
 
---- Get directory for a result.
--- Returns the relative path to the resultdir and optionally a name
--- (e.g. res/name).
--- @param name optional path component (string).
+--- Get project-relative directory for a result.
+-- Returns the relative path to the resultdir and optionally a name and prefix
+-- (e.g. prefix/res/name).
+-- @param name Optional result path component (string).
+-- @param prefix Optional prefix path.
 -- @return Path of the result.
-function e2tool.resultdir(name)
+function e2tool.resultdir(name, prefix)
+    local p = "res"
     if name then
-        return e2lib.join("res", name)
+        p = e2lib.join(p, name)
     end
-    return "res"
+    if prefix then
+        p = e2lib.join(prefix, p)
+    end
+    return p
 end
 
---- Get directory for a source.
--- Returns the relative path to the sourcedir and optinally a name
--- (e.g. src/name).
--- @param name optional path component (string).
+--- Get project-relative directory for a source.
+-- Returns the relative path to the sourcedir and optinally a name and prefix
+-- (e.g. prefix/src/name).
+-- @param name Optional source path component (string).
+-- @param prefix Optional prefix path.
 -- @return Path of the source.
-function e2tool.sourcedir(name)
+function e2tool.sourcedir(name, prefix)
+    local p = "src"
     if name then
-        return e2lib.join("src", name)
+        p = e2lib.join(p, name)
     end
-    return "src"
+    if prefix then
+        p = e2lib.join(prefix, p)
+    end
+    return p
 end
 
---- get path to the result config.
--- @param resultname
--- @return path to the resultconfig
-function e2tool.resultconfig(name)
-    return e2lib.join(e2tool.resultdir(name), "config")
+--- Get project-relative path to the result config.
+-- @param name Result path component.
+-- @param prefix Optional prefix path.
+-- @return Path to the resultconfig.
+function e2tool.resultconfig(name, prefix)
+    return e2lib.join(e2tool.resultdir(name, prefix), "config")
 end
 
---- get path to the result build-script
--- @param resultname
--- @return path to the result build-script
-function e2tool.resultbuildscript(name)
-    return e2lib.join(e2tool.resultdir(name), "build-script")
+--- Get project-relative path to the result build-script
+-- @param name Result path compnent name.
+-- @param prefix Optional prefix path.
+-- @return Path to the result build-script.
+function e2tool.resultbuildscript(name, prefix)
+    return e2lib.join(e2tool.resultdir(name, prefix), "build-script")
 end
 
---- get path to the source config
--- @param sourcename
--- @return path to the sourceconfig
-function e2tool.sourceconfig(name)
-    return e2lib.join(e2tool.sourcedir(name), "config")
+--- Get project-relative path to the source config.
+-- @param name Source path component.
+-- @param prefix Optional prefix path.
+-- @return Path to the sourceconfig.
+function e2tool.sourceconfig(name, prefix)
+    return e2lib.join(e2tool.sourcedir(name, prefix), "config")
 end
 
 --- Gather result paths.
