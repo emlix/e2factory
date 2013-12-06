@@ -385,22 +385,22 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
     return true, nil
 end
 
---- fetch a file from a server
--- @param surl url to the server
--- @param location location relative to the server url
--- @return true on success, false on error
--- @return nil, an error string on error
+--- Get file path to the specified location, if the file is locally accessable.
+-- It's the responsibilty of the caller to check whether the file exists.
+-- @param surl Url to the server.
+-- @param location Location relative to the server url.
+-- @return File path on success, false on error.
+-- @return Error string on failure.
 function transport.file_path(surl, location)
     local e = err.new("can't get path to file")
     local u, re = url.parse(surl)
     if not u then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
     if u.transport ~= "file" then
-        return nil, e:append("transport does not support file_path()")
+        return false, e:append("transport does not support file_path()")
     end
-    local path = string.format("/%s/%s", u.path, location)
-    return path
+    return string.format("/%s/%s", u.path, location)
 end
 
 return strict.lock(transport)
