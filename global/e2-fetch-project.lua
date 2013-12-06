@@ -91,7 +91,7 @@ local function e2_fetch_project(arg)
     end
 
     -- Make destdir an absolute path.
-    if string.sub(p.destdir, 1) ~= "/" then
+    if string.sub(p.destdir, 1, 1) ~= "/" then
         rc, re = e2lib.cwd()
         if not rc then
             return false, e:cat(re)
