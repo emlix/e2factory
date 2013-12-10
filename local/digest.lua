@@ -282,17 +282,7 @@ local function compute_checksum_entry(pos, entry, directory, verify)
 
     if entry.digest == digest.SHA1 then
         -- XXX: We assume the hash module returns SHA1 checksums. Not nice.
-        local hc, re = hash.hash_start()
-        if not hc then
-            return false, re
-        end
-
-        rc, re = hash.hash_file(hc, filename)
-        if not rc then
-            return false, re
-        end
-
-        computedcs, re = hash.hash_finish(hc)
+        computedcs, re = hash.hash_file_once(filename)
         if not computedcs then
             return false, re
         end

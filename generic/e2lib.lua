@@ -58,6 +58,7 @@ local cache = require("cache")
 local eio = require("eio")
 local le2lib = require("le2lib")
 local trace = require("trace")
+local hash = require("hash")
 
 e2lib.globals = strict.lock({
     logflags = {
@@ -659,6 +660,7 @@ function e2lib.finish(returncode)
     if not returncode then
         returncode = 0
     end
+    hash.hcache_store()
     e2lib.cleanup()
     if e2lib.globals.debuglogfile then
         eio.fclose(e2lib.globals.debuglogfile)

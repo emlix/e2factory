@@ -704,56 +704,6 @@ function e2tool.local_init(path, tool)
     return info
 end
 
---- hashcache setup.
-local function hashcache_setup(info)
-    local e = err.new("reading hash cache")
-    local rc, re
-    e2lib.logf(4, "loading hashcache from file: %s", info.hashcache_file)
-    info.hashcache = {}
-
-    local c, msg = loadfile(info.hashcache_file)
-    if not c then
-        e2lib.warnf("WHINT", "loading hashcache failed: %s", msg)
-        return true
-    end
-    -- set empty environment for this chunk
-    setfenv(c, {})
-    local newcache = c()
-
-    if type(newcache) ~= "table" then
-        e2lib.warnf("WHINT", "ignoring malformed hashcache")
-        return true
-    end
-
-    for id, hce in pairs(newcache) do
-        if type(id) == "string" and id:match("([^:]+):(%S+)")
-            and type(hce.hash) == "string" and string.len(hce.hash) == 40
-            and type(hce.mtime) == "number"
-            and type(hce.mtime_nsec) == "number"
-            and type(hce.ctime) == "number"
-            and type(hce.ctime_nsec) == "number"
-            and type(hce.size) == "number"
-            and type(hce.dev) == "number"
-            and type(hce.ino) == "number" then
-
-            info.hashcache[id] = {
-                hash = hce.hash,
-                mtime = hce.mtime,
-                mtime_nsec = hce.mtime_nsec,
-                ctime = hce.ctime,
-                ctime_nsec = hce.ctime_nsec,
-                size = hce.size,
-                dev = hce.dev,
-                ino = hce.ino,
-            }
-        else
-            e2lib.warnf("WHINT", "ignoring malformed hashcache entry")
-        end
-    end
-
-    return true
-end
-
 --- check for configuration syntax compatibility and log informational
 -- message including list of supported syntaxes if incompatibility is
 -- detected.
@@ -1319,6 +1269,9 @@ function e2tool.collect_project_info(info, skip_load_config)
     e2lib.logf(4, "VERSION:       %s", buildconfig.VERSION)
     e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
 
+    hash.hcache_load(e2lib.join(info.root, ".e2/hashcache"))
+    -- no error check required
+
     --XXX create some policy module where the following policy settings
     --XXX and functions reside (server names, paths, etc.)
 
@@ -1350,12 +1303,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     -- either we are on x86_64 or we are on x86_32 and refuse to work anyway
     -- if x86_64 mode is requested.
     info.chroot_call_prefix["x86_64"] = ""
-
-    info.hashcache_file = e2lib.join(info.root, ".e2/hashcache")
-    rc, re = hashcache_setup(info)
-    if not rc then
-        return false, e:cat(re)
-    end
 
     if e2option.opts["check"] then
         local f = e2lib.join(info.root, e2lib.globals.e2version_file)
@@ -1860,26 +1807,6 @@ function e2tool.dsort(info)
     return e2tool.dlist_recursive(info, info.project.default_results)
 end
 
---- hash a file addressed by server name and location.
--- @param info info structure
--- @param server the server name
--- @param location file location relative to the server
--- @return string the hash value, nil on error
--- @return nil, an error string on error
-local function hash_file(info, server, location)
-    local e = err.new("error hashing file")
-    local cache_flags = { cache = true }
-    local rc, re = info.cache:cache_file(server, location, cache_flags)
-    if not rc then
-        return nil, e:cat(re)
-    end
-    local path, re = info.cache:file_path(server, location, cache_flags)
-    if not path then
-        return nil, e:cat(re)
-    end
-    return hash.hash_file_once(path)
-end
-
 --- verify that a file addressed by server name and location matches the
 -- checksum given in the sha1 parameter.
 -- @param info info structure
@@ -1891,7 +1818,7 @@ end
 function e2tool.verify_hash(info, server, location, sha1)
     local rc, re
     local e = err.new("error verifying checksum")
-    local is_sha1, re = hash_file(info, server, location)
+    local is_sha1, re = e2tool.fileid(info, {server=server, location=location})
     if not is_sha1 then
         return false, e:cat(re)
     end
@@ -1937,87 +1864,6 @@ local function projid(info)
     hash.hash_line(hc, buildconfig.VERSION)
     info.projid = hash.hash_finish(hc)
     return info.projid
-end
-
---- Write out hashcache file.
--- @param info Info table.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function hashcache_write(info)
-    local rc, re, e, out
-
-    out = { "return {\n" }
-    for k,hce in pairs(info.hashcache) do
-        table.insert(out, string.format(
-            "[%q] = { hash=%q, mtime=%d, mtime_nsec=%d, ctime=%d, " ..
-            "ctime_nsec=%d, size=%d, dev=%d, ino=%d },\n",
-            k, hce.hash, hce.mtime, hce.mtime_nsec,
-            hce.ctime, hce.ctime_nsec, hce.size, hce.dev, hce.ino))
-    end
-    table.insert(out, "}\n")
-
-    rc, re = eio.file_write(info.hashcache_file, table.concat(out))
-    if not rc then
-        e = err.new("writing hash cache file")
-        return false, e:cat(re)
-    end
-
-    return true
-end
-
---- hashcache.
-local function hashcache(info, file)
-    local e = err.new("getting fileid from hash cache failed")
-    local rc, re, fileid
-
-    local p, re = info.cache:file_path(file.server,	file.location, {})
-    if not p then
-        return nil, e:cat(re)
-    end
-    local s, re = e2lib.stat(p)
-    if not s then
-        return nil, e:cat(re)
-    end
-
-    local id = string.format("%s:%s", file.server, file.location)
-    local hce = info.hashcache[id]
-    if hce
-        -- We don't just care about the file contents (mtime),
-        -- inode changes could make the file inaccessible, so check ctime too
-        and s.mtime == hce.mtime
-        and s.mtime_nsec == hce.mtime_nsec
-        and s.ctime == hce.ctime
-        and s.ctime_nsec == hce.ctime_nsec
-        and s.size == hce.size
-        and s.dev == hce.dev
-        and s.ino == hce.ino then
-            assert(type(hce.hash) == "string" and string.len(hce.hash) == 40)
-            return hce.hash
-    end
-
-    local fileid
-    fileid, re = hash_file(info, file.server, file.location)
-    if not fileid then
-        return nil, e:cat(re)
-    end
-
-    assert(type(fileid) == "string" and string.len(fileid) == 40)
-    hce = {
-        hash = fileid,
-        mtime = s.mtime,
-        mtime_nsec = s.mtime_nsec,
-        ctime = s.ctime,
-        ctime_nsec = s.ctime_nsec,
-        size = s.size,
-        dev = s.dev,
-        ino = s.ino,
-    }
-    -- update hashcache and the hashcachefile
-    -- TBD: mark hashcache dirty and write hashcachefile once.
-    info.hashcache[id] = hce
-    hashcache_write(info) -- an error here is not fatal
-
-    return fileid
 end
 
 --- verify that remote files match the checksum. The check is skipped when
@@ -2075,15 +1921,7 @@ local function verify_remote_fileid(info, file, fileid)
                 e:cat(err.new("Could not extract digest from digest table"))
         end
     elseif u.transport == "file" then
-        hc, re = hash.hash_start()
-        if not hc then
-            return false, e:cat(re)
-        end
-        rc, re = hash.hash_file(hc, e2lib.join("/", u.path))
-        if not rc then
-            return false, e:cat(re)
-        end
-        remote_fileid, re = hash.hash_finish(hc)
+        remote_fileid, re = hash.hash_file_once(e2lib.join("/", u.path))
         if not remote_fileid then
             return false, e:cat(re)
         end
@@ -2104,15 +1942,7 @@ local function verify_remote_fileid(info, file, fileid)
             return false, e:cat(re)
         end
 
-        hc, re = hash.hash_start()
-        if not hc then
-            return false, e:cat(re)
-        end
-        rc, re = hash.hash_file(hc, tmpfile)
-        if not rc then
-            return false, e:cat(re)
-        end
-        remote_fileid, re = hash.hash_finish(hc)
+        remote_fileid, re = hash.hash_file_once(tmpfile)
         if not remote_fileid then
             return false, e:cat(re)
         end
@@ -2140,22 +1970,36 @@ end
 -- @return fileid string: hash value, or nil
 -- @return an error object on failure
 function e2tool.fileid(info, file)
-    local fileid
-    local re
-    local e = err.new("error calculating file id for file: %s:%s",
-    file.server, file.location)
+    local rc, re, e, fileid, path
+    local cache_flags = { cache = true }
+
+    e = err.new("error calculating file id for file: %s:%s",
+        file.server, file.location)
+
     if file.sha1 then
         fileid = file.sha1
     else
-        fileid, re = hashcache(info, file)
+        rc, re = info.cache:cache_file(file.server, file.location, cache_flags)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        path, re = info.cache:file_path(file.server, file.location, cache_flags)
+        if not path then
+            return false, e:cat(re)
+        end
+
+        fileid, re = hash.hash_file_once(path)
         if not fileid then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
     end
-    local rc, re = verify_remote_fileid(info, file, fileid)
+
+    rc, re = verify_remote_fileid(info, file, fileid)
     if not rc then
-        return nil, re
+        return false, e:cat(re)
     end
+
     return fileid
 end
 
