@@ -2217,28 +2217,6 @@ function e2tool.pbuildid(info, resultname)
     return r.build_mode.buildid(r.pbuildid)
 end
 
---- calculate the buildids for all results
--- @param info
--- @return nothing
-function e2tool.calc_buildids(info)
-    e2lib.log(3, "calculating buildids")
-    for _,r in ipairs(info.results) do
-        local bid, pbid
-        bid = buildid(info, r)
-        pbid = e2tool.pbuildid(info, r)
-        e2lib.logf(3, "result %20s: pbid(%s) bid(%s)", r,
-            e2tool.bid_display(pbid), e2tool.bid_display(bid))
-    end
-end
-
---- flush buildids.
-function e2tool.flush_buildids(info)
-    for r, res in pairs(info.results) do
-        res.buildid = nil
-        res.pbuildid = nil
-    end
-end
-
 --- return a table of environment variables valid for a result
 -- @param info the info table
 -- @param resultname string: name of a result
@@ -2252,27 +2230,6 @@ function e2tool.env_by_result(info, resultname)
     end
     env:merge(res._env, true)
     return env
-end
-
---- add source result.
-local function add_source_result(info, sourcename, source_set)
-    e2lib.logf(3, "adding source result for source %s", sourcename)
-    local src = info.sources[sourcename]
-    local r = {}
-    r.name = string.format("src-%s", src.name)
-    r.sources = { src.name }
-    r.depends = {}
-    r.chroot = {}
-    r.chroot.groups = {}
-    r.pseudo_result = true
-    info.results[r.name] = r
-end
-
---- add source results.
-local function add_source_results(info, source_set)
-    for _, src in pairs(info.sources) do
-        add_source_result(info, src.name)
-    end
 end
 
 --- select the result and apply build options
