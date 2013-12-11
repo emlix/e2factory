@@ -221,14 +221,14 @@ URL of the server.
 .BR cachable
 Type: Boolean (true, false)
 .br
-Defines weather the content of the server could be cached.
+Defines whether the content of the server could be cached.
 
 .TP
 .BR cache
 (on server level)
 Type: Boolean (true, false)
 .br
-Defines weather the content of the server should be cached.
+Defines whether the content of the server should be cached.
 
 .TP
 .BR islocal
