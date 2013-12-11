@@ -65,7 +65,6 @@ local buildconfig = require("buildconfig")
 -- @field sources_sorted table: sorted list of sources
 -- @field results table: results
 -- @field results_sorted table: sorted list of results
--- @field servers table: servers
 -- @field licences table: licences keyed by licence names
 -- @field licences_sorted table: sorted list of licences
 -- @field chroot table: chroot
@@ -138,16 +137,6 @@ local buildconfig = require("buildconfig")
 -- @field directory
 -- @see policy.build_mode
 -- @see e2build.build_config
-
---- table of server records, keyed by server name
--- @name servers
--- @class table
--- @field name string: server name
--- @field path (deprecated)
--- @field url string: server url
--- @field cachable bool: cachable flag
--- @field cache bool: cache enable flag
--- @field directory string: dirname where the config and build-script reside
 
 --- table of chroot configuration
 -- @name chroot
