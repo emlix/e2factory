@@ -29,25 +29,26 @@
 ]]
 
 local cache = {}
+package.loaded["cache"] = cache -- stop module loading loop
+
 local e2lib = require("e2lib")
-local transport = require("transport")
-local url = require("url")
 local err = require("err")
 local strict = require("strict")
+local transport = require("transport")
+local url = require("url")
 
---- cache
--- @class table
--- @name cache
--- @field name a human readable name
--- @field url cache base url
--- @field ce cache entries
+--- Internal representation of a cache. This table is locked.
+-- @table cache
+-- @field _name Human readable name.
+-- @field _url Cache base url.
+-- @field _ce Cache entries dict, indexed by server name.
+-- @see cache_entry
 
---- cache entry
--- @class table
--- @name cache entry
--- @field server the server name
--- @field remote_url the remote server url
--- @field cache_url the cache url (must be a file:/// url)
+--- Cache entry. Represents a server or alias. This table is locked.
+-- @table cache_entry
+-- @field server Server name, like "projects".
+-- @field remote_url Remote server URL.
+-- @field cache_url Cache URL (must be a file:/// url), or false if no cache.
 -- @field flags default flags for this cache entry
 
 --- flags influencing the caching behaviour
@@ -57,23 +58,20 @@ local strict = require("strict")
 -- @field refresh refresh a cached file?
 -- @field check_only check if a file is in the cache, without fetching
 
---- create a new cache table
--- @param name a cache name
+--- Create a new cache.
+-- @param name Cache name.
 -- @param url base url for this cache, must use file transport
 -- @return a cache table
 function cache.new_cache(name, url)
     local c = {}
-    c.name = name
-    c.url = url
-    c.ce = {}
+    c._name = name
+    c._url = url
+    c._ce = {}
 
-    e2lib.logf(4, "Cache: %s", c.name)
-    e2lib.logf(4, " url: %s", c.url)
+    e2lib.logf(4, "Cache: %s", c._name)
+    e2lib.logf(4, " url: %s", c._url)
 
-    local meta = { __index = cache }
-    setmetatable(c, meta)
-
-    return c
+    return strict.lock(c)
 end
 
 --- get a sorted list of servers
@@ -81,7 +79,7 @@ end
 -- @return table: a list of servers
 function cache.servers(c)
     local l = {}
-    for server, ce in pairs(c.ce) do
+    for server, ce in pairs(c._ce) do
         table.insert(l, server)
     end
     table.sort(l)
@@ -106,7 +104,12 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     local rc, re
     local e = err.new("error setting up cache entry")
     local ce = {}
-    local cache_url = nil
+    local cache_url = false
+
+    if c._ce[server] then
+        return false, e:append("cache entry for server %q exists", server)
+    end
+
     if not remote_url then
         -- setting up an alias
         local alias_ce, re = cache.ce_by_server(c, alias_server)
@@ -114,14 +117,14 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
             return false, e:cat(re)
         end
         remote_url = string.format("%s/%s", alias_ce.remote_url,
-        alias_location)
+            alias_location)
         if alias_ce.cache_url then
             cache_url = string.format("%s/%s", alias_ce.cache_url,
-            alias_location)
+                alias_location)
         end
         flags = alias_ce.flags
     else
-        cache_url = string.format("%s/%s", c.url, server)
+        cache_url = string.format("%s/%s", c._url, server)
     end
     ru, re = url.parse(remote_url)
     if not ru then
@@ -129,6 +132,7 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     end
     ce.server = server
     ce.remote_url = ru.url
+
     ce.flags = {}
     ce.flags.cachable = flags.cachable
     ce.flags.cache = flags.cache and flags.cachable
@@ -145,46 +149,50 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     end
     if ce.flags.cache then
         ce.cache_url = cache_url
+    else
+        ce.cache_url = false
     end
-    if c.ce[server] then
+
+    if c._ce[server] then
         return false, e:append("cache entry for server exists")
     end
-    c.ce[server] = ce
-    e2lib.logf(4, "cache entry: %s (%s)", ce.server, c.name)
+    c._ce[server] = strict.lock(ce)
+    e2lib.logf(4, "cache entry: %s (%s)", ce.server, c._name)
     e2lib.logf(4, " remote url: %s", ce.remote_url)
-    e2lib.logf(4, " cache url:  %s", tostring(ce.cache_url))
+    if ce.cache_url then
+        e2lib.logf(4, " cache url:  %s", ce.cache_url)
+    end
     for k,v in pairs(ce.flags) do
         e2lib.logf(4, " flags:      %-20s = %s", k, tostring(v))
     end
-    return true, nil
+    return true
 end
 
 --- get cache entry by url
 -- @param c the cache table
 -- @param url the server url
--- @return the cache entry table, nil on error
+-- @return the cache entry table, false on error
 -- @return an error object on failure
 function cache.ce_by_url(c, url)
     for _,ce in pairs(c.ce) do
         if ce.remote_url == url then
-            return ce, nil
+            return ce
         end
     end
-    return nil, err.new("no cache entry for url: %s", url)
+    return false, err.new("no cache entry for url: %s", url)
 end
 
---- get cache entry by server
+--- Get cache entry by server.
 -- @param c the cache table
 -- @param server the server name
--- @return the cache entry table, nil on error
+-- @return the cache entry table, false on error
 -- @return an error object on failure
 function cache.ce_by_server(c, server)
-    for _,ce in pairs(c.ce) do
-        if ce.server == server then
-            return ce, nil
-        end
+    if c._ce[server] then
+        return  c._ce[server]
     end
-    return nil, err.new("no cache entry for server: %s", server)
+
+    return false, err.new("no cache entry for server: %s", server)
 end
 
 --- check if server is valid
@@ -205,12 +213,12 @@ end
 -- @param c the cache table
 -- @param server the server name
 -- @param location the location relative to the server
--- @return the remote url, nil on error
+-- @return the remote url, false on error
 -- @return an error object on failure
 function cache.remote_url(c, server, location)
     local ce, e = cache.ce_by_server(c, server)
     if not ce then
-        return nil, e
+        return false, e
     end
     local url = string.format("%s/%s", ce.remote_url, location)
     return url
@@ -265,7 +273,7 @@ function cache.file_local(c, server, location)
         return false, re
     end
     if rc then
-        return true, nil
+        return true
     end
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -333,7 +341,7 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
             return false, e:cat(re)
         end
     end
-    return true, nil
+    return true
 end
 
 --- push a file to a server: cache and writeback
@@ -356,7 +364,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
         -- push the file from source to cache and from cache to
         -- destination
         rc, re = transport.push_file(sourcefile, ce.cache_url,
-        location, nil, flags.try_hardlink)
+            location, nil, flags.try_hardlink)
         if not rc then
             return false, e:cat(re)
         end
@@ -374,7 +382,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
             return false, e:cat(re)
         end
     end
-    return true, nil
+    return true
 end
 
 --- writeback a cached file
@@ -397,16 +405,15 @@ function cache.writeback(c, server, location, flags)
     end
     if flags.writeback == false or
         (ce.flags.writeback == false and flags.writeback ~= true) then
-        return true, nil
+        return true
     end
     local sourcefile = string.format("/%s/%s", ceurl.path, location)
     rc, re = transport.push_file(sourcefile, ce.remote_url, location,
-    ce.flags.push_permissions,
-    flags.try_hardlink)
+        ce.flags.push_permissions, flags.try_hardlink)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 --- cache a file
@@ -424,7 +431,7 @@ function cache.cache_file(c, server, location, flags)
         return false, e:cat(re)
     end
     if not ce.flags.cache then
-        return true, nil
+        return true
     end
     local ceurl, re = url.parse(ce.cache_url)
     if not ceurl then
@@ -433,11 +440,11 @@ function cache.cache_file(c, server, location, flags)
     local avail, re = cache.file_in_cache(c, server, location)
     if avail and flags.check_only then
         -- file is in the cache and just checking was requested
-        return true, nil
+        return true
     end
     if avail and not flags.refresh then
         -- file is in the cache and no refresh requested
-        return true, nil
+        return true
     end
     local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
     -- fetch the file to the cache
@@ -445,7 +452,7 @@ function cache.cache_file(c, server, location, flags)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 --- get path to a cached file or a file on a local server
@@ -454,7 +461,7 @@ end
 -- @param server the server where the file is located
 -- @param location the location on the server
 -- @param flags unused parameter
--- @return string the path to the cached file, nil on error
+-- @return string the path to the cached file, false on error
 -- @return an error object on failure
 function cache.file_path(c, server, location, flags)
     local rc, re
@@ -462,24 +469,24 @@ function cache.file_path(c, server, location, flags)
     -- get the cache entry
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
     if ce.flags.cache then
         -- cache enabled. cache the file and return path to cached
         -- file
         local path, re = transport.file_path(ce.cache_url, location)
         if not path then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
-        return path, nil
+        return path
     end
     -- try if the transport delivers a path directly (works for file://)
     local path, re = transport.file_path(ce.remote_url, location)
     if not path then
         e:append("Enable caching for this server.")
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
-    return path, nil
+    return path
 end
 
 --- enable/disable writeback for a server
@@ -502,7 +509,7 @@ function cache.set_writeback(c, server, value)
         return false, re
     end
     ce.flags.writeback = value
-    return true, nil
+    return true
 end
 
 return strict.lock(cache)
