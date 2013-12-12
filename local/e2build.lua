@@ -29,17 +29,18 @@
 ]]
 
 local e2build = {}
-local digest = require("digest")
-local transport = require("transport")
-local tools = require("tools")
-local err = require("err")
-local e2lib = require("e2lib")
-local scm = require("scm")
-local environment = require("environment")
-local e2tool = require("e2tool")
-local strict = require("strict")
 local buildconfig = require("buildconfig")
+local cache = require("cache")
+local digest = require("digest")
+local e2lib = require("e2lib")
+local e2tool = require("e2tool")
 local eio = require("eio")
+local environment = require("environment")
+local err = require("err")
+local scm = require("scm")
+local strict = require("strict")
+local tools = require("tools")
+local transport = require("transport")
 
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}
@@ -60,13 +61,13 @@ local function linklast(info, r, return_flags)
     local cache_flags = {
         check_only = true
     }
-    local dst, re = info.cache:file_path(server, location1, cache_flags)
+    local dst, re = cache.file_path(info.cache, server, location1, cache_flags)
     if not dst then
         return false, e:cat(re)
     end
     -- create the last link
     local lnk_location = e2lib.join("out", r, "last")
-    local lnk, re = info.cache:file_path(info.root_server_name, lnk_location)
+    local lnk, re = cache.file_path(info.cache, info.root_server_name, lnk_location)
     if not lnk then
         return false, e:cat(re)
     end
@@ -130,13 +131,14 @@ local function result_available(info, r, return_flags)
     -- cache the result
     local result_location = e2lib.join(location, r, dep_set, "result.tar")
     local cache_flags = {}
-    rc, re = info.cache:cache_file(server, result_location, cache_flags)
+    rc, re = cache.cache_file(info.cache, server, result_location, cache_flags)
     if not rc then
         e2lib.log(3, "caching result failed")
         -- ignore
     end
     local cache_flags = {}
-    local path, re = info.cache:file_path(server, result_location, cache_flags)
+    local path, re = cache.file_path(info.cache, server, result_location,
+        cache_flags)
     rc = e2lib.isfile(path)
     if not rc then
         -- result is not available. Build.
@@ -313,11 +315,13 @@ local function setup_chroot(info, r, return_flags)
         if res.build_config.groups[grp.name] then
             for _, f in ipairs(grp.files) do
                 local flags = { cache = true }
-                local rc, re = info.cache:cache_file(f.server, f.location, flags)
+                local rc, re = cache.cache_file(info.cache, f.server,
+                    f.location, flags)
                 if not rc then
                     return false, e:cat(re)
                 end
-                local path, re = info.cache:file_path(f.server, f.location, flags)
+                local path, re = cache.file_path(info.cache, f.server,
+                    f.location, flags)
                 if not path then
                     return false, e:cat(re)
                 end
@@ -553,7 +557,7 @@ function e2build.unpack_result(info, r, dep, destdir)
     e2lib.logf(3, "searching for dependency %s in %s:%s", dep, server, location)
     local location1 = e2lib.join(location, dep, dep_set, "result.tar")
     local cache_flags = {}
-    local path, re = info.cache:file_path(server, location1, cache_flags)
+    local path, re = cache.file_path(info.cache, server, location1, cache_flags)
     if not path then
         return false, e:cat(re)
     end
@@ -907,7 +911,8 @@ local function deploy(info, r, tmpdir)
     local cache_flags = {
         cache = false,
     }
-    local rc, re = info.cache:fetch_file(server, location1, tmpdir, nil, cache_flags)
+    local rc, re = cache.fetch_file(info.cache, server, location1, tmpdir,
+        nil, cache_flags)
     if rc then
         e2lib.warnf("WOTHER",
             "Skipping deployment. This release was already deployed.")
@@ -919,7 +924,7 @@ local function deploy(info, r, tmpdir)
         local sourcefile = e2lib.join(resdir, f)
         local location1 = e2lib.join(location, r, f)
         local cache_flags = {}
-        local rc, re = info.cache:push_file(sourcefile, server, location1,
+        local rc, re = cache.push_file(info.cache, sourcefile, server, location1,
             cache_flags)
         if not rc then
             return false, re
@@ -1031,7 +1036,8 @@ local function store_result(info, r, return_flags)
     local cache_flags = {
         try_hardlink = true,
     }
-    rc, re = info.cache:push_file(sourcefile, server, location1, cache_flags)
+    rc, re = cache.push_file(info.cache, sourcefile, server,
+        location1, cache_flags)
     if not rc then
         return false, e:cat(re)
     end
@@ -1143,7 +1149,7 @@ local function collect_project(info, r, return_flags)
         local server = info.root_server_name
         local location = e2lib.join("proj/init", f)
         local cache_flags = {}
-        rc, re = info.cache:fetch_file(server, location,
+        rc, re = cache.fetch_file(info.cache, server, location,
             destdir, nil, cache_flags)
         if not rc then
             return false, e:cat(re)
@@ -1189,7 +1195,7 @@ local function collect_project(info, r, return_flags)
 
         for _,file in pairs(grp.files) do
             local cache_flags = {}
-            rc, re = info.cache:fetch_file(file.server,
+            rc, re = cache.fetch_file(info.cache, file.server,
             file.location, destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
@@ -1242,9 +1248,8 @@ local function collect_project(info, r, return_flags)
                     return false, e:cat(re)
                 end
             end
-            rc, re = info.cache:fetch_file(file.server,
-            file.location, destdir, nil,
-            cache_flags)
+            rc, re = cache.fetch_file(file.server, file.location, destdir,
+                nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
             end
@@ -1272,8 +1277,8 @@ local function collect_project(info, r, return_flags)
         for _,file in pairs(files) do
             local server = info.root_server_name
             local cache_flags = {}
-            rc, re = info.cache:fetch_file(server, file,
-                destdir, nil, cache_flags)
+            rc, re = cache.fetch_file(info.cache, server, file, destdir,
+                nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
             end
@@ -1353,8 +1358,8 @@ local function collect_project(info, r, return_flags)
         ".e2/lib/make/detect_tool",
     }
     for _,location in ipairs(locations) do
-        rc, re = info.cache:fetch_file(server, location,
-        destdir, nil, cache_flags)
+        rc, re = cache.fetch_file(info.cache, server, location,
+            destdir, nil, cache_flags)
         if not rc then
             return false, e:cat(re)
         end

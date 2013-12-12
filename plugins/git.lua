@@ -29,18 +29,18 @@
 ]]
 
 local git = {}
-local scm = require("scm")
-local hash = require("hash")
 local cache = require("cache")
-local generic_git = require("generic_git")
-local url = require("url")
-local err = require("err")
-local e2option = require("e2option")
 local e2lib = require("e2lib")
+local e2option = require("e2option")
 local e2tool = require("e2tool")
 local eio = require("eio")
+local err = require("err")
+local generic_git = require("generic_git")
+local hash = require("hash")
+local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
+local url = require("url")
 
 --- Initialize git plugin.
 -- @param ctx Plugin context. See plugin module.
@@ -165,7 +165,7 @@ function git.validate_source(info, sourcename)
     if not src.server then
         e:append("source has no `server' attribute")
     end
-    if src.server and (not info.cache:valid_server(src.server)) then
+    if src.server and (not cache.valid_server(info.cache, src.server)) then
         e:append("invalid server: %s", src.server)
     end
     if not src.licences then

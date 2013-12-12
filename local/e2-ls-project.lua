@@ -30,13 +30,14 @@
 
 -- ls-project - show project information -*- Lua -*-
 
+local cache = require("cache")
 local console = require("console")
 local e2lib = require("e2lib")
+local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
-local e2option = require("e2option")
-local scm = require("scm")
 local policy = require("policy")
+local scm = require("scm")
 
 local function e2_ls_project(arg)
     local rc, re = e2lib.init()
@@ -212,9 +213,9 @@ local function e2_ls_project(arg)
     local s1 = "|"
     local s2 = "|"
     p1(s1, s2, "servers")
-    local servers_sorted = info.cache:servers()
+    local servers_sorted = cache.servers(info.cache)
     for i = 1, #servers_sorted, 1 do
-        local ce = info.cache:ce_by_server(servers_sorted[i])
+        local ce = cache.ce_by_server(info.cache, servers_sorted[i])
         if i < #servers_sorted then
             s2 = "|"
         else

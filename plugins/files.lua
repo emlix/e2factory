@@ -29,12 +29,13 @@
 ]]
 
 local files = {}
-local scm = require("scm")
-local hash = require("hash")
-local err = require("err")
+local cache = require("cache")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local eio = require("eio")
+local err = require("err")
+local hash = require("hash")
+local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
 
@@ -88,7 +89,7 @@ function files.validate_source(info, sourcename)
             if not f.server then
                 e:append("source has file entry without `server' attribute")
             end
-            if f.server and (not info.cache:valid_server(f.server)) then
+            if f.server and (not cache.valid_server(info.cache, f.server)) then
                 e:append("invalid server: %s", f.server)
             end
             if not f.location then
@@ -134,7 +135,8 @@ function files.cache_source(info, sourcename)
             f.location)
         local flags = { cache = true }
         if f.server ~= info.root_server_name then
-            local rc, e = info.cache:cache_file(f.server, f.location, flags)
+            local rc, e = cache.cache_file(info.cache, f.server,
+                f.location, flags)
             if not rc then
                 return false, e
             end
@@ -348,13 +350,13 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
         end
         if file.unpack then
             local cache_flags = { cache = true }
-            local rc, re = info.cache:cache_file(file.server, file.location,
-            cache_flags)
+            local rc, re = cache.cache_file(info.cache, file.server,
+                file.location, cache_flags)
             if not rc then
                 return false, e:cat(re)
             end
-            local path, re = info.cache:file_path(file.server, file.location,
-            cache_flags)
+            local path, re = cache.file_path(info.cache, file.server,
+                file.location, cache_flags)
             if not path then
                 return false, e:cat(re)
             end
@@ -390,13 +392,13 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             end
             if file.patch then
                 local cache_flags = { cache = true }
-                local rc, re = info.cache:cache_file(file.server, file.location,
-                cache_flags)
+                local rc, re = cache.cache_file(info.cache, file.server,
+                    file.location, cache_flags)
                 if not rc then
                     return false, e:cat(re)
                 end
-                local path, re = info.cache:file_path(file.server,
-                file.location, cache_flags)
+                local path, re = cache.file_path(info.cache, file.server,
+                    file.location, cache_flags)
                 if not path then
                     return false, e:append(re)
                 end
@@ -417,8 +419,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:cat(re)
                 end
 
-                local rc, re = info.cache:fetch_file(file.server, file.location,
-                    destdir, destname, {})
+                local rc, re = cache.fetch_file(info.cache, file.server,
+                    file.location, destdir, destname, {})
                 if not rc then
                     return false, e:cat(re)
                 end
@@ -539,8 +541,8 @@ function files.toresult(info, sourcename, sourceset, directory)
         if not rc then
             return false, e:cat(re)
         end
-        rc, re = info.cache:fetch_file(file.server, file.location, destdir,
-            destname, {})
+        rc, re = cache.fetch_file(info.cache, file.server, file.location,
+            destdir, destname, {})
         if not rc then
             return false, e:cat(re)
         end

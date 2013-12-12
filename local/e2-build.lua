@@ -28,14 +28,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local cache = require("cache")
 local console = require("console")
-local e2lib = require("e2lib")
-local e2tool = require("e2tool")
 local e2build = require("e2build")
-local err = require("err")
+local e2lib = require("e2lib")
 local e2option = require("e2option")
-local scm = require("scm")
+local e2tool = require("e2tool")
+local err = require("err")
 local policy = require("policy")
+local scm = require("scm")
 
 local function e2_build(arg)
     local rc, re = e2lib.init()
@@ -74,14 +75,14 @@ local function e2_build(arg)
         for _,set in ipairs(writeback) do
             if set.set == "disable" then
                 e2lib.logf(3, disable_msg, set.server)
-                rc, re = info.cache:set_writeback(set.server, false)
+                rc, re = cache.set_writeback(info.cache, set.server, false)
                 if not rc then
                     local e = err.new(disable_msg, set.server)
                     return false, e:cat(re)
                 end
             elseif set.set == "enable" then
                 e2lib.logf(3, enable_msg, set.server)
-                rc, re = info.cache:set_writeback(set.server, true)
+                rc, re = cache.set_writeback(info.cache, set.server, true)
                 if not rc then
                     local e = err.new(enable_msg, set.server)
                     return false, e:cat(re)

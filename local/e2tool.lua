@@ -1432,10 +1432,10 @@ function e2tool.collect_project_info(info, skip_load_config)
     if not info.cache then
         return false, e:cat(re)
     end
-    rc = info.cache:new_cache_entry(info.root_server_name,
-    info.root_server, { writeback=true },  nil, nil )
-    rc = info.cache:new_cache_entry(info.proj_storage_server_name,
-    nil, nil, info.default_repo_server, info.project_location)
+    rc = cache.new_cache_entry(info.cache, info.root_server_name,
+        info.root_server, { writeback=true },  nil, nil )
+    rc = cache.new_cache_entry(info.cache, info.proj_storage_server_name,
+        nil, nil, info.default_repo_server, info.project_location)
 
     --e2tool.add_source_results(info)
 
@@ -1519,7 +1519,7 @@ local function check_chroot_config(info)
         if not grp.server then
             e:append("in group: %s", grp.name)
             e:append(" `server' attribute missing")
-        elseif not info.cache:valid_server(grp.server) then
+        elseif not cache.valid_server(info.cache, grp.server) then
             e:append("in group: %s", grp.name)
             e:append(" no such server: %s", grp.server)
         end
@@ -1891,13 +1891,13 @@ local function verify_remote_fileid(info, file, fileid)
     local rc, re, hc
     local e = err.new("error calculating remote file id for file: %s:%s",
     file.server, file.location)
-    if not info.cache:cache_enabled(file.server) or
+    if not cache.cache_enabled(info.cache, file.server) or
         not e2option.opts["check-remote"] then
         e2lib.logf(4, "checksum for remote file %s:%s skip verifying",
         file.server, file.location)
         return true, nil
     end
-    local surl, re = info.cache:remote_url(file.server, file.location)
+    local surl, re = cache.remote_url(info.cache, file.server, file.location)
     if not surl then
         return false, e:cat(re)
     end
@@ -1993,12 +1993,14 @@ function e2tool.fileid(info, file)
     if file.sha1 then
         fileid = file.sha1
     else
-        rc, re = info.cache:cache_file(file.server, file.location, cache_flags)
+        rc, re = cache.cache_file(info.cache, file.server,
+            file.location, cache_flags)
         if not rc then
             return false, e:cat(re)
         end
 
-        path, re = info.cache:file_path(file.server, file.location, cache_flags)
+        path, re = cache.file_path(info.cache, file.server,
+            file.location, cache_flags)
         if not path then
             return false, e:cat(re)
         end

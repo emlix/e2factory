@@ -29,14 +29,15 @@
 ]]
 
 local svn = {}
-local scm = require("scm")
-local hash = require("hash")
-local url = require("url")
-local tools = require("tools")
-local err = require("err")
+local cache = require("cache")
 local e2lib = require("e2lib")
 local eio = require("eio")
+local err = require("err")
+local hash = require("hash")
+local scm = require("scm")
 local strict = require("strict")
+local tools = require("tools")
+local url = require("url")
 
 plugin_descriptor = {
     description = "SVN SCM Plugin",
@@ -150,7 +151,7 @@ function svn.fetch_source(info, sourcename)
     local src = info.sources[sourcename]
     local location = src.location
     local server = src.server
-    local surl, re = info.cache:remote_url(server, location)
+    local surl, re = cache.remote_url(info.cache, server, location)
     if not surl then
         return false, e:cat(re)
     end
@@ -177,7 +178,7 @@ function svn.prepare_source(info, sourcename, source_set, build_path)
     local src = info.sources[ sourcename ]
     local location = src.location
     local server = src.server
-    local surl, re = info.cache:remote_url(server, location)
+    local surl, re = cache.remote_url(info.cache, server, location)
     if not surl then
         return false, e:cat(re)
     end
@@ -319,7 +320,7 @@ function svn.sourceid(info, sourcename, source_set)
     end
 
     -- svn specific
-    surl, re = info.cache:remote_url(src.server, src.location)
+    surl, re = cache.remote_url(info.cache, src.server, src.location)
     if not surl then
         return false, re
     end

@@ -29,9 +29,10 @@
 ]]
 
 local policy = {}
+local cache = require("cache")
 local e2lib = require("e2lib")
-local err = require("err")
 local e2option = require("e2option")
+local err = require("err")
 local strict = require("strict")
 local hash = require("hash")
 
@@ -186,7 +187,7 @@ function policy.init(info)
         local release_id = "release-id"
         local server, location = s(location, release_id)
         local se = err.new("checking server configuration for '%s'", server)
-        local ce, re = info.cache:ce_by_server(server)
+        local ce, re = cache.ce_by_server(info.cache, server)
         if not ce then
             se:cat(re)
         elseif not ce.flags.writeback then

@@ -30,10 +30,11 @@
 
 -- fetch-sources - Retrieve sources for project -*- Lua -*-
 
+local cache = require("cache")
 local e2lib = require("e2lib")
+local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
-local e2option = require("e2option")
 local scm = require("scm")
 
 local function e2_fetch_source(arg)
@@ -116,7 +117,8 @@ local function e2_fetch_source(arg)
     local function cache_chroot(info)
         for _,c in ipairs(info.chroot.groups_sorted) do
             for _,file in ipairs(info.chroot.groups_byname[c].files) do
-                local rc, e = info.cache:cache_file(file.server, file.location, {})
+                local rc, e = cache.cache_file(info.cache, file.server,
+                    file.location, {})
                 if not rc then
                     return false, err.new("caching file failed")
                 end
