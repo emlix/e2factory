@@ -1819,40 +1819,65 @@ function e2tool.verify_hash(info, server, location, sha1)
     return true, nil
 end
 
---- project id.
+--- Cache for projid() result.
+local projid_cache = false
+
+--- Calculate the Project ID. The Project ID consists of files in proj/init
+-- as well as some keys from proj/config and buildconfig. Returns a cached
+-- value after the first call.
 -- @return Project ID or false on error.
 -- @return Error object on failure
 local function projid(info)
-    if info.projid then
-        return info.projid
+    local rc, re, hc, cs
+
+    if projid_cache then
+        return projid_cache
     end
+
     -- catch proj/init/*
-    local hc = hash.hash_start()
+    hc, re = hash.hash_start()
+    if not hc then return false, re end
+
     for f, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
         if not f then
             return false, re
         end
 
+        local location, file, fileid
         if not e2lib.is_backup_file(f) then
-            local location = e2lib.join("proj/init", e2lib.basename(f))
-            local f = {
+            location = e2lib.join("proj/init", f)
+            file = {
                 server = info.root_server_name,
                 location = location,
             }
-            local fileid, e = e2tool.fileid(info, f)
+
+            fileid, re = e2tool.fileid(info, file)
             if not fileid then
-                return false, e
+                return false, re
             end
-            hash.hash_line(hc, location)	-- the filename
-            hash.hash_line(hc, fileid)	-- the file content
+
+            rc, re = hash.hash_line(hc, location)   -- the filename
+            if not rc then return false, re end
+
+            rc, re = hash.hash_line(hc, fileid)     -- the file content cs
+            if not rc then return false, re end
         end
     end
-    hash.hash_line(hc, info.project.release_id)
-    hash.hash_line(hc, info.project.name)
-    hash.hash_line(hc, info.project.chroot_arch)
-    hash.hash_line(hc, buildconfig.VERSION)
-    info.projid = hash.hash_finish(hc)
-    return info.projid
+    rc, re = hash.hash_line(hc, info.project.release_id)
+    if not rc then return false, re end
+    rc, re = hash.hash_line(hc, info.project.name)
+    if not rc then return false, re end
+    rc, re = hash.hash_line(hc, info.project.chroot_arch)
+    if not rc then return false, re end
+    rc, re = hash.hash_line(hc, buildconfig.VERSION)
+    if not rc then return false, re end
+
+    cs, re = hash.hash_finish(hc)
+    if not cs then return false, re end
+
+    projid_cache = cs
+
+    return cs
 end
 
 --- verify that remote files match the checksum. The check is skipped when
