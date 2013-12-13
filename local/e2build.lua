@@ -45,6 +45,7 @@ local transport = require("transport")
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}
 
+--- TODO
 local function linklast(info, r, return_flags)
     local res = info.results[r]
     local rc, re
@@ -256,6 +257,7 @@ function e2build.build_config(info, r)
     return true
 end
 
+--- TODO
 local function chroot_lock(info, r, return_flags)
     local res = info.results[r]
     local rc, re
@@ -271,6 +273,7 @@ local function chroot_lock(info, r, return_flags)
     return true, nil
 end
 
+--- TODO
 local function chroot_unlock(info, r, return_flags)
     local res = info.results[r]
     local rc, re
@@ -282,6 +285,7 @@ local function chroot_unlock(info, r, return_flags)
     return true, nil
 end
 
+--- TODO
 local function setup_chroot(info, r, return_flags)
     local res = info.results[r]
     local rc, re
@@ -395,6 +399,7 @@ function e2build.enter_playground(info, r, chroot_command)
     return true
 end
 
+--- TODO
 local function fix_permissions(info, r, return_flags)
     local res = info.results[r]
     local rc, re
@@ -419,6 +424,7 @@ local function fix_permissions(info, r, return_flags)
     return true, nil
 end
 
+--- TODO
 local function playground(info, r, return_flags)
     local res = info.results[r]
     if res.playground then
@@ -430,6 +436,7 @@ local function playground(info, r, return_flags)
     return true, nil
 end
 
+--- TODO
 local function runbuild(info, r, return_flags)
     local res = info.results[r]
     local rc, re, out
@@ -489,6 +496,7 @@ local function runbuild(info, r, return_flags)
     return true
 end
 
+--- TODO
 local function chroot_remove(info, r, return_flags)
     local res = info.results[r]
     local e = err.new("removing chroot failed")
@@ -513,6 +521,7 @@ local function chroot_remove(info, r, return_flags)
     return true, nil
 end
 
+--- TODO
 local function chroot_cleanup(info, r, return_flags)
     local res = info.results[r]
     -- do not remove chroot if the user requests to keep it
@@ -522,6 +531,7 @@ local function chroot_cleanup(info, r, return_flags)
     return chroot_remove(info, r, return_flags)
 end
 
+--- TODO
 local function chroot_cleanup_if_exists(info, r, return_flags)
     local res = info.results[r]
     if chroot_remove(info, r, return_flags) then
@@ -531,14 +541,15 @@ local function chroot_cleanup_if_exists(info, r, return_flags)
 end
 
 --- check if a chroot exists for this result
--- @param info
--- @param r string: result name
--- @return bool
+-- @param info Info table
+-- @param r Result name
+-- @return True if chroot for result could be found, false otherwise.
 function e2build.chroot_exists(info, r)
     local res = info.results[r]
     return e2lib.isfile(res.build_config.chroot_marker)
 end
 
+--- TODO
 function e2build.unpack_result(info, r, dep, destdir)
     local res = info.results[r]
     local rc, re
@@ -691,6 +702,7 @@ local function write_environment_script(env, file)
     return true
 end
 
+--- TODO
 local function sources(info, r, return_flags)
     local e = err.new("installing sources")
     local i, k, l, source, cp
@@ -1417,6 +1429,7 @@ function e2build.register_build_function(info, name, func, pos)
     return true, nil
 end
 
+--- TODO
 build_process = {
     { name="build_config", func=e2build.build_config },
     { name="result_available", func=result_available },
