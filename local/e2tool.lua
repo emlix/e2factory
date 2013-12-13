@@ -1278,9 +1278,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     info.default_repo_server = "projects"
     info.default_files_server = "upstream"
 
-    -- the build mode policy used
-    info.build_mode = nil
-
     -- prefix the chroot call with this tool (switch to 32bit on amd64)
     -- XXX not in buildid, as it is filesystem location dependent...
     info.chroot_call_prefix = {}
