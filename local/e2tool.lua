@@ -1278,9 +1278,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     info.default_repo_server = "projects"
     info.default_files_server = "upstream"
 
-    -- build modes
-    info.build_modes = { "tag", "branch" }
-
     -- the build mode policy used
     info.build_mode = nil
 
