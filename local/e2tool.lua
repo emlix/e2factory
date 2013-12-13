@@ -633,6 +633,19 @@ local function init_umask(info)
     e2tool.reset_umask(info)
 end
 
+--- get dependencies for use in build order calculation
+local function get_depends(info, resultname)
+    local t = {}
+    local res = info.results[resultname]
+    if not res.depends then
+        return t
+    end
+    for _,d in ipairs(res.depends) do
+        table.insert(t, d)
+    end
+    return t
+end
+
 --- initialize the local library, load and initialize local plugins
 -- @param path string: path to project tree
 -- @param tool string: tool name (without the 'e2-' prefix)
@@ -671,7 +684,7 @@ function e2tool.local_init(path, tool)
         return nil, e:cat(re)
     end
 
-    rc, re = e2tool.register_dlist(info, e2tool.get_depends)
+    rc, re = e2tool.register_dlist(info, get_depends)
     if not rc then
         return nil, e:cat(re)
     end
@@ -1712,19 +1725,6 @@ function e2tool.check_project_info(info)
         return false, e:cat("cyclic dependencies")
     end
     return true, nil
-end
-
---- get dependencies for use in build order calculation
-function e2tool.get_depends(info, resultname)
-    local t = {}
-    local res = info.results[resultname]
-    if not res.depends then
-        return t
-    end
-    for _,d in ipairs(res.depends) do
-        table.insert(t, d)
-    end
-    return t
 end
 
 ---   e2tool.dlist(INFO, RESULT) -> ARRAY.
