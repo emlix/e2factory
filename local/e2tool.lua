@@ -1113,8 +1113,11 @@ local function gather_result_paths(info, basedir, results)
     return results
 end
 
---- load result config.
-local function load_result_config(info)
+--- Load all result configs. Creates and populates the info.results dictionary.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function load_result_configs(info)
     local e = err.new("error loading result configuration")
     info.results = {}
 
@@ -1169,7 +1172,7 @@ local function load_result_config(info)
             info.results[name] = item.data
         end
     end
-    return true, nil
+    return true
 end
 
 --- Read project configuration file.
@@ -1360,7 +1363,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    rc, re = load_result_config(info)
+    rc, re = load_result_configs(info)
     if not rc then
         return false, e:cat(re)
     end
