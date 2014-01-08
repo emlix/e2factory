@@ -958,8 +958,11 @@ function e2tool.src_res_path_to_name(pathname)
     return pathname:gsub("/", ".")
 end
 
---- load source config.
-local function load_source_config(info)
+--- Load all source configs. Creates and populates the info.sources dictionary.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function load_source_configs(info)
     local e = err.new("error loading source configuration")
     info.sources = {}
 
@@ -1013,7 +1016,7 @@ local function load_source_config(info)
             info.sources[name] = item.data
         end
     end
-    return true, nil
+    return true
 end
 
 --- Get project-relative directory for a result.
@@ -1358,7 +1361,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
     table.sort(info.licences_sorted)
 
-    rc, re = load_source_config(info)
+    rc, re = load_source_configs(info)
     if not rc then
         return false, e:cat(re)
     end
