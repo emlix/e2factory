@@ -2248,37 +2248,6 @@ function e2tool.env_by_result(info, resultname)
     return env
 end
 
---- select the result and apply build options
--- @param info
--- @param r string: the result name
--- @param force_rebuild bool
--- @param keep_chroot bool
--- @param build_mode table: build mode policy
--- @param playground bool
--- @return True on success, false on error.
--- @return Error object on failure.
-local function select_result(info, r, force_rebuild, keep_chroot, build_mode, playground)
-    local rc, re = e2tool.verify_src_res_name_valid_chars(r)
-    if not rc then
-        return false, err.new("'%s' is not a valid result name", r)
-    end
-
-    local res = info.results[r]
-    if not res then
-        return false, err.new("selecting invalid result: %s", r)
-    end
-    res.selected = true
-    res.force_rebuild = force_rebuild
-    res.keep_chroot = keep_chroot
-    if build_mode then
-        res.build_mode = build_mode
-    end
-    res.playground = playground
-
-    return true
-end
-
-
 --- select results based upon a list of results usually given on the
 -- command line. Parameters are assigned to all selected results.
 -- @param info the info structure
@@ -2290,17 +2259,28 @@ end
 -- @return bool
 -- @return an error object on failure
 function e2tool.select_results(info, results, force_rebuild, keep_chroot, build_mode, playground)
-    local rc, re
+    local rc, re, res
 
     for _,r in ipairs(results) do
-        rc, re = select_result(info, r, force_rebuild, keep_chroot, build_mode,
-            playground)
+        rc, re = e2tool.verify_src_res_name_valid_chars(r)
         if not rc then
-            return false, re
+            return false, err.new("'%s' is not a valid result name", r)
         end
+
+        res = info.results[r]
+        if not res then
+            return false, err.new("selecting invalid result: %s", r)
+        end
+        res.selected = true
+        res.force_rebuild = force_rebuild
+        res.keep_chroot = keep_chroot
+        if build_mode then
+            res.build_mode = build_mode
+        end
+        res.playground = playground
     end
 
-    return true, nil
+    return true
 end
 
 --- print selection status for a list of results
