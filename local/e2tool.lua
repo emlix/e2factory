@@ -47,6 +47,9 @@ local transport = require("transport")
 local cache = require("cache")
 local buildconfig = require("buildconfig")
 
+-- Build function table, see end of file for details.
+local e2tool_ftab = {}
+
 --- Info table contains sources, results, servers, caches and more...
 -- @table info
 -- @field current_tool Name of the current local tool (string).
@@ -54,8 +57,6 @@ local buildconfig = require("buildconfig")
 -- @field chroot_umask Umask setting for chroot (decimal number).
 -- @field host_umask Default umask of the process (decimal number).
 -- @field root Project root directory (string).
--- @field ftab Table of build functions tables (table). See info.ftab table.
--- @see info.ftab
 -- @field root_server string: url pointing to the project root
 -- @field root_server_name string: name of the root server (".")
 -- @field default_repo_server string: name of the default scm repo server
@@ -76,15 +77,6 @@ local buildconfig = require("buildconfig")
 -- @field env table: env table
 -- @field env_files table: list of env files
 -- @field local_template_path Path to the local templates (string).
-
---- Function table, driving the build process. Contains further tables to
--- which e2factory and plugins add functions that comprise the build process.
--- @table info.ftab
--- @field collect_project_info
--- @field check_result
--- @field resultid
--- @field pbuildid
--- @field dlist
 
 --- table of sources records, keyed by source names
 -- @name sources
@@ -451,7 +443,7 @@ end
 local function check_results(info)
     local e = err.new("Error while checking results")
     local rc, re
-    for _,f in ipairs(info.ftab.check_result) do
+    for _,f in ipairs(e2tool_ftab.check_result) do
         for r,_ in pairs(info.results) do
             rc, re = f(info, r)
             if not rc then
@@ -670,14 +662,6 @@ function e2tool.local_init(path, tool)
     if not info.root then
         return false, e:append("not located in a project directory")
     end
-
-    info.ftab = strict.lock({
-        collect_project_info = {},		-- f(info)
-        check_result = {},			-- f(info, resultname)
-        resultid = {},		        	-- f(info, resultname)
-        pbuildid = {},			        -- f(info, resultname)
-        dlist = {},				-- f(info, resultname)
-    })
 
     rc, re = e2tool.register_check_result(info, check_result)
     if not rc then
@@ -1513,7 +1497,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    for _,f in ipairs(info.ftab.collect_project_info) do
+    for _,f in ipairs(e2tool_ftab.collect_project_info) do
         rc, re = f(info)
         if not rc then
             return false, e:cat(re)
@@ -1739,7 +1723,7 @@ end
 --     project specified by INFO, the RESULT itself excluded.
 function e2tool.dlist(info, resultname)
     local t = {}
-    for _,f in ipairs(info.ftab.dlist) do
+    for _,f in ipairs(e2tool_ftab.dlist) do
         local deps = f(info, resultname)
         for _,d in ipairs(deps) do
             table.insert(t, d)
@@ -2182,8 +2166,8 @@ function e2tool.pbuildid(info, resultname)
         end
         hash.hash_line(hc, fileid)			-- build script hash
     end
-    -- call the list of functions in info.ftab.resultid
-    for _,f in ipairs(info.ftab.resultid) do
+
+    for _,f in ipairs(e2tool_ftab.resultid) do
         local rhash, re = f(info, resultname)
         -- nil -> error
         -- false -> don't modify the hash
@@ -2218,8 +2202,8 @@ function e2tool.pbuildid(info, resultname)
         end
         hash.hash_line(hc, pbid)
     end
-    -- call the list of functions in info.ftab.pbuildid
-    for _,f in ipairs(info.ftab.pbuildid) do
+
+    for _,f in ipairs(e2tool_ftab.pbuildid) do
         local rhash, re = f(info, resultname)
         -- nil -> error
         -- false -> don't modify the hash
@@ -2308,7 +2292,7 @@ function e2tool.register_collect_project_info(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_collect_project_info: invalid argument")
     end
-    table.insert(info.ftab.collect_project_info, func)
+    table.insert(e2tool_ftab.collect_project_info, func)
     return true, nil
 end
 
@@ -2317,7 +2301,7 @@ function e2tool.register_check_result(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_check_result: invalid argument")
     end
-    table.insert(info.ftab.check_result, func)
+    table.insert(e2tool_ftab.check_result, func)
     return true, nil
 end
 
@@ -2326,7 +2310,7 @@ function e2tool.register_resultid(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_resultid: invalid argument")
     end
-    table.insert(info.ftab.resultid, func)
+    table.insert(e2tool_ftab.resultid, func)
     return true, nil
 end
 
@@ -2335,7 +2319,7 @@ function e2tool.register_pbuildid(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_pbuildid: invalid argument")
     end
-    table.insert(info.ftab.pbuildid, func)
+    table.insert(e2tool_ftab.pbuildid, func)
     return true, nil
 end
 
@@ -2344,9 +2328,29 @@ function e2tool.register_dlist(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_dlist: invalid argument")
     end
-    table.insert(info.ftab.dlist, func)
+    table.insert(e2tool_ftab.dlist, func)
     return true, nil
 end
+
+--- Function table, driving the build process. Contains further tables to
+-- which e2factory core and plugins add functions that comprise the
+-- build process.
+-- @field collect_project_info Called f(info). Populates the info table,
+--                             not to be confused with the "collect_project"
+--                             feature.
+-- @field check_result Called f(info, resultname).
+-- @field resultid Called f(info, resultname).
+-- @field pbuildid Called f(info, resultname).
+-- @field dlist Called f(info, resultname).
+e2tool_ftab = {
+    collect_project_info = {},
+    check_result = {},
+    resultid = {},
+    pbuildid = {},
+    dlist = {},
+}
+
+strict.lock(e2tool_ftab)
 
 return strict.lock(e2tool)
 
