@@ -121,7 +121,6 @@ local e2tool_ftab = {}
 -- 							to be collected
 -- @field collect_project_licences table: sorted list of licences to be
 -- 								collected
--- @field export bool: export to the result with collect_project enabled?
 -- @field selected bool: select for build?
 -- @field force_rebuild bool: force rebuild?
 -- @field build_mode table: build mode policy object
