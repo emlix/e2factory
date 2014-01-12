@@ -359,110 +359,21 @@ local function load_user_config2(info, path, types)
     return list, nil
 end
 
---- check collect_project configuration
--- This function depends on sane result and source configurations.
--- Run only after check_result() was run on all results.
--- @param info table: the info table
--- @param resultname string: the result to check
-local function check_collect_project(info, resultname)
-    local res = info.results[resultname]
-    local e = err.new("in result %s:", resultname)
-    local rc, re
-    if not res.collect_project then
-        -- insert empty tables, to avoid some conditionals in the code
-        res.collect_project_results = {}
-        res.collect_project_sources = {}
-        res.collect_project_chroot_groups = {}
-        res.collect_project_licences = {}
-        -- XXX store list of used chroot groups here, too, and use.
-        return true, nil
-    end
-    local d = res.collect_project_default_result
-    if not d then
-        e:append("collect_project_default_result is not set")
-    elseif type(d) ~= "string" then
-        e:append(
-        "collect_project_default_result is non-string")
-    elseif not info.results[d] then
-        e:append("collect_project_default_result is set to "..
-        "an invalid result: %s", d)
-    end
-    -- catch errors upon this point before starting additional checks.
-    if e:getcount() > 1 then
-        return false, e
-    end
-    res.collect_project_results, re = e2tool.dlist_recursive(info,
-        res.collect_project_default_result)
-    if not res.collect_project_results then
-        return false, e:cat(re)
-    end
-    -- store a sorted list of required results
-    table.insert(res.collect_project_results,
-        res.collect_project_default_result)
-    table.sort(res.collect_project_results)
-    e2lib.warnf("WDEFAULT", "in result %s:", resultname)
-    e2lib.warnf("WDEFAULT", " collect_project takes these results: %s",
-    table.concat(res.collect_project_results, ","))
-    -- store a sorted list of required sources, chroot groups and licences
-    local tmp_grp = {}
-    local tmp_src = {}
-    for _,r in ipairs(res.collect_project_results) do
-        local res = info.results[r]
-        for _,s in ipairs(res.sources) do
-            tmp_src[s] = true
-        end
-        for _,g in ipairs(res.chroot) do
-            -- use the name as key here, to hide duplicates...
-            tmp_grp[g] = true
-        end
-    end
-    res.collect_project_sources = {}
-    for s,_ in pairs(tmp_src) do
-        -- and build the desired array
-        table.insert(res.collect_project_sources, s)
-    end
-    table.sort(res.collect_project_sources)
-    res.collect_project_chroot_groups = {}
-    for g,_ in pairs(tmp_grp) do
-        table.insert(res.collect_project_chroot_groups, g)
-    end
-    table.sort(res.collect_project_chroot_groups)
-    res.collect_project_licences = {}
-    for _,l in ipairs(info.licences_sorted) do
-        table.insert(res.collect_project_licences, l)
-    end
-    table.sort(res.collect_project_licences)
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true, nil
-end
-
 --- check results.
 local function check_results(info)
-    local e = err.new("Error while checking results")
-    local rc, re
+    local e, rc, re
+
     for _,f in ipairs(e2tool_ftab.check_result) do
         for r,_ in pairs(info.results) do
             rc, re = f(info, r)
             if not rc then
+                e = err.new("Error while checking results")
                 return false, e:cat(re)
             end
         end
     end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    for r,_ in pairs(info.results) do
-        rc, re = check_collect_project(info, r)
-        if not rc then
-            e:cat(re)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true, nil
+
+    return true
 end
 
 --- check result configuration
