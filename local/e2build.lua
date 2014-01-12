@@ -625,7 +625,7 @@ end
 -- @param destdir string: where to store the scripts
 -- @return bool
 -- @return an error object on failure
-local function write_build_driver(info, r, destdir)
+function e2build.write_build_driver(info, r, destdir)
     local rc, re, e, res, bd, buildrc_noinit_file, buildrc_file
     local build_driver_file
 
@@ -811,7 +811,7 @@ local function sources(info, r, return_flags)
         local e = err.new("writing build driver script failed")
         local bc = res.build_config
         local destdir = e2lib.join(bc.T, bc.scriptdir)
-        rc, re = write_build_driver(info, r, destdir)
+        rc, re = e2build.write_build_driver(info, r, destdir)
         if not rc then
             return false, e:cat(re)
         end
