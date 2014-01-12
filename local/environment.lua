@@ -29,6 +29,9 @@
 ]]
 
 local environment = {}
+local e2lib = require("e2lib")
+local eio = require("eio")
+local err = require("err")
 local hash = require("hash")
 local strict = require("strict")
 
@@ -103,6 +106,30 @@ function environment.get_dict(env)
         dict[k] = v
     end
     return dict
+end
+
+--- Write environment as key=value\n... string to file. File is created or
+-- truncated. Value is quoted with e2lib.shquote() so the file can be sourced
+-- by a shell.
+-- @param env Environment.
+-- @param file File name.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function environment.tofile(env, file)
+    local rc, re, e, out
+
+    out = {}
+    for var, val in env:iter() do
+        table.insert(out, string.format("%s=%s\n", var, e2lib.shquote(val)))
+    end
+
+    rc, re = eio.file_write(file, table.concat(out))
+    if not rc then
+        e = err.new("writing environment script")
+        return false, e:cat(re)
+    end
+
+    return true
 end
 
 local function unittest()
