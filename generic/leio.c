@@ -298,6 +298,24 @@ eio_setlinebuf(lua_State *lua)
 }
 
 static int
+eio_setunbuffered(lua_State *lua)
+{
+	FILE *f;
+
+	f = lua_touserdata(lua, 1);
+	if (!f) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, "eio_setunbuffered: one or more arguments "
+		    "of wrong type/missing");
+		return 2;
+	}
+
+	setbuf(f, NULL);
+	lua_pushboolean(lua, 1);
+	return 1;
+}
+
+static int
 eio_dup2(lua_State *lua)
 {
 	int oldfd, newfd, rc;
@@ -373,6 +391,7 @@ static luaL_Reg lib[] = {
   { "fwrite", eio_fwrite },
   { "pipe", eio_pipe },
   { "setlinebuf", eio_setlinebuf },
+  { "setunbuffered", eio_setunbuffered },
   { NULL, NULL }
 };
 

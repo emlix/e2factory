@@ -304,6 +304,24 @@ function eio.setlinebuf(file)
     end
 end
 
+--- Turn line and block buffering off. See setbuf(3) for details. setunbuffered
+-- has no error conditions. If an invalid file object is passed, it calls
+-- e2lib.abort() terminating the process.
+-- @param file File object
+function eio.setunbuffered(file)
+    local errstring, rc, re
+
+    rc, re = is_eio_object(file)
+    if not rc then
+        e2lib.abort(re)
+    end
+
+    rc, errstring = leio.setunbuffered(file.handle)
+    if not rc then
+        e2lib.abort(err.new("%s", errstring))
+    end
+end
+
 --- Duplicate a file descriptor. See dup(2) for details.
 -- @param oldfd File descriptor to duplicate.
 -- @param newfd Duplicated file descritor. If the file descriptor was open
