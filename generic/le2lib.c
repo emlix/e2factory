@@ -338,10 +338,10 @@ poll_fd(lua_State *lua)
 	if (f > 0) {
 		while (--nfds >= 0) {
 			if (fds[nfds].revents) {
-				free(fds);
 				lua_pushnumber(lua, nfds+1);
 				lua_pushboolean(lua, fds[nfds].revents & POLLIN);
 				lua_pushboolean(lua, fds[nfds].revents & POLLOUT);
+				free(fds);
 				return 3;
 			}
 		}
