@@ -361,6 +361,7 @@ function eio.pipe()
     if not fw then
         return false, re
     end
+    eio.setunbuffered(fw)
 
     return fr, fw
 end
