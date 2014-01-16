@@ -77,7 +77,7 @@ local function linklast(info, r, return_flags)
         return false, e:cat(re)
     end
 
-    if e2lib.exists(lnk) then
+    if e2lib.stat(lnk, false) then
         e2lib.unlink(lnk) -- ignore errors, symlink will catch it
     end
 
