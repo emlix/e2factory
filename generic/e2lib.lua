@@ -1161,7 +1161,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
             end
         end
 
-        local rc, re, fdvec, fdpos, pollin, pollout, fdvec, fdct
+        local rc, re, fdvec, pollvec, fdvec, fdct
 
         fdvec = {}
         for _,fdct in ipairs(fdctv) do
@@ -1171,49 +1171,50 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         end
 
         while #fdvec > 0 do
-            fdpos, pollin, pollout = e2lib.poll(-1, fdvec)
-            if fdpos == 0 then
+            pollvec, re = e2lib.poll(-1, fdvec)
+            if not pollvec then
+                return false, re
+            elseif #pollvec == 0 then
                 return false, err.new("poll timeout")
-            elseif fdpos < 0 then
-                return false, err.new("poll error %d", fdpos)
             end
 
-            if pollin then
-                fdct = fd_find_writefunc_by_readfd(fdctv, fdvec[fdpos])
-                if fdct then
-                    local data, readsz
+            for _,ptab in ipairs(pollvec) do
+                if ptab.POLLIN then
+                    fdct = fd_find_writefunc_by_readfd(fdctv, ptab.fd)
+                    if fdct then
+                        local data, readsz
 
-                    while true do
-                        readsz = 64*1024
-                        data, re = eio.fread(fdct._p.readfo, readsz)
-                        if not data then
-                            return false, re
-                        elseif data == "" then
-                            break
-                        end
+                        while true do
+                            readsz = 64*1024
+                            data, re = eio.fread(fdct._p.readfo, readsz)
+                            if not data then
+                                return false, re
+                            elseif data == "" then
+                                break
+                            end
 
-                        if fdct.linebuffer then
-                            fd_linebuffer(fdct, data)
-                        else
-                            fdct.callfn(data)
+                            if fdct.linebuffer then
+                                fd_linebuffer(fdct, data)
+                            else
+                                fdct.callfn(data)
+                            end
                         end
                     end
-                end
-            elseif pollout then
-                return false, err.new("poll returned POLLOUT")
-            else
-                -- Neither POLLIN or POLLOUT are set. Probably
-                -- because POLLHUP occured. On Linux it indicates
-                -- the pipe was closed by the child.
+                elseif ptab.POLLOUT then
+                    return false, err.new("poll unexpectedly returned POLLOUT")
+                else
+                    -- Nothing to read, nothing to write, file descriptor
+                    -- was closed.
+                    --
+                    -- Flush remaining buffers if linebuffer is enabled
+                    -- and the last fread did not end with \n.
+                    fdct = fd_find_writefunc_by_readfd(fdctv, ptab.fd)
+                    if fdct then
+                        fd_linebuffer_final(fdct)
+                    end
 
-                -- Flush remaining buffers if linebuffer is enabled
-                -- and the last fread did not end with \n.
-                fdct = fd_find_writefunc_by_readfd(fdctv, fdvec[fdpos])
-                if fdct then
-                    fd_linebuffer_final(fdct)
+                    table.remove(fdvec, ptab.fdvecpos)
                 end
-
-                table.remove(fdvec, fdpos)
             end
         end
 
