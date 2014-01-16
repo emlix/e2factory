@@ -219,7 +219,6 @@ end
 -- @param fdvec Vector of file descriptors (table of numbers).
 -- @return Returns 0 on timeout, < 0 on error and > 0 for the position in fdvec
 -- that has an event waiting.
-
 -- @return True if it's a POLLIN event.
 -- @return True if it's a POLLOUT event.
 function e2lib.poll(timeout, fdvec)
@@ -1224,12 +1223,90 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         return true
     end
 
+    local function sync_pipe_setup()
+        local sync_pipes = {}
+
+        sync_pipes[1], sync_pipes[2] = eio.pipe()
+        if not sync_pipes[1] then
+            return false, sync_pipes[2]
+        end
+
+        sync_pipes[3], sync_pipes[4] = eio.pipe()
+        if not sync_pipes[3] then
+            return false, sync_pipes[4]
+        end
+
+        return sync_pipes
+    end
+
+    local function sync_child(sync_pipes)
+        local rc, re
+
+        -- ping parent
+        rc, re = eio.fwrite(sync_pipes[4], "c")
+        if not rc then
+            return false, re
+        end
+
+        -- wait for parent
+        rc, re = eio.fgetc(sync_pipes[1])
+        if not rc then
+            return false, re
+        elseif rc ~= "p" then
+            return false, err.new("unexpected reply from parent: %q", rc)
+        end
+
+        -- cleanup
+        for _,pfo in ipairs(sync_pipes) do
+            rc, re = eio.fclose(pfo)
+            if not rc then
+                return false, re
+            end
+        end
+
+        return true
+    end
+
+    local function sync_parent(sync_pipes)
+        local rc, re
+
+        -- ping child
+        rc, re = eio.fwrite(sync_pipes[2], "p")
+        if not rc then
+            return false, re
+        end
+
+        -- wait for child
+        rc, re = eio.fgetc(sync_pipes[3])
+        if not rc then
+            return false, re
+        elseif rc ~= "c" then
+            return false, err.new("unexpected reply from child: %q", rc)
+        end
+
+        -- cleanup
+        for _,pfo in ipairs(sync_pipes) do
+            rc, re = eio.fclose(pfo)
+            if not rc then
+                return false, re
+            end
+        end
+
+        return true
+    end
+
     -- start of callcmd() proper
 
     local rc, re, pid
+    local sync_pipes = {}
 
     rc, re = fd_parent_setup(fdctv)
     if not rc then
+        return false, re
+    end
+
+    sync_pipes, re = sync_pipe_setup()
+    if not sync_pipes then
         return false, re
     end
 
@@ -1237,7 +1314,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
     if not pid then
         return false, re
     elseif pid == 0 then
-        -- disable debug logging to console in the child because output mixes
+        -- disable debug logging to console in the child because it
+        -- potentially mixes with the output of the command
         e2lib.setlog(4, false)
 
         fd_child_setup(fdctv)
@@ -1258,11 +1336,21 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
             end
         end
 
+        rc, re = sync_child(sync_pipes)
+        if not rc then
+            e2lib.abort(re)
+        end
+
         rc, re = e2lib.execvp(argv[1], argv)
         e2lib.abort(re)
     end
 
     rc, re = fd_parent_after_fork(fdctv)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = sync_parent(sync_pipes)
     if not rc then
         return false, re
     end
