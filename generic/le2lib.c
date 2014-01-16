@@ -315,7 +315,7 @@ static int
 poll_fd(lua_State *lua)
 {
 	int tmo = luaL_checkinteger(lua, 1);
-	int nfds = 0, f;
+	int nfds = 0, f, index = 0;
 	struct pollfd *fds = NULL;
 	luaL_checktype(lua, 2, LUA_TTABLE);
 
@@ -334,20 +334,49 @@ poll_fd(lua_State *lua)
 		nfds += 1;
 	}
 	f = poll(fds, nfds, tmo);
+	if (f < 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		return 2;
+	}
 
-	if (f > 0) {
-		while (--nfds >= 0) {
-			if (fds[nfds].revents) {
-				lua_pushnumber(lua, nfds+1);
-				lua_pushboolean(lua, fds[nfds].revents & POLLIN);
-				lua_pushboolean(lua, fds[nfds].revents & POLLOUT);
-				free(fds);
-				return 3;
-			}
+	/* We want to return a table containing all selected fds looking like
+	 * this:
+	 * {
+	 *	{ fd = 3, fdvecpos=1, POLLIN = true, POLLOUT = false },
+	 *	{ fd = 5, fdvecpos=2, POLLIN = false, POLLOUT = false },
+	 *	...
+	 * }
+	 */
+
+	lua_newtable(lua);
+
+	while (index < f && --nfds >= 0) {
+		if (fds[nfds].revents) {
+			lua_createtable(lua, 0, 4); /* 4 elements */
+
+			lua_pushliteral(lua, "fd");
+			lua_pushnumber(lua, fds[nfds].fd);
+			lua_rawset(lua, -3);
+
+			lua_pushliteral(lua, "fdvecpos");
+			lua_pushnumber(lua, nfds+1);
+			lua_rawset(lua, -3);
+
+			lua_pushliteral(lua, "POLLIN");
+			lua_pushboolean(lua, fds[nfds].revents & POLLIN);
+			lua_rawset(lua, -3);
+
+			lua_pushliteral(lua, "POLLOUT");
+			lua_pushboolean(lua, fds[nfds].revents & POLLOUT);
+			lua_rawset(lua, -3);
+
+			/* commit table to newtable at index */
+			lua_rawseti(lua, -2, ++index);
 		}
 	}
+
 	free(fds);
-	lua_pushnumber(lua, f);
 	return 1;
 }
 

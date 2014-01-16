@@ -213,16 +213,27 @@ function e2lib.wait(pid)
     return rc, childpid, sig
 end
 
---- Poll input output multiplexing.
--- Only indicates first selected file descriptor.
+--- Poll input output multiplexing. See poll(2) for details on flags etc.
 -- @param timeout Timeout in milliseconds (number).
--- @param fdvec Vector of file descriptors (table of numbers).
--- @return Returns 0 on timeout, < 0 on error and > 0 for the position in fdvec
--- that has an event waiting.
--- @return True if it's a POLLIN event.
--- @return True if it's a POLLOUT event.
+-- @param fdvec Vector of file descriptors. This wrapper listens for
+--              POLLIN and POLLOUT events on every fd.
+-- @return False on error, empty table on timeout, or a vector of tables for
+--         each selected file descriptor. The tables looks like this:
+--         { fd=(file descriptor number), fdvecpos=(index number),
+--         POLLIN=boolean, POLLOUT=boolean }.
+--         If a file descriptor is selected but neither POLLIN nor POLLOUT are
+--         set, the file descriptor was closed. fdvecpos is the position of the
+--         fd in the fdvec table.
+-- @return Error object on failure.
 function e2lib.poll(timeout, fdvec)
-    return le2lib.poll(timeout, fdvec)
+    local pollvec, errstring
+
+    pollvec, errstring = le2lib.poll(timeout, fdvec)
+    if not pollvec then
+        return false, err.new("poll() failed: %s", errstring)
+    end
+
+    return pollvec
 end
 
 --- Set file descriptor in non-blocking mode.
