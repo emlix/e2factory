@@ -270,7 +270,7 @@ function tools.init()
         end
         if not rc then
             if t.optional then
-                e2lib.warnf("optional tool is not available: %s", tool)
+                e2lib.warnf("WHINT", "optional tool is not available: %s", tool)
             else
                 return false, err.new("required tool is missing: %s", tool)
             end
