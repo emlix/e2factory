@@ -139,6 +139,21 @@ function eio.fclose(file)
     return true
 end
 
+--- Close a file descriptor.
+-- @param fd File descriptor.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function eio.close(fd)
+    local rc, errstring
+
+    rc, errstring = leio.close(fd)
+    if not rc then
+        return false, err.new("close failed: %s", errstring)
+    end
+
+    return true
+end
+
 --- Read a file.
 -- @param file File object.
 -- @param size Positive number specifying how many bytes to read.
@@ -167,6 +182,36 @@ function eio.fread(file, size)
     end
 
     return buffer
+end
+
+--- Read from a file descriptor
+-- @param fd File descriptor.
+-- @param size Number of bytes to read in one go.
+-- @return File data as a string, or false on error. May be *up to* 'size' bytes
+-- large and contain embedded zero's. On EOF the empty string is returned.
+-- @return Error object on failure.
+-- @return Errno number on failure.
+function eio.read(fd, size)
+    local data, errstring, errno
+
+    if type(size) ~= "number" then
+        return false, err.new("eio.read: size argument has wrong type")
+    end
+
+    if size <= 0 or size > 2147483648 --[[2GB]] then
+        return false, err("eio.read: size argument out of range")
+    end
+
+    if type(fd) ~= "number" or fd < 0 then
+        return false, err.new("eio.read: fd argument has wrong type or range")
+    end
+
+    data, errstring, errno = leio.read(fd, size)
+    if not data then
+        return false, err.new("read error on fd %d: %s", fd, errstring), errno
+    end
+
+    return data
 end
 
 --- Read character from file.
@@ -210,6 +255,27 @@ function eio.fwrite(file, buffer)
     end
 
     return true
+end
+
+--- Write buffer to a file descriptor.
+-- @param fd File descriptor.
+-- @param buffer Data string to be written. May contain embedded zero's.
+-- @return Number of bytes written or false on error.
+-- @return Error object on failure.
+-- @return Errno number on failure.
+function eio.write(fd, buffer)
+    local rc, errstring, errno
+
+    if type(fd) ~= "number" or fd < 0 then
+        return false, err.new("eio.read: fd argument has wrong type or range")
+    end
+
+    rc, errstring, errno = leio.write(fd, buffer)
+    if not rc then
+        return false, err.new("write error: %s", errstring), errno
+    end
+
+    return rc
 end
 
 --- Read line from a file.
@@ -342,28 +408,16 @@ end
 
 
 --- Create a new UNIX pipe(2) between two file objects.
--- @return File object in read mode, or false on error.
--- @return File object in write mode, or error object on failure.
+-- @return File descriptor in read mode, or false on error.
+-- @return File descriptor in write mode, or error object on failure.
 function eio.pipe()
-    local fd1, fd2, fr, fw, re
+    local fd1, fd2
 
     fd1, fd2 = leio.pipe()
     if not fd1 then
         return false, err.new("failed creating pipe: %s", fd2)
     end
-
-    fr, re = eio.fdopen(fd1, "r")
-    if not fr then
-        return false, re
-    end
-
-    fw,re = eio.fdopen(fd2, "w")
-    if not fw then
-        return false, re
-    end
-    eio.setunbuffered(fw)
-
-    return fr, fw
+    return fd1, fd2
 end
 
 
