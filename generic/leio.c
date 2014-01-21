@@ -88,6 +88,23 @@ eio_fclose(lua_State *lua)
 }
 
 static int
+eio_close(lua_State *L)
+{
+	int fd, rc;
+
+	fd = luaL_checkinteger(L, 1);
+	rc = close(fd);
+	if (rc < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		return 2;
+	}
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+static int
 eio_fdopen(lua_State *lua)
 {
 	FILE *f;
@@ -146,6 +163,48 @@ eio_fwrite(lua_State *lua)
 }
 
 static int
+eio_write(lua_State *L)
+{
+	int fd;
+	const char *buf;
+	size_t sz;
+	ssize_t wsz;
+
+	fd = luaL_checkinteger(L, 1);
+	buf = lua_tolstring(L, 2, &sz);
+
+	wsz = write(fd, buf, sz);
+	if (wsz < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		lua_pushinteger(L, errno);
+		return 3;
+	}
+
+	lua_pushinteger(L, wsz);
+	return 1;
+}
+
+static char *
+get_read_buf(size_t sz)
+{
+	static char *buf;
+	static size_t bufsz;
+
+	if (sz > bufsz) {
+		free(buf);
+		bufsz = 0;
+		buf = malloc(sz);
+		if (!buf)
+			return NULL;
+
+		bufsz = sz;
+	}
+
+	return buf;
+}
+
+static int
 eio_fread(lua_State *lua)
 {
 	char *buf;
@@ -161,7 +220,7 @@ eio_fread(lua_State *lua)
 		return 2;
 	}
 
-	buf = malloc(sz);
+	buf = get_read_buf(sz);
 	if (buf == NULL) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(errno));
@@ -171,7 +230,6 @@ eio_fread(lua_State *lua)
 	ret = fread(buf, 1, sz, f);
 	if (ret != sz) {
 		if (ferror(f)) {
-			free(buf);
 			lua_pushboolean(lua, 0);
 			lua_pushstring(lua, strerror(errno));
 			return 2;
@@ -180,14 +238,43 @@ eio_fread(lua_State *lua)
 		if (ret <= 0 && feof(f)) {
 			/* ret <= 0: do not discard data on short reads,
 			 * only signal EOF when all data is returned. */
-			free(buf);
 			lua_pushstring(lua, "");
 			return 1;
 		}
 	}
 
 	lua_pushlstring(lua, buf, ret);
-	free(buf);
+	return 1;
+}
+
+static int
+eio_read(lua_State *L)
+{
+	int fd;
+	size_t sz;
+	ssize_t rsz;
+	char *buf;
+
+
+	fd = luaL_checkinteger(L, 1);
+	sz = luaL_checkinteger(L, 2);
+
+	buf = get_read_buf(sz);
+	if (buf == NULL) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		return 2;
+	}
+
+	rsz = read(fd, buf, sz);
+	if (rsz < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		lua_pushinteger(L, errno);
+		return 3;
+	}
+
+	lua_pushlstring(L, buf, rsz);
 	return 1;
 }
 
@@ -380,6 +467,7 @@ eio_cloexec(lua_State *lua)
 
 static luaL_Reg lib[] = {
   { "cloexec", eio_cloexec },
+  { "close", eio_close },
   { "dup2", eio_dup2 },
   { "fclose", eio_fclose },
   { "fdopen", eio_fdopen },
@@ -390,8 +478,10 @@ static luaL_Reg lib[] = {
   { "fread", eio_fread },
   { "fwrite", eio_fwrite },
   { "pipe", eio_pipe },
+  { "read", eio_read },
   { "setlinebuf", eio_setlinebuf },
   { "setunbuffered", eio_setunbuffered },
+  { "write", eio_write },
   { NULL, NULL }
 };
 
