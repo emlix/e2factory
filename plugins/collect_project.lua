@@ -242,8 +242,8 @@ local function build_collect_project(info, r, return_flags)
                     return false, e:cat(re)
                 end
             end
-            rc, re = cache.fetch_file(file.server, file.location, destdir,
-                nil, cache_flags)
+            rc, re = cache.fetch_file(info.cache, file.server, file.location,
+                destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
             end
