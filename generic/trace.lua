@@ -29,7 +29,7 @@ local function_blacklist = {}
 -- @param event string: type of event
 -- @param line line number of event (unused)
 local function tracer(event, line)
-    local ftbl, module, out, name, value, isbinary, svalue, fnbl
+    local ftbl, module, out, name, value, isbinary, svalue, overlen, fnbl
 
     ftbl = debug.getinfo(2)
     if ftbl == nil or ftbl.name == nil then
@@ -72,7 +72,7 @@ local function tracer(event, line)
                 isbinary = false
 
                 -- check the first 40 bytes for values common in binary data
-                for _,v in ipairs({string.byte(value, 1, 41)}) do
+                for _,v in ipairs({string.byte(value, 1, 40)}) do
                     if (v >= 0 and v < 9) or (v > 13 and v < 32) then
                         isbinary = true
                         break
@@ -82,12 +82,13 @@ local function tracer(event, line)
                 if isbinary then
                     out = string.format("%s%s=<binary data>", out, name)
                 else
-                    svalue = string.sub(value, 0, 800)
+                    overlen = ""
+                    svalue = string.sub(value, 1, 300)
                     if string.len(value) > string.len(svalue) then
-                        svalue = svalue .. "..."
+                        overlen = "..."
                     end
 
-                    out = string.format("%s%s=\"%s\"", out, name, svalue)
+                    out = string.format("%s%s=%q%s", out, name, svalue, overlen)
                 end
             else
                 out = string.format("%s%s=%s", out, name, tostring(value))
