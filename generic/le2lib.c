@@ -337,6 +337,7 @@ poll_fd(lua_State *lua)
 	if (f < 0) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(errno));
+		free(fds);
 		return 2;
 	}
 
