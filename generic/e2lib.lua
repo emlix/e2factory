@@ -661,8 +661,7 @@ function e2lib.tartype_by_suffix(filename)
     elseif filename:match("tar$") then
         tartype = "tar"
     else
-        e = err.new("unknown suffix for filename: %s", filename)
-        return false, e
+        return false, err.new("unknown suffix for filename: %s", filename)
     end
     return tartype
 end
