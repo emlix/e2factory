@@ -2255,6 +2255,7 @@ end
 --                             feature.
 -- @field check_result Called f(info, resultname).
 -- @field resultid Called f(info, resultname).
+--        Returns nil on error, false to skip, or a resultid string.
 -- @field pbuildid Called f(info, resultname).
 -- @field dlist Called f(info, resultname).
 e2tool_ftab = {
