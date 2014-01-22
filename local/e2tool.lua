@@ -2070,18 +2070,17 @@ function e2tool.pbuildid(info, resultname)
     end
     r.envid = envid(info, resultname)
     hash.hash_line(hc, r.envid)
-    if not r.pseudo_result then
-        local location = e2tool.resultbuildscript(info.results[resultname].directory)
-        local f = {
-            server = info.root_server_name,
-            location = location,
-        }
-        local fileid, re = e2tool.fileid(info, f)
-        if not fileid then
-            return false, e:cat(re)
-        end
-        hash.hash_line(hc, fileid)			-- build script hash
+
+    local location = e2tool.resultbuildscript(info.results[resultname].directory)
+    local f = {
+        server = info.root_server_name,
+        location = location,
+    }
+    local fileid, re = e2tool.fileid(info, f)
+    if not fileid then
+        return false, e:cat(re)
     end
+    hash.hash_line(hc, fileid)			-- build script hash
 
     for _,f in ipairs(e2tool_ftab.resultid) do
         local rhash, re = f(info, resultname)
