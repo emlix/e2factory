@@ -179,7 +179,7 @@ local function listofstrings(l, unique, unify)
             table.insert(l, s)
         end
     end
-    return true, nil
+    return true
 end
 
 --- check a table according to a description table
@@ -225,7 +225,7 @@ local function check_tab(tab, keys, inherit)
     if e:getcount() > 1 then
         return false, e
     end
-    return true, nil
+    return true
 end
 
 --- Open debug logfile.
@@ -354,9 +354,9 @@ local function load_user_config2(info, path, types)
 
     rc, re = e2lib.dofile2(path, g, true)
     if not rc then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
-    return list, nil
+    return list
 end
 
 --- check results.
@@ -505,7 +505,7 @@ local function check_result(info, resultname)
     if e:getcount() > 1 then
         return false, e
     end
-    return true, nil
+    return true
 end
 
 --- set umask to value used for build processes
@@ -575,12 +575,12 @@ function e2tool.local_init(path, tool)
 
     rc, re = e2tool.register_check_result(info, check_result)
     if not rc then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
 
     rc, re = e2tool.register_dlist(info, get_depends)
     if not rc then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
 
     -- load local plugins
@@ -690,7 +690,7 @@ local function load_env_config(info, file)
                 end
             end
         end
-        return true, nil
+        return true
     end
 
     table.insert(info.env_files, file)
@@ -707,7 +707,7 @@ local function load_env_config(info, file)
         return false, merge_error
     end
     e2lib.logf(4, "loading environment done: %s", file)
-    return true, nil
+    return true
 end
 
 --- read chroot configuration
@@ -1405,7 +1405,7 @@ function e2tool.collect_project_info(info, skip_load_config)
             return false, e:cat(re)
         end
     end
-    return info, nil
+    return info
 end
 
 --- check chroot config
@@ -1492,7 +1492,7 @@ local function check_source(info, sourcename)
     if not rc then
         return false, re
     end
-    return true, nil
+    return true
 end
 
 --- check sources.
@@ -1508,7 +1508,7 @@ local function check_sources(info)
     if e:getcount() > 1 then
         return false, e
     end
-    return true, nil
+    return true
 end
 
 --- check licence.
@@ -1573,7 +1573,7 @@ local function check_licences(info)
     if e:getcount() > 1 then
         return false, e
     end
-    return true, nil
+    return true
 end
 
 --- Checks project information for consistancy.
@@ -1702,7 +1702,7 @@ function e2tool.verify_hash(info, server, location, sha1)
         return false, e:append("%s:%s", server, location)
     end
     e2lib.logf(4, "checksum matches: %s:%s", server, location)
-    return true, nil
+    return true
 end
 
 --- Cache for projid() result.
@@ -1781,7 +1781,7 @@ local function verify_remote_fileid(info, file, fileid)
         not e2option.opts["check-remote"] then
         e2lib.logf(4, "checksum for remote file %s:%s skip verifying",
         file.server, file.location)
-        return true, nil
+        return true
     end
     local surl, re = cache.remote_url(info.cache, file.server, file.location)
     if not surl then
@@ -1931,7 +1931,7 @@ function e2tool.licenceid(info, licence)
     end
     lic.licenceid, re = hash.hash_finish(hc)
     if not lic.licenceid then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
     return lic.licenceid
 end
@@ -2186,7 +2186,7 @@ function e2tool.print_selection(info, results)
         local p = res.playground and "[playground]" or ""
         e2lib.logf(3, "Selected result: %-20s %s %s %s", r, s, f, p)
     end
-    return true, nil
+    return true
 end
 
 --- register collect project info.
@@ -2195,7 +2195,7 @@ function e2tool.register_collect_project_info(info, func)
         return false, err.new("register_collect_project_info: invalid argument")
     end
     table.insert(e2tool_ftab.collect_project_info, func)
-    return true, nil
+    return true
 end
 
 --- register check result.
@@ -2204,7 +2204,7 @@ function e2tool.register_check_result(info, func)
         return false, err.new("register_check_result: invalid argument")
     end
     table.insert(e2tool_ftab.check_result, func)
-    return true, nil
+    return true
 end
 
 --- register resultid.
@@ -2213,7 +2213,7 @@ function e2tool.register_resultid(info, func)
         return false, err.new("register_resultid: invalid argument")
     end
     table.insert(e2tool_ftab.resultid, func)
-    return true, nil
+    return true
 end
 
 --- register project buildid.
@@ -2222,7 +2222,7 @@ function e2tool.register_pbuildid(info, func)
         return false, err.new("register_pbuildid: invalid argument")
     end
     table.insert(e2tool_ftab.pbuildid, func)
-    return true, nil
+    return true
 end
 
 --- register dlist.
@@ -2231,7 +2231,7 @@ function e2tool.register_dlist(info, func)
         return false, err.new("register_dlist: invalid argument")
     end
     table.insert(e2tool_ftab.dlist, func)
-    return true, nil
+    return true
 end
 
 --- Function table, driving the build process. Contains further tables to
