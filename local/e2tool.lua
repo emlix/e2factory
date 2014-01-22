@@ -2038,25 +2038,6 @@ function e2tool.pbuildid(info, resultname)
     for _,d in ipairs(r.depends) do
         hash.hash_line(hc, d)			-- dependency name
     end
-    for _,c in ipairs(r.collect_project_results) do
-        hash.hash_line(hc, c)		-- name
-    end
-    for _,s in ipairs(r.collect_project_sources) do
-        hash.hash_line(hc, s)		-- name
-    end
-    for _,g in ipairs(r.collect_project_chroot_groups) do
-        hash.hash_line(hc, g)		-- name
-    end
-    for _,l in ipairs(r.collect_project_licences) do
-        hash.hash_line(hc, l)		-- name
-        -- We collect all licences. So we cannot be sure to catch
-        -- them via results/sources. Include them explicitly here.
-        local lid, re = e2tool.licenceid(info, l)
-        if not lid then
-            return false, e:cat(re)
-        end
-        hash.hash_line(hc, lid)		-- licence id
-    end
 
     if r.chroot then
         for _,g in ipairs(r.chroot) do

@@ -26,6 +26,7 @@ local e2tool = require("e2tool")
 local eio = require("eio")
 local environment = require("environment")
 local err = require("err")
+local hash = require("hash")
 local scm = require("scm")
 
 --- check collect_project configuration
@@ -104,6 +105,59 @@ local function check_collect_project(info, resultname)
         return false, e
     end
     return true, nil
+end
+
+--- Calculate part of the resultid for collect_project results.
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return ResultID string, false to skip, nil on error.
+-- @return Error object on failure.
+local function collect_project_resultid(info, resultname)
+    local rc, re, res, hc, id
+
+    res = info.results[resultname]
+
+    if not res.collect_project then
+        return false
+    end
+
+    -- Warning: nil is used to signal error to the caller.
+
+    hc, re = hash.hash_start()
+    if not hc then return nil, re end
+
+
+    for _,c in ipairs(res.collect_project_results) do
+        rc, re = hash.hash_line(hc, c)
+        if not rc then return nil, re end
+    end
+    for _,s in ipairs(res.collect_project_sources) do
+        rc, re = hash.hash_line(hc, s)
+        if not rc then return nil, re end
+    end
+    for _,g in ipairs(res.collect_project_chroot_groups) do
+        rc, re = hash.hash_line(hc, g)
+        if not rc then return nil, re end
+    end
+    for _,l in ipairs(res.collect_project_licences) do
+        rc, re = hash.hash_line(hc, l)
+        if not rc then return nil, re end
+
+        -- We collect all licences. So we cannot be sure to catch
+        -- them via results/sources. Include them explicitly here.
+        local lid, re = e2tool.licenceid(info, l)
+        if not lid then
+            return nil, e:cat(re)
+        end
+
+        rc, re = hash.hash_line(hc, lid)
+        if not rc then return nil, re end
+    end
+
+    id, re = hash.hash_finish(hc)
+    if not id then return nil, re end
+
+    return id
 end
 
 --- collect all data required to build the project.
@@ -374,7 +428,15 @@ end
 local function collect_project_init(ctx)
     local rc, re
 
-    e2tool.register_check_result(ctx.info, check_collect_project)
+    rc, re = e2tool.register_check_result(ctx.info, check_collect_project)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = e2tool.register_resultid(ctx.info, collect_project_resultid)
+    if not rc then
+        return false, re
+    end
 
     rc, re = e2build.register_build_function(ctx.info, "collect_project",
         build_collect_project, "fix_permissions")
