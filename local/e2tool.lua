@@ -300,8 +300,8 @@ end
 -- @param info info table
 -- @param path string: file to load
 -- @param types list of strings: allowed config types
--- @return list of config items
--- @return an error object on failure
+-- @return List of config items, or false on error.
+-- @return Error object on failure
 local function load_user_config2(info, path, types)
     local e = err.new("loading configuration file failed")
     local rc, re
@@ -1616,13 +1616,14 @@ function e2tool.check_project_info(info)
     if not rc then
         return false, e:cat("cyclic dependencies")
     end
-    return true, nil
+    return true
 end
 
----   e2tool.dlist(INFO, RESULT) -> ARRAY.
---
---     Returns a sorted array with all dependencies for the given RESULT in the
---     project specified by INFO, the RESULT itself excluded.
+--- Returns a sorted vector with all dependencies for the given result
+-- in the project. The result itself is excluded.
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return Sorted vector of result dependencies.
 function e2tool.dlist(info, resultname)
     local t = {}
     for _,f in ipairs(e2tool_ftab.dlist) do
@@ -1689,7 +1690,7 @@ end
 -- @param location file location relative to the server
 -- @param sha1 string: the hash to verify against
 -- @return bool true if verify succeeds, false otherwise
--- @return nil, an error string on error
+-- @return Error object on failure.
 function e2tool.verify_hash(info, server, location, sha1)
     local rc, re
     local e = err.new("error verifying checksum")
@@ -1867,7 +1868,7 @@ end
 -- attributes are not included.
 -- @param info info table
 -- @param file table: file table from configuration
--- @return fileid string: hash value, or nil
+-- @return fileid string: hash value, or false on error.
 -- @return an error object on failure
 function e2tool.fileid(info, file)
     local rc, re, e, fileid, path
@@ -1908,8 +1909,8 @@ end
 --- calculate licence id
 -- @param info
 -- @param licence
--- @return string
--- @return an error object on failure
+-- @return string, or false on error.
+-- @return Error object on failure
 function e2tool.licenceid(info, licence)
     local rc, re
     local e = err.new("calculating licence id failed for licence: %s",
@@ -1995,7 +1996,7 @@ local function envid(info, resultname)
     return e2tool.env_by_result(info, resultname):id()
 end
 
---- Get the pbuildid for a result, calculating it if required.
+--- Get the project-wide buildid for a result, calculating it if required.
 -- @param info
 -- @param resultname
 -- @return Build ID or false on error.
