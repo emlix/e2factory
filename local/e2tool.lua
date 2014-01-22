@@ -1379,14 +1379,6 @@ function e2tool.collect_project_info(info, skip_load_config)
             end
         end
 
-        if rc == nil then
-            return false, e:cat(re)
-        end
-        if not rc then
-            e:append("project repository tag does not match the ReleaseId" ..
-                " given in proj/config")
-            return false, e:cat(re)
-        end
         rc, re, dirty = generic_git.verify_clean_repository(info.root)
         if not rc then
             if dirty then
