@@ -1635,43 +1635,56 @@ function e2tool.dlist(info, resultname)
     return t
 end
 
----   e2tool.dlist_recursive(INFO, RESULT) -> ARRAY.
---
---     Similar to e2tool.dlist(), but also includes indirect dependencies.
---     If RESULT is a table, calculate dependencies for all elements, inclusive,
---     otherwise calculate dependencies for RESULT, exclusive.
+--- Returns a sorted vector with all depdencies of result, and all
+-- the indirect dependencies. If result is a vector, calculates dependencies
+-- for all results and includes those from result. If result is a result name,
+-- calculates its dependencies but does not include the result itself.
+-- @param info Info table
+-- @param result Vector of result names or single result name.
+-- @return Vector of dependencies of the result, may or may not include result.
+--         False on failure.
+-- @return Error object on failure
+-- @see e2tool.dlist
 function e2tool.dlist_recursive(info, result)
+    local rc, re
     local had = {}
     local path = {}
     local col = {}
     local t = {}
+
+    if type(result) == "string" then
+        result = e2tool.dlist(info, result)
+    end
+
     local function visit(res)
         if had[res] then
-            return false, err.new("cyclic dependency: %s", table.concat(path, " "))
-        elseif t and not col[res] then
+            return false,
+                err.new("cyclic dependency: %s", table.concat(path, " "))
+        elseif not col[res] then
             table.insert(path, res)
             had[res] = true
             col[res] = true
             for _, d in ipairs(e2tool.dlist(info, res)) do
-                local rc, re = visit(d)
+                rc, re = visit(d)
                 if not rc then
                     return false, re
                 end
             end
-            if t then table.insert(t, res) end
+            table.insert(t, res)
             had[res] = nil
             path[#path] = nil
         end
         return true
     end
-    for _, r in ipairs(
-        type(result) == "table" and result or e2tool.dlist(info, result)) do
-        local rc, re = visit(r)
+
+    for _, r in ipairs(result) do
+        rc, re = visit(r)
         if not rc then
-            return nil, re
+            return false, re
         end
     end
-    return t, nil
+
+    return t
 end
 
 ---   e2tool.dsort(INFO) -> ARRAY.
