@@ -1687,11 +1687,11 @@ function e2tool.dlist_recursive(info, result)
     return t
 end
 
----   e2tool.dsort(INFO) -> ARRAY.
---
---     Returns an array with the names of all results of the project specified
---     by INFO, topologically sorted according to the projects dependency
---     information.
+--- Calls dlist_recursive() with the default results vector of the project.
+-- @param info Info table.
+-- @return Vector of results in topological order, or false on error.
+-- @return Error object on failure.
+-- @see e2tool.dlist_recursive
 function e2tool.dsort(info)
     return e2tool.dlist_recursive(info, info.project.default_results)
 end
