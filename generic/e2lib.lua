@@ -1079,8 +1079,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
                 end
 
                 fdct._p = {}
-                fdct._p.readfo = rc
-                fdct._p.writefo = re
+                fdct._p.rfd = rc
+                fdct._p.wfd = re
                 fdct._p.buffer = ""
             elseif fdct.istype == "readfo" then
             else
@@ -1096,12 +1096,12 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         local rc, re
         for _,fdct in ipairs(fdctv) do
             if fdct.istype == "writefunc" then
-                rc, re = eio.fclose(fdct._p.readfo)
+                rc, re = eio.close(fdct._p.rfd)
                 if not rc then
                     e2lib.abort(re)
                 end
 
-                rc, re = eio.dup2(eio.fileno(fdct._p.writefo), fdct.dup)
+                rc, re = eio.dup2(fdct._p.wfd, fdct.dup)
                 if not rc then
                     e2lib.abort(re)
                 end
@@ -1118,7 +1118,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         local rc, re
         for _,fdct in ipairs(fdctv) do
             if fdct.istype == "writefunc" then
-                rc, re = eio.fclose(fdct._p.writefo)
+                rc, re = eio.close(fdct._p.wfd)
                 if not rc then
                     return false, re
                 end
@@ -1130,8 +1130,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
 
     local function fd_find_writefunc_by_readfd(fdctv, fd)
         for _,fdct in ipairs(fdctv) do
-            if fdct.istype == "writefunc" and
-                eio.fileno(fdct._p.readfo) == fd then
+            if fdct.istype == "writefunc" and fdct._p.rfd == fd then
                 return fdct
             end
         end
@@ -1166,7 +1165,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         fdvec = {}
         for _,fdct in ipairs(fdctv) do
             if fdct.istype == "writefunc" then
-                table.insert(fdvec, eio.fileno(fdct._p.readfo))
+                table.insert(fdvec, fdct._p.rfd)
             end
         end
 
@@ -1182,17 +1181,12 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
                 if ptab.POLLIN then
                     fdct = fd_find_writefunc_by_readfd(fdctv, ptab.fd)
                     if fdct then
-                        local data, readsz
+                        local data
 
-                        while true do
-                            readsz = 64*1024
-                            data, re = eio.fread(fdct._p.readfo, readsz)
-                            if not data then
-                                return false, re
-                            elseif data == "" then
-                                break
-                            end
-
+                        data, re = eio.read(fdct._p.rfd, 4096)
+                        if not data then
+                            return false, re
+                        elseif data ~= "" then
                             if fdct.linebuffer then
                                 fd_linebuffer(fdct, data)
                             else
@@ -1212,7 +1206,6 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
                     if fdct then
                         fd_linebuffer_final(fdct)
                     end
-
                     table.remove(fdvec, ptab.fdvecpos)
                 end
             end
@@ -1225,7 +1218,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         local rc, re
         for _,fdct in ipairs(fdctv) do
             if fdct.istype == "writefunc" then
-                rc, re = eio.fclose(fdct._p.readfo)
+                rc, re = eio.close(fdct._p.rfd)
                 if not rc then
                     return false, re
                 end
@@ -1255,13 +1248,15 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         local rc, re
 
         -- ping parent
-        rc, re = eio.fwrite(sync_pipes[4], "c")
+        rc, re = eio.write(sync_pipes[4], "c")
         if not rc then
             return false, re
+        elseif rc ~= 1 then
+            return false, err.new("wrote %d bytes instead of 1", rc)
         end
 
         -- wait for parent
-        rc, re = eio.fgetc(sync_pipes[1])
+        rc, re = eio.read(sync_pipes[1], 1)
         if not rc then
             return false, re
         elseif rc ~= "p" then
@@ -1269,8 +1264,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         end
 
         -- cleanup
-        for _,pfo in ipairs(sync_pipes) do
-            rc, re = eio.fclose(pfo)
+        for _,fd in ipairs(sync_pipes) do
+            rc, re = eio.close(fd)
             if not rc then
                 return false, re
             end
@@ -1283,13 +1278,15 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         local rc, re
 
         -- ping child
-        rc, re = eio.fwrite(sync_pipes[2], "p")
+        rc, re = eio.write(sync_pipes[2], "p")
         if not rc then
             return false, re
+        elseif rc ~= 1 then
+            return false, err.new("wrote %d bytes instead of 1", rc)
         end
 
         -- wait for child
-        rc, re = eio.fgetc(sync_pipes[3])
+        rc, re = eio.read(sync_pipes[3], 1)
         if not rc then
             return false, re
         elseif rc ~= "c" then
@@ -1297,8 +1294,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         end
 
         -- cleanup
-        for _,pfo in ipairs(sync_pipes) do
-            rc, re = eio.fclose(pfo)
+        for _,fd in ipairs(sync_pipes) do
+            rc, re = eio.close(fd)
             if not rc then
                 return false, re
             end
