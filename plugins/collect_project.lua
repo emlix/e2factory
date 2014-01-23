@@ -28,6 +28,26 @@ local environment = require("environment")
 local err = require("err")
 local hash = require("hash")
 local scm = require("scm")
+local strict = require("strict")
+
+--- Collect_project result config. This result config table lives in
+-- info.results[resultname]. The fields are merged with e2tool.result
+-- @table collect_project_result
+-- @field collect_project bool: collect the project structure into this result?
+-- @field collect_project_default_result string: which result shall be
+--                                 collected, including recursive dependencies?
+-- @see local.e2tool.result
+
+--- Local dict indexed by result names for which collect_project is enabled.
+local cpresults = {}
+
+--- Per collect_project result table containing data local to the plugin.
+-- @table cpresults.resultname
+-- @field results table: sorted list of results to be collected
+-- @field sources table: sorted list of sources to be collected
+-- @field chroot_groups table: sorted list of chroot groups to be collected
+-- @field licences table: sorted list of licences to be collected
+-- @see cpresults
 
 --- check collect_project configuration
 -- This function depends on sane result and source configurations.
@@ -35,47 +55,50 @@ local scm = require("scm")
 -- @param resultname string: the result to check
 local function check_collect_project(info, resultname)
     local res = info.results[resultname]
-    local e = err.new("in result %s:", resultname)
-    local rc, re
     if not res.collect_project then
-        -- insert empty tables, to avoid some conditionals in the code
-        res.collect_project_results = {}
-        res.collect_project_sources = {}
-        res.collect_project_chroot_groups = {}
-        res.collect_project_licences = {}
-        -- XXX store list of used chroot groups here, too, and use.
-        return true, nil
+        return true
     end
-    local d = res.collect_project_default_result
-    if not d then
+
+    local e = err.new("in result %s:", resultname)
+    local rc, re, cpres, default_result
+
+    cpresults[resultname] = {}
+    cpres = cpresults[resultname]
+
+    cpres.results = {}
+    cpres.sources = {}
+    cpres.chroot_groups = {}
+    cpres.licences = {}
+
+    strict.lock(cpres)
+
+    default_result = res.collect_project_default_result
+    if not default_result then
         e:append("collect_project_default_result is not set")
-    elseif type(d) ~= "string" then
-        e:append(
-        "collect_project_default_result is non-string")
-    elseif not info.results[d] then
+    elseif type(default_result) ~= "string" then
+        e:append( "collect_project_default_result is not a string")
+    elseif not info.results[default_result] then
         e:append("collect_project_default_result is set to "..
-        "an invalid result: %s", d)
+            "an invalid result: %s", default_result)
     end
     -- catch errors upon this point before starting additional checks.
     if e:getcount() > 1 then
         return false, e
     end
-    res.collect_project_results, re = e2tool.dlist_recursive(info,
-        res.collect_project_default_result)
-    if not res.collect_project_results then
+
+    cpres.results, re = e2tool.dlist_recursive(info, { default_result })
+    if not cpres.results then
         return false, e:cat(re)
     end
-    -- store a sorted list of required results
-    table.insert(res.collect_project_results,
-        res.collect_project_default_result)
-    table.sort(res.collect_project_results)
+
     e2lib.warnf("WDEFAULT", "in result %s:", resultname)
     e2lib.warnf("WDEFAULT", " collect_project takes these results: %s",
-    table.concat(res.collect_project_results, ","))
+        table.concat(cpres.results, ","))
+
     -- store a sorted list of required sources, chroot groups and licences
     local tmp_grp = {}
     local tmp_src = {}
-    for _,r in ipairs(res.collect_project_results) do
+    for _,r in ipairs(cpres.results) do
         local res = info.results[r]
         for _,s in ipairs(res.sources) do
             tmp_src[s] = true
@@ -85,22 +108,19 @@ local function check_collect_project(info, resultname)
             tmp_grp[g] = true
         end
     end
-    res.collect_project_sources = {}
     for s,_ in pairs(tmp_src) do
         -- and build the desired array
-        table.insert(res.collect_project_sources, s)
+        table.insert(cpres.sources, s)
     end
-    table.sort(res.collect_project_sources)
-    res.collect_project_chroot_groups = {}
+    table.sort(cpres.sources)
     for g,_ in pairs(tmp_grp) do
-        table.insert(res.collect_project_chroot_groups, g)
+        table.insert(cpres.chroot_groups, g)
     end
-    table.sort(res.collect_project_chroot_groups)
-    res.collect_project_licences = {}
+    table.sort(cpres.chroot_groups)
     for _,l in ipairs(info.licences_sorted) do
-        table.insert(res.collect_project_licences, l)
+        table.insert(cpres.licences, l)
     end
-    table.sort(res.collect_project_licences)
+    table.sort(cpres.licences)
     if e:getcount() > 1 then
         return false, e
     end
@@ -113,7 +133,7 @@ end
 -- @return ResultID string, false to skip, nil on error.
 -- @return Error object on failure.
 local function collect_project_resultid(info, resultname)
-    local rc, re, res, hc, id
+    local rc, re, res, cpres, hc, id
 
     res = info.results[resultname]
 
@@ -123,23 +143,23 @@ local function collect_project_resultid(info, resultname)
 
     -- Warning: nil is used to signal error to the caller.
 
+    cpres = cpresults[resultname]
     hc, re = hash.hash_start()
     if not hc then return nil, re end
 
-
-    for _,c in ipairs(res.collect_project_results) do
+    for _,c in ipairs(cpres.results) do
         rc, re = hash.hash_line(hc, c)
         if not rc then return nil, re end
     end
-    for _,s in ipairs(res.collect_project_sources) do
+    for _,s in ipairs(cpres.sources) do
         rc, re = hash.hash_line(hc, s)
         if not rc then return nil, re end
     end
-    for _,g in ipairs(res.collect_project_chroot_groups) do
+    for _,g in ipairs(cpres.chroot_groups) do
         rc, re = hash.hash_line(hc, g)
         if not rc then return nil, re end
     end
-    for _,l in ipairs(res.collect_project_licences) do
+    for _,l in ipairs(cpres.licences) do
         rc, re = hash.hash_line(hc, l)
         if not rc then return nil, re end
 
@@ -160,6 +180,40 @@ local function collect_project_resultid(info, resultname)
     return id
 end
 
+--- Calculate part of the (recursive) pbuildid for collect_project results.
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return PbuildID string, false to skip, nil on error.
+-- @return Error object on failure.
+local function collect_project_pbuildid(info, resultname)
+    local rc, re, res, cpres, hc, pbid
+
+    res = info.results[resultname]
+
+    if not res.collect_project then
+        return false
+    end
+
+    cpres = cpresults[resultname]
+    hc, re = hash.hash_start()
+    if not hc then return nil, re end
+
+    for _,rn in ipairs(cpres.results) do
+        pbid, re = e2tool.pbuildid(info, rn)
+        if not pbid then
+            return nil, re
+        end
+
+        rc, re = hash.hash_line(hc, pbid)
+        if not rc then return nil, re end
+    end
+
+    pbid, re = hash.hash_finish(hc)
+    if not pbid then return nil, re end
+
+    return pbid
+end
+
 --- collect all data required to build the project.
 -- skip results that depend on this result
 -- example: toolchain, busybox, sources, iso,
@@ -167,22 +221,27 @@ end
 -- the results sources and iso won't be included, as that would lead to
 -- an impossibility to calculate buildids (infinite recursion)
 -- @param info info table
--- @param r
+-- @param resultname Result name.
 -- @param return_flags
 -- @return bool
 -- @return an error object on failure
-local function build_collect_project(info, r, return_flags)
+local function build_collect_project(info, resultname, return_flags)
     local out
-    local res = info.results[r]
+    local res = info.results[resultname]
     if not res.collect_project then
         -- nothing to be done here...
         return true, nil
     end
+
+    local cpres = cpresults[resultname]
+
     e2lib.log(3, "providing project data to this build")
     local rc, re
     local e = err.new("providing project data to this build failed")
     -- project/proj/init/<files>
+
     local destdir = e2lib.join(res.build_config.T, "project/proj/init")
+
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
@@ -230,7 +289,7 @@ local function build_collect_project(info, r, return_flags)
 
     -- generate build driver file for each result
     -- project/chroot/<group>/<files>
-    for _,g in pairs(res.collect_project_chroot_groups) do
+    for _,g in ipairs(cpres.chroot_groups) do
         e2lib.logf(3, "chroot group: %s", g)
         local grp = info.chroot.groups_byname[g]
         local destdir = e2lib.join( res.build_config.T, "project/chroot", g)
@@ -278,7 +337,7 @@ local function build_collect_project(info, r, return_flags)
         end
     end
     -- project/licences/<licence>/<files>
-    for _,l in ipairs(res.collect_project_licences) do
+    for _,l in ipairs(cpres.licences) do
         e2lib.logf(3, "licence: %s", l)
         local lic = info.licences[l]
         local destdir = e2lib.join(res.build_config.T, "project/licences", l)
@@ -304,7 +363,7 @@ local function build_collect_project(info, r, return_flags)
         end
     end
     -- project/results/<res>/<files>
-    for _,n in ipairs(res.collect_project_results) do
+    for _,n in ipairs(cpres.results) do
         e2lib.logf(3, "result: %s", n)
         local rn = info.results[n]
         rc, re = e2build.build_config(info, n)
@@ -363,7 +422,7 @@ local function build_collect_project(info, r, return_flags)
             return false, e:cat(re)
         end
     end
-    for _,s in ipairs(info.results[r].collect_project_sources) do
+    for _,s in ipairs(cpres.sources) do
         local src = info.sources[s]
         e2lib.logf(3, "source: %s", s)
         local destdir =
@@ -383,7 +442,7 @@ local function build_collect_project(info, r, return_flags)
     -- write topologically sorted list of result
     local destdir = e2lib.join(res.build_config.T, "project")
     local tsorted_results, re = e2tool.dlist_recursive(info,
-    res.collect_project_results)
+        cpres.results)
     if not tsorted_results then
         return false, e:cat(re)
     end
@@ -434,6 +493,11 @@ local function collect_project_init(ctx)
     end
 
     rc, re = e2tool.register_resultid(ctx.info, collect_project_resultid)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = e2tool.register_pbuildid(ctx.info, collect_project_pbuildid)
     if not rc then
         return false, re
     end
