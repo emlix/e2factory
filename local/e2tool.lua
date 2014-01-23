@@ -110,17 +110,6 @@ local e2tool_ftab = {}
 -- @field chroot table of strings: list of chroot groups to use
 -- @field env table of strings
 -- @field _env
--- @field collect_project bool: collect the project structure into this result?
--- @field collect_project_default_result string: which result shall be
--- 				collected, including recursive dependencies?
--- @field collect_project_results table: sorted list of results to be
--- 								collected
--- @field collect_project_sources table: sorted list of sources to be
--- 								collected
--- @field collect_project_chroot_groups table: sorted list of chroot groups
--- 							to be collected
--- @field collect_project_licences table: sorted list of licences to be
--- 								collected
 -- @field selected bool: select for build?
 -- @field force_rebuild bool: force rebuild?
 -- @field build_mode table: build mode policy object
@@ -128,6 +117,7 @@ local e2tool_ftab = {}
 -- @field directory
 -- @see policy.build_mode
 -- @see e2build.build_config
+-- @see plugins.collect_project
 
 --- table of chroot configuration
 -- @name chroot
@@ -500,11 +490,11 @@ local function check_result(info, resultname)
     if not e2lib.isfile(build_script) then
         e:append("build-script does not exist: %s", build_script)
     end
-    -- stop if we had an error, as the collect_project stuff depends
-    -- on a sane result structure
+
     if e:getcount() > 1 then
         return false, e
     end
+
     return true
 end
 
@@ -2089,16 +2079,6 @@ function e2tool.pbuildid(info, resultname)
         end
         hash.hash_line(hc, id)		-- buildid of dependency
     end
-    for _,c in ipairs(r.collect_project_results) do
-        local res = info.results[c]
-        -- pbuildids of collected results
-        local pbid, re = e2tool.pbuildid(info, c)
-        if not pbid then
-            return false, re
-        end
-        hash.hash_line(hc, pbid)
-    end
-
     for _,f in ipairs(e2tool_ftab.pbuildid) do
         local rhash, re = f(info, resultname)
         -- nil -> error
