@@ -1644,7 +1644,7 @@ function e2lib.mktempfile(template)
     local rc, re, errstring, tmpfile, tmpfd, tmpfo
 
     if not template then
-        template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.globals.tmpdir,
+        template = string.format("%s/e2tmp.%d.XXXXXX", e2lib.globals.tmpdir,
             e2lib.getpid())
     end
 
@@ -1700,7 +1700,7 @@ end
 function e2lib.mktempdir(template)
     local rc, errstring, tmpdir
     if not template then
-        template = string.format("%s/e2tmp.%d.XXXXXXXX", e2lib.globals.tmpdir,
+        template = string.format("%s/e2tmp.%d.XXXXXX", e2lib.globals.tmpdir,
             e2lib.getpid())
     end
 
