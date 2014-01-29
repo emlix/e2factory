@@ -85,7 +85,7 @@ function cvs.validate_source(info, sourcename)
     if not src.branch then
         e:append("source has no `branch' attribute")
     end
-    if not type(src.tag) == "string" then
+    if type(src.tag) ~= "string" then
         e:append("source has no `tag' attribute or tag attribute has wrong type")
     end
     if not src.module then

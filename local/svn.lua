@@ -365,10 +365,10 @@ function svn.validate_source(info, sourcename)
     if not src.branch then
         e:append("source has no `branch' attribute")
     end
-    if not type(src.tag) == "string" then
+    if type(src.tag) ~= "string" then
         e:append("source has no `tag' attribute or tag attribute has wrong type")
     end
-    if not type(src.workingcopy_subdir) == "string" then
+    if type(src.workingcopy_subdir) ~= "string" then
         e2lib.warnf("WDEFAULT", "in source %s", sourcename)
         e2lib.warnf("WDEFAULT",
         " workingcopy_subdir defaults to the branch: %s", src.branch)
