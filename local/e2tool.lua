@@ -1573,7 +1573,7 @@ local function check_licence(info, l)
     end
     if not lic.files then
         e:append("no files attribute")
-    elseif not type(lic.files) == "table" then
+    elseif type(lic.files) ~= "table" then
         e:append("files attribute is not a table")
     else
         for _,f in ipairs(lic.files) do
