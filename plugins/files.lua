@@ -373,6 +373,12 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 return false, e:cat(re)
             end
 
+            local expected_location = e2lib.join(buildpath, file.unpack)
+            if not e2lib.stat(expected_location, true) then
+                return false, err.new("expected unpack location '%s' does not exist",
+                    expected_location)
+            end
+
             if not symlink then
                 symlink = buildpath .. "/" .. sourcename
                 if file.unpack ~= sourcename then
@@ -380,6 +386,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     if not rc then
                         return false, e:cat(re)
                     end
+
+
                 end
             end
         else
