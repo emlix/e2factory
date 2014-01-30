@@ -11,3 +11,6 @@ Lua is used for e2factory as well as LDoc:
 
 SHA-1 implementation by Steve Reid:
  - generic/sha1.c
+
+Middleclass by Enrique García Cota
+ - generic/class.lua
