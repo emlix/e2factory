@@ -71,10 +71,6 @@ local function e2_playground(arg)
     if not info then
         return false, re
     end
-    local rc, re = e2tool.check_project_info(info)
-    if not rc then
-        return false, re
-    end
 
     if #arguments ~= 1 then
         e2option.usage(1)

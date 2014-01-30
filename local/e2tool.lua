@@ -1126,6 +1126,217 @@ local function read_project_config(info)
     return true
 end
 
+--- check chroot config
+-- @param chroot
+-- @return bool
+-- @return an error object on failure
+local function check_chroot_config(info)
+    local e = err.new("error validating chroot configuration")
+    for g,grp in pairs(info.chroot.groups) do
+        if not grp.server then
+            e:append("in group: %s", grp.name)
+            e:append(" `server' attribute missing")
+        elseif not cache.valid_server(info.cache, grp.server) then
+            e:append("in group: %s", grp.name)
+            e:append(" no such server: %s", grp.server)
+        end
+        if (not grp.files) or (#grp.files) == 0 then
+            e:append("in group: %s", grp.name)
+            e:append(" list of files is empty")
+        else
+            for _,f in ipairs(grp.files) do
+                local inherit = {
+                    server = grp.server,
+                }
+                local keys = {
+                    server = {
+                        mandatory = true,
+                        type = "string",
+                        inherit = true,
+                    },
+                    location = {
+                        mandatory = true,
+                        type = "string",
+                        inherit = false,
+                    },
+                    sha1 = {
+                        mandatory = false,
+                        type = "string",
+                        inherit = false,
+                    },
+                }
+                local rc, re = check_tab(f, keys, inherit)
+                if not rc then
+                    e:append("in group: %s", grp.name)
+                    e:cat(re)
+                end
+                if f.server ~= info.root_server_name and not f.sha1 then
+                    e:append("in group: %s", grp.name)
+                    e:append("file entry for remote file without `sha1` attribute")
+                end
+            end
+        end
+    end
+    if (not info.chroot.default_groups) or #info.chroot.default_groups == 0 then
+        e:append(" `default_groups' attribute is missing or empty list")
+    else
+        for _,g in ipairs(info.chroot.default_groups) do
+            if not info.chroot.groups_byname[g] then
+                e:append(" unknown group in default groups list: %s", g)
+            end
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
+--- check source.
+local function check_source(info, sourcename)
+    local src = info.sources[sourcename]
+    local rc, e, re
+    if not src then
+        e = err.new("no source by that name: %s", sourcename)
+        return false, e
+    end
+    local e = err.new("in source: %s", sourcename)
+    if not src.type then
+        e2lib.warnf("WDEFAULT", "in source %s", sourcename)
+        e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
+        src.type = "files"
+    end
+    rc, re = scm.validate_source(info, sourcename)
+    if not rc then
+        return false, re
+    end
+    return true
+end
+
+--- check sources.
+local function check_sources(info)
+    local e = err.new("Error while checking sources")
+    local rc, re
+    for n,s in pairs(info.sources) do
+        rc, re = check_source(info, n)
+        if not rc then
+            e:cat(re)
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
+--- check licence.
+local function check_licence(info, l)
+    local e = err.new("in licence: %s", l)
+    local lic = info.licences[l]
+    if not lic.server then
+        e:append("no server attribute")
+    end
+    if not lic.files then
+        e:append("no files attribute")
+    elseif type(lic.files) ~= "table" then
+        e:append("files attribute is not a table")
+    else
+        for _,f in ipairs(lic.files) do
+            local inherit = {
+                server = lic.server,
+            }
+            local keys = {
+                server = {
+                    mandatory = true,
+                    type = "string",
+                    inherit = true,
+                },
+                location = {
+                    mandatory = true,
+                    type = "string",
+                    inherit = false,
+                },
+                sha1 = {
+                    mandatory = false,
+                    type = "string",
+                    inherit = false,
+                },
+            }
+            local rc, re = check_tab(f, keys, inherit)
+            if not rc then
+                e:cat(re)
+            elseif f.server ~= info.root_server_name and
+                not f.sha1 then
+                e:append("file entry for remote file without"..
+                " `sha1` attribute")
+            end
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
+--- check licences.
+local function check_licences(info)
+    local e = err.new("Error while checking licences")
+    local rc, re
+    for l, lic in pairs(info.licences) do
+        rc, re = check_licence(info, l)
+        if not rc then
+            e:cat(re)
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
+--- Checks project information for consistancy.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function check_project_info(info)
+    local rc, re
+    local e = err.new("error in project configuration")
+    rc, re = check_chroot_config(info)
+    if not rc then
+        return false, e:cat(re)
+    end
+    local rc, re = check_sources(info)
+    if not rc then
+        return false, e:cat(re)
+    end
+    local rc, re = check_results(info)
+    if not rc then
+        return false, e:cat(re)
+    end
+    local rc, re = check_licences(info)
+    if not rc then
+        return false, e:cat(re)
+    end
+    for _, r in ipairs(info.project.default_results) do
+        if not info.results[r] then
+            e:append("default_results: No such result: %s", r)
+        end
+    end
+    for _, r in ipairs(info.project.deploy_results) do
+        if not info.results[r] then
+            e:append("deploy_results: No such result: %s", r)
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+    local rc = e2tool.dsort(info)
+    if not rc then
+        return false, e:cat("cyclic dependencies")
+    end
+    return true
+end
+
 --- collect project info.
 function e2tool.collect_project_info(info, skip_load_config)
     local rc, re
@@ -1391,218 +1602,13 @@ function e2tool.collect_project_info(info, skip_load_config)
             return false, e:cat(re)
         end
     end
-    return info
-end
 
---- check chroot config
--- @param chroot
--- @return bool
--- @return an error object on failure
-local function check_chroot_config(info)
-    local e = err.new("error validating chroot configuration")
-    for g,grp in pairs(info.chroot.groups) do
-        if not grp.server then
-            e:append("in group: %s", grp.name)
-            e:append(" `server' attribute missing")
-        elseif not cache.valid_server(info.cache, grp.server) then
-            e:append("in group: %s", grp.name)
-            e:append(" no such server: %s", grp.server)
-        end
-        if (not grp.files) or (#grp.files) == 0 then
-            e:append("in group: %s", grp.name)
-            e:append(" list of files is empty")
-        else
-            for _,f in ipairs(grp.files) do
-                local inherit = {
-                    server = grp.server,
-                }
-                local keys = {
-                    server = {
-                        mandatory = true,
-                        type = "string",
-                        inherit = true,
-                    },
-                    location = {
-                        mandatory = true,
-                        type = "string",
-                        inherit = false,
-                    },
-                    sha1 = {
-                        mandatory = false,
-                        type = "string",
-                        inherit = false,
-                    },
-                }
-                local rc, re = check_tab(f, keys, inherit)
-                if not rc then
-                    e:append("in group: %s", grp.name)
-                    e:cat(re)
-                end
-                if f.server ~= info.root_server_name and not f.sha1 then
-                    e:append("in group: %s", grp.name)
-                    e:append("file entry for remote file without `sha1` attribute")
-                end
-            end
-        end
-    end
-    if (not info.chroot.default_groups) or #info.chroot.default_groups == 0 then
-        e:append(" `default_groups' attribute is missing or empty list")
-    else
-        for _,g in ipairs(info.chroot.default_groups) do
-            if not info.chroot.groups_byname[g] then
-                e:append(" unknown group in default groups list: %s", g)
-            end
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
---- check source.
-local function check_source(info, sourcename)
-    local src = info.sources[sourcename]
-    local rc, e, re
-    if not src then
-        e = err.new("no source by that name: %s", sourcename)
-        return false, e
-    end
-    local e = err.new("in source: %s", sourcename)
-    if not src.type then
-        e2lib.warnf("WDEFAULT", "in source %s", sourcename)
-        e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
-        src.type = "files"
-    end
-    rc, re = scm.validate_source(info, sourcename)
+    rc, re = check_project_info(info)
     if not rc then
         return false, re
     end
-    return true
-end
 
---- check sources.
-local function check_sources(info)
-    local e = err.new("Error while checking sources")
-    local rc, re
-    for n,s in pairs(info.sources) do
-        rc, re = check_source(info, n)
-        if not rc then
-            e:cat(re)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
---- check licence.
-local function check_licence(info, l)
-    local e = err.new("in licence: %s", l)
-    local lic = info.licences[l]
-    if not lic.server then
-        e:append("no server attribute")
-    end
-    if not lic.files then
-        e:append("no files attribute")
-    elseif type(lic.files) ~= "table" then
-        e:append("files attribute is not a table")
-    else
-        for _,f in ipairs(lic.files) do
-            local inherit = {
-                server = lic.server,
-            }
-            local keys = {
-                server = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = true,
-                },
-                location = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = false,
-                },
-                sha1 = {
-                    mandatory = false,
-                    type = "string",
-                    inherit = false,
-                },
-            }
-            local rc, re = check_tab(f, keys, inherit)
-            if not rc then
-                e:cat(re)
-            elseif f.server ~= info.root_server_name and
-                not f.sha1 then
-                e:append("file entry for remote file without"..
-                " `sha1` attribute")
-            end
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
---- check licences.
-local function check_licences(info)
-    local e = err.new("Error while checking licences")
-    local rc, re
-    for l, lic in pairs(info.licences) do
-        rc, re = check_licence(info, l)
-        if not rc then
-            e:cat(re)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
---- Checks project information for consistancy.
--- @param info Info table.
--- @return True on success, false on error.
--- @return Error object on failure.
-function e2tool.check_project_info(info)
-    local rc, re
-    local e = err.new("error in project configuration")
-    rc, re = check_chroot_config(info)
-    if not rc then
-        return false, e:cat(re)
-    end
-    local rc, re = check_sources(info)
-    if not rc then
-        return false, e:cat(re)
-    end
-    local rc, re = check_results(info)
-    if not rc then
-        return false, e:cat(re)
-    end
-    local rc, re = check_licences(info)
-    if not rc then
-        return false, e:cat(re)
-    end
-    for _, r in ipairs(info.project.default_results) do
-        if not info.results[r] then
-            e:append("default_results: No such result: %s", r)
-        end
-    end
-    for _, r in ipairs(info.project.deploy_results) do
-        if not info.results[r] then
-            e:append("deploy_results: No such result: %s", r)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    local rc = e2tool.dsort(info)
-    if not rc then
-        return false, e:cat("cyclic dependencies")
-    end
-    return true
+    return info
 end
 
 --- Returns a sorted vector with all dependencies for the given result

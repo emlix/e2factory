@@ -110,11 +110,8 @@ local function e2_build(arg)
     if not info then
         return false, re
     end
+
     perform_writeback_settings(writeback)
-    local rc, re = e2tool.check_project_info(info)
-    if not rc then
-        return false, re
-    end
 
     -- apply the standard build mode to all results
     for _,res in pairs(info.results) do

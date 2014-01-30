@@ -65,10 +65,6 @@ local function e2_ls_project(arg)
     if not info then
         return false, re
     end
-    local rc, re = e2tool.check_project_info(info)
-    if not rc then
-        return false, re
-    end
 
     local results = {}
     if opts.all then

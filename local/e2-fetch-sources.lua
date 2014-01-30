@@ -71,10 +71,6 @@ local function e2_fetch_source(arg)
     if not info then
         return false, info
     end
-    local rc, re = e2tool.check_project_info(info)
-    if not rc then
-        return false, e:cat(re)
-    end
 
     if not (opts.fetch or opts.update) then
         opts.fetch = true
