@@ -222,12 +222,12 @@ end
 local function e2_new_source(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "new-source")
     if not info then
-        return false, re
+        error(re)
     end
 
     e2option.flag("git", "create a git repository")
@@ -236,17 +236,17 @@ local function e2_new_source(arg)
     e2option.flag("no-checksum", "do not verify checksum file")
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, re
+        error(re)
     end
 
     if opts.git then
         if #arguments ~= 1 then
-            return false, err.new("<name> argument required")
+            error(err.new("<name> argument required"))
         end
         -- remote
         local rserver = info.default_repo_server
@@ -261,7 +261,7 @@ local function e2_new_source(arg)
         local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
             rserver, rlocation)
         if not rc then
-            return false, re
+            error(re)
         end
         e2lib.log(1, "Read e2-new-source(1) for the next step")
     elseif opts.files then
@@ -272,7 +272,7 @@ local function e2_new_source(arg)
         local location = arguments[1]
         local sl, re = e2lib.parse_server_location(location, info.default_files_server)
         if not sl then
-            return false, re
+            error(re)
         end
         local server = sl.server
         local location = sl.location
@@ -280,23 +280,21 @@ local function e2_new_source(arg)
         local checksum_file = arguments[3]
         local verify = not opts["no-checksum"]
         if verify and not checksum_file then
-            return false, err.new("checksum file argument missing")
+            error(err.new("checksum file argument missing"))
         end
 
         local rc, re = new_files_source(info.cache, server, location, source_file,
         checksum_file, verify)
         if not rc then
-            return false, re
+            error(re)
         end
     else
-        return false, err.new("Please specify either --files are --git")
+        error(err.new("Please specify either --files are --git"))
     end
-
-    return true
 end
 
-local rc, re = e2_new_source(arg)
-if not rc then
+local pc, re = pcall(e2_new_source, arg)
+if not pc then
     e2lib.abort(re)
 end
 

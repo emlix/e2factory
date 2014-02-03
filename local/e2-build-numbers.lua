@@ -34,19 +34,19 @@ local err = require("err")
 local function e2_build_numbers(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "build-numbers")
     if not info then
-        return false, re
+        error(re)
     end
 
-    return false, err.new("e2-build-numbers is deprecated and has been removed")
+    error(err.new("e2-build-numbers is deprecated and has been removed"))
 end
 
-local rc, re = e2_build_numbers(arg)
-if not rc then
+local pc, re = pcall(e2_build_numbers, arg)
+if not pc then
     e2lib.abort(re)
 end
 

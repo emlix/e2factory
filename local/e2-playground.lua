@@ -42,12 +42,12 @@ local policy = require("policy")
 local function e2_playground(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "playground")
     if not info then
-        return false, re
+        error(re)
     end
 
     local e = err.new("entering playground failed")
@@ -59,17 +59,17 @@ local function e2_playground(arg)
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     -- get build mode from the command line
     local build_mode, re = policy.handle_commandline_options(opts, true)
     if not build_mode then
-        return false, re
+        error(re)
     end
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, re
+        error(re)
     end
 
     if #arguments ~= 1 then
@@ -84,10 +84,10 @@ local function e2_playground(arg)
     end
     rc, re = e2build.build_config(info, r, {})
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
     if not e2build.chroot_exists(info, r) then
-        return false, err.new("playground does not exist")
+        error(err.new("playground does not exist"))
     end
     if opts.showpath then
         console.infonl(info.results[r].build_config.c)
@@ -113,7 +113,7 @@ local function e2_playground(arg)
     end
     rc, re = eio.file_write(profile, table.concat(out))
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
     local command = nil
     if opts.command then
@@ -128,14 +128,12 @@ local function e2_playground(arg)
     end
     rc, re = e2build.enter_playground(info, r, command)
     if not rc then
-        return false, re
+        error(re)
     end
-
-    return true
 end
 
-local rc, re = e2_playground(arg)
-if not rc then
+local pc, re = pcall(e2_playground, arg)
+if not pc then
     e2lib.abort(re)
 end
 

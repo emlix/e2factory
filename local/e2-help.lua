@@ -241,54 +241,52 @@ local function e2_help(arg)
     local rc, re, e
     rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "help")
     if not info then
-        return false, re;
+        error(re)
     end
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     info, re = e2tool.collect_project_info(info, true)
     if not info then
-        return false, re
+        error(re)
     end
 
     local documentation = {}
     if #arguments == 0 then
         rc, re = discover_documentation(documentation)
         if not rc then
-            return false, re
+            error(re)
         end
 
         rc, re = list_documentation(documentation)
         if not rc then
-            return false, re
+            error(re)
         end
     elseif #arguments == 1 then
         rc, re = discover_documentation(documentation)
         if not rc then
-            return false, re
+            error(re)
         end
 
         rc, re = display_doc(documentation, arguments[1])
         if not rc then
-            return false, re
+            error(re)
         end
     else
-        return false, err.new("Too many arguments")
+        error(err.new("Too many arguments"))
     end
-
-    return true
 end
 
-local rc, re = e2_help(arg)
-if not rc then
+local pc, re = pcall(e2_help, arg)
+if not pc then
     e2lib.abort(re)
 end
 

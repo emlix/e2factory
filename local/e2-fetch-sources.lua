@@ -40,12 +40,12 @@ local scm = require("scm")
 local function e2_fetch_source(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "fetch-sources")
     if not info then
-        return false, re
+        error(re)
     end
 
     local e = err.new()
@@ -64,12 +64,12 @@ local function e2_fetch_source(arg)
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, info
+        error(re)
     end
 
     if not (opts.fetch or opts.update) then
@@ -190,9 +190,9 @@ local function e2_fetch_source(arg)
                     sel[s] = s
                 end
             elseif opts.result then
-                return false, err.new("is not a result: %s", x)
+                error(err.new("is not a result: %s", x))
             else
-                return false, err.new("is not a source: %s", x)
+                error(err.new("is not a source: %s", x))
             end
         end
     elseif opts["all"] then
@@ -218,7 +218,7 @@ local function e2_fetch_source(arg)
         end
     end
     if e:getcount() > 0 then
-        return false, e
+        error(e)
     end
 
     if opts.chroot then
@@ -240,14 +240,12 @@ local function e2_fetch_source(arg)
     end
 
     if e:getcount() > 0 then
-        return false, e
+        error(e)
     end
-
-    return true
 end
 
-local rc, re = e2_fetch_source(arg)
-if not rc then
+local pc, re = pcall(e2_fetch_source, arg)
+if not pc then
     e2lib.abort(re)
 end
 

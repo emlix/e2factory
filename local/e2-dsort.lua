@@ -36,22 +36,22 @@ local e2option = require("e2option")
 local function e2_dsort(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "dsort")
     if not info then
-        return false, re
+        error(re)
     end
 
     local opts, re = e2option.parse(arg)
     if not opts then
-        return false, re
+        error(re)
     end
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, re
+        error(re)
     end
 
     local d = e2tool.dsort(info)
@@ -60,12 +60,10 @@ local function e2_dsort(arg)
             console.infonl(dep)
         end
     end
-
-    return true
 end
 
-local rc, re = e2_dsort(arg)
-if not rc then
+local pc, re = pcall(e2_dsort, arg)
+if not pc then
     e2lib.abort(re)
 end
 

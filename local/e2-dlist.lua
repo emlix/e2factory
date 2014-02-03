@@ -37,33 +37,33 @@ local err = require("err")
 local function e2_dlist(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "dlist")
     if not info then
-        return false, re
+        error(re)
     end
 
     e2option.flag("recursive", "show indirect dependencies, too")
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     if #arguments == 0 then
-        return false,
-            err.new("no result given - enter `e2-dlist --help' for usage information")
+        error(err.new(
+            "no result given - enter `e2-dlist --help' for usage information"))
     elseif #arguments ~= 1 then e2option.usage(1) end
 
     local result = arguments[1]
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, re
+        error(re)
     end
 
     if not info.results[ result ] then
-        return false, err.new("no such result: %s", result)
+       error(err.new("no such result: %s", result))
     end
 
     local dep, re
@@ -73,18 +73,16 @@ local function e2_dlist(arg)
         dep, re = e2tool.dlist(info, result)
     end
     if not dep then
-        return false, re
+        error(re)
     end
 
     for _,d in ipairs(dep) do
         console.infonl(d)
     end
-
-    return true
 end
 
-local rc, re = e2_dlist(arg)
-if not rc then
+local pc, re = pcall(e2_dlist, arg)
+if not pc then
     e2lib.abort(re)
 end
 

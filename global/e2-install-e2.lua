@@ -38,7 +38,7 @@ local buildconfig = require("buildconfig")
 local function e2_install_e2(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     -- When called from e2-fetch-project, we inherit its arg vector.
@@ -48,34 +48,34 @@ local function e2_install_e2(arg)
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     local root = e2lib.locate_project_root()
     if not root then
-        return false, err.new("can't locate project root.")
+        error(err.new("can't locate project root."))
     end
 
     rc, re = e2lib.init2()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local e = err.new("e2-install-e2 failed")
 
     local config, re = e2lib.get_global_config()
     if not config then
-        return false, re
+        error(re)
     end
 
     local servers = config.servers
     if not servers then
-        return false, err.new("no servers configured in global config")
+        error(err.new("no servers configured in global config"))
     end
 
     local scache, re = e2lib.setup_cache()
     if not scache then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- standard global tool setup finished
@@ -88,12 +88,12 @@ local function e2_install_e2(arg)
     local givf = e2lib.join(root, e2lib.globals.global_interface_version_file)
     local line, re = eio.file_read_line(givf)
     if not line then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local v = tonumber(line:match("[0-9]+"))
     if not v or v < 1 or v > 2 then
-        return false, e:append("unhandled project version")
+        error(e:append("unhandled project version"))
     end
 
     -- version is 1 or 2
@@ -104,7 +104,7 @@ local function e2_install_e2(arg)
         if e2lib.exists(dir) then
             rc, re = e2lib.unlink_recursive(dir)
             if not rc then
-                return false, e:cat(re)
+                error(e:cat(re))
             end
         end
     end
@@ -113,13 +113,13 @@ local function e2_install_e2(arg)
 
     local extensions, re = e2lib.read_extension_config(root)
     if not extensions then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local ef = e2lib.join(root, e2lib.globals.e2version_file)
     local e2version, re = e2lib.parse_e2versionfile(ef)
     if not e2version then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local ref
@@ -142,13 +142,13 @@ local function e2_install_e2(arg)
     rc, re = generic_git.git_clone_from_server(scache, server, location,
         destdir, false)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- change to requested branch or tag
     rc, re = generic_git.git_checkout1(destdir, ref)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     for _,ex in ipairs(extensions) do
@@ -166,19 +166,19 @@ local function e2_install_e2(arg)
         if e2lib.exists(destdir) then
             rc, re = e2lib.unlink_recursive(destdir)
             if not rc then
-                return false, e:cat(re)
+                error(e:cat(re))
             end
         end
 
         rc, re = generic_git.git_clone_from_server(scache, server, location,
             destdir, false)
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
 
         rc, re = generic_git.git_checkout1(destdir, ref)
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
     end
 
@@ -195,14 +195,12 @@ local function e2_install_e2(arg)
 
     rc, re = e2lib.callcmd_log(cmd, e2lib.join(root, ".e2/e2"))
     if not rc or rc ~= 0 then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
-
-    return true
 end
 
-local rc, re = e2_install_e2(arg)
-if not rc then
+local pc, re = pcall(e2_install_e2, arg)
+if not pc then
     e2lib.abort(re)
 end
 

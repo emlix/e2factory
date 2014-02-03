@@ -41,12 +41,12 @@ local scm = require("scm")
 local function e2_build(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "build")
     if not info then
-        return false, re
+        error(re)
     end
 
     e2option.flag("all", "build all results (default unless for working copy)")
@@ -78,14 +78,14 @@ local function e2_build(arg)
                 rc, re = cache.set_writeback(info.cache, set.server, false)
                 if not rc then
                     local e = err.new(disable_msg, set.server)
-                    return false, e:cat(re)
+                    error(e:cat(re))
                 end
             elseif set.set == "enable" then
                 e2lib.logf(3, enable_msg, set.server)
                 rc, re = cache.set_writeback(info.cache, set.server, true)
                 if not rc then
                     local e = err.new(enable_msg, set.server)
-                    return false, e:cat(re)
+                    error(e:cat(re))
                 end
             end
         end
@@ -97,18 +97,18 @@ local function e2_build(arg)
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     -- get build mode from the command line
     local build_mode, re = policy.handle_commandline_options(opts, true)
     if not build_mode then
-        return false, re
+        error(re)
     end
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, re
+        error(re)
     end
 
     perform_writeback_settings(writeback)
@@ -137,7 +137,7 @@ local function e2_build(arg)
     local build_mode = nil
     if opts["branch-mode"] and opts["wc-mode"] then
         e = err.new("--branch-mode and --wc-mode are mutually exclusive")
-        return false, e
+        error(e)
     end
     if opts["branch-mode"] then
         -- selected results get a special build mode
@@ -152,16 +152,13 @@ local function e2_build(arg)
     local playground = opts["playground"]
     if playground then
         if opts.release then
-            return false,
-                err.new("--release and --playground are mutually exclusive")
+            error(err.new("--release and --playground are mutually exclusive"))
         end
         if opts.all then
-            return false,
-                err.new("--all and --playground are mutually exclusive")
+            error(err.new("--all and --playground are mutually exclusive"))
         end
         if #arguments ~= 1 then
-            return false,
-                err.new("please select one single result for the playground")
+            error(err.new("please select one single result for the playground"))
         end
     end
     local force_rebuild = opts["force-rebuild"]
@@ -171,7 +168,7 @@ local function e2_build(arg)
     rc, re = e2tool.select_results(info, results, force_rebuild,
         keep_chroot, build_mode, playground)
     if not rc then
-        return false, re
+        error(re)
     end
 
     -- a list of results to build, topologically sorted
@@ -180,31 +177,31 @@ local function e2_build(arg)
         local re
         sel_res, re = e2tool.dlist_recursive(info, results)
         if not sel_res then
-            return false, re
+            error(re)
         end
     else
         local re
         sel_res, re = e2tool.dsort(info)
         if not sel_res then
-            return false, re
+            error(re)
         end
     end
 
     rc, re = e2tool.print_selection(info, sel_res)
     if not rc then
-        return false, re
+        error(re)
     end
 
     if opts.release then
         local version_table, re = e2lib.parse_e2versionfile(
             e2lib.join(info.root, e2lib.globals.e2version_file))
         if not version_table then
-            return false, re
+           error(re)
         end
 
         if version_table.tag == "^" then
-            return false,
-                err.new("e2 is on a pseudo tag while building in release mode.")
+            error(
+                err.new("e2 is on a pseudo tag while building in release mode."))
         end
     end
 
@@ -212,7 +209,7 @@ local function e2_build(arg)
     for _,r in ipairs(sel_res) do
         local bid, re = e2tool.buildid(info, r)
         if not bid then
-            return false, re
+            error(re)
         end
     end
 
@@ -220,25 +217,21 @@ local function e2_build(arg)
         for _,r in ipairs(sel_res) do
             local bid, re = e2tool.buildid(info, r)
             if not bid then
-                return false, re
+                error(re)
             end
             console.infof("%-20s [%s]\n", r, bid)
         end
-
-        return true
+    else
+        -- build
+        local rc, re = e2build.build_results(info, sel_res)
+        if not rc then
+            error(re)
+        end
     end
-
-    -- build
-    local rc, re = e2build.build_results(info, sel_res)
-    if not rc then
-        return false, re
-    end
-
-    return true
 end
 
-local rc, re = e2_build(arg)
-if not rc then
+local pc, re = pcall(e2_build, arg)
+if not pc then
     e2lib.abort(re)
 end
 

@@ -106,29 +106,29 @@ local function e2_create_project(arg)
 
     rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     rc, re = e2lib.init2()
     if not rc then
-        return false, re
+        error(re)
     end
 
     e = err.new("creating project failed")
 
     local config, re = e2lib.get_global_config()
     if not config then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local scache, re = e2lib.setup_cache()
     if not scache then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     if #arguments ~= 1 then
@@ -138,7 +138,7 @@ local function e2_create_project(arg)
     local sl, re = e2lib.parse_server_location(arguments[1],
         e2lib.globals.default_projects_server)
     if not sl then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local p = {}
@@ -152,7 +152,7 @@ local function e2_create_project(arg)
     -- create the server side structure
     local tmpdir, re = e2lib.mktempdir()
     if not tmpdir then
-        return false, re
+        error(re)
     end
 
     local version = string.format("%d\n", p.version)
@@ -172,25 +172,25 @@ local function e2_create_project(arg)
 
         rc, re = e2lib.mkdir_recursive(e2lib.dirname(sourcefile))
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
 
         rc, re = eio.file_write(sourcefile, f.content)
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
 
         flocation = e2lib.join(p.location, f.filename)
         rc, re = cache.push_file(scache, sourcefile, p.server, flocation, {})
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
     end
     e2lib.rmtempdir(tmpdir)
 
     tmpdir, re = e2lib.mktempdir()
     if not tmpdir then
-        return false, re
+        error(re)
     end
 
     -- create the initial repository on server side
@@ -198,7 +198,7 @@ local function e2_create_project(arg)
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
     rc, re = generic_git.git_init_db(scache, p.server, rlocation)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- works up to this point
@@ -208,37 +208,37 @@ local function e2_create_project(arg)
 
     tmp_repo_url, re = url.parse(string.format("file://%s/.git", tmpdir))
     if not tmp_repo_url then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
     tmp_repo_path, re = url.to_file_path(tmp_repo_url)
     if not tmp_repo_path then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     rc, re = generic_git.git_init_db1(tmp_repo_url.url, false)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local gitignore, re = read_template("gitignore")
     if not gitignore then
-        return false, re
+        error(re)
     end
     local chroot, re = read_template("proj/chroot")
     if not chroot then
-        return false, re
+        error(re)
     end
     local licences, re = read_template("proj/licences")
     if not licences then
-        return false, re
+        error(re)
     end
     local env, re = read_template("proj/env")
     if not env then
-        return false, re
+        error(re)
     end
     local pconfig, re = read_template("proj/config")
     if not pconfig then
-        return false, re
+        error(re)
     end
     pconfig = pconfig:gsub("<<release_id>>", p.name)
     pconfig = pconfig:gsub("<<name>>", p.name)
@@ -269,30 +269,30 @@ local function e2_create_project(arg)
         sourcefile = e2lib.join(tmpdir, f.filename)
         rc, re = e2lib.mkdir_recursive(e2lib.dirname(sourcefile))
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
         rc, re = eio.file_write(sourcefile, f.content)
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
         rc, re = generic_git.git_add(tmp_repo_path, { f.filename })
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
     end
     local ec = e2lib.join(tmpdir, e2lib.globals.extension_config)
     rc, re = write_extension_config(ec, config.site.default_extensions)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
     rc, re = generic_git.git_add(tmp_repo_path,
         { e2lib.globals.extension_config })
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
     rc, re = generic_git.git_commit(tmp_repo_path, { "-m", "project setup" })
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local refspec = "master:refs/heads/master"
@@ -300,16 +300,14 @@ local function e2_create_project(arg)
     rc, re = generic_git.git_push(scache, tmp_repo_path, p.server,
         rlocation, refspec)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     e2lib.rmtempdir(tmpdir)
-
-    return true
 end
 
-local rc, re = e2_create_project(arg)
-if not rc then
+local pc, re = pcall(e2_create_project, arg)
+if not pc then
     e2lib.abort(re)
 end
 

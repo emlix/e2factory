@@ -37,7 +37,7 @@ local err = require("err")
 local function e2(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     e2option.flag("prefix", "print installation prefix",
@@ -58,13 +58,13 @@ local function e2(arg)
         e2call.toolname = "e2"
         local opts, re = e2option.parse(arg)
         if not opts then
-            return false, re
+            error(re)
         end
 
         if #opts == 0 then
             e2option.usage(1)
         end
-        return 0
+        return nil, 0
     else
         e2call.toolname = e2call.basename
         e2call.argindex = 1
@@ -90,12 +90,10 @@ local function e2(arg)
             root, root)
         env.LUA_CPATH = string.format("%s/.e2/lib/e2/?.so", root)
     elseif not root then
-        return false,
-            err.new("%s is not a global tool and we're not in a "..
-                "project environment", e2call.toolname)
+        error(err.new("%s is not a global tool and we're not in a "..
+            "project environment", e2call.toolname))
     else
-        return false,
-            err.new("%s is neither local nor global tool", e2call.toolname)
+        error(err.new("%s is neither local nor global tool", e2call.toolname))
     end
 
     table.insert(cmd, e2call.tool)
@@ -109,14 +107,14 @@ local function e2(arg)
 
     rc, re = e2lib.callcmd(cmd, {}, nil, env)
     if not rc then
-        return false, re
+        error(re)
     end
 
-    return rc
+    return nil, rc
 end
 
-local rc, re = e2(arg)
-if not rc then
+local pc, re, rc = pcall(e2, arg)
+if not pc then
     e2lib.abort(re)
 end
 

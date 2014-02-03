@@ -39,7 +39,7 @@ local buildconfig = require("buildconfig")
 local function e2_fetch_project(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local e = err.new("fetching project failed")
@@ -51,33 +51,33 @@ local function e2_fetch_project(arg)
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     rc, re = e2lib.init2()
     if not rc then
-        return false, re
+        error(re)
     end
 
     -- setup cache
     local scache, re = e2lib.setup_cache()
     if not scache then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- standard global tool setup finished
 
     if #arguments < 1 then
-        return false, err.new("specify path to a project to fetch")
+        error(err.new("specify path to a project to fetch"))
     end
     if #arguments > 2 then
-        return false, err.new("too many arguments")
+        error(err.new("too many arguments"))
     end
 
     local sl, re = e2lib.parse_server_location(arguments[1],
         e2lib.globals.default_projects_server)
     if not sl then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local p = {}
@@ -94,7 +94,7 @@ local function e2_fetch_project(arg)
     if string.sub(p.destdir, 1, 1) ~= "/" then
         rc, re = e2lib.cwd()
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
 
         p.destdir = e2lib.join(rc, p.destdir)
@@ -114,27 +114,27 @@ local function e2_fetch_project(arg)
     -- fetch project descriptor file
     local tmpdir, re = e2lib.mktempdir()
     if not tmpdir then
-        return false, re
+        error(re)
     end
 
     local location = string.format("%s/version", p.location)
     local rc, re = cache.fetch_file(scache, p.server, location, tmpdir, nil,
         { cache = false })
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- read the version from the first line
     local version_file = string.format("%s/version", tmpdir)
     local line, re = eio.file_read_line(version_file)
     if not line then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
     e2lib.rmtempdir()
 
     local v = tonumber(line:match("[0-9]+"))
     if not v or v < 1 or v > 2 then
-        return false, e:append("unhandled project version")
+        error(e:append("unhandled project version"))
     end
 
     -- version is 1 or 2
@@ -145,7 +145,7 @@ local function e2_fetch_project(arg)
     local rc, re = generic_git.git_clone_from_server(scache, p.server, location,
         p.destdir, skip_checkout)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- checkout the desired branch, if a branch was given
@@ -158,19 +158,19 @@ local function e2_fetch_project(arg)
         rc, re, id = generic_git.lookup_id(e2lib.join(p.destdir, ".git"),
             false, "refs/heads/" .. p.branch)
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
         if not id then
             rc, re = generic_git.git_branch_new1(p.destdir, true, p.branch,
                 "origin/" .. p.branch)
             if not rc then
-                return false, e:cat(re)
+                error(e:cat(re))
             end
 
             rc, re = generic_git.git_checkout1(p.destdir,
                 "refs/heads/" .. p.branch)
             if not rc then
-                return false, e:cat(re)
+                error(e:cat(re))
             end
         end
     end
@@ -188,7 +188,7 @@ local function e2_fetch_project(arg)
 
         rc, re = generic_git.git_checkout1(p.destdir, "refs/tags/" .. p.tag)
         if not rc then
-            return false, e:cat(re)
+            error(e:cat(re))
         end
     end
 
@@ -197,14 +197,14 @@ local function e2_fetch_project(arg)
     local data = string.format("%s\n", p.location)
     rc, re = eio.file_write(plf, data)
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     -- write version file
     local givf = e2lib.join(p.destdir, e2lib.globals.global_interface_version_file)
     rc, re = eio.file_write(givf, string.format("%d\n", v))
     if not rc then
-        return false, e:cat(re)
+        error(e:cat(re))
     end
 
     local e2_install_e2 =
@@ -228,14 +228,12 @@ local function e2_fetch_project(arg)
     rc, re = e2lib.callcmd_log(e2_install_e2, p.destdir)
     if not rc or rc ~= 0 then
         local e = err.new("installing local e2 failed")
-        return false, e:cat(re)
+        error(e:cat(re))
     end
-
-    return true
 end
 
-local rc, re = e2_fetch_project(arg)
-if not rc then
+local pc, re = pcall(e2_fetch_project, arg)
+if not pc then
     e2lib.abort(re)
 end
 

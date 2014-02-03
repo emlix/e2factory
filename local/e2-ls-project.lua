@@ -42,12 +42,12 @@ local scm = require("scm")
 local function e2_ls_project(arg)
     local rc, re = e2lib.init()
     if not rc then
-        return false, re
+        error(re)
     end
 
     local info, re = e2tool.local_init(nil, "ls-project")
     if not info then
-        return false, re
+        error(re)
     end
 
     policy.register_commandline_options()
@@ -58,12 +58,12 @@ local function e2_ls_project(arg)
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
-        return false, arguments
+        error(arguments)
     end
 
     info, re = e2tool.collect_project_info(info)
     if not info then
-        return false, re
+        error(re)
     end
 
     local results = {}
@@ -76,19 +76,19 @@ local function e2_ls_project(arg)
             if info.results[r] then
                 table.insert(results, r)
             else
-                return false, err.new("not a result: %s", r)
+                error(err.new("not a result: %s", r))
             end
         end
     end
     if #results > 0 then
         results, re = e2tool.dlist_recursive(info, results)
         if not results then
-            return false, re
+            error(re)
         end
     else
         results, re = e2tool.dsort(info)
         if not results then
-            return false, re
+            error(re)
         end
     end
     table.sort(results)
@@ -326,8 +326,8 @@ local function e2_ls_project(arg)
     return true
 end
 
-local rc, re = e2_ls_project(arg)
-if not rc then
+local pc, re = pcall(e2_ls_project, arg)
+if not pc then
     e2lib.abort(re)
 end
 
