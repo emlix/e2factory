@@ -63,7 +63,7 @@ function strict.lock(t)
     mt.__index = function(t, k, v)
         local mt = getmetatable(t)
         if type(k) == 'string' and not mt.__declared[k] and what() ~= "C" then
-            error("variable "..k.." is not declared")
+            error("variable "..k.." is not declared", 2)
         end
 
         return rawget(t, k)
