@@ -2355,6 +2355,203 @@ function e2lib.align(columns, align1, string1, align2, string2)
     return s
 end
 
+--- Verify that type t is a string with a minimal length.
+-- @param t Variable to verify.
+-- @param name Name of the variable in error message.
+-- @param minlen Minimum length of t (default=1).
+-- @return True if string of minimal length, false if not.
+-- @return Error object if false.
+function e2lib.vrfy_string_len(t, name, minlen)
+    assert(type(name) == "string", "vrfy_string_len: name must be a string")
+
+    if type(minlen) ~= "number" then
+        minlen = 1
+    end
+
+    if type(t) ~= "string" then
+        return false, err.new("%s is not a string (found %s)", name, type(t))
+    end
+
+    if string.len(t) < minlen then
+        return false,
+            err.new("%s is too short (minimum length %d)", name, minlen)
+    end
+
+    return true
+end
+
+--- Verify that a dictionary contains only expected keys. Does not check
+-- for missing expected keys.
+-- @param t Variable to verify
+-- @param name Name of t in error message.
+-- @param ekeyvec Expected key vector
+-- @return True if t is a table and contains only the expected keys
+-- @return Error object if false.
+function e2lib.vrfy_dict_exp_keys(t, name, ekeyvec)
+    assert(type(name) == "string", "vrfy_dict_exp_keys: name must be a string")
+    assert(type(ekeyvec) == "table", "vrfy_dict_exp_keys: ekeyvec not a table")
+
+    if type(t) ~= "table" then
+        return false, err.new("%s is not a table (found %s)", name, type(t))
+    end
+
+    local lookup = {}
+    for _,v in ipairs(ekeyvec) do
+        lookup[v] = true
+    end
+
+    local msg, e = nil
+    for k,_ in pairs(t) do
+        if not lookup[k] then
+            if not e then
+                e = err.new("table %s contains unexpected key %q",
+                    name, tostring(k))
+            else
+                e:append("table %s contains unexpected key %q",
+                    name, tostring(k))
+            end
+        end
+    end
+
+    if e then
+        return false, e
+    end
+
+    return true
+end
+
+--- Verify that a given table only contains numeric indicies, with no weird
+-- holes or anything that throws ipairs() off.
+-- @param t Table to verify
+-- @param name Name of the table for error message.
+-- @return True if t is a vector, false otherwise
+-- @return Error object if false.
+function e2lib.vrfy_vector(t, name)
+    assert(type(name) == "string", "vrfy_vector: name must be a string")
+
+    local i = 0
+
+    if type(t) ~= "table" then
+        return false, err.new("%s is not a table (found %s)", name,
+            type(t))
+    end
+
+    for k,_ in pairs(t) do
+        i = i + 1
+
+        if type(k) ~= "number" then
+            return false, err.new("table %s contains non-numeric index %q",
+                name, tostring(k))
+        end
+
+        if k < 1 then
+            return false, err.new("table %s index %q out of range", name,
+                tostring(k))
+        end
+    end
+
+    if i ~= #t then
+        return false, err.new("table %s index has holes", name)
+    end
+
+    return true
+end
+
+--- Check (and optionally modify) that a table is a list of strings
+-- @param t Table to check.
+-- @param name Name of the table, for error message.
+-- @param unique bool: require strings to be unique
+-- @param unify bool: remove duplicate strings
+-- @return True if the t is a list of strings, false otherwise.
+-- @return Error object if false
+function e2lib.vrfy_listofstrings(t, name, unique, unify)
+    assert(type(unique) == "boolean", "vrfy_listofstrings: unique not a boolean")
+    assert(type(unify) == "boolean", "vrfy_listofstrings: unify not a boolean")
+
+    local ok, re
+
+    ok, re = e2lib.vrfy_vector(t, name)
+    if not ok then
+        return false, re
+    end
+
+
+    local values = {}
+    local unified = {}
+
+    for i,s in ipairs(t) do
+        if type(s) ~= "string" then
+            return false, err.new("table %s contains non-string value %q",
+                name, tostring(s))
+        end
+
+        if unique and values[s] then
+            return false, err.new("table %s has non-unique value: %q", name, s)
+        end
+
+        if unify and not values[s] then
+            table.insert(unified, s)
+        end
+        values[s] = true
+    end
+
+    if unify then
+        while #t > 0 do
+            table.remove(t, 1)
+        end
+        for i,s in ipairs(unified) do
+            table.insert(t, s)
+        end
+    end
+    return true
+end
+
+--- Check (and modify) a table according to a description table
+-- @param t Table to check.
+-- @param keys Attribute description table. See comments in code for details.
+-- @param inherit Table with keys to inherit. See comments in code for details.
+-- @return True on success, false on verification failure.
+-- @return Error object if false.
+function e2lib.vrfy_table_attributes(t, keys, inherit)
+    local e = err.new("checking file configuration")
+
+    if type(t) ~= "table" then
+        return false, e:append("not a table")
+    end
+
+    -- keys = {
+    --   location = {
+    --     mandatory = true,
+    --     type = "string",
+    --     inherit = false,
+    --   },
+    -- }
+    -- inherit = {
+    --   location = "foo",
+    -- }
+
+    -- inherit keys
+    for k,v in pairs(inherit) do
+        if not t[k] and keys[k].inherit ~= false then
+            t[k] = v
+        end
+    end
+
+    -- check types and mandatory
+    for k,v in pairs(keys) do
+        if keys[k].mandatory and not t[k] then
+            e:append("missing mandatory key: %s", k)
+        elseif t[k] and keys[k].type ~= type(t[k]) then
+            e:append("wrong type: %s", k)
+        end
+    end
+
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
 return strict.lock(e2lib)
 
 -- vim:sw=4:sts=4:et:
