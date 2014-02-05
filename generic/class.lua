@@ -1,3 +1,9 @@
+--- Middleclass. A simple OOP library for Lua. It has inheritance, metamethods
+-- (operators), class variables and weak mixin support. See
+-- https://github.com/kikito/middleclass for more information and
+-- documentation/examples.
+-- @module generic.class
+
 local middleclass = {
   _VERSION     = 'middleclass v3.0.1',
   _DESCRIPTION = 'Object Orientation for Lua',
