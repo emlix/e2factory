@@ -30,8 +30,9 @@
 
 local scm = {}
 local e2lib = require("e2lib")
-local err = require("err")
 local environment = require("environment")
+local err = require("err")
+local licence = require("licence")
 local strict = require("strict")
 
 -- scm modules
@@ -176,7 +177,7 @@ local function source_apply_default_licences(info, sourcename)
     end
   end
   for _,l in ipairs(src.licences) do
-    if not info.licences[l] then
+    if not licence.licences[l] then
       e:append("unknown licence: %s", l)
       return false, e
     end

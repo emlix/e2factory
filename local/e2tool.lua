@@ -29,23 +29,26 @@
 ]]
 
 local e2tool = {}
-local e2lib = require("e2lib")
-local eio = require("eio")
-local err = require("err")
-local digest = require("digest")
-local scm = require("scm")
-local tools = require("tools")
-local environment = require("environment")
-local plugin = require("plugin")
-local url = require("url")
-local hash = require("hash")
-local e2option = require("e2option")
-local generic_git = require("generic_git")
-local policy = require("policy")
-local strict = require("strict")
-local transport = require("transport")
-local cache = require("cache")
+package.loaded["e2tool"] = e2tool -- stop e2tool loading loop
+
 local buildconfig = require("buildconfig")
+local cache = require("cache")
+local digest = require("digest")
+local e2lib = require("e2lib")
+local e2option = require("e2option")
+local eio = require("eio")
+local environment = require("environment")
+local err = require("err")
+local generic_git = require("generic_git")
+local hash = require("hash")
+local licence = require("licence")
+local plugin = require("plugin")
+local policy = require("policy")
+local scm = require("scm")
+local strict = require("strict")
+local tools = require("tools")
+local transport = require("transport")
+local url = require("url")
 
 -- Build function table, see end of file for details.
 local e2tool_ftab = {}
@@ -66,8 +69,6 @@ local e2tool_ftab = {}
 -- @field sources_sorted table: sorted list of sources
 -- @field results table: results
 -- @field results_sorted table: sorted list of results
--- @field licences table: licences keyed by licence names
--- @field licences_sorted table: sorted list of licences
 -- @field chroot table: chroot
 -- @field project_location string: project location relative to the servers
 -- @field env table: env table
@@ -130,89 +131,6 @@ local e2tool_ftab = {}
 --- env - environment table from "proj/env"
 -- @name env
 -- @class table
-
---- check if a table is a list of strings
--- @param l table
--- @param unique bool: require strings to be unique
--- @param unify bool: remove duplicate strings
--- @return bool
-local function listofstrings(l, unique, unify)
-    if type(l) ~= "table" then
-        return false, err.new("not a table")
-    end
-    local values = {}
-    local unified = {}
-    for i,s in pairs(l) do
-        if type(i) ~= "number" then
-            return false, err.new("found non-numeric index")
-        end
-        if type(s) ~= "string" then
-            return false, err.new("found non-string value")
-        end
-        if unique and values[s] then
-            return false, err.new("found non-unique value: '%s'", s)
-        end
-        if unify and not values[s] then
-            table.insert(unified, s)
-        end
-        values[s] = true
-    end
-    if unify then
-        while #l > 0 do
-            table.remove(l, 1)
-        end
-        for i,s in ipairs(unified) do
-            table.insert(l, s)
-        end
-    end
-    return true
-end
-
---- check a table according to a description table
--- @param tab table: the table to check
--- @param keys table: the description table
--- @param inherit table: table with keys to inherit
--- @return bool
--- @return an error object on failure
-local function check_tab(tab, keys, inherit)
-    local e = err.new("checking file configuration")
-
-    if type(tab) ~= "table" then
-        return false, e:append("not a table")
-    end
-
-    -- keys = {
-    --   location = {
-    --     mandatory = true,
-    --     type = "string",
-    --     inherit = false,
-    --   },
-    -- }
-    -- inherit = {
-    --   location = "foo",
-    -- }
-
-    -- inherit keys
-    for k,v in pairs(inherit) do
-        if not tab[k] and keys[k].inherit ~= false then
-            tab[k] = v
-        end
-    end
-
-    -- check types and mandatory
-    for k,v in pairs(keys) do
-        if keys[k].mandatory and not tab[k] then
-            e:append("missing mandatory key: %s", k)
-        elseif tab[k] and keys[k].type ~= type(tab[k]) then
-            e:append("wrong type: %s", k)
-        end
-    end
-
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
 
 --- Open debug logfile.
 -- @param info Info table.
@@ -389,7 +307,7 @@ local function check_result(info, resultname)
         "Converting to list")
         res.sources = { res.sources }
     end
-    local rc, re = listofstrings(res.sources, true, false)
+    local rc, re = e2lib.vrfy_listofstrings(res.sources, "sources", true, false)
     if not rc then
         e:append("source attribute:")
         e:cat(re)
@@ -411,7 +329,7 @@ local function check_result(info, resultname)
         "Converting to list")
         res.depends = { res.depends }
     end
-    local rc, re = listofstrings(res.depends, true, false)
+    local rc, re = e2lib.vrfy_listofstrings(res.depends, "depends", true, false)
     if not rc then
         e:append("dependency attribute:")
         e:cat(re)
@@ -433,7 +351,7 @@ local function check_result(info, resultname)
         "Converting to list")
         res.chroot = { res.chroot }
     end
-    local rc, re = listofstrings(res.chroot, true, false)
+    local rc, re = e2lib.vrfy_listofstrings(res.chroot, "chroot", true, false)
     if not rc then
         e:append("chroot attribute:")
         e:cat(re)
@@ -443,7 +361,7 @@ local function check_result(info, resultname)
             table.insert(res.chroot, g)
         end
         -- The list may have duplicates now. Unify.
-        local rc, re = listofstrings(res.chroot, false, true)
+        rc, re = e2lib.vrfy_listofstrings(res.chroot, "chroot", false, true)
         if not rc then
             e:append("chroot attribute:")
             e:cat(re)
@@ -1094,12 +1012,14 @@ local function read_project_config(info)
             "default_results is not set. Defaulting to empty list.")
         info.project.default_results = {}
     end
-    rc, re = listofstrings(info.project.deploy_results, true, true)
+    rc, re = e2lib.vrfy_listofstrings(info.project.deploy_results,
+        "deploy_results", true, true)
     if not rc then
         e:append("deploy_results is not a valid list of strings")
         e:cat(re)
     end
-    rc, re = listofstrings(info.project.default_results, true, false)
+    rc, re = e2lib.vrfy_listofstrings(info.project.default_results,
+        "default_results",  true, false)
     if not rc then
         e:append("default_results is not a valid list of strings")
         e:cat(re)
@@ -1165,7 +1085,7 @@ local function check_chroot_config(info)
                         inherit = false,
                     },
                 }
-                local rc, re = check_tab(f, keys, inherit)
+                local rc, re = e2lib.vrfy_table_attributes(f, keys, inherit)
                 if not rc then
                     e:append("in group: %s", grp.name)
                     e:cat(re)
@@ -1229,71 +1149,6 @@ local function check_sources(info)
     return true
 end
 
---- check licence.
-local function check_licence(info, l)
-    local e = err.new("in licence: %s", l)
-    local lic = info.licences[l]
-    if not lic.server then
-        e:append("no server attribute")
-    end
-    if not lic.files then
-        e:append("no files attribute")
-    elseif type(lic.files) ~= "table" then
-        e:append("files attribute is not a table")
-    else
-        for _,f in ipairs(lic.files) do
-            local inherit = {
-                server = lic.server,
-            }
-            local keys = {
-                server = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = true,
-                },
-                location = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = false,
-                },
-                sha1 = {
-                    mandatory = false,
-                    type = "string",
-                    inherit = false,
-                },
-            }
-            local rc, re = check_tab(f, keys, inherit)
-            if not rc then
-                e:cat(re)
-            elseif f.server ~= info.root_server_name and
-                not f.sha1 then
-                e:append("file entry for remote file without"..
-                " `sha1` attribute")
-            end
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
---- check licences.
-local function check_licences(info)
-    local e = err.new("Error while checking licences")
-    local rc, re
-    for l, lic in pairs(info.licences) do
-        rc, re = check_licence(info, l)
-        if not rc then
-            e:cat(re)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
 --- Checks project information for consistancy.
 -- @param info Info table.
 -- @return True on success, false on error.
@@ -1310,10 +1165,6 @@ local function check_project_info(info)
         return false, e:cat(re)
     end
     local rc, re = check_results(info)
-    if not rc then
-        return false, e:cat(re)
-    end
-    local rc, re = check_licences(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1440,23 +1291,18 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- licences
-    rc, re = load_user_config(info, e2lib.join(info.root, "proj/licences"),
-        info, "licences", "e2licence")
+    rc, re = licence.load_licence_config(info)
     if not rc then
         return false, e:cat(re)
     end
-    -- provide sorted list of licences
-    info.licences_sorted = {}
-    for l,lic in pairs(info.licences) do
-        table.insert(info.licences_sorted, l)
-    end
-    table.sort(info.licences_sorted)
 
+    -- sources
     rc, re = load_source_configs(info)
     if not rc then
         return false, e:cat(re)
     end
 
+    -- results
     rc, re = load_result_configs(info)
     if not rc then
         return false, e:cat(re)
@@ -1909,37 +1755,6 @@ function e2tool.fileid(info, file)
     end
 
     return fileid
-end
-
---- calculate licence id
--- @param info
--- @param licence
--- @return string, or false on error.
--- @return Error object on failure
-function e2tool.licenceid(info, licence)
-    local rc, re
-    local e = err.new("calculating licence id failed for licence: %s",
-    licence)
-    local lic = info.licences[licence]
-    if lic.licenceid then
-        return lic.licenceid
-    end
-    local hc = hash.hash_start()
-    hash.hash_line(hc, licence)			-- licence name
-    for _,f in ipairs(lic.files) do
-        hash.hash_line(hc, f.server)
-        hash.hash_line(hc, f.location)
-        local fileid, re = e2tool.fileid(info, f)
-        if not fileid then
-            return false, e:cat(re)
-        end
-        hash.hash_line(hc, fileid)
-    end
-    lic.licenceid, re = hash.hash_finish(hc)
-    if not lic.licenceid then
-        return false, e:cat(re)
-    end
-    return lic.licenceid
 end
 
 --- return the first eight digits of buildid hash

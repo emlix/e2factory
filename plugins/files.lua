@@ -38,6 +38,7 @@ local hash = require("hash")
 local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
+local licence = require("licence")
 
 plugin_descriptor = {
     description = "Files SCM Plugin",
@@ -82,7 +83,7 @@ function files.validate_source(info, sourcename)
                 e:append("source has file entry without `licences' attribute")
             end
             for _,l in ipairs(f.licences) do
-                if not info.licences[l] then
+                if not licence.licences[l] then
                     e:append("invalid licence assigned to file: %s", l)
                 end
             end
@@ -495,8 +496,9 @@ function files.sourceid(info, sourcename, sourceset)
     hash.hash_line(hc, src.type)
     hash.hash_line(hc, src._env:id())
     for _,l in ipairs(src.licences) do
+        local alicence = licence.licences[l]
         hash.hash_line(hc, l)
-        local licenceid, re = e2tool.licenceid(info, l)
+        local licenceid, re = alicence:licenceid(info)
         if not licenceid then
             return false, re
         end

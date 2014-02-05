@@ -37,6 +37,7 @@ local eio = require("eio")
 local err = require("err")
 local generic_git = require("generic_git")
 local hash = require("hash")
+local licence = require("licence")
 local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
@@ -536,8 +537,8 @@ function git.sourceid(info, sourcename, sourceset)
     hash.hash_line(hc, src.type)
     hash.hash_line(hc, src._env:id())
     for _,l in ipairs(src.licences) do
-        hash.hash_line(hc, l)
-        local licenceid, re = e2tool.licenceid(info, l)
+        hash.hash_line(hc, l) -- XXX: redundant
+        local licenceid, re = licence.licences[l]:licenceid(info)
         if not licenceid then
             return false, re
         end

@@ -34,6 +34,7 @@ local e2lib = require("e2lib")
 local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
+local licence = require("licence")
 local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
@@ -291,7 +292,7 @@ end
 function svn.sourceid(info, sourcename, source_set)
     local src = info.sources[sourcename]
     local rc, re
-    local hc, surl, svnurl, argv, out, svnrev
+    local hc, surl, svnurl, argv, out, svnrev, lid
 
     rc, re = svn.validate_source(info, sourcename)
     if not rc then
@@ -310,13 +311,12 @@ function svn.sourceid(info, sourcename, source_set)
     hash.hash_line(hc, src.name)
     hash.hash_line(hc, src.type)
     hash.hash_line(hc, src._env:id())
-    for _,l in ipairs(src.licences) do
-        hash.hash_line(hc, l)
-        local licenceid, re = e2tool.licenceid(info, l)
-        if not licenceid then
+    for _,ln in pairs(src.licences) do
+        lid, re = licence.licences[ln]:licenceid(info)
+        if not lid then
             return false, re
         end
-        hash.hash_line(hc, licenceid)
+        hash.hash_line(hc, lid)
     end
 
     -- svn specific

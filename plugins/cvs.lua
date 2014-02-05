@@ -34,6 +34,7 @@ local e2lib = require("e2lib")
 local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
+local licence = require("licence")
 local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
@@ -339,7 +340,7 @@ end
 
 function cvs.sourceid(info, sourcename, source_set)
     local src = info.sources[sourcename]
-    local rc, re
+    local rc, re, lid
     rc, re = cvs.validate_source(info, sourcename)
     if not rc then
         return false, re
@@ -356,13 +357,12 @@ function cvs.sourceid(info, sourcename, source_set)
     hash.hash_line(hc, src.name)
     hash.hash_line(hc, src.type)
     hash.hash_line(hc, src._env:id())
-    for _,l in ipairs(src.licences) do
-        hash.hash_line(hc, l)
-        local licenceid, re = e2tool.licenceid(info, l)
-        if not licenceid then
-            return false, re
+    for _,ln in ipairs(src.licences) do
+        lid, re = licence.licences[ln]:licenceid(info)
+        if not lid then
+            return false, e:cat(re)
         end
-        hash.hash_line(hc, licenceid)
+        hash.hash_line(hc, lid)
     end
     -- cvs specific
     if source_set == "tag" and src.tag ~= "^" then

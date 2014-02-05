@@ -29,6 +29,7 @@ local err = require("err")
 local hash = require("hash")
 local scm = require("scm")
 local strict = require("strict")
+local licence = require("licence")
 
 --- Collect_project result config. This result config table lives in
 -- info.results[resultname]. The fields are merged with e2tool.result
@@ -46,7 +47,6 @@ local cpresults = {}
 -- @field results table: sorted list of results to be collected
 -- @field sources table: sorted list of sources to be collected
 -- @field chroot_groups table: sorted list of chroot groups to be collected
--- @field licences table: sorted list of licences to be collected
 -- @see cpresults
 
 --- check collect_project configuration
@@ -68,7 +68,6 @@ local function check_collect_project(info, resultname)
     cpres.results = {}
     cpres.sources = {}
     cpres.chroot_groups = {}
-    cpres.licences = {}
 
     strict.lock(cpres)
 
@@ -95,7 +94,7 @@ local function check_collect_project(info, resultname)
     e2lib.warnf("WDEFAULT", " collect_project takes these results: %s",
         table.concat(cpres.results, ","))
 
-    -- store a sorted list of required sources, chroot groups and licences
+    -- store a sorted list of required sources and chroot groups
     local tmp_grp = {}
     local tmp_src = {}
     for _,r in ipairs(cpres.results) do
@@ -117,10 +116,7 @@ local function check_collect_project(info, resultname)
         table.insert(cpres.chroot_groups, g)
     end
     table.sort(cpres.chroot_groups)
-    for _,l in ipairs(info.licences_sorted) do
-        table.insert(cpres.licences, l)
-    end
-    table.sort(cpres.licences)
+
     if e:getcount() > 1 then
         return false, e
     end
@@ -159,13 +155,13 @@ local function collect_project_resultid(info, resultname)
         rc, re = hash.hash_line(hc, g)
         if not rc then return nil, re end
     end
-    for _,l in ipairs(cpres.licences) do
-        rc, re = hash.hash_line(hc, l)
+    for _,l in ipairs(licence.licences_sorted) do
+        rc, re = hash.hash_line(hc, l:get_name())
         if not rc then return nil, re end
 
         -- We collect all licences. So we cannot be sure to catch
         -- them via results/sources. Include them explicitly here.
-        local lid, re = e2tool.licenceid(info, l)
+        local lid, re = l:licenceid(info)
         if not lid then
             return nil, e:cat(re)
         end
@@ -337,16 +333,16 @@ local function build_collect_project(info, resultname, return_flags)
         end
     end
     -- project/licences/<licence>/<files>
-    for _,l in ipairs(cpres.licences) do
-        e2lib.logf(3, "licence: %s", l)
-        local lic = info.licences[l]
-        local destdir = e2lib.join(res.build_config.T, "project/licences", l)
+    for _,l in ipairs(licence.licences_sorted) do
+        e2lib.logf(3, "licence: %s", l:get_name())
+        local destdir =
+            e2lib.join(res.build_config.T, "project/licences", l:get_name())
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
 
-        for _,file in ipairs(lic.files) do
+        for file in l:file_iter() do
             local cache_flags = {}
             if file.sha1 then
                 rc, re = e2tool.verify_hash(info, file.server,

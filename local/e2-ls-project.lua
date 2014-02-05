@@ -36,6 +36,7 @@ local e2lib = require("e2lib")
 local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
+local licence = require("licence")
 local policy = require("policy")
 local scm = require("scm")
 
@@ -286,15 +287,14 @@ local function e2_ls_project(arg)
     pempty(s1, s2, s3)
     s2 = "|"
     p1(s1, s2, "licences")
-    local llen = #info.licences_sorted
-    for _,l in pairs(info.licences_sorted) do
-        local lic = info.licences[l]
+    local llen = #licence.licences_sorted
+    for _,lic in ipairs(licence.licences_sorted) do
         llen = llen - 1
         if llen == 0 then
             s2 = " "
         end
-        p2(s1, s2, l)
-        for _,f in ipairs(lic.files) do
+        p2(s1, s2, lic:get_name())
+        for f in lic:file_iter() do
             p3(s1, s2, "file", string.format("%s:%s", f.server, f.location))
         end
     end
