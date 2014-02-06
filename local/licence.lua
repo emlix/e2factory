@@ -166,7 +166,7 @@ function licence.load_licence_config(info)
     end
 
     rc, re = e2lib.dofile2(path,
-        { e2licence = assign, env = info.env, string = string }, false)
+        { e2licence = assign, env = info.env, string = string })
     if not rc then
         return false, re
     end

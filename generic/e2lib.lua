@@ -907,27 +907,26 @@ function e2lib.get_global_config()
     end
     -- use ipairs to keep the list entries ordered
     for _,path in ipairs(cf_path) do
-        local c = {}
-        c.config = function(x)
-            c.data = x
-        end
+        local data = nil
+
         e2lib.logf(4, "reading global config file: %s", path)
         local rc = e2lib.exists(path)
         if rc then
             e2lib.logf(3, "using global config file: %s", path)
-            rc, re = e2lib.dofile2(path, c, true)
+            rc, re = e2lib.dofile2(path,
+                { config = function(x) data = x end })
             if not rc then
                 return false, re
             end
-            if not c.data then
+            if not data then
                 return false, err.new("invalid configuration")
             end
-            rc, re = verify_global_config(c.data)
+            rc, re = verify_global_config(data)
             if not rc then
                 return false, re
             end
 
-            get_global_config_cache = strict.lock(c.data)
+            get_global_config_cache = strict.lock(data)
             return get_global_config_cache
         else
             e2lib.logf(4, "global config file does not exist: %s", path)
@@ -957,20 +956,18 @@ function e2lib.read_extension_config(root)
 
     e2lib.logf(3, "reading extension file: %s", extension_config)
 
-    local c = {}
-    c.extensions = function(x)
-        c.data = x
-    end
-    rc, re = e2lib.dofile2(extension_config, c, true)
+    local data = nil
+    rc, re = e2lib.dofile2(extension_config,
+        { extensions = function(x) data = x end })
     if not rc then
         return false, e:cat(re)
     end
 
-    if not c.data then
+    if not data then
         return false, e:append("invalid extension configuration")
     end
 
-    return c.data
+    return data
 end
 
 --- Successively returns the file names in the directory.
@@ -1469,16 +1466,20 @@ end
 --- Executes Lua code loaded from path.
 --@param path Filename to load lua code from (string).
 --@param gtable Environment (table) that is used instead of the global _G.
---@param allownewdefs Boolean indicating whether new variables may be defined
---                    and undefined ones read.
+--              If gtable has no metatable, the default is to reject
+--              __index and __newindex access.
 --@return True on success, false on error.
 --@return Error object on failure.
-function e2lib.dofile2(path, gtable, allownewdefs)
+function e2lib.dofile2(path, gtable)
     local e = err.new("error loading config file: %s", path)
     local chunk, msg = loadfile(path)
     if not chunk then
         return false, e:cat(msg)
     end
+
+    --for k,v in pairs(gtable) do
+    --  e2lib.logf(1, "[%s] = %s", tostring(k), tostring(v))
+    --end
 
     local function checkread(t, k)
         local x = rawget(t, k)
@@ -1496,7 +1497,7 @@ function e2lib.dofile2(path, gtable, allownewdefs)
             path, tostring(k), tostring(v)), 0)
     end
 
-    if not allownewdefs then
+    if not getmetatable(gtable) then
         setmetatable(gtable, { __newindex = checkwrite, __index = checkread })
     end
 

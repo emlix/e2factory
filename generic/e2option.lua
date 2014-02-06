@@ -238,7 +238,7 @@ local function userdefaultoptions(opts)
     end
 
     local e2rc = {}
-    local rc, e = e2lib.dofile2(file, { e2rc = function(t) e2rc = t end }, false)
+    local rc, e = e2lib.dofile2(file, { e2rc = function(t) e2rc = t end })
     if not rc then
         return false, e
     end
