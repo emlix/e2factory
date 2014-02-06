@@ -156,9 +156,6 @@ local function collect_project_resultid(info, resultname)
         if not rc then return nil, re end
     end
     for _,l in ipairs(licence.licences_sorted) do
-        rc, re = hash.hash_line(hc, l:get_name())
-        if not rc then return nil, re end
-
         -- We collect all licences. So we cannot be sure to catch
         -- them via results/sources. Include them explicitly here.
         local lid, re = l:licenceid(info)

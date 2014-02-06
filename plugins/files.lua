@@ -495,14 +495,12 @@ function files.sourceid(info, sourcename, sourceset)
     hash.hash_line(hc, src.name)
     hash.hash_line(hc, src.type)
     hash.hash_line(hc, src._env:id())
-    for _,l in ipairs(src.licences) do
-        local alicence = licence.licences[l]
-        hash.hash_line(hc, l)
-        local licenceid, re = alicence:licenceid(info)
-        if not licenceid then
+    for _,ln in ipairs(src.licences) do
+        local lid, re = licence.licences[ln]:licenceid(info)
+        if not lid then
             return false, re
         end
-        hash.hash_line(hc, licenceid)
+        hash.hash_line(hc, lid)
     end
     for _,f in ipairs(src.file) do
         local fileid, re = e2tool.fileid(info, f)
