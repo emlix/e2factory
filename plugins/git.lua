@@ -341,7 +341,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
             return e:cat(re)
         end
 
-        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout")
+        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout", "-f")
         table.insert(argv, "refs/heads/" .. src.branch)
         table.insert(argv, "--")
 
@@ -364,7 +364,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
             return false, e:cat(re)
         end
 
-        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout")
+        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout", "-f")
         table.insert(argv, "refs/tags/" .. src.tag)
         table.insert(argv, "--")
 
