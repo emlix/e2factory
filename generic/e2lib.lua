@@ -1306,6 +1306,9 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
     local rc, re, pid
     local sync_pipes = {}
 
+    e2lib.logf(3, "calling %q in %q", table.concat(argv, " "),
+        workdir or "$PWD")
+
     rc, re = fd_parent_setup(fdctv)
     if not rc then
         return false, re
