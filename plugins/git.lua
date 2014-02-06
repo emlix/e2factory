@@ -361,7 +361,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         work_tree = e2lib.join(buildpath, sourcename)
         rc, re = e2lib.mkdir_recursive(work_tree)
         if not rc then
-            return e:cat(re)
+            return false, e:cat(re)
         end
 
         argv = generic_git.git_new_argv(gitdir, work_tree, "checkout")
