@@ -230,7 +230,7 @@ local function e2_build(arg)
     end
 end
 
-local pc, re = pcall(e2_build, arg)
+local pc, re = e2lib.trycall(e2_build, arg)
 if not pc then
     e2lib.abort(re)
 end

@@ -293,7 +293,7 @@ local function e2_new_source(arg)
     end
 end
 
-local pc, re = pcall(e2_new_source, arg)
+local pc, re = e2lib.trycall(e2_new_source, arg)
 if not pc then
     e2lib.abort(re)
 end

@@ -62,7 +62,7 @@ local function e2_dsort(arg)
     end
 end
 
-local pc, re = pcall(e2_dsort, arg)
+local pc, re = e2lib.trycall(e2_dsort, arg)
 if not pc then
     e2lib.abort(re)
 end

@@ -199,7 +199,7 @@ local function e2_install_e2(arg)
     end
 end
 
-local pc, re = pcall(e2_install_e2, arg)
+local pc, re = e2lib.trycall(e2_install_e2, arg)
 if not pc then
     e2lib.abort(re)
 end

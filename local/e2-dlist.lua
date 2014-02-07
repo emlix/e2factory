@@ -81,7 +81,7 @@ local function e2_dlist(arg)
     end
 end
 
-local pc, re = pcall(e2_dlist, arg)
+local pc, re = e2lib.trycall(e2_dlist, arg)
 if not pc then
     e2lib.abort(re)
 end

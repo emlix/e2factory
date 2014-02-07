@@ -113,7 +113,7 @@ local function e2(arg)
     return nil, rc
 end
 
-local pc, re, rc = pcall(e2, arg)
+local pc, re, rc = e2lib.trycall(e2, arg)
 if not pc then
     e2lib.abort(re)
 end

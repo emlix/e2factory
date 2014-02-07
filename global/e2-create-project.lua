@@ -306,7 +306,7 @@ local function e2_create_project(arg)
     e2lib.rmtempdir(tmpdir)
 end
 
-local pc, re = pcall(e2_create_project, arg)
+local pc, re = e2lib.trycall(e2_create_project, arg)
 if not pc then
     e2lib.abort(re)
 end

@@ -326,7 +326,7 @@ local function e2_ls_project(arg)
     return true
 end
 
-local pc, re = pcall(e2_ls_project, arg)
+local pc, re = e2lib.trycall(e2_ls_project, arg)
 if not pc then
     e2lib.abort(re)
 end

@@ -232,7 +232,7 @@ local function e2_fetch_project(arg)
     end
 end
 
-local pc, re = pcall(e2_fetch_project, arg)
+local pc, re = e2lib.trycall(e2_fetch_project, arg)
 if not pc then
     e2lib.abort(re)
 end

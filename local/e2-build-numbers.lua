@@ -45,7 +45,7 @@ local function e2_build_numbers(arg)
     error(err.new("e2-build-numbers is deprecated and has been removed"))
 end
 
-local pc, re = pcall(e2_build_numbers, arg)
+local pc, re = e2lib.trycall(e2_build_numbers, arg)
 if not pc then
     e2lib.abort(re)
 end

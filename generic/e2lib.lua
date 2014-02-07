@@ -109,6 +109,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.]],
     debuglogfilebuffer = {},
 })
 
+--- Call function in a protected environment. This is a fancy version of the
+-- native pcall() and a poor mans exception mechanism. A traceback of the stack
+-- at the time of the error is sent to logf at level 4 to help with debugging.
+-- @param f Function to call.
+-- @param ... Arguments to the function.
+-- @return True when function ended without an anomaly, false otherwise.
+-- @return If previous result is false, the object or string that was passed
+--         from error(), assert() etc. If the previous result is true, the
+--         first result of the called function.
+-- @return Further results from the called function if any.
+function e2lib.trycall(f, ...)
+    local args = {...}
+    return xpcall(
+        function() return f(unpack(args)) end,
+        function(e) e2lib.logf(4, "%s", debug.traceback("", 2)) return e end
+        )
+end
+
 --- Get current working directory.
 -- @return Current working directory (string) or false on error.
 -- @return Error object on failure.

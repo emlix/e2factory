@@ -285,7 +285,7 @@ local function e2_help(arg)
     end
 end
 
-local pc, re = pcall(e2_help, arg)
+local pc, re = e2lib.trycall(e2_help, arg)
 if not pc then
     e2lib.abort(re)
 end
