@@ -69,7 +69,7 @@ local e2tool_ftab = {}
 -- @field sources_sorted table: sorted list of sources
 -- @field results table: results
 -- @field results_sorted table: sorted list of results
--- @field chroot table: chroot
+-- @field chroot See info.chroot
 -- @field project_location string: project location relative to the servers
 -- @field env table: env table
 -- @field env_files table: list of env files
@@ -116,14 +116,14 @@ local e2tool_ftab = {}
 -- @see e2build.build_config
 -- @see plugins.collect_project
 
---- table of chroot configuration
--- @name chroot
--- @class table
--- @field groups table: chroot group table
+--- Table of chroot configuration. Locked.
+-- @table info.chroot
+-- @field default_groups Chroot groups used in every result. Locked.
+-- @field groups_byname Dict mapping group name to group table.
+-- @field groups_sorted Vector of sorted group names. Locked.
 
 --- chroot group table
--- @name chroot group table
--- @class table
+-- @table chroot group table
 -- @field name string: group name
 -- @field server string: server name
 -- @field files table: array of file names
@@ -638,19 +638,12 @@ local function read_chroot_config(info)
     if type(t.chroot.default_groups) ~= "table" then
         return false, e:append("chroot.default_groups is not a table")
     end
-    --- chroot config
-    -- @class table
-    -- @name info.chroot
-    -- @field default_groups chroot groups used in any result
-    -- @field groups chroot groups in configuration order
-    -- @field groups_byname chroot groups keyed by name
-    -- @field groups_sorted chroot groups sorted by name
     info.chroot = {}
-    info.chroot.default_groups = t.chroot.default_groups
-    info.chroot.groups = t.chroot.groups
+    info.chroot.default_groups = t.chroot.default_groups or {}
     info.chroot.groups_byname = {}
     info.chroot.groups_sorted = {}
-    for _,grp in pairs(info.chroot.groups) do
+    strict.lock(info.chroot)
+    for _,grp in ipairs(t.chroot.groups) do
         if grp.group then
             e:append("in group: %s", grp.group)
             e:append(" `group' attribute is deprecated. Replace by `name'")
@@ -667,6 +660,8 @@ local function read_chroot_config(info)
         info.chroot.groups_byname[g] = grp
     end
     table.sort(info.chroot.groups_sorted)
+    strict.lock(info.chroot.groups_sorted)
+    strict.lock(info.chroot.default_groups)
     return true
 end
 
@@ -1054,7 +1049,10 @@ end
 -- @return an error object on failure
 local function check_chroot_config(info)
     local e = err.new("error validating chroot configuration")
-    for g,grp in pairs(info.chroot.groups) do
+    local grp
+
+    for _,cgrpnm in ipairs(info.chroot.groups_sorted) do
+        grp = info.chroot.groups_byname[cgrpnm]
         if not grp.server then
             e:append("in group: %s", grp.name)
             e:append(" `server' attribute missing")
@@ -1099,7 +1097,7 @@ local function check_chroot_config(info)
             end
         end
     end
-    if (not info.chroot.default_groups) or #info.chroot.default_groups == 0 then
+    if #info.chroot.default_groups == 0 then
         e:append(" `default_groups' attribute is missing or empty list")
     else
         for _,g in ipairs(info.chroot.default_groups) do
