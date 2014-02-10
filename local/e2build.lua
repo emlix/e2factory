@@ -188,7 +188,6 @@ end
 -- @field buildrc_file XXX
 -- @field buildrc_noinit_file XXX
 -- @field profile Configuration file passed to the shell (string).
--- @field groups     table of strings: chroot groups
 -- @field builtin_env Environment that's built in like E2_TMPDIR.
 
 --- Generate build_config and store in res.build_config.
@@ -236,12 +235,6 @@ function e2build.build_config(info, r)
     bc.buildrc_file = "buildrc"
     bc.buildrc_noinit_file = "buildrc-noinit"
     bc.profile = "/tmp/bashrc"
-
-    bc.groups = {}
-    for _,g in ipairs(res.chroot) do
-        bc.groups[g] = true
-    end
-
     bc.builtin_env = environment.new()
     bc.builtin_env:set("E2_TMPDIR", bc.Tc)
     bc.builtin_env:set("E2_RESULT", r)
@@ -315,39 +308,41 @@ local function setup_chroot(info, r, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    for _,grp in ipairs(info.chroot.groups) do
-        if res.build_config.groups[grp.name] then
-            for _, f in ipairs(grp.files) do
-                local flags = { cache = true }
-                local rc, re = cache.cache_file(info.cache, f.server,
-                    f.location, flags)
-                if not rc then
-                    return false, e:cat(re)
-                end
-                local path, re = cache.file_path(info.cache, f.server,
-                    f.location, flags)
-                if not path then
-                    return false, e:cat(re)
-                end
-                if f.sha1 then
-                    rc, re = e2tool.verify_hash(info, f.server, f.location, f.sha1)
-                    if not rc then
-                        return false, e:cat(re)
-                    end
-                end
-                local tartype
-                tartype, re = e2lib.tartype_by_suffix(path)
-                if not tartype then
-                    return false, e:cat(re)
-                end
 
-                e2tool.set_umask(info)
-                local argv = { "extract_tar_2_3", res.build_config.base, tartype, path }
-                local rc, re = e2lib.e2_su_2_2(argv)
-                e2tool.reset_umask(info)
+    local grp
+    for _,cgrpnm in ipairs(res.chroot) do
+        grp = info.chroot.groups_byname[cgrpnm]
+
+        for _, f in ipairs(grp.files) do
+            local flags = { cache = true }
+            local rc, re = cache.cache_file(info.cache, f.server,
+                f.location, flags)
+            if not rc then
+                return false, e:cat(re)
+            end
+            local path, re = cache.file_path(info.cache, f.server,
+                f.location, flags)
+            if not path then
+                return false, e:cat(re)
+            end
+            if f.sha1 then
+                rc, re = e2tool.verify_hash(info, f.server, f.location, f.sha1)
                 if not rc then
                     return false, e:cat(re)
                 end
+            end
+            local tartype
+            tartype, re = e2lib.tartype_by_suffix(path)
+            if not tartype then
+                return false, e:cat(re)
+            end
+
+            e2tool.set_umask(info)
+            local argv = { "extract_tar_2_3", res.build_config.base, tartype, path }
+            local rc, re = e2lib.e2_su_2_2(argv)
+            e2tool.reset_umask(info)
+            if not rc then
+                return false, e:cat(re)
             end
         end
     end

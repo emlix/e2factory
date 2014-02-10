@@ -366,11 +366,12 @@ local function check_result(info, resultname)
             e:append("chroot attribute:")
             e:cat(re)
         end
-        for i,g in pairs(res.chroot) do
+        for _,g in ipairs(res.chroot) do
             if not info.chroot.groups_byname[g] then
                 e:append("chroot group does not exist: %s", g)
             end
         end
+        table.sort(res.chroot)
     end
     if res.env and type(res.env) ~= "table" then
         e:append("result has invalid `env' attribute")
