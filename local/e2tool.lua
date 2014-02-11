@@ -1239,6 +1239,29 @@ function e2tool.collect_project_info(info, skip_load_config)
     info.default_repo_server = "projects"
     info.default_files_server = "upstream"
 
+    -- read .e2/proj-location
+    local plf = e2lib.join(info.root, e2lib.globals.project_location_file)
+    local line, re = eio.file_read_line(plf)
+    if not line then
+        return false, e:cat(re)
+    end
+    local _, _, l = string.find(line, "^%s*(%S+)%s*$")
+    if not l then
+        return false, e:append("%s: can't parse project location", plf)
+    end
+    info.project_location = l
+    e2lib.logf(4, "project location is %s", info.project_location)
+
+    -- setup cache
+    info.cache, re = e2lib.setup_cache()
+    if not info.cache then
+        return false, e:cat(re)
+    end
+    rc = cache.new_cache_entry(info.cache, info.root_server_name,
+        info.root_server, { writeback=true },  nil, nil )
+    rc = cache.new_cache_entry(info.cache, info.proj_storage_server_name,
+        nil, nil, info.default_repo_server, info.project_location)
+
     -- prefix the chroot call with this tool (switch to 32bit on amd64)
     -- XXX not in buildid, as it is filesystem location dependent...
     info.chroot_call_prefix = {}
@@ -1327,19 +1350,6 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e
     end
 
-    -- read .e2/proj-location
-    local plf = e2lib.join(info.root, e2lib.globals.project_location_file)
-    local line, re = eio.file_read_line(plf)
-    if not line then
-        return false, e:cat(re)
-    end
-    local _, _, l = string.find(line, "^%s*(%S+)%s*$")
-    if not l then
-        return false, e:append("%s: can't parse project location", plf)
-    end
-    info.project_location = l
-    e2lib.logf(4, "project location is %s", info.project_location)
-
     -- read global interface version and check if this version of the local
     -- tools supports the version used for the project
     local givf = e2lib.join(info.root, e2lib.globals.global_interface_version_file)
@@ -1377,15 +1387,6 @@ function e2tool.collect_project_info(info, skip_load_config)
             e2lib.warnf("WDEPRECATED", "File exists but is no longer used: `%s'", f)
         end
     end
-
-    info.cache, re = e2lib.setup_cache()
-    if not info.cache then
-        return false, e:cat(re)
-    end
-    rc = cache.new_cache_entry(info.cache, info.root_server_name,
-        info.root_server, { writeback=true },  nil, nil )
-    rc = cache.new_cache_entry(info.cache, info.proj_storage_server_name,
-        nil, nil, info.default_repo_server, info.project_location)
 
     --e2tool.add_source_results(info)
 
