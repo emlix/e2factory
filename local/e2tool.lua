@@ -227,27 +227,6 @@ local function load_user_config2(info, path, types)
         t.filename = path
         table.insert(list, t)
     end
-    f.e2project = function(data)
-        local t = {}
-        t.data = data
-        t.type = "project"
-        t.filename = path
-        table.insert(list, t)
-    end
-    f.e2chroot = function(data)
-        local t = {}
-        t.data = data
-        t.type = "chroot"
-        t.filename = path
-        table.insert(list, t)
-    end
-    f.e2env = function(data)
-        local t = {}
-        t.data = data
-        t.type = "env"
-        t.filename = path
-        table.insert(list, t)
-    end
 
     local g = {}			-- compose the environment for the config file
     g.env = info.env			-- env
