@@ -36,6 +36,7 @@ local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
 local scm = require("scm")
+local chroot = require("chroot")
 
 local function e2_fetch_source(arg)
     local rc, re = e2lib.init()
@@ -111,16 +112,18 @@ local function e2_fetch_source(arg)
     -- @return bool
     -- @return nil, an error string on error
     local function cache_chroot(info)
-        for _,c in ipairs(info.chroot.groups_sorted) do
-            for _,file in ipairs(info.chroot.groups_byname[c].files) do
-                local rc, e = cache.cache_file(info.cache, file.server,
+        local grp, rc, re
+        for _,g in ipairs(chroot.groups_sorted) do
+            grp = chroot.groups_byname[g]
+            for file in grp:file_iter() do
+                rc, re = cache.cache_file(info.cache, file.server,
                     file.location, {})
                 if not rc then
-                    return false, err.new("caching file failed")
+                    return false, re
                 end
             end
         end
-        return true, nil
+        return true
     end
 
     --- fetch and upgrade sources

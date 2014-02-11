@@ -41,6 +41,7 @@ local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
 local transport = require("transport")
+local chroot = require("chroot")
 
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}
@@ -311,9 +312,9 @@ local function setup_chroot(info, r, return_flags)
 
     local grp
     for _,cgrpnm in ipairs(res.chroot) do
-        grp = info.chroot.groups_byname[cgrpnm]
+        grp = chroot.groups_byname[cgrpnm]
 
-        for _, f in ipairs(grp.files) do
+        for f in grp:file_iter() do
             local flags = { cache = true }
             local rc, re = cache.cache_file(info.cache, f.server,
                 f.location, flags)

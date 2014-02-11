@@ -39,6 +39,7 @@ local err = require("err")
 local licence = require("licence")
 local policy = require("policy")
 local scm = require("scm")
+local chroot = require("chroot")
 
 local function e2_ls_project(arg)
     local rc, re = e2lib.init()
@@ -307,20 +308,20 @@ local function e2_ls_project(arg)
     p1(s1, s2, "chroot groups")
     local s1 = " "
     local s2 = "|"
-    local len = #info.chroot.groups_sorted
-    for _,g in ipairs(info.chroot.groups_sorted) do
-        local grp = info.chroot.groups_byname[g]
+    local len = #chroot.groups_sorted
+    for _,g in ipairs(chroot.groups_sorted) do
+        local grp = chroot.groups_byname[g]
         len = len - 1
         if len == 0 then
             s2 = " "
         end
-        p2(s1, s2, grp.name, grp.name)
-        for _,f in ipairs(grp.files) do
+        p2(s1, s2, grp:get_name(), grp:get_name())
+        for f in grp:file_iter() do
             p3(s1, s2, "file", string.format("%s:%s", f.server, f.location))
         end
-        if grp.groupid then
+        --[[if grp.groupid then
             p3(s1, s2, "groupid", grp.groupid)
-        end
+        end]]
     end
 
     return true

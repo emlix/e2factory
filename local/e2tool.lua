@@ -49,6 +49,7 @@ local strict = require("strict")
 local tools = require("tools")
 local transport = require("transport")
 local url = require("url")
+local chroot = require("chroot")
 
 -- Build function table, see end of file for details.
 local e2tool_ftab = {}
@@ -69,7 +70,6 @@ local e2tool_ftab = {}
 -- @field sources_sorted table: sorted list of sources
 -- @field results table: results
 -- @field results_sorted table: sorted list of results
--- @field chroot See info.chroot
 -- @field project_location string: project location relative to the servers
 -- @field env table: env table
 -- @field env_files table: list of env files
@@ -115,18 +115,6 @@ local e2tool_ftab = {}
 -- @see policy.build_mode
 -- @see e2build.build_config
 -- @see plugins.collect_project
-
---- Table of chroot configuration. Locked.
--- @table info.chroot
--- @field default_groups Chroot groups used in every result. Locked.
--- @field groups_byname Dict mapping group name to group table.
--- @field groups_sorted Vector of sorted group names. Locked.
-
---- chroot group table
--- @table chroot group table
--- @field name string: group name
--- @field server string: server name
--- @field files table: array of file names
 
 --- env - environment table from "proj/env"
 -- @name env
@@ -336,7 +324,7 @@ local function check_result(info, resultname)
         e:cat(re)
     else
         -- apply default chroot groups
-        for _,g in ipairs(info.chroot.default_groups) do
+        for _,g in ipairs(chroot.groups_default) do
             table.insert(res.chroot, g)
         end
         -- The list may have duplicates now. Unify.
@@ -346,7 +334,7 @@ local function check_result(info, resultname)
             e:cat(re)
         end
         for _,g in ipairs(res.chroot) do
-            if not info.chroot.groups_byname[g] then
+            if not chroot.groups_byname[g] then
                 e:append("chroot group does not exist: %s", g)
             end
         end
@@ -592,55 +580,6 @@ local function load_env_config(info, file)
         return false, merge_error
     end
     e2lib.logf(4, "loading environment done: %s", file)
-    return true
-end
-
---- read chroot configuration
--- @param info
--- @return bool
--- @return an error object on failure
-local function read_chroot_config(info)
-    local e = err.new("reading chroot config failed")
-    local t = {}
-    local rc, re =
-        load_user_config(info, e2lib.join(info.root, "proj/chroot"),
-            t, "chroot", "e2chroot")
-    if not rc then
-        return false, e:cat(re)
-    end
-    if type(t.chroot) ~= "table" then
-        return false, e:append("chroot configuration table not available")
-    end
-    if type(t.chroot.groups) ~= "table" then
-        return false, e:append("chroot.groups configuration is not a table")
-    end
-    if type(t.chroot.default_groups) ~= "table" then
-        return false, e:append("chroot.default_groups is not a table")
-    end
-    info.chroot = {}
-    info.chroot.default_groups = t.chroot.default_groups or {}
-    info.chroot.groups_byname = {}
-    info.chroot.groups_sorted = {}
-    strict.lock(info.chroot)
-    for _,grp in ipairs(t.chroot.groups) do
-        if grp.group then
-            e:append("in group: %s", grp.group)
-            e:append(" `group' attribute is deprecated. Replace by `name'")
-            return false, e
-        end
-        if not grp.name then
-            return false, e:append("`name' attribute is missing in a group")
-        end
-        local g = grp.name
-        table.insert(info.chroot.groups_sorted, g)
-        if info.chroot.groups_byname[g] then
-            return false, e:append("duplicate chroot group name: %s", g)
-        end
-        info.chroot.groups_byname[g] = grp
-    end
-    table.sort(info.chroot.groups_sorted)
-    strict.lock(info.chroot.groups_sorted)
-    strict.lock(info.chroot.default_groups)
     return true
 end
 
@@ -1022,75 +961,6 @@ local function read_project_config(info)
     return true
 end
 
---- check chroot config
--- @param chroot
--- @return bool
--- @return an error object on failure
-local function check_chroot_config(info)
-    local e = err.new("error validating chroot configuration")
-    local grp
-
-    for _,cgrpnm in ipairs(info.chroot.groups_sorted) do
-        grp = info.chroot.groups_byname[cgrpnm]
-        if not grp.server then
-            e:append("in group: %s", grp.name)
-            e:append(" `server' attribute missing")
-        elseif not cache.valid_server(info.cache, grp.server) then
-            e:append("in group: %s", grp.name)
-            e:append(" no such server: %s", grp.server)
-        end
-        if (not grp.files) or (#grp.files) == 0 then
-            e:append("in group: %s", grp.name)
-            e:append(" list of files is empty")
-        else
-            for _,f in ipairs(grp.files) do
-                local inherit = {
-                    server = grp.server,
-                }
-                local keys = {
-                    server = {
-                        mandatory = true,
-                        type = "string",
-                        inherit = true,
-                    },
-                    location = {
-                        mandatory = true,
-                        type = "string",
-                        inherit = false,
-                    },
-                    sha1 = {
-                        mandatory = false,
-                        type = "string",
-                        inherit = false,
-                    },
-                }
-                local rc, re = e2lib.vrfy_table_attributes(f, keys, inherit)
-                if not rc then
-                    e:append("in group: %s", grp.name)
-                    e:cat(re)
-                end
-                if f.server ~= info.root_server_name and not f.sha1 then
-                    e:append("in group: %s", grp.name)
-                    e:append("file entry for remote file without `sha1` attribute")
-                end
-            end
-        end
-    end
-    if #info.chroot.default_groups == 0 then
-        e:append(" `default_groups' attribute is missing or empty list")
-    else
-        for _,g in ipairs(info.chroot.default_groups) do
-            if not info.chroot.groups_byname[g] then
-                e:append(" unknown group in default groups list: %s", g)
-            end
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
 --- check source.
 local function check_source(info, sourcename)
     local src = info.sources[sourcename]
@@ -1135,10 +1005,6 @@ end
 local function check_project_info(info)
     local rc, re
     local e = err.new("error in project configuration")
-    rc, re = check_chroot_config(info)
-    if not rc then
-        return false, e:cat(re)
-    end
     local rc, re = check_sources(info)
     if not rc then
         return false, e:cat(re)
@@ -1287,7 +1153,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- chroot config
-    rc, re = read_chroot_config(info)
+    rc, re = chroot.load_chroot_config(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1761,33 +1627,6 @@ function e2tool.buildid(info, resultname)
     return r.build_mode.buildid(r.buildid)
 end
 
---- chroot group id.
--- @param info Info table.
--- @param groupname
--- @return Chroot group ID or false on error.
--- @return Error object on failure.
-local function chrootgroupid(info, groupname)
-    local e = err.new("calculating chroot group id failed for group %s",
-        groupname)
-    local g = info.chroot.groups_byname[groupname]
-    if g.groupid then
-        return g.groupid
-    end
-    local hc = hash.hash_start()
-    hash.hash_line(hc, g.name)
-    for _,f in ipairs(g.files) do
-        hash.hash_line(hc, f.server)
-        hash.hash_line(hc, f.location)
-        local fileid, re = e2tool.fileid(info, f)
-        if not fileid then
-            return false, e:cat(re)
-        end
-        hash.hash_line(hc, fileid)
-    end
-    g.groupid = hash.hash_finish(hc)
-    return g.groupid
-end
-
 --- envid: calculate a value represennting the environment for a result
 -- @param info the info table
 -- @param resultname string: name of a result
@@ -1828,7 +1667,7 @@ function e2tool.pbuildid(info, resultname)
 
     if r.chroot then
         for _,g in ipairs(r.chroot) do
-            local groupid, re = chrootgroupid(info, g)
+            local groupid, re = chroot.groups_byname[g]:chrootgroupid(info)
             if not groupid then
                 return false, e:cat(re)
             end

@@ -30,6 +30,7 @@ local hash = require("hash")
 local scm = require("scm")
 local strict = require("strict")
 local licence = require("licence")
+local chroot = require("chroot")
 
 --- Collect_project result config. This result config table lives in
 -- info.results[resultname]. The fields are merged with e2tool.result
@@ -284,7 +285,7 @@ local function build_collect_project(info, resultname, return_flags)
     -- project/chroot/<group>/<files>
     for _,g in ipairs(cpres.chroot_groups) do
         e2lib.logf(3, "chroot group: %s", g)
-        local grp = info.chroot.groups_byname[g]
+        local grp = chroot.groups_byname[g]
         local destdir = e2lib.join( res.build_config.T, "project/chroot", g)
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
@@ -293,7 +294,7 @@ local function build_collect_project(info, resultname, return_flags)
 
         out = { "place:\n" }
 
-        for _,file in pairs(grp.files) do
+        for file in grp:file_iter() do
             local cache_flags = {}
             rc, re = cache.fetch_file(info.cache, file.server,
             file.location, destdir, nil, cache_flags)
