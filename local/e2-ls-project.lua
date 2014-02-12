@@ -171,7 +171,10 @@ local function e2_ls_project(arg)
         console.infof("digraph \"%s\" {\n", info.project.name)
         for _, r in pairs(results) do
             local res = info.results[r]
-            local deps = e2tool.dlist(info, r)
+            local deps, re = e2tool.dlist(info, r)
+            if not deps then
+                error(re)
+            end
             if #deps > 0 then
                 for _, dep in pairs(deps) do
                     if opts.swap then

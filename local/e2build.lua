@@ -819,7 +819,10 @@ local function sources(info, r, return_flags)
         local rc, re
         local e = err.new("installing build time dependencies")
         local deps
-        deps = e2tool.dlist(info, r)
+        deps, re = e2tool.dlist(info, r)
+        if not deps then
+            return false, e:cat(re)
+        end
         for i, dep in pairs(deps) do
             local destdir = e2lib.join(res.build_config.T, "dep", dep)
             rc, re = e2build.unpack_result(info, r, dep, destdir)

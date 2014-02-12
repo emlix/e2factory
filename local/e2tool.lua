@@ -1317,12 +1317,16 @@ end
 -- in the project. The result itself is excluded.
 -- @param info Info table.
 -- @param resultname Result name.
--- @return Sorted vector of result dependencies.
+-- @return Sorted vector of result dependencies, or false on error.
+-- @return Error object on failure.
 function e2tool.dlist(info, resultname)
     local t = {}
-    local deps
-    for _,f in ipairs(e2tool_ftab.dlist) do
-        deps = f(info, resultname)
+    local deps, re
+    for _,dlist_cb in ipairs(e2tool_ftab.dlist) do
+        deps, re = dlist_cb(info, resultname)
+        if not deps then
+            return false, re
+        end
         for _,d in ipairs(deps) do
             table.insert(t, d)
         end
@@ -1348,10 +1352,14 @@ function e2tool.dlist_recursive(info, result)
     local t = {}
 
     if type(result) == "string" then
-        result = e2tool.dlist(info, result)
+        result, re = e2tool.dlist(info, result)
+        if not result then
+            return false, re
+        end
     end
 
     local function visit(res)
+        local deps, re
         if had[res] then
             return false,
                 err.new("cyclic dependency: %s", table.concat(path, " "))
@@ -1359,7 +1367,11 @@ function e2tool.dlist_recursive(info, result)
             table.insert(path, res)
             had[res] = true
             col[res] = true
-            for _, d in ipairs(e2tool.dlist(info, res)) do
+            deps, re = e2tool.dlist(info, res)
+            if not deps then
+                return false, re
+            end
+            for _, d in ipairs(deps) do
                 rc, re = visit(d)
                 if not rc then
                     return false, re
