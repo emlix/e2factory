@@ -127,7 +127,7 @@ end
 --- Calculate part of the resultid for collect_project results.
 -- @param info Info table.
 -- @param resultname Result name.
--- @return ResultID string, false to skip, nil on error.
+-- @return ResultID string, true to skip, false on error.
 -- @return Error object on failure.
 local function collect_project_resultid(info, resultname)
     local rc, re, res, cpres, hc, id
@@ -135,41 +135,39 @@ local function collect_project_resultid(info, resultname)
     res = info.results[resultname]
 
     if not res.collect_project then
-        return false
+        return true
     end
-
-    -- Warning: nil is used to signal error to the caller.
 
     cpres = cpresults[resultname]
     hc, re = hash.hash_start()
-    if not hc then return nil, re end
+    if not hc then return false, re end
 
     for _,c in ipairs(cpres.results) do
         rc, re = hash.hash_line(hc, c)
-        if not rc then return nil, re end
+        if not rc then return false, re end
     end
     for _,s in ipairs(cpres.sources) do
         rc, re = hash.hash_line(hc, s)
-        if not rc then return nil, re end
+        if not rc then return false, re end
     end
     for _,g in ipairs(cpres.chroot_groups) do
         rc, re = hash.hash_line(hc, g)
-        if not rc then return nil, re end
+        if not rc then return false, re end
     end
     for _,l in ipairs(licence.licences_sorted) do
         -- We collect all licences. So we cannot be sure to catch
         -- them via results/sources. Include them explicitly here.
         local lid, re = l:licenceid(info)
         if not lid then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
 
         rc, re = hash.hash_line(hc, lid)
-        if not rc then return nil, re end
+        if not rc then return false, re end
     end
 
     id, re = hash.hash_finish(hc)
-    if not id then return nil, re end
+    if not id then return false, re end
 
     return id
 end
@@ -177,7 +175,7 @@ end
 --- Calculate part of the (recursive) pbuildid for collect_project results.
 -- @param info Info table.
 -- @param resultname Result name.
--- @return PbuildID string, false to skip, nil on error.
+-- @return PbuildID string, true to skip, false on error.
 -- @return Error object on failure.
 local function collect_project_pbuildid(info, resultname)
     local rc, re, res, cpres, hc, pbid
@@ -185,25 +183,25 @@ local function collect_project_pbuildid(info, resultname)
     res = info.results[resultname]
 
     if not res.collect_project then
-        return false
+        return true
     end
 
     cpres = cpresults[resultname]
     hc, re = hash.hash_start()
-    if not hc then return nil, re end
+    if not hc then return false, re end
 
     for _,rn in ipairs(cpres.results) do
         pbid, re = e2tool.pbuildid(info, rn)
         if not pbid then
-            return nil, re
+            return false, re
         end
 
         rc, re = hash.hash_line(hc, pbid)
-        if not rc then return nil, re end
+        if not rc then return false, re end
     end
 
     pbid, re = hash.hash_finish(hc)
-    if not pbid then return nil, re end
+    if not pbid then return false, re end
 
     return pbid
 end

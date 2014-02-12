@@ -1047,6 +1047,10 @@ local function check_project_info(info)
 end
 
 --- collect project info.
+-- @param info Info table.
+-- @param skip_load_config If true, skip loading config files etc.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2tool.collect_project_info(info, skip_load_config)
     local rc, re
     local e = err.new("reading project configuration")
@@ -1301,8 +1305,8 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    for _,f in ipairs(e2tool_ftab.collect_project_info) do
-        rc, re = f(info)
+    for _,collect_project_info_cb in ipairs(e2tool_ftab.collect_project_info) do
+        rc, re = collect_project_info_cb(info)
         if not rc then
             return false, e:cat(re)
         end
@@ -1716,13 +1720,13 @@ function e2tool.pbuildid(info, resultname)
     end
     hash.hash_line(hc, fileid)			-- build script hash
 
-    for _,f in ipairs(e2tool_ftab.resultid) do
-        local rhash, re = f(info, resultname)
-        -- nil -> error
-        -- false -> don't modify the hash
-        if rhash == nil then
+    for _,resultid_cb in ipairs(e2tool_ftab.resultid) do
+        local rhash, re = resultid_cb(info, resultname)
+        if not rhash then
             return false, e:cat(re)
-        elseif rhash ~= false then
+        elseif rhash == true then
+            -- skip
+        else
             hash.hash_line(hc, rhash)
         end
     end
@@ -1742,13 +1746,13 @@ function e2tool.pbuildid(info, resultname)
         end
         hash.hash_line(hc, id)		-- buildid of dependency
     end
-    for _,f in ipairs(e2tool_ftab.pbuildid) do
-        local rhash, re = f(info, resultname)
-        -- nil -> error
-        -- false -> don't modify the hash
-        if rhash == nil then
+    for _,pbuildid_cb in ipairs(e2tool_ftab.pbuildid) do
+        local rhash, re = pbuildid_cb(info, resultname)
+        if not rhash then
             return false, e:cat(re)
-        elseif rhash ~= false then
+        elseif rhash == true then
+            -- skip
+        else
             hash.hash_line(hc, rhash)
         end
     end
@@ -1826,7 +1830,20 @@ function e2tool.print_selection(info, results)
     return true
 end
 
---- register collect project info.
+--- Collect project info callback function signature.
+-- Called to populate the info table, not to be confused with the
+-- "collect_project" plugin feature.
+-- @function collect_project_info_cb
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure
+
+--- Register collect project info.
+-- @param info Info table.
+-- @param func collect_project_info_cb function.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @see collect_project_info_cb
 function e2tool.register_collect_project_info(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_collect_project_info: invalid argument")
@@ -1835,7 +1852,20 @@ function e2tool.register_collect_project_info(info, func)
     return true
 end
 
---- register check result.
+--- Check result callback function signature. Called after all config files
+-- have been loaded.
+-- @function check_result_cb
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+
+--- Register check result.
+-- @param info Info table.
+-- @param func check_result_cb function.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @see check_result_cb
 function e2tool.register_check_result(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_check_result: invalid argument")
@@ -1844,7 +1874,19 @@ function e2tool.register_check_result(info, func)
     return true
 end
 
---- register resultid.
+--- Calculate ResultID callback function signature.
+-- @function resultid_cb
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return SHA1 checksum or true (for skip) on success, false on error.
+-- @return Error object on failure.
+
+--- Register resultid.
+-- @param info Info table.
+-- @param func resultid_cb function.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @see resultid_cb
 function e2tool.register_resultid(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_resultid: invalid argument")
@@ -1853,7 +1895,19 @@ function e2tool.register_resultid(info, func)
     return true
 end
 
---- register project buildid.
+--- Calculate ProjectBuildID callback function signature.
+-- @function pbuildid_cb
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return SHA1 checksum or true (for skip) on success, false on error.
+-- @return Error object on failure.
+
+--- Register project buildid.
+-- @param info Info table.
+-- @param func pbuildid_cb function.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @see pbuildid_cb
 function e2tool.register_pbuildid(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_pbuildid: invalid argument")
@@ -1862,7 +1916,19 @@ function e2tool.register_pbuildid(info, func)
     return true
 end
 
---- register dlist.
+--- Get dependency list callback function signature.
+-- @function dlist_cb
+-- @param info Info table.
+-- @param resultname Result name.
+-- @return String vector of dependencies for result, false on error.
+-- @return Error object on failure.
+
+--- Register dlist.
+-- @param info Info table.
+-- @param func dlist_cb function.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @see dlist_cb
 function e2tool.register_dlist(info, func)
     if type(info) ~= "table" or type(func) ~= "function" then
         return false, err.new("register_dlist: invalid argument")
@@ -1874,14 +1940,16 @@ end
 --- Function table, driving the build process. Contains further tables to
 -- which e2factory core and plugins add functions that comprise the
 -- build process.
--- @field collect_project_info Called f(info). Populates the info table,
---                             not to be confused with the "collect_project"
---                             feature.
+-- @field collect_project_info Called f(info).
 -- @field check_result Called f(info, resultname).
 -- @field resultid Called f(info, resultname).
---        Returns nil on error, false to skip, or a resultid string.
 -- @field pbuildid Called f(info, resultname).
 -- @field dlist Called f(info, resultname).
+-- @see collect_project_info_cb
+-- @see check_result_cb
+-- @see resultid_cb
+-- @see pbuildid_cb
+-- @see dlist_cb
 e2tool_ftab = {
     collect_project_info = {},
     check_result = {},
