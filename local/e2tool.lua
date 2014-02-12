@@ -169,7 +169,7 @@ local function load_user_config(info, path, dest, index, var)
         dest[index] = table
     end
 
-    local rc, re = e2lib.dofile2(path, { [var] = func, env = info.env, string=string })
+    rc, re = e2lib.dofile2(path, { [var] = func, env = info.env, string=string })
     if not rc then
         return false, e:cat(re)
     end
@@ -253,6 +253,8 @@ end
 local function check_result(info, resultname)
     local res = info.results[resultname]
     local e = err.new("in result %s:", resultname)
+    local rc, re
+
     if not res then
         e:append("result does not exist: %s", resultname)
         return false, e
@@ -274,7 +276,7 @@ local function check_result(info, resultname)
         "Converting to list")
         res.sources = { res.sources }
     end
-    local rc, re = e2lib.vrfy_listofstrings(res.sources, "sources", true, false)
+    rc, re = e2lib.vrfy_listofstrings(res.sources, "sources", true, false)
     if not rc then
         e:append("source attribute:")
         e:cat(re)
@@ -296,7 +298,7 @@ local function check_result(info, resultname)
         "Converting to list")
         res.depends = { res.depends }
     end
-    local rc, re = e2lib.vrfy_listofstrings(res.depends, "depends", true, false)
+    rc, re = e2lib.vrfy_listofstrings(res.depends, "depends", true, false)
     if not rc then
         e:append("dependency attribute:")
         e:cat(re)
@@ -318,7 +320,7 @@ local function check_result(info, resultname)
         "Converting to list")
         res.chroot = { res.chroot }
     end
-    local rc, re = e2lib.vrfy_listofstrings(res.chroot, "chroot", true, false)
+    rc, re = e2lib.vrfy_listofstrings(res.chroot, "chroot", true, false)
     if not rc then
         e:append("chroot attribute:")
         e:cat(re)
@@ -591,9 +593,11 @@ end
 -- @return Table with source paths, or false on error.
 -- @return Error object on failure.
 local function gather_source_paths(info, basedir, sources)
+    local rc, re
+    local currdir, sdir, sconfig, s
     sources = sources or {}
 
-    local currdir = e2tool.sourcedir(basedir, info.root)
+    currdir = e2tool.sourcedir(basedir, info.root)
     for entry, re in e2lib.directory(currdir) do
         if not entry then
             return false, re
@@ -603,15 +607,15 @@ local function gather_source_paths(info, basedir, sources)
             entry = e2lib.join(basedir, entry)
         end
 
-        local sdir = e2tool.sourcedir(entry, info.root)
-        local sconfig = e2tool.sourceconfig(entry, info.root)
-        local s = e2lib.stat(sdir, false)
+        sdir = e2tool.sourcedir(entry, info.root)
+        sconfig = e2tool.sourceconfig(entry, info.root)
+        s = e2lib.stat(sdir, false)
         if s.type == "directory" then
             if e2lib.exists(sconfig) then
                 table.insert(sources, entry)
             else
                 -- try subfolder
-                local rc, re = gather_source_paths(info, entry, sources)
+                rc, re = gather_source_paths(info, entry, sources)
                 if not rc then
                     return false, re
                 end
@@ -676,19 +680,20 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function load_source_configs(info)
-    local e = err.new("error loading source configuration")
-    info.sources = {}
+    local rc, re, e
+    local sources, list, path, types
 
-    local sources, re = gather_source_paths(info)
+    e = err.new("error loading source configuration")
+    info.sources = {}
+    sources, re = gather_source_paths(info)
     if not sources then
         return false, e:cat(re)
     end
 
     for _,src in ipairs(sources) do
-        local list, re
-        local path = e2tool.sourceconfig(src, info.root)
-        local types = { "e2source", }
-        local rc, re = e2tool.verify_src_res_pathname_valid_chars(src)
+        path = e2tool.sourceconfig(src, info.root)
+        types = { "e2source", }
+        rc, re = e2tool.verify_src_res_pathname_valid_chars(src)
         if not rc then
             e:append("invalid source file name: %s", src)
             e:cat(re)
@@ -700,9 +705,9 @@ local function load_source_configs(info)
             return false, e:cat(re)
         end
 
-
+        local name
         for _,item in ipairs(list) do
-            local name = item.data.name
+            name = item.data.name
             item.data.directory = src
             if not name and #list == 1 then
                 e2lib.warnf("WDEFAULT", "`name' attribute missing in source config.")
@@ -715,7 +720,7 @@ local function load_source_configs(info)
                 return false, e:append("`name' attribute missing in source config")
             end
 
-            local rc, re = e2tool.verify_src_res_name_valid_chars(name)
+            rc, re = e2tool.verify_src_res_name_valid_chars(name)
             if not rc then
                 e:append("invalid source name: %s", name)
                 e:cat(re)
@@ -798,9 +803,11 @@ end
 -- @return Table with result paths, or false on error.
 -- @return Error object on failure.
 local function gather_result_paths(info, basedir, results)
-    results = results or {}
+    local rc, re
+    local currdir, resdir, resconfig, s
 
-    local currdir = e2tool.resultdir(basedir, info.root)
+    results = results or {}
+    currdir = e2tool.resultdir(basedir, info.root)
     for entry, re in e2lib.directory(currdir) do
         if not entry then
             return false, re
@@ -810,15 +817,15 @@ local function gather_result_paths(info, basedir, results)
             entry = e2lib.join(basedir, entry)
         end
 
-        local resdir = e2tool.resultdir(entry, info.root)
-        local resconfig = e2tool.resultconfig(entry, info.root)
-        local s = e2lib.stat(resdir, false)
+        resdir = e2tool.resultdir(entry, info.root)
+        resconfig = e2tool.resultconfig(entry, info.root)
+        s = e2lib.stat(resdir, false)
         if s.type == "directory" then
             if e2lib.exists(resconfig) then
                 table.insert(results, entry)
             else
                 -- try subfolder
-                local rc, re = gather_result_paths(info, entry, results)
+                rc, re = gather_result_paths(info, entry, results)
                 if not rc then
                     return false, re
                 end
@@ -834,20 +841,21 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function load_result_configs(info)
-    local e = err.new("error loading result configuration")
+    local rc, re, e
+    local results, list, path, types
+    e = err.new("error loading result configuration")
     info.results = {}
 
-    local results, re = gather_result_paths(info)
+    results, re = gather_result_paths(info)
     if not results then
         return false, e:cat(re)
     end
 
     for _,res in ipairs(results) do
-        local list, re
-        local path = e2tool.resultconfig(res, info.root)
-        local types = { "e2result", }
+        path = e2tool.resultconfig(res, info.root)
+        types = { "e2result", }
 
-        local rc, re = e2tool.verify_src_res_pathname_valid_chars(res)
+        rc, re = e2tool.verify_src_res_pathname_valid_chars(res)
         if not rc then
             e:append("invalid result file name: %s", res)
             e:cat(re)
@@ -862,8 +870,10 @@ local function load_result_configs(info)
             return false, e:append("%s: only one result allowed per config file",
             path)
         end
+
+        local name
         for _,item in ipairs(list) do
-            local name = item.data.name
+            name = item.data.name
             item.data.directory = res
 
             if name and name ~= res then
@@ -874,7 +884,7 @@ local function load_result_configs(info)
             item.data.name = e2tool.src_res_path_to_name(res)
             name = item.data.name
 
-            local rc, re = e2tool.verify_src_res_name_valid_chars(name)
+            rc, re = e2tool.verify_src_res_name_valid_chars(name)
             if not rc then
                 e:append("invalid result name: %s",name)
                 e:cat(re)
@@ -906,15 +916,15 @@ local function read_project_config(info)
     --                        (table containing strings).
     -- @field chroot_arch Chroot architecture (string).
 
-    local rc, re
+    local rc, re, e
 
-    local rc, re = load_user_config(info, e2lib.join(info.root, "proj/config"),
+    rc, re = load_user_config(info, e2lib.join(info.root, "proj/config"),
         info, "project", "e2project")
     if not rc then
         return false, re
     end
 
-    local e = err.new("in project configuration:")
+    e = err.new("in project configuration:")
     if not info.project.release_id then
         e:append("key is not set: release_id")
     end
@@ -969,7 +979,7 @@ local function check_source(info, sourcename)
         e = err.new("no source by that name: %s", sourcename)
         return false, e
     end
-    local e = err.new("in source: %s", sourcename)
+    e = err.new("in source: %s", sourcename)
     if not src.type then
         e2lib.warnf("WDEFAULT", "in source %s", sourcename)
         e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
@@ -984,8 +994,8 @@ end
 
 --- check sources.
 local function check_sources(info)
-    local e = err.new("Error while checking sources")
     local rc, re
+    local e = err.new("Error while checking sources")
     for n,s in pairs(info.sources) do
         rc, re = check_source(info, n)
         if not rc then
@@ -1003,13 +1013,13 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function check_project_info(info)
-    local rc, re
-    local e = err.new("error in project configuration")
-    local rc, re = check_sources(info)
+    local rc, re, e
+    e = err.new("error in project configuration")
+    rc, re = check_sources(info)
     if not rc then
         return false, e:cat(re)
     end
-    local rc, re = check_results(info)
+    rc, re = check_results(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1026,7 +1036,7 @@ local function check_project_info(info)
     if e:getcount() > 1 then
         return false, e
     end
-    local rc = e2tool.dsort(info)
+    rc = e2tool.dsort(info)
     if not rc then
         return false, e:cat("cyclic dependencies")
     end
@@ -1056,7 +1066,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return info
     end
 
-    local rc, re = opendebuglogfile(info)
+    rc, re = opendebuglogfile(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1141,7 +1151,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     info.env_files = {}   -- a list of environment files
     info.global_env = environment.new()
     info.result_env = {} -- result specific env only
-    local rc, re = load_env_config(info, "proj/env")
+    rc, re = load_env_config(info, "proj/env")
     if not rc then
         return false, e:cat(re)
     end
@@ -1310,8 +1320,9 @@ end
 -- @return Sorted vector of result dependencies.
 function e2tool.dlist(info, resultname)
     local t = {}
+    local deps
     for _,f in ipairs(e2tool_ftab.dlist) do
-        local deps = f(info, resultname)
+        deps = f(info, resultname)
         for _,d in ipairs(deps) do
             table.insert(t, d)
         end
@@ -1641,8 +1652,9 @@ end
 -- @return Build ID or false on error.
 -- @return Error object on failure.
 function e2tool.pbuildid(info, resultname)
-    local e = err.new("error calculating result id for result: %s",
-        resultname)
+    local rc, re, e
+
+    e = err.new("error calculating result id for result: %s", resultname)
     local r = info.results[resultname]
     if r.pbuildid then
         return r.build_mode.buildid(r.pbuildid)
