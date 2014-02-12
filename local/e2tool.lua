@@ -231,12 +231,15 @@ local function load_user_config2(info, path, types)
 end
 
 --- check results.
+-- @param info Info table.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 local function check_results(info)
     local e, rc, re
 
-    for _,f in ipairs(e2tool_ftab.check_result) do
+    for _,check_result_cb in ipairs(e2tool_ftab.check_result) do
         for r,_ in pairs(info.results) do
-            rc, re = f(info, r)
+            rc, re = check_result_cb(info, r)
             if not rc then
                 e = err.new("Error while checking results")
                 return false, e:cat(re)
