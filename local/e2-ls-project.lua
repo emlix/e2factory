@@ -248,7 +248,7 @@ local function e2_ls_project(arg)
         p2(s1, s2, src.name)
         local t, re = scm.display(info, src.name)
         if not t then
-            return false, re
+            error(re)
         end
         for _,line in pairs(t) do
             p3(s1, s2, line)
