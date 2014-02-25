@@ -158,17 +158,20 @@ function licence.load_licence_config(info)
     e2lib.logf(3, "loading licence config %q", path)
     e = err.new("loading licence config %q failed", path)
 
-    ltable = {}
-    local function assign(table)
-        for k,v in pairs(table) do
-            ltable[k] = v
-        end
-    end
+    ltable = nil
+    local g = {
+        e2licence = function(data) ltable = data end,
+        env = info.env,
+        string = e2lib.safe_string_table(),
+    }
 
-    rc, re = e2lib.dofile2(path,
-        { e2licence = assign, env = info.env, string = string })
+    rc, re = e2lib.dofile2(path, g)
     if not rc then
         return false, re
+    end
+
+    if type(ltable) ~= "table" then
+        return false, e:append("empty or invalid licence configuration")
     end
 
     for k,v in pairs(ltable) do

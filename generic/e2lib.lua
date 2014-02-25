@@ -1484,6 +1484,28 @@ function e2lib.callcmd_log(cmd, workdir, envdict)
     return rc, e
 end
 
+--- Generate a new table populated with all the safe Lua "string" functions.
+-- The intended use is to generate a now string table for each protected
+-- environment, so that no information can be passed through string, or worse,
+-- real string functions can be overwritten and thus escape the protected env.
+-- @return New "string" replacement package.
+function e2lib.safe_string_table()
+    local safefn = {
+        "byte", "char", "find", "format", "gmatch", "gsub", "len", "lower",
+        "match", "rep", "reverse", "sub", "upper"
+    }
+    -- unsafe: dump
+
+    local st = {}
+
+    for _,name in ipairs(safefn) do
+        assert(string[name])
+        st[name] = string[name]
+    end
+
+    return st
+end
+
 --- Executes Lua code loaded from path.
 --@param path Filename to load lua code from (string).
 --@param gtable Environment (table) that is used instead of the global _G.

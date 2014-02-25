@@ -169,7 +169,13 @@ local function load_user_config(info, path, dest, index, var)
         dest[index] = table
     end
 
-    rc, re = e2lib.dofile2(path, { [var] = func, env = info.env, string=string })
+    local g = {
+        [var] = func,
+        env = info.env,
+        string = e2lib.safe_string_table(),
+    }
+
+    rc, re = e2lib.dofile2(path, g)
     if not rc then
         return false, e:cat(re)
     end
@@ -216,11 +222,15 @@ local function load_user_config2(info, path, types)
         table.insert(list, t)
     end
 
-    local g = {}			-- compose the environment for the config file
-    g.env = info.env			-- env
-    g.string = string			-- string
+    -- compose the environment for the config file
+    local g = {
+        env = info.env,
+        string = e2lib.safe_string_table(),
+    }
+
+    -- and some config functions
     for _,typ in ipairs(types) do
-        g[typ] = f[typ]			-- and some config functions
+        g[typ] = f[typ]
     end
 
     rc, re = e2lib.dofile2(path, g)
@@ -574,8 +584,8 @@ local function load_env_config(info, file)
     local path = e2lib.join(info.root, file)
     local g = {
         e2env = info.env,
-        string = string,
         env = mergeenv,
+        string = e2lib.safe_string_table(),
     }
     rc, re = e2lib.dofile2(path, g)
     if not rc then

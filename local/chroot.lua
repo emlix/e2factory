@@ -174,12 +174,13 @@ function chroot.load_chroot_config(info)
     e = err.new("loading chroot config %q failed", path)
 
     t = nil
-    local function assign(table)
-        t = table
-    end
+    local g = {
+        e2chroot = function (data) t = data end,
+        env = info.env,
+        string = e2lib.safe_string_table(),
+    }
 
-    rc, re = e2lib.dofile2(path,
-        { e2chroot = assign, env = info.env, string = string })
+    rc, re = e2lib.dofile2(path, g)
     if not rc then
         return false, re
     end
