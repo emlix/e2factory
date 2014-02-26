@@ -42,6 +42,7 @@ local strict = require("strict")
 local tools = require("tools")
 local transport = require("transport")
 local chroot = require("chroot")
+local project = require("project")
 
 -- Table driving the build process, see documentation at the bottom.
 local build_process = {}
@@ -53,7 +54,7 @@ local function linklast(info, r, return_flags)
     local e = err.new("creating link to last results")
     -- calculate the path to the result
     local server, location = res.build_mode.storage(info.project_location,
-        info.project.release_id)
+        project.release_id())
 
     local buildid, re = e2tool.buildid(info, r)
     if not buildid then
@@ -127,7 +128,7 @@ local function result_available(info, r, return_flags)
         return true, nil
     end
     local server, location =
-        res.build_mode.storage(info.project_location, info.project.release_id)
+        res.build_mode.storage(info.project_location, project.release_id())
     local dep_set = res.build_mode.dep_set(buildid)
 
     -- cache the result
@@ -215,20 +216,14 @@ function e2build.build_config(info, r)
         buildconfig.PATCHLEVEL, e2lib.globals.osenv["USER"])
     local builddir = "tmp/e2"
 
-    bc.base = e2lib.join(tmpdir, info.project.name, r)
+    bc.base = e2lib.join(tmpdir, project.name(), r)
     bc.c = e2lib.join(bc.base, "chroot")
     bc.chroot_marker = e2lib.join(bc.base, "e2factory-chroot")
     bc.chroot_lock = e2lib.join(bc.base, "e2factory-chroot-lock")
-    bc.T = e2lib.join(tmpdir, info.project.name, r, "chroot", builddir)
+    bc.T = e2lib.join(tmpdir, project.name(), r, "chroot", builddir)
     bc.Tc = e2lib.join("/", builddir)
     bc.r = r
-    if info.chroot_call_prefix[info.project.chroot_arch] == "" then
-        -- escape only if non-empty, otherwise we fail to start "''"
-        tab.chroot_call_prefix = ""
-    else
-        tab.chroot_call_prefix =
-            e2lib.shquote(info.chroot_call_prefix[info.project.chroot_arch])
-    end
+    bc.chroot_call_prefix = info.chroot_call_prefix[project.chroot_arch()]
     bc.buildlog = string.format("%s/log/build.%s.log", info.root, r)
     bc.scriptdir = "script"
     bc.build_driver = ""
@@ -239,8 +234,8 @@ function e2build.build_config(info, r)
     bc.builtin_env = environment.new()
     bc.builtin_env:set("E2_TMPDIR", bc.Tc)
     bc.builtin_env:set("E2_RESULT", r)
-    bc.builtin_env:set("E2_RELEASE_ID", info.project.release_id)
-    bc.builtin_env:set("E2_PROJECT_NAME", info.project.name)
+    bc.builtin_env:set("E2_RELEASE_ID", project.release_id())
+    bc.builtin_env:set("E2_PROJECT_NAME", project.name())
     bc.builtin_env:set("E2_BUILDID", buildid)
     bc.builtin_env:set("T", bc.Tc)
     bc.builtin_env:set("r", r)
@@ -368,11 +363,14 @@ function e2build.enter_playground(info, r, chroot_command)
     end
 
     cmd = {
-        res.build_config.chroot_call_prefix,
         e2_su,
         "chroot_2_3",
         res.build_config.base,
     }
+
+    if #res.build_config.chroot_call_prefix > 0 then
+        table.insert(cmd, 1, res.build_config.chroot_call_prefix)
+    end
 
     if chroot_command then
         table.insert(cmd, "/bin/sh")
@@ -461,7 +459,6 @@ local function runbuild(info, r, return_flags)
     e2tool.set_umask(info)
 
     local cmd = {
-        res.build_config.chroot_call_prefix,
         e2_su,
         "chroot_2_3",
         res.build_config.base,
@@ -470,6 +467,10 @@ local function runbuild(info, r, return_flags)
         e2lib.join(res.build_config.Tc, res.build_config.scriptdir,
             res.build_config.build_driver_file)
     }
+
+    if #res.build_config.chroot_call_prefix > 0 then
+        table.insert(cmd, 1, res.build_config.chroot_call_prefix)
+    end
 
     rc, re = e2lib.callcmd_capture(cmd, logto)
     if not rc then
@@ -560,7 +561,7 @@ function e2build.unpack_result(info, r, dep, destdir)
 
     local dep_set = d.build_mode.dep_set(buildid)
     local server, location =
-        d.build_mode.storage(info.project_location, info.project.release_id)
+        d.build_mode.storage(info.project_location, project.release_id())
     e2lib.logf(3, "searching for dependency %s in %s:%s", dep, server, location)
     local location1 = e2lib.join(location, dep, dep_set, "result.tar")
     local cache_flags = {}
@@ -915,7 +916,7 @@ local function deploy(info, r, tmpdir)
     end
     table.insert(files, "checksums")
     local server, location = res.build_mode.deploy_storage(
-        info.project_location, info.project.release_id)
+        info.project_location, project.release_id())
 
     -- do not re-deploy if this release was already done earlier
     local location1 = e2lib.join(location, r, "checksums")
@@ -1035,7 +1036,7 @@ local function store_result(info, r, return_flags)
         return false, e:cat(re)
     end
     local server, location = res.build_mode.storage(info.project_location,
-        info.project.release_id)
+        project.release_id())
 
     local buildid, re = e2tool.buildid(info, r)
     if not buildid then

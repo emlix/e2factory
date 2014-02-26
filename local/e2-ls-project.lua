@@ -40,6 +40,7 @@ local licence = require("licence")
 local policy = require("policy")
 local scm = require("scm")
 local chroot = require("chroot")
+local project = require("project")
 
 local function e2_ls_project(arg)
     local rc, re = e2lib.init()
@@ -168,7 +169,7 @@ local function e2_ls_project(arg)
 
     if opts.dot or opts["dot-sources"] then
         local arrow = "->"
-        console.infof("digraph \"%s\" {\n", info.project.name)
+        console.infof("digraph \"%s\" {\n", project.name())
         for _, r in pairs(results) do
             local res = info.results[r]
             local deps, re = e2tool.dlist(info, r)
@@ -208,7 +209,7 @@ local function e2_ls_project(arg)
     --------------- project name
     local s1 = "|"
     local s2 = "|"
-    p0(s1, s2, info.project.name)
+    p0(s1, s2, project.name())
 
     --------------- servers
     local s1 = "|"

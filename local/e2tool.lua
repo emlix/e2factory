@@ -50,6 +50,7 @@ local tools = require("tools")
 local transport = require("transport")
 local url = require("url")
 local chroot = require("chroot")
+local project = require("project")
 
 -- Build function table, see end of file for details.
 local e2tool_ftab = {}
@@ -377,7 +378,7 @@ local function check_result(info, resultname)
             end
         end
     end
-    for _,r in ipairs(info.project.deploy_results) do
+    for r in project.deploy_results_iter() do
         if r == resultname then
             res._deploy = true
             break
@@ -932,76 +933,6 @@ local function load_result_configs(info)
     return true
 end
 
---- Read project configuration file.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function read_project_config(info)
-
-    --- Project configuration table (e2project).
-    -- @table info.project
-    -- @field release_id Release identifier, usually a git tag (string).
-    -- @field name Name of project (string).
-    -- @field deploy_results List of results that should be archived on
-    --                       --release builds (table containing strings).
-    -- @field default_results List of results that are built by default
-    --                        (table containing strings).
-    -- @field chroot_arch Chroot architecture (string).
-
-    local rc, re, e
-
-    rc, re = load_user_config(info, e2lib.join(info.root, "proj/config"),
-        info, "project", "e2project")
-    if not rc then
-        return false, re
-    end
-
-    e = err.new("in project configuration:")
-    if not info.project.release_id then
-        e:append("key is not set: release_id")
-    end
-    if not info.project.name then
-        e:append("key is not set: name")
-    end
-    if not info.project.default_results then
-        e2lib.warnf("WDEFAULT", "in project configuration:")
-        e2lib.warnf("WDEFAULT",
-            "default_results is not set. Defaulting to empty list.")
-        info.project.default_results = {}
-    end
-    rc, re = e2lib.vrfy_listofstrings(info.project.deploy_results,
-        "deploy_results", true, true)
-    if not rc then
-        e:append("deploy_results is not a valid list of strings")
-        e:cat(re)
-    end
-    rc, re = e2lib.vrfy_listofstrings(info.project.default_results,
-        "default_results",  true, false)
-    if not rc then
-        e:append("default_results is not a valid list of strings")
-        e:cat(re)
-    end
-    if not info.project.chroot_arch then
-        e2lib.warnf("WDEFAULT", "in project configuration:")
-        e2lib.warnf("WDEFAULT", " chroot_arch defaults to x86_32")
-        info.project.chroot_arch = "x86_32"
-    end
-    if not info.chroot_call_prefix[info.project.chroot_arch] then
-        e:append("chroot_arch is set to an invalid value")
-    end
-    local host_system_arch, re = e2lib.get_sys_arch()
-    if not host_system_arch then
-        e:cat(re)
-    elseif info.project.chroot_arch == "x86_64" and
-        host_system_arch ~= "x86_64" then
-        e:append("running on x86_32: switching to x86_64 mode is impossible.")
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-
-    return true
-end
-
 --- check source.
 local function check_source(info, sourcename)
     local src = info.sources[sourcename]
@@ -1054,12 +985,12 @@ local function check_project_info(info)
     if not rc then
         return false, e:cat(re)
     end
-    for _, r in ipairs(info.project.default_results) do
+    for r in project.default_results_iter() do
         if not info.results[r] then
             e:append("default_results: No such result: %s", r)
         end
     end
-    for _, r in ipairs(info.project.deploy_results) do
+    for r in project.deploy_results_iter() do
         if not info.results[r] then
             e:append("deploy_results: No such result: %s", r)
         end
@@ -1192,7 +1123,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- read project configuration
-    rc, re = read_project_config(info)
+    rc, re = project.load_project_config(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1303,7 +1234,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         local dirty, mismatch
 
         rc, re, mismatch = generic_git.verify_head_match_tag(info.root,
-            info.project.release_id)
+            project.release_id())
         if not rc then
             if mismatch then
                 e:append("project repository tag does not match " ..
@@ -1326,7 +1257,7 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     if e2option.opts["check-remote"] then
         rc, re = generic_git.verify_remote_tag(
-            e2lib.join(info.root, ".git"), info.project.release_id)
+            e2lib.join(info.root, ".git"), project.release_id())
         if not rc then
             e:append("verifying remote tag failed")
             return false, e:cat(re)
@@ -1435,7 +1366,11 @@ end
 -- @return Error object on failure.
 -- @see e2tool.dlist_recursive
 function e2tool.dsort(info)
-    return e2tool.dlist_recursive(info, info.project.default_results)
+    local dr = {}
+    for r in project.default_results_iter() do
+        table.insert(dr, r)
+    end
+    return e2tool.dlist_recursive(info, dr)
 end
 
 --- verify that a file addressed by server name and location matches the
@@ -1505,11 +1440,11 @@ local function projid(info)
             if not rc then return false, re end
         end
     end
-    rc, re = hash.hash_line(hc, info.project.release_id)
+    rc, re = hash.hash_line(hc, project.release_id())
     if not rc then return false, re end
-    rc, re = hash.hash_line(hc, info.project.name)
+    rc, re = hash.hash_line(hc, project.name())
     if not rc then return false, re end
-    rc, re = hash.hash_line(hc, info.project.chroot_arch)
+    rc, re = hash.hash_line(hc, project.chroot_arch())
     if not rc then return false, re end
     rc, re = hash.hash_line(hc, buildconfig.VERSION)
     if not rc then return false, re end

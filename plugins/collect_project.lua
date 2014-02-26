@@ -31,6 +31,7 @@ local scm = require("scm")
 local strict = require("strict")
 local licence = require("licence")
 local chroot = require("chroot")
+local project = require("project")
 
 --- Collect_project result config. This result config table lives in
 -- info.results[resultname]. The fields are merged with e2tool.result
@@ -257,11 +258,11 @@ local function build_collect_project(info, resultname, return_flags)
 
     -- write project configuration
     out = {
-        string.format("name='%s'\n", info.project.name),
-        string.format("release_id='%s'\n", info.project.release_id),
+        string.format("name='%s'\n", project.name()),
+        string.format("release_id='%s'\n", project.release_id()),
         string.format("default_results='%s'\n",
             res.collect_project_default_result),
-        string.format("chroot_arch='%s'\n", info.project.chroot_arch)
+        string.format("chroot_arch='%s'\n", project.chroot_arch())
     }
 
     local file, destdir
