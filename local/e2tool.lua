@@ -74,6 +74,7 @@ local e2tool_ftab = {}
 -- @field env table: env table
 -- @field env_files table: list of env files
 -- @field local_template_path Path to the local templates (string).
+local _info = false
 
 --- table of sources records, keyed by source names
 -- @name sources
@@ -435,6 +436,22 @@ local function get_depends(info, resultname)
     return t
 end
 
+--- Set a new info table.
+-- @param t Table to use for info.
+-- @return The new info table.
+function e2tool.set_info(t)
+    assert(type(t) == "table")
+    _info = t
+    return _info
+end
+
+--- Return the info table.
+-- @return Info table on success,
+--         false if the info table has not been initialised yet.
+function e2tool.info()
+    return _info
+end
+
 --- initialize the local library, load and initialize local plugins
 -- @param path string: path to project tree
 -- @param tool string: tool name (without the 'e2-' prefix)
@@ -443,7 +460,9 @@ end
 function e2tool.local_init(path, tool)
     local rc, re
     local e = err.new("initializing local tool")
-    local info = {}
+    local info
+
+    info = e2tool.set_info({})
 
     info.current_tool = tool
 
@@ -531,7 +550,6 @@ local function load_env_config(info, file)
     local e = err.new("loading environment: %s", file)
     local rc, re
 
-    local info = info
     local load_env_config = load_env_config
     local merge_error = false
     local function mergeenv(data)
