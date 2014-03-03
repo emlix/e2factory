@@ -1445,6 +1445,37 @@ function e2lib.call_tool_argv(tool, argv)
     return true, e
 end
 
+--- call a tool with argv and capture output
+-- @param tool string: tool name as registered in the tools library
+-- @param argv table: a vector of (string) arguments
+-- @param capturefn function called for ever chunk of output
+-- @return bool
+-- @return string: the last line ouf captured output
+function e2lib.call_tool_argv_capture(tool, argv, capturefn)
+    local cmd = tools.get_tool(tool)
+    if not cmd then
+        e2lib.bomb("trying to call invalid tool: " .. tostring(tool))
+    end
+    local flags = tools.get_tool_flags(tool)
+    if not flags then
+        e2lib.bomb("invalid tool flags for tool: " .. tostring(tool))
+    end
+
+    -- TODO: flags should be quoted as well, requires config changes
+    local call = string.format("%s %s", e2lib.shquote(cmd), flags)
+
+    for _,arg in ipairs(argv) do
+        assert(type(arg) == "string")
+        call = call .. " " .. e2lib.shquote(arg)
+    end
+
+    local rc, e = e2lib.callcmd_capture(call, capturefn)
+    if rc ~= 0 then
+        return false, e
+    end
+    return true, e
+end
+
 --- call git
 -- @param gitdir string: GIT_DIR (optional, defaults to ".git")
 -- @param subtool string: git tool name
