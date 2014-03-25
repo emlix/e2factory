@@ -33,6 +33,7 @@ local e2lib = require("e2lib")
 local err = require("err")
 local e2option = require("e2option")
 local strict = require("strict")
+local hash = require("hash")
 
 --- source_set_* get the source set identifier
 -- @class function
@@ -113,8 +114,51 @@ local function buildid_buildid(buildid)
     return buildid
 end
 
+local buildid_scratch_cache = {}
+
 local function buildid_scratch(buildid)
-    return "scratch"
+    --- XXX: Always returning a fixed buildid string does not work when
+    -- the scratch results gets used by results not in scratch mode.
+    -- eg. if we have a result graph like this: root->tag->wc-mode->tag
+    -- the final tag would only be built once and then cached globally.
+    --
+    -- Ideally we would use the hash of the wc-mode result.tar (and making sure
+    -- that its checksum is stable), but getting it requires some bigger
+    -- changes that are currently not possible.
+    --
+    -- Next best thing is to generate a random buildid. However, since
+    -- buildid_scratch() is called multiple times, we need to cache the result
+    -- to make the new buildid stable.
+
+    -- calculate buildid only once to make stable.
+    if buildid_scratch_cache[buildid] then
+        return buildid_scratch_cache[buildid]
+    end
+
+    local rfile, msg, rstr
+    local hc, newbuildid
+
+    rfile, msg = io.open("/dev/urandom")
+    if not rfile then
+        e2lib.abort(msg)
+    end
+
+    rstr = rfile:read(16)
+    if not rstr or string.len(rstr) ~= 16 then
+        e2lib.abort("could not get 16 bytes of entrophy")
+    end
+
+    rfile:close()
+
+    hc = hash.hash_start()
+    hash.hash_append(hc, buildid)
+    hash.hash_append(hc, rstr)
+
+    newbuildid = hash.hash_finish(hc)
+    newbuildid = "scratch-" .. newbuildid
+    buildid_scratch_cache[buildid] = newbuildid
+
+    return buildid_scratch_cache[buildid]
 end
 
 function policy.init(info)

@@ -1,4 +1,7 @@
 NEXT:
+ * Unbreak --wc-mode and allow specifying multiple results, including
+   intermediary dependencies. Beware this changes wc-mode buildid from "scratch"
+   to "scratch-<buildid>".
  * Include revision ID in SVN sourceid calculation, fixing various issue with
    moving tags and branch mode. Also fix licenceid calculation for svn sources.
  * Fix error message for unknown chroot tarball extension.

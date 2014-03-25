@@ -50,7 +50,7 @@ local function linklast(info, r, return_flags)
     local server, location = res.build_mode.storage(info.project_location,
     info.release_id)
     local location1 = string.format("%s/%s/%s", location, r,
-    res.build_mode.buildid(res.buildid))
+        e2tool.buildid(info, r))
     local cache_flags = {
         check_only = true
     }
@@ -91,7 +91,7 @@ local function result_available(info, r, return_flags)
     e2lib.log(4, string.format("result_available(%s)", tostring(r)))
     local res = info.results[r]
     local mode = res.build_mode
-    local buildid = res.build_mode.buildid(e2tool.buildid(info, r))
+    local buildid = e2tool.buildid(info, r)
     local sbid = e2tool.bid_display(buildid)
     local rc, re
     local e = err.new("error while checking if result is available: %s", r)
@@ -476,8 +476,8 @@ function e2build.unpack_result(info, r, dep, destdir)
     local d = info.results[dep]
     local buildid = e2tool.buildid(info, dep)
 
-    local dep_set = res.build_mode.dep_set(buildid)
-    local server, location = res.build_mode.storage(info.project_location,
+    local dep_set = d.build_mode.dep_set(buildid)
+    local server, location = d.build_mode.storage(info.project_location,
     info.release_id)
     e2lib.log(3, string.format("searching for dependency %s in %s:%s",
     dep, server, location))
@@ -917,7 +917,7 @@ local function store_result(info, r, return_flags)
     end
     local server, location = res.build_mode.storage(info.project_location,
     info.release_id)
-    local buildid = res.build_mode.buildid(e2tool.buildid(info, r))
+    local buildid = e2tool.buildid(info, r)
     local sourcefile = string.format("%s/result.tar", tmpdir)
     local location1 = string.format("%s/%s/%s/result.tar", location, r, buildid)
     local cache_flags = {
