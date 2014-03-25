@@ -113,7 +113,10 @@ end
 
 -- handle result selection
 local results = {}
-if opts["all"] then
+
+if opts["all"] and #arguments ~= 0 then
+    e2lib.abort("--all with additional results does not make sense")
+elseif opts["all"] then
     for r,_ in pairs(info.results) do
         table.insert(results, r)
     end
@@ -134,6 +137,9 @@ if opts["branch-mode"] then
     build_mode = policy.default_build_mode("branch")
 end
 if opts["wc-mode"] then
+    if #results == 0 then
+        e2lib.abort("--wc-mode requires one or more results")
+    end
     build_mode = policy.default_build_mode("working-copy")
 end
 local playground = opts["playground"]
