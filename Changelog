@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.14p0
  * This release continues to be compatible with 2.3.14 plugins.
  * Unbreak --wc-mode and allow specifying multiple results, including
