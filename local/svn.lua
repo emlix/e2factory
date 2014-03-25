@@ -221,33 +221,85 @@ end
 -- @param source_set
 function svn.sourceid(info, sourcename, source_set)
     local src = info.sources[sourcename]
-    local rc, e
-    rc, e = svn.validate_source(info, sourcename)
+    local rc, re
+    local hc, surl, svnurl, argv, out, svnrev
+
+    rc, re = svn.validate_source(info, sourcename)
     if not rc then
-        return false, e
+        return false, re
     end
     if not src.sourceid then
         src.sourceid = {}
     end
+
     src.sourceid["working-copy"] = "working-copy"
     if src.sourceid[source_set] then
         return true, nil, src.sourceid[source_set]
     end
-    local hc = hash.hash_start()
+
+    hc = hash.hash_start()
     hash.hash_line(hc, src.name)
     hash.hash_line(hc, src.type)
     hash.hash_line(hc, src._env:id())
-    for _,l in pairs(src.licences) do
+    for _,l in ipairs(src.licences) do
         hash.hash_line(hc, l)
+        local licenceid, re = e2tool.licenceid(info, l)
+        if not licenceid then
+            return false, re
+        end
+        hash.hash_line(hc, licenceid)
     end
+
     -- svn specific
-    hash.hash_line(hc, src.branch)
-    hash.hash_line(hc, src.tag)
+    surl, re = info.cache:remote_url(src.server, src.location)
+    if not surl then
+        return false, re
+    end
+
+    svnurl, re = mksvnurl(surl)
+    if not svnurl then
+        return false, re
+    end
+
     hash.hash_line(hc, src.server)
     hash.hash_line(hc, src.location)
-    e2lib.log(4, string.format("hash data for source %s\n%s", src.name,
-    hc.data))
+
+    if source_set == "tag" then
+        hash.hash_line(hc, src.tag)
+        argv = { "info", svnurl.."/"..src.tag }
+    elseif source_set == "branch" then
+        hash.hash_line(hc, src.branch)
+        argv = { "info", svnurl.."/"..src.branch }
+    elseif source_set == "lazytag" then
+        return false, err.new("svn source does not support lazytag mode")
+    else
+        return false,
+            err.new("svn sourceid can't handle source_set %q", source_set)
+    end
+
+    local function cfn(data)
+        e2lib.logf(3, "%s", data)
+        if out then
+            out = out .. data
+        else
+            out = data
+        end
+    end
+
+    rc, re = e2lib.call_tool_argv_capture("svn", argv, cfn)
+    if not rc then
+        re = err.new("retrieving revision for tag or branch failed")
+        return false, re:append("%s", out)
+    end
+
+    svnrev = string.match(out, "Last Changed Rev: (%d+)")
+    if not svnrev or string.len(svnrev) == 0 then
+        return false, err.new("could not find SVN revision")
+    end
+    hash.hash_line(hc, svnrev)
+
     src.sourceid[source_set] = hash.hash_finish(hc)
+
     return true, nil, src.sourceid[source_set]
 end
 

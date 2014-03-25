@@ -1,4 +1,6 @@
 NEXT:
+ * Include revision ID in SVN sourceid calculation, fixing various issue with
+   moving tags and branch mode. Also fix licenceid calculation for svn sources.
  * Fix error message for unknown chroot tarball extension.
  * Unbreak collect_project functionality with files in proj/init.
 
