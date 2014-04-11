@@ -59,59 +59,59 @@ function files.validate_source(info, sourcename)
     e = err.new("in source %s:", sourcename)
     e:setcount(0)
     local src = info.sources[ sourcename ]
-    if not src.file then
-        e:append("%s: source has no `file' attribute", sourcename)
+    if type(src.file) ~= "table" then
+        return false, e:cat(err.new("source has no valid `file' attribute"))
     end
-    if src.file then
-        for _,f in pairs(src.file) do
-            if type(f) ~= "table" then
-                e:append("%s: source has invalid file entry in `file' attribute",
-                sourcename)
-                break
-            end
-            -- catch deprecated configuration
-            if f.name then
-                e:append("source has file entry with `name' attribute")
-            end
-            if (not f.licences) and src.licences then
-                f.licences = src.licences
-            end
-            if (not f.server) and src.server then
-                f.server = src.server
-            end
-            if not f.licences then
-                e:append("source has file entry without `licences' attribute")
-            end
-            for _,l in ipairs(f.licences) do
-                if not licence.licences[l] then
-                    e:append("invalid licence assigned to file: %s", l)
-                end
-            end
-            if not f.server then
-                e:append("source has file entry without `server' attribute")
-            end
-            if f.server and (not cache.valid_server(info.cache, f.server)) then
-                e:append("invalid server: %s", f.server)
-            end
-            if not f.location then
-                e:append("source has file entry without `location' attribute")
-            end
-            if f.server ~= info.root_server_name and not f.sha1 then
-                e:append("source has file entry for remote file without `sha1` "..
-                "attribute")
-            end
-            if not (f.unpack or f.copy or f.patch) then
-                e:append("source has file entry without `unpack, copy or patch' " ..
-                "attribute")
-            end
-            if f.checksum_file then
-                e2lib.warnf("WDEPRECATED", "in source %s:", sourcename)
-                e2lib.warnf("WDEPRECATED",
-                " checksum_file attribute is deprecated and no longer used")
-                f.checksum_file = nil
+
+    for _,f in pairs(src.file) do
+        if type(f) ~= "table" then
+            e:append("%s: source has invalid file entry in `file' attribute",
+            sourcename)
+            break
+        end
+        -- catch deprecated configuration
+        if f.name then
+            e:append("source has file entry with `name' attribute")
+        end
+        if (not f.licences) and src.licences then
+            f.licences = src.licences
+        end
+        if (not f.server) and src.server then
+            f.server = src.server
+        end
+        if not f.licences then
+            e:append("source has file entry without `licences' attribute")
+        end
+        for _,l in ipairs(f.licences) do
+            if not licence.licences[l] then
+                e:append("invalid licence assigned to file: %s", l)
             end
         end
+        if not f.server then
+            e:append("source has file entry without `server' attribute")
+        end
+        if f.server and (not cache.valid_server(info.cache, f.server)) then
+            e:append("invalid server: %s", f.server)
+        end
+        if not f.location then
+            e:append("source has file entry without `location' attribute")
+        end
+        if f.server ~= info.root_server_name and not f.sha1 then
+            e:append("source has file entry for remote file without `sha1` "..
+            "attribute")
+        end
+        if not (f.unpack or f.copy or f.patch) then
+            e:append("source has file entry without `unpack, copy or patch' " ..
+            "attribute")
+        end
+        if f.checksum_file then
+            e2lib.warnf("WDEPRECATED", "in source %s:", sourcename)
+            e2lib.warnf("WDEPRECATED",
+            " checksum_file attribute is deprecated and no longer used")
+            f.checksum_file = nil
+        end
     end
+
     if e:getcount() > 0 then
         return false, e
     end
