@@ -66,7 +66,7 @@ List of environment variables and values separated by \fB=\fR. The variables are
 .BR type
 Type: String
 .br
-Defines the type of the source. In case of file sources always \fBfile\fR, defaults to \fBfile\fR if
+Defines the type of the source. In case of a file source always \fBfiles\fR, defaults to \fBfiles\fR if
 omitted.
 
 .TP
