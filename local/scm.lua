@@ -156,7 +156,7 @@ local function source_apply_default_licences(info, sourcename)
 		" licence attribute is deprecated. Replace by licences.")
     src.licences = src.licence
   end
-  if not src.licences then
+  if src.licences == nil then
     e2lib.warnf("WDEFAULT", "in source %s:", src.name)
     e2lib.warnf("WDEFAULT",
 		" licences attribute missing. Defaulting to empty list.")
@@ -167,6 +167,12 @@ local function source_apply_default_licences(info, sourcename)
 		" licences attribute is not in table format. Converting.")
     src.licences = { src.licences }
   end
+
+  if type(src.licences) ~= "table" then
+      e:append("licences attribute is of invalid type")
+      return false, e
+  end
+
   for i, s in pairs(src.licences) do
     if type(i) ~= "number" or type(s) ~= "string" then
       e:append("licences attribute is not a list of strings")
