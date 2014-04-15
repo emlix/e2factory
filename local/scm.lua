@@ -149,10 +149,7 @@ end
 local function source_apply_default_licences(info, sourcename)
   local e = err.new("applying default licences failed.")
   local src = info.sources[ sourcename ]
-  if src.licences_default_applied then
-    return true
-  end
-  src.licences_default_applied = true
+
   if not src.licences and src.licence then
     e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
     e2lib.warnf("WDEPRECATED",
@@ -265,10 +262,7 @@ end
 -- @return an error object on failure
 function scm.generic_source_check(info, sourcename, require_workingcopy)
     local rc, re
-    rc, re = scm.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
+
     rc, re = scm.working_copy_available(info, sourcename)
     if (not rc) and require_workingcopy then
         return false, err.new("working copy is not available")

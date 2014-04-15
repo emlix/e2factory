@@ -175,11 +175,6 @@ end
 function cvs.fetch_source(info, sourcename)
     local rc, re, e, src, cvsroot, workdir, argv
 
-    rc, re = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
-
     e = err.new("fetching source failed: %s", sourcename)
     src = info.sources[sourcename]
 
@@ -217,11 +212,6 @@ end
 
 function cvs.prepare_source(info, sourcename, source_set, buildpath)
     local rc, re, e, src, cvsroot, argv
-
-    rc, re = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
 
     e = err.new("cvs.prepare_source failed")
     src = info.sources[sourcename]
@@ -270,11 +260,6 @@ end
 function cvs.update(info, sourcename)
     local rc, re, e, src, workdir, argv
 
-    rc, re = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
-
     e = err.new("updating source '%s' failed", sourcename)
     src = info.sources[sourcename]
 
@@ -290,11 +275,6 @@ function cvs.update(info, sourcename)
 end
 
 function cvs.working_copy_available(info, sourcename)
-    local rc, e
-    rc, e = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, e
-    end
     local src = info.sources[sourcename]
     local dir = string.format("%s/%s", info.root, src.working)
     return e2lib.isdir(dir)
@@ -312,11 +292,8 @@ end
 function cvs.display(info, sourcename)
     local src = info.sources[sourcename]
     local rc, re
-    rc, re = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
     local display = {}
+
     display[1] = string.format("type       = %s", src.type)
     display[2] = string.format("branch     = %s", src.branch)
     display[3] = string.format("tag        = %s", src.tag)
@@ -341,10 +318,7 @@ end
 function cvs.sourceid(info, sourcename, source_set)
     local src = info.sources[sourcename]
     local rc, re, lid
-    rc, re = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
+
     if source_set == "working-copy" then
         src.sourceid[source_set] = "working-copy"
     end
@@ -449,19 +423,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
 end
 
 function cvs.check_workingcopy(info, sourcename)
-    local rc, re
-    local e = err.new("checking working copy failed")
-    e:append("in source %s (cvs configuration):", sourcename)
-    e:setcount(0)
-    rc, re = cvs.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
-    local src = info.sources[sourcename]
-    if e:getcount() > 0 then
-        return false, e
-    end
-    return true, nil
+    return true
 end
 
 strict.lock(cvs)

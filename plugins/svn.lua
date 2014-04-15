@@ -144,10 +144,7 @@ local function svn_tool(argv, workdir)
 end
 
 function svn.fetch_source(info, sourcename)
-    local rc, re = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
+    local rc, re
     local e = err.new("fetching source failed: %s", sourcename)
     local src = info.sources[sourcename]
     local location = src.location
@@ -171,10 +168,7 @@ function svn.fetch_source(info, sourcename)
 end
 
 function svn.prepare_source(info, sourcename, source_set, build_path)
-    local rc, re = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
+    local rc, re
     local e = err.new("svn.prepare_source failed")
     local src = info.sources[ sourcename ]
     local location = src.location
@@ -216,10 +210,6 @@ end
 
 function svn.working_copy_available(info, sourcename)
     local rc, re
-    rc, re = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
     local src = info.sources[sourcename]
     local dir = e2lib.join(info.root, src.working)
     return e2lib.isdir(dir)
@@ -230,10 +220,6 @@ function svn.check_workingcopy(info, sourcename)
     local e = err.new("checking working copy failed")
     e:append("in source %s (svn configuration):", sourcename)
     e:setcount(0)
-    rc, re = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
     local src = info.sources[sourcename]
     if e:getcount() > 0 then
         return false, e
@@ -266,10 +252,6 @@ end
 function svn.display(info, sourcename)
     local src = info.sources[sourcename]
     local rc, e
-    rc, e = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, e
-    end
     local display = {}
     display[1] = string.format("type       = %s", src.type)
     display[2] = string.format("server     = %s", src.server)
@@ -294,10 +276,6 @@ function svn.sourceid(info, sourcename, source_set)
     local rc, re
     local hc, surl, svnurl, argv, out, svnrev, lid
 
-    rc, re = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
     if not src.sourceid then
         src.sourceid = {}
     end
@@ -423,10 +401,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
 end
 
 function svn.update(info, sourcename)
-    local rc, re = svn.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
+    local rc, re
     local e = err.new("updating source '%s' failed", sourcename)
     local src = info.sources[ sourcename ]
     local workdir = e2lib.join(info.root, src.working)

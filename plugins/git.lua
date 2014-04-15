@@ -90,11 +90,6 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
     e = err.new("getting commit ID failed for source: %s", sourcename)
     src = info.sources[sourcename]
 
-    rc, re = git.validate_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
-
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then
         return false, e:append("working copy is not available")
@@ -273,11 +268,6 @@ function git.fetch_source(info, sourcename)
     src = info.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
 
-    rc, re = git.validate_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
-
     work_tree = e2lib.join(info.root, src.working)
     git_dir = e2lib.join(work_tree, ".git")
 
@@ -422,10 +412,6 @@ function git.working_copy_available(info, sourcename)
     local rc, re
     local e = err.new("checking if working copy is available for source %s",
     sourcename)
-    rc, re = git.validate_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
     local gitwc = e2lib.join(info.root, src.working)
     local rc = e2lib.isdir(gitwc)
     return rc, nil
@@ -467,10 +453,6 @@ function git.display(info, sourcename)
     local src = info.sources[sourcename]
     local rc, re
     local e = err.new("display source information failed")
-    rc, re = git.validate_source(info, sourcename)
-    if not rc then
-        return nil, e:cat(re)
-    end
     -- try to calculte the sourceid, but do not care if it fails.
     -- working copy might be unavailable
     scm.sourceid(info, sourcename, "tag")
@@ -653,11 +635,6 @@ end
 function git.check_workingcopy(info, sourcename)
     local rc, re
     local e = err.new("checking working copy of source %s failed", sourcename)
-
-    rc, re = git.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
 
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then

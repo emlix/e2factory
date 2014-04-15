@@ -125,10 +125,6 @@ end
 -- @return nil, an error string on error
 function files.cache_source(info, sourcename)
     local rc, e
-    rc, e = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e
-    end
     local s = info.sources[sourcename]
     -- cache all files for this source
     for i,f in pairs(s.file) do
@@ -152,10 +148,6 @@ end
 function files.fetch_source(info, sourcename)
     local rc, re
     local e = err.new("fetching source failed: %s", sourcename)
-    rc, re = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
     local rc, re = files.cache_source(info, sourcename)
     if not rc then
         return false, e:cat(re)
@@ -164,20 +156,10 @@ function files.fetch_source(info, sourcename)
 end
 
 function files.working_copy_available(info, sourcename)
-    local rc, e
-    rc, e = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e
-    end
     return false
 end
 
 function files.has_working_copy(info, sourcename)
-    local rc, e
-    rc, e = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e
-    end
     return false
 end
 
@@ -336,10 +318,6 @@ end
 function files.prepare_source(info, sourcename, sourceset, buildpath)
     local rc, re
     local e = err.new("error preparing source: %s", sourcename)
-    rc, re = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
     local symlink = nil
     local s = info.sources[sourcename]
     for _,file in ipairs(info.sources[sourcename].file) do
@@ -448,13 +426,9 @@ end
 -- @return a table, nil on error
 -- @return an error string on failure
 function files.display(info, sourcename)
-    local rc, e
-    rc, e = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e
-    end
     local src = info.sources[sourcename]
     local display = {}
+
     display[1] = string.format("type       = %s", src.type)
     local i = 2
     for _,f in pairs(src.file) do
@@ -481,11 +455,7 @@ end
 function files.sourceid(info, sourcename, sourceset)
     local rc, re
     local e = err.new("error calculating sourceid for source: %s",
-    sourcename)
-    rc, re = files.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
+        sourcename)
     local src = info.sources[sourcename]
     if src.sourceid then
         return true, nil, src.sourceid
@@ -531,10 +501,6 @@ end
 function files.toresult(info, sourcename, sourceset, directory)
     local rc, re, out
     local e = err.new("converting result failed")
-    rc, re = files.validate_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
     local s = info.sources[sourcename]
     local source = "source"     -- directory to store source files in
     local makefile = e2lib.join(directory, "Makefile")
