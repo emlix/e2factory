@@ -239,24 +239,18 @@ end
 -- @return bool
 -- @return an error object on failure
 function scm.generic_source_default_working(info, sourcename)
-    local src = info.sources[ sourcename ]
-    if src.working_default_applied then
-        return true
+    local src
+
+    src = info.sources[sourcename]
+
+    if not src.working then
+        src.working = e2lib.join("in", sourcename)
+
+        e2lib.warnf("WDEFAULT", "in source %s:", sourcename)
+        e2lib.warnf("WDEFAULT", " `working' attribute defaults to '%s'.",
+            src.working)
     end
-    src.working_default_applied = true
-    local src_working_default = string.format("in/%s", sourcename)
-    if src.working and src.working ~= src_working_default then
-        e2lib.warnf("WPOLICY", "in source %s:", src.name)
-        e2lib.warnf("WPOLICY", " configuring non standard working direcory")
-    elseif src.working then
-        e2lib.warnf("WHINT", "in source %s:", src.name)
-        e2lib.warnf("WHINT", " no need to configure working directory")
-    else
-        src.working = string.format("in/%s", sourcename)
-        e2lib.warnf("WDEFAULT", "in source %s:", src.name)
-        e2lib.warnf("WDEFAULT",
-        " `working' attribute missing. Defaulting to '%s'.", src.working)
-    end
+
     return true
 end
 
