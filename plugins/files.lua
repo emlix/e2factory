@@ -100,10 +100,28 @@ function files.validate_source(info, sourcename)
             e:append("source has file entry for remote file without `sha1` "..
             "attribute")
         end
-        if not (f.unpack or f.copy or f.patch) then
-            e:append("source has file entry without `unpack, copy or patch' " ..
-            "attribute")
+
+        local attrcnt = 0
+        for _,attr in ipairs({"unpack", "copy", "patch"}) do
+            if f[attr] ~= nil then
+                attrcnt = attrcnt + 1
+
+                if type(f[attr]) ~= "string" then
+                    e:append("'%s' in file entry of source must be a string", attr)
+                    break
+                end
+
+            end
         end
+
+        if attrcnt == 0 then
+            e:append("source has file entry without `unpack, copy or patch' " ..
+                "attribute")
+        elseif attrcnt > 1 then
+            e:append("source has file entry with conflicting unpack, copy or"..
+                " patch attributes")
+        end
+
         if f.checksum_file then
             e2lib.warnf("WDEPRECATED", "in source %s:", sourcename)
             e2lib.warnf("WDEPRECATED",
