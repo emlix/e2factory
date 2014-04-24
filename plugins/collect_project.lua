@@ -415,19 +415,17 @@ local function build_collect_project(info, resultname, return_flags)
             return false, e:cat(re)
         end
     end
-    for _,s in ipairs(cpres.sources) do
-        local src = info.sources[s]
-        e2lib.logf(3, "source: %s", s)
-        local destdir =
-            e2lib.join(res.build_config.T, "project", e2tool.sourcedir(s))
+    for _,sourcename in ipairs(cpres.sources) do
+        e2lib.logf(3, "source: %s", sourcename)
+        local destdir = e2lib.join(res.build_config.T, "project",
+            e2tool.sourcedir(sourcename))
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
 
         local source_set = res.build_mode.source_set()
-        local files, re = scm.toresult(info, src.name, source_set,
-        destdir)
+        local files, re = scm.toresult(info, sourcename, source_set, destdir)
         if not files then
             return false, e:cat(re)
         end
