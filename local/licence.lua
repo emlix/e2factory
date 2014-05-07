@@ -114,6 +114,8 @@ end
 -- @return LicenceID or false on error.
 -- @return Error object on failure.
 function licence.licence:licenceid(info)
+    assert(type(info) == "table", "info invalid")
+
     local rc, re, e, hc, fileid
 
     if self._licenceid then
