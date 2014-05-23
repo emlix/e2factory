@@ -389,6 +389,34 @@ function cache.push_file(c, sourcefile, server, location, flags)
     return true
 end
 
+--- Query whether writeback is true for this particular server and flags
+-- combination. Returns true if writeback is on, false otherwise.
+-- Throws an error on failure.
+-- @param c Cache.
+-- @param server Server name.
+-- @param flags Flags table.
+-- @return Boolean state of writeback.
+function cache.writeback_state(c, server, flags)
+    assert(type(c) == "table", "invalid cache")
+    assert(type(server) == "string" and server ~= "", "invalid server")
+    assert(type(flags) == "table", "invalid flags")
+
+    local ce, re
+
+    ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        error(re)
+    end
+
+    if flags.writeback == false then
+        return false
+    elseif ce.flags.writeback == false and flags.writeback == nil then
+        return false
+    end
+
+    return true
+end
+
 --- writeback a cached file
 -- @param c the cache data structure
 -- @param server Server to write the file back to.
@@ -410,8 +438,7 @@ function cache.writeback(c, server, location, flags)
         return false, e:cat(re)
     end
 
-    if flags.writeback == false or
-        (ce.flags.writeback == false and flags.writeback ~= true) then
+    if cache.writeback_state(c, server, flags) == false then
         return true
     end
 
