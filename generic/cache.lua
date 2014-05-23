@@ -216,6 +216,10 @@ end
 -- @return the remote url, false on error
 -- @return an error object on failure
 function cache.remote_url(c, server, location)
+    assert(type(c) == "table", "cache invalid")
+    assert(type(server) == "string" and server ~= "", "server invalid")
+    assert(type(location) == "string" and location ~= "", "location invalid")
+
     local ce, e = cache.ce_by_server(c, server)
     if not ce then
         return false, e
