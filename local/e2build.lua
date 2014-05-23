@@ -931,17 +931,26 @@ local function deploy(info, r, tmpdir)
         return true
     end
 
+
     e2lib.logf(1, "deploying %s to %s:%s", r, server, location)
+    local cache_flags = {}
+
     for _,f in ipairs(files) do
-        local sourcefile = e2lib.join(resdir, f)
-        local location1 = e2lib.join(location, r, f)
-        local cache_flags = {}
-        local rc, re = cache.push_file(info.cache, sourcefile, server, location1,
+        local sourcefile, location1
+
+        sourcefile = e2lib.join(resdir, f)
+        location1 = e2lib.join(location, r, f)
+        rc, re = cache.push_file(info.cache, sourcefile, server, location1,
             cache_flags)
         if not rc then
             return false, re
         end
     end
+    if cache.writeback_state(info.cache, server, cache_flags) == false then
+        e2lib.warnf("WOTHER",
+            "Writeback is disabled for server %q. Release not deployed!", server)
+    end
+
     return true
 end
 
