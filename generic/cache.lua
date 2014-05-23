@@ -391,8 +391,8 @@ end
 
 --- writeback a cached file
 -- @param c the cache data structure
--- @param server the server to fetch the file from
--- @param location the location on the server
+-- @param server Server to write the file back to.
+-- @param location Path to the file in cache and on the server.
 -- @param flags
 -- @return bool
 -- @return an error object on failure
