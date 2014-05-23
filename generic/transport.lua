@@ -274,6 +274,12 @@ end
 -- @return true on success, false on error
 -- @return nil, an error string on error
 function transport.push_file(sourcefile, durl, location, push_permissions, try_hardlink)
+    assert(type(sourcefile) == "string" and sourcefile ~= "", "sourcefile invalid")
+    assert(type(durl) == "string" and durl ~= "")
+    assert(type(location) == "string" and location ~= "")
+    assert(push_permissions == nil or type(push_permissions) == "string")
+    assert(try_hardlink == nil or type(try_hardlink) == "boolean")
+
     local rc, e
     e = err.new("error pushing file to server")
     durl = string.format("%s/%s", durl, location)
