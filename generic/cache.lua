@@ -372,6 +372,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
         if not rc then
             return false, e:cat(re)
         end
+
         rc, re = cache.writeback(c, server, location, flags)
         if not rc then
             return false, e:cat(re)
@@ -380,8 +381,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
         -- cache is disabled
         -- push the file from source to destination immediately
         rc, re = transport.push_file(sourcefile, ce.remote_url,
-        location, ce.flags.push_permissions,
-        flags.try_hardlink)
+            location, ce.flags.push_permissions, flags.try_hardlink)
         if not rc then
             return false, e:cat(re)
         end
@@ -399,18 +399,22 @@ end
 function cache.writeback(c, server, location, flags)
     local e = err.new("writeback failed")
     local rc, re
+
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
     end
+
     local ceurl, re = url.parse(ce.cache_url)
     if not ceurl then
         return false, e:cat(re)
     end
+
     if flags.writeback == false or
         (ce.flags.writeback == false and flags.writeback ~= true) then
         return true
     end
+
     local sourcefile = string.format("/%s/%s", ceurl.path, location)
     rc, re = transport.push_file(sourcefile, ce.remote_url, location,
         ce.flags.push_permissions, flags.try_hardlink)
