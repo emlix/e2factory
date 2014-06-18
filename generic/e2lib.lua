@@ -613,15 +613,25 @@ function e2lib.rotate_log(file)
     local logdir = e2lib.dirname(file)
     local logfile = e2lib.basename(file)
     local files = {}
+    local dst
+
+    if not e2lib.stat(file) then
+        return true
+    end
 
     for f, re in e2lib.directory(logdir, false) do
+        local start, stop, extension
+
         if not f then
             return false, e:cat(re)
         end
 
-        local match = f:match(string.format("%s.[0-9]+", logfile))
-        if match then
-            table.insert(files, 1, match)
+        start, stop = string.find(f, logfile, 1, true)
+        if start and start == 1 then
+            extension = string.sub(f, stop+1)
+            if string.find(extension, "^%.[0-9]+$") then
+                table.insert(files, f)
+            end
         end
     end
 
@@ -635,28 +645,28 @@ function e2lib.rotate_log(file)
     table.sort(files, comp)
 
     for _,f in ipairs(files) do
-        local n = f:match(string.format("%s.([0-9]+)", logfile))
-        if n then
-            n = tonumber(n)
-            if n >= e2lib.globals.logrotate - 1 then
-                local del = string.format("%s/%s.%d", logdir, logfile, n)
-                rc, re = e2lib.unlink(del)
-                if not rc then
-                    return false, e:cat(re)
-                end
-            else
-                local src = string.format("%s/%s.%d", logdir, logfile, n)
-                local dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
-                rc, re = e2lib.mv(src, dst)
-                if not rc then
-                    return false, e:cat(re)
-                end
+        local n, src, dst
+
+        src = e2lib.join(logdir, f)
+        n = f:match("%.([0-9]+)$")
+        assert(n, "could not match logfile number")
+        n = tonumber(n)
+        if n >= e2lib.globals.logrotate - 1 then
+            rc, re = e2lib.unlink(src)
+            if not rc then
+                return false, e:cat(re)
+            end
+        else
+            dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
+            rc, re = e2lib.mv(src, dst)
+            if not rc then
+                return false, e:cat(re)
             end
         end
     end
 
     dst = string.format("%s/%s.0", logdir, logfile)
-    assert(not e2util.stat(dst), "did not expect logfile here: "..dst)
+    assert(not e2lib.stat(dst), "did not expect logfile here: "..dst)
     rc, re = e2lib.mv(file, dst)
     if not rc then
         return false, e:cat(re)
