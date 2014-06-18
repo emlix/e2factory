@@ -476,6 +476,9 @@ function e2lib.log(level, msg)
 end
 
 --- Rotate log file.
+-- @param file Absolute path to log file.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2lib.rotate_log(file)
     local e = err.new("rotating logfile: %s", file)
     local rc, re
@@ -486,48 +489,65 @@ function e2lib.rotate_log(file)
         return false, e:cat(string.format("%s: can't read directory", dir))
     end
     local files = {}
-    for _,f in ipairs(dir) do
-        local match = f:match(string.format("%s.[0-9]+", logfile))
-        if match then
-            table.insert(files, 1, match)
+    local dst
+
+    if not e2util.stat(file) then
+        return true
+    end
+
+    for f, re in e2lib.directory(logdir, false) do
+        local start, stop, extension
+
+        if not f then
+            return false, e:cat(re)
         end
-    end
-    -- sort in reverse order
-    local function comp(a, b)
-        local na = a:match(string.format("%s.([0-9]+)", logfile))
-        local nb = b:match(string.format("%s.([0-9]+)", logfile))
-        return tonumber(na) > tonumber(nb)
-    end
-    table.sort(files, comp)
-    for _,f in ipairs(files) do
-        local n = f:match(string.format("%s.([0-9]+)", logfile))
-        if n then
-            n = tonumber(n)
-            if n >= e2lib.globals.logrotate - 1 then
-                local del = string.format("%s/%s.%d", logdir, logfile, n)
-                rc, re = e2lib.rm(del)
-                if not rc then
-                    return false, e:cat(re)
-                end
-            else
-                local src = string.format("%s/%s.%d", logdir, logfile, n)
-                local dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
-                rc, re = e2lib.mv(src, dst)
-                if not rc then
-                    return false, e:cat(re)
-                end
+
+        start, stop = string.find(f, logfile, 1, true)
+        if start and start == 1 then
+            extension = string.sub(f, stop+1)
+            if string.find(extension, "^%.[0-9]+$") then
+                table.insert(files, f)
             end
         end
     end
-    local src = file
-    local dst = string.format("%s/%s.0", logdir, logfile)
-    if e2lib.isfile(src) then
-        rc, re = e2lib.mv(src, dst)
-        if not rc then
-            return false, e:cat(re)
+
+    -- sort in reverse order
+    local function comp(a, b)
+        local na = a:match("%.([0-9]+)$")
+        local nb = b:match("%.([0-9]+)$")
+        return tonumber(na) > tonumber(nb)
+    end
+
+    table.sort(files, comp)
+
+    for _,f in ipairs(files) do
+        local n, src, dst
+
+        src = e2lib.join(logdir, f)
+        n = f:match("%.([0-9]+)$")
+        assert(n, "could not match logfile number")
+        n = tonumber(n)
+        if n >= e2lib.globals.logrotate - 1 then
+            rc, re = e2lib.rm(src)
+            if not rc then
+                return false, e:cat(re)
+            end
+        else
+            dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
+            rc, re = e2lib.mv(src, dst)
+            if not rc then
+                return false, e:cat(re)
+            end
         end
     end
-    return true, nil
+
+    dst = string.format("%s/%s.0", logdir, logfile)
+    assert(not e2util.stat(dst), "did not expect logfile here: "..dst)
+    rc, re = e2lib.mv(file, dst)
+    if not rc then
+        return false, e:cat(re)
+    end
+    return true
 end
 
 --- Clean up temporary files and directories, shut down plugins.
