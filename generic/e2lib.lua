@@ -2458,11 +2458,11 @@ function e2lib.vrfy_dict_exp_keys(t, name, ekeyvec)
     for k,_ in pairs(t) do
         if not lookup[k] then
             if not e then
-                e = err.new("table %s contains unexpected key %q",
-                    name, tostring(k))
+                e = err.new("unexpected key %q in %s",
+                    tostring(k), name)
             else
-                e:append("table %s contains unexpected key %q",
-                    name, tostring(k))
+                e = err.new("unexpected key %q in %s",
+                    tostring(k), name)
             end
         end
     end

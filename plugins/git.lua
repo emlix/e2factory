@@ -30,6 +30,7 @@
 
 local git = {}
 local cache = require("cache")
+local class = require("class")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 local e2tool = require("e2tool")
@@ -42,6 +43,7 @@ local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
+local source = require("source")
 
 --- Initialize git plugin.
 -- @param ctx Plugin context. See plugin module.
@@ -49,6 +51,11 @@ local url = require("url")
 -- @return Error object on failure.
 local function git_plugin_init(ctx)
     local rc, re
+
+    rc, re = source.register_source_class("git", git.git_source)
+    if not rc then
+        return false, re
+    end
 
     rc, re = scm.register("git", git)
     if not rc then
@@ -75,6 +82,191 @@ plugin_descriptor = {
     exit = function (ctx) return true end,
 }
 
+git.git_source = class("git_source", source.basic_source)
+
+function git.git_source:initialize(rawsrc)
+    assert(type(rawsrc) == "table")
+    assert(type(rawsrc.name) == "string" and rawsrc.name ~= "")
+    assert(type(rawsrc.type) == "string" and rawsrc.type ~= "")
+
+    local rc, re
+
+    source.basic_source.initialize(self, rawsrc)
+
+    self._server = false
+    self._location = false
+    self._tag = false
+    self._branch = false
+    self._working = false
+    self._sourceids = {
+        ["working-copy"] = "working-copy",
+    }
+    self._commitids = {}
+
+    rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source", {
+        "branch",
+        "env",
+        "licences",
+        "location",
+        "name",
+        "server",
+        "tag",
+        "type",
+        "working",
+    })
+    if not rc then
+        error(re)
+    end
+
+    rc, re = source.generic_source_validate_licences(rawsrc, self)
+    if not rc then
+        error(re)
+    end
+
+    rc, re = source.generic_source_validate_env(rawsrc, self)
+    if not rc then
+        error(re)
+    end
+
+    rc, re = source.generic_source_validate_server(rawsrc, true)
+    if not rc then
+        error(re)
+    end
+    self._server = rawsrc.server
+
+    rc, re = source.generic_source_validate_working(rawsrc)
+    if not rc then
+        error(re)
+    end
+    self._working = rawsrc.working
+
+    for _,attr in ipairs({ "branch", "location", "tag" }) do
+        if rawsrc[attr] == nil then
+            error(err.new("source has no `%s' attribute", attr))
+        elseif type(rawsrc[attr]) ~= "string" then
+            error(err.new("'%s' must be a string", attr))
+        elseif rawsrc[attr] == "" then
+            error(err.new("'%s' may not be empty", attr))
+        end
+    end
+
+    self._branch = rawsrc.branch
+    self._location = rawsrc.location
+    self._tag = rawsrc.tag
+end
+
+function git.git_source:get_server()
+    assert(type(self._server) == "string")
+
+    return self._server
+end
+
+function git.git_source:get_location()
+    assert(type(self._location) == "string")
+
+    return self._location
+end
+
+function git.git_source:get_working()
+    assert(type(self._working) == "string")
+
+    return self._working
+end
+
+function git.git_source:get_branch()
+    assert(type(self._branch) == "string")
+
+    return self._branch
+end
+
+
+function git.git_source:get_tag()
+    assert(type(self._tag) == "string")
+
+    return self._tag
+end
+
+function git.git_source:sourceid(sourceset)
+    assert(type(sourceset) == "string" and #sourceset > 0,
+        "sourceset arg invalid")
+
+    local rc, re, info, id, hc, licences
+
+    if self._sourceids[sourceset] then
+        return self._sourceids[sourceset]
+    end
+
+    info = e2tool.info()
+    assert(info)
+
+    rc, re, id = git.git_commit_id(info, self._name, sourceset,
+        e2option.opts["check-remote"])
+    if not rc then
+        return false, re
+    end
+
+    hc = hash.hash_start()
+    hash.hash_line(hc, self._name)
+    hash.hash_line(hc, self._type)
+    hash.hash_line(hc, self._env:id())
+
+    licences = self:get_licences()
+    for licencename in licences:iter_sorted() do
+        local lid, re = licence.licences[licencename]:licenceid(info)
+        if not lid then
+            return false, re
+        end
+        hash.hash_line(hc, lid)
+    end
+
+    hash.hash_line(hc, self._server)
+    hash.hash_line(hc, self._location)
+    hash.hash_line(hc, self._working)
+    hash.hash_line(hc, id)
+    self._commitids[sourceset] = id
+    self._sourceids[sourceset] = hash.hash_finish(hc)
+
+    return self._sourceids[sourceset]
+end
+
+function git.git_source:display()
+    local rev_tag, rev_branch, licences
+
+    -- try to calculte the sourceid, but do not care if it fails.
+    -- working copy might be unavailable
+    self:sourceid("tag")
+    self:sourceid("branch")
+
+    rev_tag = ""
+    rev_branch = ""
+    if self._commitids["tag"] then
+        rev_tag = string.format("[%s...]", self._commitids["tag"]:sub(1,8))
+    end
+    if self._commitids["branch"] then
+        rev_branch = string.format("[%s...]", self._commitids["branch"]:sub(1,8))
+    end
+    local d = {}
+    table.insert(d, string.format("type       = %s", self:get_type()))
+    table.insert(d, string.format("branch     = %-15s %s", self._branch, rev_branch))
+    table.insert(d, string.format("tag        = %-15s %s", self._tag, rev_tag))
+    table.insert(d, string.format("server     = %s", self._server))
+    table.insert(d, string.format("location   = %s", self._location))
+    table.insert(d, string.format("working    = %s", self._working))
+
+    licences = self:get_licences()
+    for licencename in licences:iter_sorted() do
+        table.insert(d, string.format("licence    = %s", licencename))
+    end
+
+    for sourceset, sid in pairs(self._sourceids) do
+        if sid then
+            table.insert(d, string.format("sourceid [%s] = %s", sourceset, sid))
+        end
+    end
+
+    return d
+end
+
 --- Return the git commit ID of the specified source configuration. Specific to
 -- sources of type git, useful for writing plugins.
 -- @param info Info table.
@@ -88,7 +280,7 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
     local rc, re, e, src, id, fr, gitdir, ref
 
     e = err.new("getting commit ID failed for source: %s", sourcename)
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
 
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then
@@ -100,17 +292,17 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
         return false, e:cat(re)
     end
 
-    gitdir = e2lib.join(info.root, src.working, ".git")
+    gitdir = e2lib.join(info.root, src:get_working(), ".git")
 
-    if sourceset == "branch" or (sourceset == "lazytag" and src.tag == "^") then
-        ref = string.format("refs/heads/%s", src.branch)
+    if sourceset == "branch" or (sourceset == "lazytag" and src:get_tag() == "^") then
+        ref = string.format("refs/heads/%s", src:get_branch())
 
         rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
             return false, e:cat(re)
         end
-    elseif sourceset == "tag" or (sourceset == "lazytag" and src.tag ~= "^") then
-        ref = string.format("refs/tags/%s", src.tag)
+    elseif sourceset == "tag" or (sourceset == "lazytag" and src:get_tag() ~= "^") then
+        ref = string.format("refs/tags/%s", src:get_tag())
 
         rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
@@ -118,7 +310,7 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
         end
 
         if id and check_remote then
-            rc, re = generic_git.verify_remote_tag(gitdir, src.tag)
+            rc, re = generic_git.verify_remote_tag(gitdir, src:get_tag())
             if not rc then
                 return false, e:cat(re)
             end
@@ -129,60 +321,11 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
 
     if not id then
         re = err.new("can't get git commit ID for ref %q from repository %q",
-            ref, src.working)
+            ref, src:get_working())
         return false, e:cat(re)
     end
 
     return true, nil, id
-end
-
---- validate source configuration, log errors to the debug log
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on error
-function git.validate_source(info, sourcename)
-    local rc, re = scm.generic_source_validate(info, sourcename)
-    if not rc then
-        -- error in generic configuration. Don't try to go on.
-        return false, re
-    end
-    local src = info.sources[ sourcename ]
-    local e = err.new("in source %s:", sourcename)
-    rc, re = scm.generic_source_default_working(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
-    e:setcount(0)
-    -- catch deprecated attributes
-    if src.remote then
-        e:append("source has deprecated `remote' attribute")
-    end
-    if not src.server then
-        e:append("source has no `server' attribute")
-    end
-    if src.server and (not cache.valid_server(info.cache, src.server)) then
-        e:append("invalid server: %s", src.server)
-    end
-    if not src.licences then
-        e:append("source has no `licences' attribute")
-    end
-    if not src.branch then
-        e:append("source has no `branch' attribute")
-    end
-    if type(src.tag) ~= "string" then
-        e:append("source has no `tag' attribute or tag attribute has wrong type")
-    end
-    if not src.location then
-        e:append("source has no `location' attribute")
-    end
-    if not src.working then
-        e:append("source has no `working' attribute")
-    end
-    if e:getcount() > 0 then
-        return false, e
-    end
-    return true, nil
 end
 
 --- update a working copy
@@ -193,7 +336,7 @@ end
 function git.update(info, sourcename)
     local e, rc, re, src, gitwc, gitdir, argv, id, branch, remote
 
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
     e = err.new("updating source '%s' failed", sourcename)
 
     rc, re = scm.working_copy_available(info, sourcename)
@@ -201,9 +344,9 @@ function git.update(info, sourcename)
         return false, e:cat(re)
     end
 
-    e2lib.logf(2, "updating %s [%s]", src.working, src.branch)
+    e2lib.logf(2, "updating %s [%s]", src:get_working(), src:get_branch())
 
-    gitwc  = e2lib.join(info.root, src.working)
+    gitwc  = e2lib.join(info.root, src:get_working())
     gitdir = e2lib.join(gitwc, ".git")
 
     argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
@@ -234,20 +377,20 @@ function git.update(info, sourcename)
         return true
     end
 
-    if branch ~= "refs/heads/" .. src.branch then
+    if branch ~= "refs/heads/" .. src:get_branch() then
         e2lib.warnf("WOTHER", "not on configured branch. Skipping.")
         return true
     end
 
     rc, re, remote = generic_git.git_config(
-        gitdir, "branch."..src.branch.."remote")
+        gitdir, "branch."..src:get_branch().."remote")
     if not rc or string.len(remote) == 0  then
         e2lib.warnf("WOTHER", "no remote configured for branch %q. Skipping.",
-            src.branch)
+            src:get_branch())
         return true
     end
 
-    branch = remote .. "/" .. src.branch
+    branch = remote .. "/" .. src:get_branch()
     argv = generic_git.git_new_argv(gitdir, gitwc, "merge", "--ff-only", branch)
     rc, re = generic_git.git(argv)
     if not rc then
@@ -265,33 +408,34 @@ end
 function git.fetch_source(info, sourcename)
     local e, rc, re, src, git_dir, work_tree, id
 
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
 
-    work_tree = e2lib.join(info.root, src.working)
+    work_tree = e2lib.join(info.root, src:get_working())
     git_dir = e2lib.join(work_tree, ".git")
 
-    e2lib.logf(2, "cloning %s:%s [%s]", src.server, src.location, src.branch)
+    e2lib.logf(2, "cloning %s:%s [%s]", src:get_server(), src:get_location(),
+        src:get_branch())
 
-    rc, re = generic_git.git_clone_from_server(info.cache, src.server,
-        src.location, work_tree, false --[[always checkout]])
+    rc, re = generic_git.git_clone_from_server(info.cache, src:get_server(),
+        src:get_location(), work_tree, false --[[always checkout]])
     if not rc then
         return false, e:cat(re)
     end
 
     rc, re, id = generic_git.lookup_id(git_dir, false,
-        "refs/heads/" .. src.branch)
+        "refs/heads/" .. src:get_branch())
     if not rc then
         return false, e:cat(re)
     elseif not id then
-        rc, re = generic_git.git_branch_new1(work_tree, true, src.branch,
-            "origin/" .. src.branch)
+        rc, re = generic_git.git_branch_new1(work_tree, true, src:get_branch(),
+            "origin/" .. src:get_branch())
         if not rc then
             return false, e:cat(re)
         end
 
         rc, re = generic_git.git_checkout1(work_tree,
-            "refs/heads/" .. src.branch)
+            "refs/heads/" .. src:get_branch())
         if not rc then
             return false, e:cat(re)
         end
@@ -308,16 +452,16 @@ end
 -- @return bool
 -- @return nil on success, an error string on error
 function git.prepare_source(info, sourcename, sourceset, buildpath)
-    local src = info.sources[ sourcename ]
+    local src = source.sources[sourcename]
     local rc, re, e
     local e = err.new("preparing git sources failed")
     rc, re = scm.generic_source_check(info, sourcename, true)
     if not rc then
         return false, e:cat(re)
     end
-    local gitdir = e2lib.join(info.root, src.working, ".git")
+    local gitdir = e2lib.join(info.root, src:get_working(), ".git")
     if sourceset == "branch" or
-        (sourceset == "lazytag" and src.tag == "^") then
+        (sourceset == "lazytag" and src:get_tag() == "^") then
         local argv, work_tree
 
         rc, re = git.git_commit_id(info, sourcename, sourceset)
@@ -332,7 +476,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         end
 
         argv = generic_git.git_new_argv(gitdir, work_tree, "checkout", "-f")
-        table.insert(argv, "refs/heads/" .. src.branch)
+        table.insert(argv, "refs/heads/" .. src:get_branch())
         table.insert(argv, "--")
 
         rc, re = generic_git.git(argv)
@@ -340,7 +484,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
             return false, e:cat(re)
         end
     elseif sourceset == "tag" or
-        (sourceset == "lazytag" and src.tag ~= "^") then
+        (sourceset == "lazytag" and src:get_tag() ~= "^") then
         local argv, work_tree
 
         rc, re = git.git_commit_id(info, sourcename, sourceset)
@@ -355,7 +499,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         end
 
         argv = generic_git.git_new_argv(gitdir, work_tree, "checkout", "-f")
-        table.insert(argv, "refs/tags/" .. src.tag)
+        table.insert(argv, "refs/tags/" .. src:get_tag())
         table.insert(argv, "--")
 
         rc, re = generic_git.git(argv)
@@ -365,7 +509,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     elseif sourceset == "working-copy" then
         local working, destdir, empty
 
-        working = e2lib.join(info.root, src.working)
+        working = e2lib.join(info.root, src:get_working())
         destdir = e2lib.join(buildpath, sourcename)
 
         rc, re = e2lib.mkdir_recursive(destdir)
@@ -392,7 +536,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         end
 
         if empty then
-            e2lib.warnf("WOTHER", "in result: %s", src.name)
+            e2lib.warnf("WOTHER", "in result: %s", sourcename)
             e2lib.warnf("WOTHER", "working copy seems empty")
         end
     else
@@ -402,19 +546,17 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     return true
 end
 
---- check if a working copy for a git repository is available
+--- Check if a working copy for a git repository is available
 -- @param info the info structure
 -- @param sourcename string
--- @return bool
--- @return sometimes an error string, when ret. false. XXX interface cleanup.
+-- @return True if available, false otherwise.
 function git.working_copy_available(info, sourcename)
-    local src = info.sources[sourcename]
-    local rc, re
-    local e = err.new("checking if working copy is available for source %s",
-    sourcename)
-    local gitwc = e2lib.join(info.root, src.working)
-    local rc = e2lib.isdir(gitwc)
-    return rc, nil
+    local rc
+    local src = source.sources[sourcename]
+    local gitwc = e2lib.join(info.root, src:get_working())
+
+    rc = e2lib.isdir(gitwc)
+    return rc
 end
 
 function git.has_working_copy(info, sname)
@@ -450,13 +592,14 @@ end
 -- @return a table, nil on error
 -- @return an error string on failure
 function git.display(info, sourcename)
-    local src = info.sources[sourcename]
+    error("called git.display")
+    local src = source.sources[sourcename]
     local rc, re
     local e = err.new("display source information failed")
     -- try to calculte the sourceid, but do not care if it fails.
     -- working copy might be unavailable
-    scm.sourceid(info, sourcename, "tag")
-    scm.sourceid(info, sourcename, "branch")
+    src:sourceid("tag")
+    src:sourceid("branch")
     local rev_tag = ""
     local rev_branch = ""
     if src.commitid["tag"] then
@@ -466,12 +609,12 @@ function git.display(info, sourcename)
         rev_branch = string.format("[%s...]", src.commitid["branch"]:sub(1,8))
     end
     local display = {}
-    display[1] = string.format("type       = %s", src.type)
-    display[2] = string.format("branch     = %-15s %s", src.branch, rev_branch)
-    display[3] = string.format("tag        = %-15s %s", src.tag, rev_tag)
-    display[4] = string.format("server     = %s", src.server)
-    display[5] = string.format("location   = %s", src.location)
-    display[6] = string.format("working    = %s", src.working)
+    display[1] = string.format("type       = %s", src:get_type())
+    display[2] = string.format("branch     = %-15s %s", src:get_branch(), rev_branch)
+    display[3] = string.format("tag        = %-15s %s", src:get_tag(), rev_tag)
+    display[4] = string.format("server     = %s", src:get_server())
+    display[5] = string.format("location   = %s", src:get_location())
+    display[6] = string.format("working    = %s", src:get_working())
     local i = 8
     for _,l in ipairs(src.licences) do
         display[i] = string.format("licence    = %s", l)
@@ -489,53 +632,6 @@ function git.display(info, sourcename)
     return display
 end
 
---- calculate an id for a source
--- @param info
--- @param sourcename
--- @param sourceset
--- @return string: the sourceid, or nil
--- @return an error string
-function git.sourceid(info, sourcename, sourceset)
-    local src = info.sources[sourcename]
-    local rc, re, e, id
-    if not src.sourceid then
-        src.sourceid = {}
-        src.sourceid["working-copy"] = "working-copy"
-        src.commitid = {}
-    end
-    if src.sourceid[sourceset] then
-        return true, nil, src.sourceid[sourceset]
-    end
-
-    rc, re, id = git.git_commit_id(info, sourcename, sourceset,
-        e2option.opts["check-remote"])
-    if not rc then
-        return false, re
-    end
-
-    src.commitid[sourceset] = id
-    local hc = hash.hash_start()
-    hash.hash_line(hc, src.name)
-    hash.hash_line(hc, src.type)
-    hash.hash_line(hc, src._env:id())
-    for _,ln in ipairs(src.licences) do
-        local lid, re = licence.licences[ln]:licenceid(info)
-        if not lid then
-            return false, re
-        end
-        hash.hash_line(hc, lid)
-    end
-    -- git specific
-    --hash.hash_line(hc, src.branch)
-    --hash.hash_line(hc, src.tag)
-    hash.hash_line(hc, src.server)
-    hash.hash_line(hc, src.location)
-    hash.hash_line(hc, src.working)
-    hash.hash_line(hc, src.commitid[sourceset])
-    src.sourceid[sourceset] = hash.hash_finish(hc)
-    return true, nil, src.sourceid[sourceset]
-end
-
 function git.toresult(info, sourcename, sourceset, directory)
     local rc, re, argv
     local e = err.new("converting result")
@@ -543,11 +639,11 @@ function git.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    local src = info.sources[sourcename]
+    local src = source.sources[sourcename]
     local makefile = "Makefile"
     local source = "source"
     local sourcedir = e2lib.join(directory, source)
-    local archive = string.format("%s.tar.gz", src.name)
+    local archive = string.format("%s.tar.gz", src:get_name())
     local cmd = nil
 
     rc, re = e2lib.mkdir_recursive(sourcedir)
@@ -558,7 +654,7 @@ function git.toresult(info, sourcename, sourceset, directory)
     if sourceset == "tag" or sourceset == "branch" then
         local ref, tmpfn
 
-        ref, re = generic_git.sourceset2ref(sourceset, src.branch, src.tag)
+        ref, re = generic_git.sourceset2ref(sourceset, src:get_branch(), src:get_tag())
         if not ref then
             return false, e:cat(re)
         end
@@ -568,7 +664,7 @@ function git.toresult(info, sourcename, sourceset, directory)
             return false, e:cat(re)
         end
 
-        argv = generic_git.git_new_argv(nil, e2lib.join(info.root, src.working))
+        argv = generic_git.git_new_argv(nil, e2lib.join(info.root, src:get_working()))
         table.insert(argv, "archive")
         table.insert(argv, "--format=tar") -- older versions don't have "tar.gz"
         table.insert(argv, string.format("--prefix=%s/", sourcename))
@@ -592,7 +688,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         end
     elseif sourceset == "working-copy" then
         argv = {
-            "-C", e2lib.join(info.root, src.working),
+            "-C", e2lib.join(info.root, src:get_working()),
             string.format("--transform=s,^./,./%s/,", sourcename),
             "--exclude=.git",
             "-czf",
@@ -620,7 +716,8 @@ function git.toresult(info, sourcename, sourceset, directory)
     -- write licences
     local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
-    local licence_list = table.concat(src.licences, "\n") .. "\n"
+    local licences = src:get_licences()
+    local licence_list = licences:concat_sorted("\n") .. "\n"
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
@@ -644,24 +741,24 @@ function git.check_workingcopy(info, sourcename)
     end
 
     -- check if branch exists
-    local src = info.sources[sourcename]
-    local gitdir = e2lib.join(info.root, src.working, ".git")
-    local ref = string.format("refs/heads/%s", src.branch)
+    local src = source.sources[sourcename]
+    local gitdir = e2lib.join(info.root, src:get_working(), ".git")
+    local ref = string.format("refs/heads/%s", src:get_branch())
     local id
 
     rc, re, id = generic_git.lookup_id(gitdir, false, ref)
     if not rc then
         return false, e:cat(re)
     elseif not id then
-        return false, e:cat(err.new("branch %q does not exist", src.branch))
+        return false, e:cat(err.new("branch %q does not exist", src:get_branch()))
     end
 
     -- git config branch.<branch>.remote == "origin"
     local query, expect, res
-    query = string.format("branch.%s.remote", src.branch)
+    query = string.format("branch.%s.remote", src:get_branch())
     res, re = generic_git.git_config(gitdir, query)
     if not res then
-        e:append("remote is not configured for branch \"%s\"", src.branch)
+        e:append("remote is not configured for branch \"%s\"", src:get_branch())
         return false, e
     elseif res ~= "origin" then
         e:append("%s is not \"origin\"", query)
@@ -670,7 +767,7 @@ function git.check_workingcopy(info, sourcename)
 
     -- git config remote.origin.url == server:location
     query = string.format("remote.origin.url")
-    expect, re = git_url(info.cache, src.server, src.location)
+    expect, re = git_url(info.cache, src:get_server(), src:get_location())
     if not expect then
         return false, e:cat(re)
     end

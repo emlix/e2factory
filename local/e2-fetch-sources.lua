@@ -37,6 +37,7 @@ local e2tool = require("e2tool")
 local err = require("err")
 local scm = require("scm")
 local chroot = require("chroot")
+local source = require("source")
 
 local function e2_fetch_source(arg)
     local rc, re = e2lib.init()
@@ -138,16 +139,16 @@ local function e2_fetch_source(arg)
         local e = err.new()  -- no message yet, append the summary later on
 
         -- fetch
-        for _, s in pairs(info.sources) do
-            local has_wc = scm.has_working_copy(info, s.name)
-            local wc_avail = scm.working_copy_available(info, s.name)
-            if opts.fetch and sel[s.name] then
+        for sourcename, _ in pairs(source.sources) do
+            local has_wc = scm.has_working_copy(info, sourcename)
+            local wc_avail = scm.working_copy_available(info, sourcename)
+            if opts.fetch and sel[sourcename] then
                 if wc_avail then
                     e2lib.logf(1,
-                    "working copy for %s is already available", s.name)
+                    "working copy for %s is already available", sourcename)
                 else
-                    e2lib.logf(1, "fetching working copy for source %s", s.name)
-                    local rc, re = scm.fetch_source(info, s.name)
+                    e2lib.logf(1, "fetching working copy for source %s", sourcename)
+                    local rc, re = scm.fetch_source(info, sourcename)
                     if not rc then
                         e:cat(re)
                     end
@@ -156,15 +157,15 @@ local function e2_fetch_source(arg)
         end
 
         -- update
-        for _, s in pairs(info.sources) do
-            local has_wc = scm.has_working_copy(info, s.name)
-            local wc_avail = scm.working_copy_available(info, s.name)
-            if opts.update and has_wc and sel[s.name] then
+        for sourcename, _ in pairs(source.sources) do
+            local has_wc = scm.has_working_copy(info, sourcename)
+            local wc_avail = scm.working_copy_available(info, sourcename)
+            if opts.update and has_wc and sel[sourcename] then
                 if not wc_avail then
-                    e2lib.logf(1, "working copy for %s is not available", s.name)
+                    e2lib.logf(1, "working copy for %s is not available", sourcename)
                 else
-                    e2lib.logf(1, "updating working copy for %s", s.name)
-                    local rc, re = scm.update(info, s.name)
+                    e2lib.logf(1, "updating working copy for %s", sourcename)
+                    local rc, re = scm.update(info, sourcename)
                     if not rc then
                         e:cat(re)
                     end
@@ -182,42 +183,42 @@ local function e2_fetch_source(arg)
     local sel = {} -- selected sources
 
     if #arguments > 0 then
-        for _, x in pairs(arguments) do
-            if info.sources[x] and not opts.result then
-                e2lib.logf(3, "is regarded as source: %s", x)
-                sel[x] = x
-            elseif info.results[x] and opts.result then
-                e2lib.logf(3, "is regarded as result: %s", x)
-                local res = info.results[x]
-                for _, s in ipairs(res.sources) do
-                    sel[s] = s
+        for _, srcresname in pairs(arguments) do
+            if source.sources[srcresname] and not opts.result then
+                e2lib.logf(3, "is regarded as source: %s", srcresname)
+                sel[srcresname] = true
+            elseif info.results[srcresname] and opts.result then
+                e2lib.logf(3, "is regarded as result: %s", srcresname)
+                local res = info.results[srcresname]
+                for _, sourcename in ipairs(res.sources) do
+                    sel[sourcename] = true
                 end
             elseif opts.result then
-                error(err.new("is not a result: %s", x))
+                error(err.new("is not a result: %s", srcresname))
             else
-                error(err.new("is not a source: %s", x))
+                error(err.new("is not a source: %s", srcresname))
             end
         end
     elseif opts["all"] then
         -- select all sources
-        for s,src in pairs(info.sources) do
-            sel[s] = s
+        for sourcename, _ in pairs(source.sources) do
+            sel[sourcename] = true
         end
     end
 
     -- select all sources by scm type
-    for s, src in pairs(info.sources) do
-        if select_type[src.type] then
-            sel[s] = s
+    for sourcename, src in pairs(source.sources) do
+        if select_type[src:get_type()] then
+            sel[sourcename] = true
         end
     end
 
 
-    for _, s in pairs(sel) do
-        e2lib.logf(2, "selecting source: %s" , s)
-        local src = info.sources[s]
+    for sourcename, _ in pairs(sel) do
+        e2lib.logf(2, "selecting source: %s" , sourcename)
+        local src = source.sources[sourcename]
         if not src then
-            e:append("selecting invalid source: %s", s)
+            e:append("selecting invalid source: %s", sourcename)
         end
     end
     if e:getcount() > 0 then

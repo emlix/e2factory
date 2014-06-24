@@ -30,7 +30,9 @@
 
 local cvs = {}
 local cache = require("cache")
+local class = require("class")
 local e2lib = require("e2lib")
+local e2tool = require("e2tool")
 local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
@@ -39,12 +41,29 @@ local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
+local source = require("source")
 
 plugin_descriptor = {
     description = "CVS SCM Plugin",
-    init = function (ctx) scm.register("cvs", cvs) return true end,
+    init = function (ctx)
+        local rc, re
+
+        rc, re = source.register_source_class("cvs", cvs.cvs_source)
+        if not rc then
+            return false, re
+        end
+
+        rc, re = scm.register("cvs", cvs)
+        if not rc then
+            return false, re
+        end
+
+        return true
+    end,
     exit = function (ctx) return true end,
 }
+
+cvs.cvs_source = class("cvs_source", source.basic_source)
 
 local function cvs_tool(argv, workdir)
     local rc, re, cvscmd, cvsflags, rsh
@@ -77,65 +96,196 @@ local function cvs_tool(argv, workdir)
     return e2lib.callcmd_log(cvscmd, workdir, { CVS_RSH=rsh })
 end
 
---- validate source configuration, log errors to the debug log
--- @param info the info table
--- @param sourcename the source name
--- @return bool
-function cvs.validate_source(info, sourcename)
-    local rc, re = scm.generic_source_validate(info, sourcename)
+
+function cvs.cvs_source:initialize(rawsrc)
+    assert(type(rawsrc) == "table")
+    assert(type(rawsrc.name) == "string" and #rawsrc.name > 0)
+    assert(type(rawsrc.type) == "string" and rawsrc.type == "cvs")
+
+    local rc, re
+
+    source.basic_source.initialize(self, rawsrc)
+
+    self._branch = false
+    self._cvsroot = false
+    self._module = false
+    self._server = false
+    self._tag = false
+    self._working = false
+    self._sourceids = {
+        ["working-copy"] = "working-copy",
+    }
+
+    rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source", {
+        "branch",
+        "cvsroot",
+        "env",
+        "licences",
+        "module",
+        "name",
+        "server",
+        "tag",
+        "type",
+        "working",
+    })
     if not rc then
-        -- error in generic configuration. Don't try to go on.
-        return false, re
+        error(re)
     end
-    local src = info.sources[ sourcename ]
-    if not src.sourceid then
-        src.sourceid = {}
-    end
-    local e = err.new("in source %s:", sourcename)
-    rc, re = scm.generic_source_default_working(info, sourcename)
+
+    rc, re = source.generic_source_validate_licences(rawsrc, self)
     if not rc then
-        return false, e:cat(re)
+        error(re)
     end
-    e:setcount(0)
-    -- XXX should move the default value out of the validate function
-    if not src.server then
-        e:append("source has no `server' attribute")
+
+    rc, re = source.generic_source_validate_env(rawsrc, self)
+    if not rc then
+        error(re)
     end
-    if not src.licences then
-        e:append("source has no `licences' attribute")
+
+    rc, re = source.generic_source_validate_server(rawsrc, true)
+    if not rc then
+        error(re)
     end
-    if not src.cvsroot then
+    self._server = rawsrc.server
+
+    rc, re = source.generic_source_validate_working(rawsrc)
+    if not rc then
+        error(re)
+    end
+    self._working = rawsrc.working
+
+    if rawsrc.cvsroot == nil then
         e2lib.warnf("WDEFAULT", "in source %s:", sourcename)
         e2lib.warnf("WDEFAULT",
         " source has no `cvsroot' attribute, defaulting to the server path")
-        src.cvsroot = "."
+        self._cvsroot = "."
+    elseif type(rawsrc.cvsroot) == "string" then
+        self._cvsroot = rawsrc.cvsroot
+    else
+        error(err.new("'cvsroot' must be a string"))
     end
-    if not src.cvsroot then
-        e:append("source has no `cvsroot' attribute")
+
+    for _,attr in ipairs({ "branch", "module", "tag" }) do
+        if rawsrc[attr] == nil then
+            error(err.new("source has no `%s' attribute", attr))
+        elseif type(rawsrc[attr]) ~= "string" then
+            error(err.new("'%s' must be a string", attr))
+        elseif rawsrc[attr] == "" then
+            error(err.new("'%s' may not be empty", attr))
+        end
     end
-    if src.remote then
-        e:append("source has `remote' attribute, not allowed for cvs sources")
+    self._branch = rawsrc.branch
+    self._module = rawsrc.module
+    self._tag = rawsrc.tag
+end
+
+function cvs.cvs_source:get_working()
+    assert(type(self._working) == "string")
+
+    return self._working
+end
+
+function cvs.cvs_source:get_module()
+    assert(type(self._module) == "string")
+
+    return self._module
+end
+
+function cvs.cvs_source:get_branch()
+    assert(type(self._branch) == "string")
+
+    return self._branch
+end
+
+function cvs.cvs_source:get_tag()
+    assert(type(self._tag) == "string")
+
+    return self._tag
+end
+
+function cvs.cvs_source:get_server()
+    assert(type(self._server) == "string")
+
+    return self._server
+end
+
+function cvs.cvs_source:get_cvsroot()
+    assert(type(self._cvsroot) == "string")
+
+    return self._cvsroot
+end
+
+function cvs.cvs_source:sourceid(sourceset)
+    assert(type(sourceset) == "string" and #sourceset > 0)
+
+    local rc, re, hc, lid, info, licences
+
+    if self._sourceids[sourceset] then
+        return self._sourceids[sourceset]
     end
-    if not src.branch then
-        e:append("source has no `branch' attribute")
+
+    info = e2tool.info()
+    assert(type(info) == "table")
+
+    hc = hash.hash_start()
+    hash.hash_line(hc, self._name)
+    hash.hash_line(hc, self._type)
+    hash.hash_line(hc, self._env:id())
+    licences = self:get_licences()
+    for licencename in licences:iter_sorted() do
+        lid, re = licence.licences[licencename]:licenceid(info)
+        if not lid then
+            return false, re
+        end
+        hash.hash_line(hc, lid)
     end
-    if type(src.tag) ~= "string" then
-        e:append("source has no `tag' attribute or tag attribute has wrong type")
+    -- cvs specific
+    if sourceset == "tag" and self._tag ~= "^" then
+        -- we rely on tags being unique with cvs
+        hash.hash_line(hc, self._tag)
+    else
+        -- the old function took a hash of the CVS/Entries file, but
+        -- forgot the subdirecties' CVS/Entries files. We might
+        -- reimplement that once...
+        return false, err.new("cannot calculate sourceid for source set %s",
+            sourceset)
     end
-    if not src.module then
-        e:append("source has no `module' attribute")
+    hash.hash_line(hc, self._server)
+    hash.hash_line(hc, self._cvsroot)
+    hash.hash_line(hc, self._module)
+
+    self._sourceids[sourceset] = hash.hash_finish(hc)
+
+    return self._sourceids[sourceset]
+end
+
+function cvs.cvs_source:display()
+    local licences
+    local d = {}
+
+    self:sourceid("tag")
+    self:sourceid("branch")
+
+    table.insert(d, string.format("type       = %s", self:get_type()))
+    table.insert(d, string.format("branch     = %s", self._branch))
+    table.insert(d, string.format("tag        = %s", self._tag))
+    table.insert(d, string.format("server     = %s", self._server))
+    table.insert(d, string.format("cvsroot    = %s", self._cvsroot))
+    table.insert(d, string.format("module     = %s", self._module))
+    table.insert(d, string.format("working    = %s", self._working))
+
+    licences = self:get_licences()
+    for licencename in licences:iter_sorted() do
+        table.insert(d, string.format("licence    = %s", licencename))
     end
-    if not src.working then
-        e:append("source has no `working' attribute")
+
+    for sourceset, sid in pairs(self._sourceids) do
+        if sid then
+            table.insert(d, string.format("sourceid [%s] = %s", sourceset, sid))
+        end
     end
-    local rc, re = tools.check_tool("cvs")
-    if not rc then
-        e:cat(re)
-    end
-    if e:getcount() > 0 then
-        return false, e
-    end
-    return true, nil
+
+    return d
 end
 
 --- Build the cvsroot string.
@@ -146,9 +296,9 @@ end
 local function mkcvsroot(info, sourcename)
     local cvsroot, src, surl, u, re
 
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
 
-    surl, re = cache.remote_url(info.cache, src.server, src.cvsroot)
+    surl, re = cache.remote_url(info.cache, src:get_server(), src:get_cvsroot())
     if not surl then
         return false, e:cat(re)
     end
@@ -176,7 +326,7 @@ function cvs.fetch_source(info, sourcename)
     local rc, re, e, src, cvsroot, workdir, argv
 
     e = err.new("fetching source failed: %s", sourcename)
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
 
     cvsroot, re = mkcvsroot(info, sourcename)
     if not cvsroot then
@@ -185,23 +335,23 @@ function cvs.fetch_source(info, sourcename)
 
     -- split the working directory into dirname and basename as some cvs clients
     -- don't like slashes (e.g. in/foo) in their checkout -d<path> argument
-    workdir = e2lib.dirname(e2lib.join(info.root, src.working))
+    workdir = e2lib.dirname(e2lib.join(info.root, src:get_working()))
 
     argv = {
         "-d", cvsroot,
         "checkout",
         "-R",
-        "-d", e2lib.basename(src.working),
+        "-d", e2lib.basename(src:get_working()),
     }
 
     -- always fetch the configured branch, as we don't know the build mode here.
     -- HEAD has special meaning to cvs
-    if src.branch ~= "HEAD" then
+    if src:get_branch() ~= "HEAD" then
         table.insert(argv, "-r")
-        table.insert(argv, src.branch)
+        table.insert(argv, src:get_branch())
     end
 
-    table.insert(argv, src.module)
+    table.insert(argv, src:get_module())
 
     rc, re = cvs_tool(argv, workdir)
     if not rc or rc ~= 0 then
@@ -210,44 +360,44 @@ function cvs.fetch_source(info, sourcename)
     return true
 end
 
-function cvs.prepare_source(info, sourcename, source_set, buildpath)
+function cvs.prepare_source(info, sourcename, sourceset, buildpath)
     local rc, re, e, src, cvsroot, argv
 
     e = err.new("cvs.prepare_source failed")
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
 
     cvsroot, re = mkcvsroot(info, sourcename)
     if not cvsroot then
         return false, re
     end
 
-    if source_set == "tag" or source_set == "branch" then
+    if sourceset == "tag" or sourceset == "branch" then
         argv = {
             "-d", cvsroot,
             "export", "-R",
-            "-d", src.name,
+            "-d", src:get_name(),
             "-r",
         }
 
-        if source_set == "branch" or
-            (source_set == "lazytag" and src.tag == "^") then
-            table.insert(argv, src.branch)
-        elseif (source_set == "tag" or source_set == "lazytag") and
-            src.tag ~= "^" then
-            table.insert(argv, src.tag)
+        if sourceset == "branch" or
+            (sourceset == "lazytag" and src:get_tag() == "^") then
+            table.insert(argv, src:get_branch())
+        elseif (sourceset == "tag" or sourceset == "lazytag") and
+            src:get_tag() ~= "^" then
+            table.insert(argv, src:get_tag())
         else
             return false, e:cat(err.new("source set not allowed"))
         end
 
-        table.insert(argv, src.module)
+        table.insert(argv, src:get_module())
 
         rc, re = cvs_tool(argv, buildpath)
         if not rc or rc ~= 0 then
             return false, e:cat(re)
         end
-    elseif source_set == "working-copy" then
-        rc, re = e2lib.cp(e2lib.join(info.root, src.working),
-            e2lib.join(buildpath, src.name), true)
+    elseif sourceset == "working-copy" then
+        rc, re = e2lib.cp(e2lib.join(info.root, src:get_working()),
+            e2lib.join(buildpath, src:get_name()), true)
         if not rc then
             return false, e:cat(re)
         end
@@ -261,9 +411,9 @@ function cvs.update(info, sourcename)
     local rc, re, e, src, workdir, argv
 
     e = err.new("updating source '%s' failed", sourcename)
-    src = info.sources[sourcename]
+    src = source.sources[sourcename]
 
-    workdir = e2lib.join(info.root, src.working)
+    workdir = e2lib.join(info.root, src:get_working())
 
     argv = { "update", "-R" }
     rc, re = cvs_tool(argv, workdir)
@@ -271,91 +421,17 @@ function cvs.update(info, sourcename)
         return false, e:cat(re)
     end
 
-    return true, nil
+    return true
 end
 
 function cvs.working_copy_available(info, sourcename)
-    local src = info.sources[sourcename]
-    local dir = string.format("%s/%s", info.root, src.working)
+    local src = source.sources[sourcename]
+    local dir = e2lib.join(info.root, src:get_working())
     return e2lib.isdir(dir)
 end
 
 function cvs.has_working_copy(info, sourcename)
     return true
-end
-
---- create a table of lines for display
--- @param info the info structure
--- @param sourcename string
--- @return a table, nil on error
--- @return an error object on failure
-function cvs.display(info, sourcename)
-    local src = info.sources[sourcename]
-    local rc, re
-    local display = {}
-
-    display[1] = string.format("type       = %s", src.type)
-    display[2] = string.format("branch     = %s", src.branch)
-    display[3] = string.format("tag        = %s", src.tag)
-    display[4] = string.format("server     = %s", src.server)
-    display[5] = string.format("cvsroot    = %s", src.cvsroot)
-    display[6] = string.format("module     = %s", src.module)
-    display[7] = string.format("working    = %s", src.working)
-    local i = 8
-    for _,l in ipairs(src.licences) do
-        display[i] = string.format("licence    = %s", l)
-        i = i + 1
-    end
-    for k,v in pairs(src.sourceid) do
-        if v then
-            display[i] = string.format("sourceid [%s] = %s", k, v)
-            i = i + 1
-        end
-    end
-    return display, nil
-end
-
-function cvs.sourceid(info, sourcename, source_set)
-    local src = info.sources[sourcename]
-    local rc, re, lid
-
-    if source_set == "working-copy" then
-        src.sourceid[source_set] = "working-copy"
-    end
-    if src.sourceid[source_set] then
-        return true, nil, src.sourceid[source_set]
-    end
-    local e = err.new("calculating sourceid failed for source %s",
-    sourcename)
-    local hc = hash.hash_start()
-    hash.hash_line(hc, src.name)
-    hash.hash_line(hc, src.type)
-    hash.hash_line(hc, src._env:id())
-    for _,ln in ipairs(src.licences) do
-        lid, re = licence.licences[ln]:licenceid(info)
-        if not lid then
-            return false, e:cat(re)
-        end
-        hash.hash_line(hc, lid)
-    end
-    -- cvs specific
-    if source_set == "tag" and src.tag ~= "^" then
-        -- we rely on tags being unique with cvs
-        hash.hash_line(hc, src.tag)
-    else
-        -- the old function took a hash of the CVS/Entries file, but
-        -- forgot the subdirecties' CVS/Entries files. We might
-        -- reimplement that once...
-        e:append("cannot calculate sourceid for source set %s",
-        source_set)
-        return false, e
-    end
-    hash.hash_line(hc, src.server)
-    hash.hash_line(hc, src.cvsroot)
-    hash.hash_line(hc, src.module)
-    -- skip src.working
-    src.sourceid[source_set] = hash.hash_finish(hc)
-    return true, nil, src.sourceid[source_set]
 end
 
 function cvs.toresult(info, sourcename, sourceset, directory)
@@ -368,7 +444,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    local src = info.sources[sourcename]
+    local src = source.sources[sourcename]
     -- write makefile
     local makefile = "Makefile"
     local source = "source"
@@ -400,7 +476,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
         return false, e:cat(re)
     end
     -- create a tarball in the final location
-    local archive = string.format("%s.tar.gz", src.name)
+    local archive = string.format("%s.tar.gz", src:get_name())
     rc, re = e2lib.tar({ "-C", tmpdir ,"-czf", sourcedir .. "/" .. archive,
     sourcename })
     if not rc then
@@ -409,7 +485,9 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     -- write licences
     local destdir = string.format("%s/licences", directory)
     local fname = string.format("%s/%s.licences", destdir, archive)
-    local licence_list = table.concat(src.licences, "\n") .. "\n"
+    local licenses = src:get_licences()
+    local licence_list = licenses:concat_sorted("\n").."\n"
+
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)

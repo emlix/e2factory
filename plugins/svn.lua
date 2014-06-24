@@ -30,7 +30,9 @@
 
 local svn = {}
 local cache = require("cache")
+local class = require("class")
 local e2lib = require("e2lib")
+local e2tool = require("e2tool")
 local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
@@ -39,12 +41,29 @@ local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
+local source = require("source")
 
 plugin_descriptor = {
     description = "SVN SCM Plugin",
-    init = function (ctx) scm.register("svn", svn) return true end,
+    init = function (ctx)
+        local rc, re
+
+        rc, re = source.register_source_class("svn", svn.svn_source)
+        if not rc then
+            return false, re
+        end
+
+        rc, re = scm.register("svn", svn)
+        if not rc then
+            return false, re
+        end
+
+        return true
+    end,
     exit = function (ctx) return true end,
 }
+
+svn.svn_source = class("svn_source", source.basic_source)
 
 --- translate url into subversion url
 -- @param u table: url table
@@ -143,162 +162,144 @@ local function svn_tool(argv, workdir)
     return true, nil, table.concat(out)
 end
 
-function svn.fetch_source(info, sourcename)
+function svn.svn_source:initialize(rawsrc)
+    assert(type(rawsrc) == "table")
+    assert(type(rawsrc.name) == "string" and #rawsrc.name > 0)
+    assert(type(rawsrc.type) == "string" and rawsrc.type == "svn")
+
     local rc, re
-    local e = err.new("fetching source failed: %s", sourcename)
-    local src = info.sources[sourcename]
-    local location = src.location
-    local server = src.server
-    local surl, re = cache.remote_url(info.cache, server, location)
-    if not surl then
-        return false, e:cat(re)
-    end
-    local svnurl, re = mksvnurl(surl)
-    if not svnurl then
-        return false, e:cat(re)
-    end
 
-    local argv = { "checkout", svnurl, info.root .. "/" .. src.working }
+    source.basic_source.initialize(self, rawsrc)
 
-    rc, re = svn_tool(argv)
+    self._server = false
+    self._location = false
+    self._tag = false
+    self._branch = false
+    self._working = false
+    self._workingcopy_subdir = false
+    self._sourceids = {
+        ["working-copy"] = "working-copy"
+    }
+
+    rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source", {
+        "branch",
+        "env",
+        "licences",
+        "location",
+        "name",
+        "server",
+        "tag",
+        "type",
+        "working",
+        "workingcopy_subdir",
+    })
+
     if not rc then
-        return false, e:cat(re)
+        error(re)
     end
-    return true, nil
-end
 
-function svn.prepare_source(info, sourcename, source_set, build_path)
-    local rc, re
-    local e = err.new("svn.prepare_source failed")
-    local src = info.sources[ sourcename ]
-    local location = src.location
-    local server = src.server
-    local surl, re = cache.remote_url(info.cache, server, location)
-    if not surl then
-        return false, e:cat(re)
+    rc, re = source.generic_source_validate_licences(rawsrc, self)
+    if not rc then
+        error(re)
     end
-    local svnurl, re = mksvnurl(surl)
-    if not svnurl then
-        return false, e:cat(re)
+
+    rc, re = source.generic_source_validate_env(rawsrc, self)
+    if not rc then
+        error(re)
     end
-    if source_set == "tag" or source_set == "branch" then
-        local rev
-        if source_set == "tag" then
-            rev = src.tag
-        else -- source_set == "branch"
-            rev = src.branch
+
+    rc, re = source.generic_source_validate_server(rawsrc, true)
+    if not rc then
+        error(re)
+    end
+    self._server = rawsrc.server
+
+    rc, re = source.generic_source_validate_working(rawsrc)
+    if not rc then
+        error(re)
+    end
+    self._working = rawsrc.working
+
+    -- workingcopy_subdir is optional and defaults to the branch
+    -- make sure branch is checked first to avoid confusing error
+    if rawsrc.workingcopy_subdir == nil then
+        rawsrc.workingcopy_subdir = rawsrc.branch
+    end
+
+    for _,attr in ipairs({"branch", "location", "tag", "workingcopy_subdir"}) do
+        if rawsrc[attr] == nil then
+            error(err.new("source has no `%s' attribute", attr))
+        elseif type(rawsrc[attr]) ~= "string" then
+            error(err.new("'%s' must be a string", attr))
+        elseif rawsrc[attr] == "" then
+            error(err.new("'%s' may not be empty", attr))
         end
-        local argv = { "export", svnurl .. "/" .. rev,
-        build_path .. "/" .. sourcename }
-        rc, re = svn_tool(argv)
-        if not rc then
-            return false, e:cat(re)
-        end
-    elseif source_set == "working-copy" then
-        -- cp -R info.root/src.working/src.workingcopy_subdir build_path
-        local s = e2lib.join(info.root, src.working, src.workingcopy_subdir)
-        local d = e2lib.join(build_path, src.name)
-        rc, re = e2lib.cp(s, d, true)
-        if not rc then
-            return false, e:cat(re)
-        end
-    else
-        return false, e:cat("invalid source set")
     end
-    return true, nil
+
+    self._branch = rawsrc.branch
+    self._location = rawsrc.location
+    self._tag = rawsrc.tag
+    self._workingcopy_subdir = rawsrc.workingcopy_subdir
 end
 
-function svn.working_copy_available(info, sourcename)
+function svn.svn_source:get_working()
+    assert(type(self._working) == "string")
+    return self._working
+end
+
+function svn.svn_source:get_workingcopy_subdir()
+    assert(type(self._workingcopy_subdir) == "string")
+    return self._workingcopy_subdir
+end
+
+function svn.svn_source:get_server()
+    assert(type(self._server) == "string")
+    return self._server
+end
+
+function svn.svn_source:get_location()
+    assert(type(self._location) == "string")
+    return self._location
+end
+
+function svn.svn_source:get_branch()
+    assert(type(self._branch) == "string")
+    return self._branch
+end
+
+function svn.svn_source:get_tag()
+    assert(type(self._tag) == "string")
+    return self._tag
+end
+
+function svn.svn_source:sourceid(sourceset)
+    assert(type(sourceset) == "string" and #sourceset > 0)
+
     local rc, re
-    local src = info.sources[sourcename]
-    local dir = e2lib.join(info.root, src.working)
-    return e2lib.isdir(dir)
-end
+    local hc, surl, svnurl, argv, out, svnrev, lid, svnrev, info, licences
 
-function svn.check_workingcopy(info, sourcename)
-    local rc, re
-    local e = err.new("checking working copy failed")
-    e:append("in source %s (svn configuration):", sourcename)
-    e:setcount(0)
-    local src = info.sources[sourcename]
-    if e:getcount() > 0 then
-        return false, e
-    end
-    -- check if the configured branch and tag exist
-    local d
-    d = e2lib.join(info.root, src.working, src.branch)
-    if not e2lib.isdir(d) then
-        e:append("branch does not exist: %s", src.branch)
-    end
-    d = e2lib.join(info.root, src.working, src.tag)
-    if not e2lib.isdir(d) then
-        e:append("tag does not exist: %s", src.tag)
-    end
-    if e:getcount() > 0 then
-        return false, e
-    end
-    return true, nil
-end
-
-function svn.has_working_copy(info, sname)
-    return true
-end
-
---- create a table of lines for display
--- @param info the info structure
--- @param sourcename string
--- @return a table, nil on error
--- @return an error string on failure
-function svn.display(info, sourcename)
-    local src = info.sources[sourcename]
-    local rc, e
-    local display = {}
-    display[1] = string.format("type       = %s", src.type)
-    display[2] = string.format("server     = %s", src.server)
-    display[3] = string.format("remote     = %s", src.location)
-    display[4] = string.format("branch     = %s", src.branch)
-    display[5] = string.format("tag        = %s", src.tag)
-    display[6] = string.format("working    = %s", src.working)
-    local i = 7
-    for _,l in pairs(src.licences) do
-        display[i] = string.format("licence    = %s", l)
-        i = i + 1
-    end
-    return display
-end
-
---- calculate an id for a source
--- @param info
--- @param sourcename
--- @param source_set
-function svn.sourceid(info, sourcename, source_set)
-    local src = info.sources[sourcename]
-    local rc, re
-    local hc, surl, svnurl, argv, out, svnrev, lid
-
-    if not src.sourceid then
-        src.sourceid = {}
-    end
-
-    src.sourceid["working-copy"] = "working-copy"
-    if src.sourceid[source_set] then
-        return true, nil, src.sourceid[source_set]
+    if self._sourceids[sourceset] then
+        return self._sourceids[sourceset]
     end
 
     hc = hash.hash_start()
-    hash.hash_line(hc, src.name)
-    hash.hash_line(hc, src.type)
-    hash.hash_line(hc, src._env:id())
-    for _,ln in pairs(src.licences) do
-        lid, re = licence.licences[ln]:licenceid(info)
+    hash.hash_line(hc, self._name)
+    hash.hash_line(hc, self._type)
+    hash.hash_line(hc, self._env:id())
+
+    info = e2tool.info()
+    assert(type(info) == "table")
+
+    licences = self:get_licences()
+    for licencename in licences:iter_sorted() do
+        lid, re = licence.licences[licencename]:licenceid(info)
         if not lid then
             return false, re
         end
         hash.hash_line(hc, lid)
     end
 
-    -- svn specific
-    surl, re = cache.remote_url(info.cache, src.server, src.location)
+    surl, re = cache.remote_url(info.cache, self._server, self._location)
     if not surl then
         return false, re
     end
@@ -308,20 +309,20 @@ function svn.sourceid(info, sourcename, source_set)
         return false, re
     end
 
-    hash.hash_line(hc, src.server)
-    hash.hash_line(hc, src.location)
+    hash.hash_line(hc, self._server)
+    hash.hash_line(hc, self._location)
 
-    if source_set == "tag" then
-        hash.hash_line(hc, src.tag)
-        argv = { "info", svnurl.."/"..src.tag }
-    elseif source_set == "branch" then
-        hash.hash_line(hc, src.branch)
-        argv = { "info", svnurl.."/"..src.branch }
-    elseif source_set == "lazytag" then
+    if sourceset == "tag" then
+        hash.hash_line(hc, self._tag)
+        argv = { "info", svnurl.."/"..self._tag }
+    elseif sourceset == "branch" then
+        hash.hash_line(hc, self._branch)
+        argv = { "info", svnurl.."/"..self._branch }
+    elseif sourceset == "lazytag" then
         return false, err.new("svn source does not support lazytag mode")
     else
         return false,
-            err.new("svn sourceid can't handle source_set %q", source_set)
+            err.new("svn sourceid can't handle sourceset %q", sourceset)
     end
 
     rc, re, out = svn_tool(argv)
@@ -336,9 +337,142 @@ function svn.sourceid(info, sourcename, source_set)
     end
     hash.hash_line(hc, svnrev)
 
-    src.sourceid[source_set] = hash.hash_finish(hc)
+    self._sourceids[sourceset] = hash.hash_finish(hc)
 
-    return true, nil, src.sourceid[source_set]
+    return self._sourceids[sourceset]
+end
+
+function svn.svn_source:display()
+    local d, licences
+
+    -- try to calculte the sourceid, but do not care if it fails.
+    -- working copy might be unavailable
+    self:sourceid("tag")
+    self:sourceid("branch")
+
+    d = {}
+    table.insert(d, string.format("type       = %s", self:get_type()))
+    table.insert(d, string.format("server     = %s", self._server))
+    table.insert(d, string.format("remote     = %s", self._location))
+    table.insert(d, string.format("branch     = %s", self._branch))
+    table.insert(d, string.format("tag        = %s", self._tag))
+    table.insert(d, string.format("working    = %s", self._working))
+
+    licences = self:get_licences()
+    for licencename in licences:iter_sorted() do
+        table.insert(d, string.format("licence    = %s", licencename))
+    end
+
+    for sourceset, sid in pairs(self._sourceids) do
+        if sid then
+            table.insert(d, string.format("sourceid [%s] = %s", sourceset, sid))
+        end
+    end
+
+    return d
+end
+
+function svn.fetch_source(info, sourcename)
+    local rc, re
+    local e = err.new("fetching source failed: %s", sourcename)
+    local src = source.sources[sourcename]
+    local location = src:get_location()
+    local server = src:get_server()
+    local surl, re = cache.remote_url(info.cache, server, location)
+    if not surl then
+        return false, e:cat(re)
+    end
+    local svnurl, re = mksvnurl(surl)
+    if not svnurl then
+        return false, e:cat(re)
+    end
+
+    local argv = { "checkout", svnurl, info.root .. "/" .. src:get_working() }
+
+    rc, re = svn_tool(argv)
+    if not rc then
+        return false, e:cat(re)
+    end
+    return true
+end
+
+function svn.prepare_source(info, sourcename, sourceset, build_path)
+    local rc, re
+    local e = err.new("svn.prepare_source failed")
+    local src = source.sources[sourcename]
+    local location = src:get_location()
+    local server = src:get_server()
+    local surl, re = cache.remote_url(info.cache, server, location)
+    if not surl then
+        return false, e:cat(re)
+    end
+    local svnurl, re = mksvnurl(surl)
+    if not svnurl then
+        return false, e:cat(re)
+    end
+    if sourceset == "tag" or sourceset == "branch" then
+        local rev
+        if sourceset == "tag" then
+            rev = src:get_tag()
+        else -- sourceset == "branch"
+            rev = src:get_branch()
+        end
+        local argv = { "export", svnurl .. "/" .. rev,
+        build_path .. "/" .. sourcename }
+        rc, re = svn_tool(argv)
+        if not rc then
+            return false, e:cat(re)
+        end
+    elseif sourceset == "working-copy" then
+        -- cp -R info.root/src.working/src.workingcopy_subdir build_path
+        local s = e2lib.join(info.root, src:get_working(),
+            src:get_workingcopy_subdir())
+        local d = e2lib.join(build_path, src:get_name())
+        rc, re = e2lib.cp(s, d, true)
+        if not rc then
+            return false, e:cat(re)
+        end
+    else
+        return false, e:cat("invalid source set")
+    end
+    return true, nil
+end
+
+function svn.working_copy_available(info, sourcename)
+    local rc, re
+    local src = source.sources[sourcename]
+
+    local dir = e2lib.join(info.root, src:get_working())
+    return e2lib.isdir(dir)
+end
+
+function svn.check_workingcopy(info, sourcename)
+    local rc, re
+    local e = err.new("checking working copy failed")
+    e:append("in source %s (svn configuration):", sourcename)
+    e:setcount(0)
+    local src = source.sources[sourcename]
+    if e:getcount() > 0 then
+        return false, e
+    end
+    -- check if the configured branch and tag exist
+    local d
+    d = e2lib.join(info.root, src:get_working(), src:get_branch())
+    if not e2lib.isdir(d) then
+        e:append("branch does not exist: %s", src:get_branch())
+    end
+    d = e2lib.join(info.root, src:get_working(), src:get_tag())
+    if not e2lib.isdir(d) then
+        e:append("tag does not exist: %s", src:get_tag())
+    end
+    if e:getcount() > 0 then
+        return false, e
+    end
+    return true
+end
+
+function svn.has_working_copy(info, sname)
+    return true
 end
 
 function svn.toresult(info, sourcename, sourceset, directory)
@@ -351,7 +485,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     if not rc then
         return false, e:cat(re)
     end
-    local src = info.sources[sourcename]
+    local src = source.sources[sourcename]
     -- write makefile
     local makefile = "Makefile"
     local source = "source"
@@ -378,7 +512,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
         return false, e:cat(re)
     end
     -- create a tarball in the final location
-    local archive = string.format("%s.tar.gz", src.name)
+    local archive = string.format("%s.tar.gz", src:get_name())
     rc, re = e2lib.tar({ "-C", tmpdir ,"-czf", sourcedir .. "/" .. archive,
     sourcename })
     if not rc then
@@ -387,7 +521,8 @@ function svn.toresult(info, sourcename, sourceset, directory)
     -- write licences
     local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
-    local licence_list = table.concat(src.licences, "\n") .. "\n"
+    local licences = src:get_licences()
+    local licence_list = licences:concat_sorted("\n") .. "\n"
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
@@ -403,70 +538,13 @@ end
 function svn.update(info, sourcename)
     local rc, re
     local e = err.new("updating source '%s' failed", sourcename)
-    local src = info.sources[ sourcename ]
-    local workdir = e2lib.join(info.root, src.working)
+    local src = source.sources[sourcename]
+    local workdir = e2lib.join(info.root, src:get_working())
     rc, re = svn_tool({ "update" }, workdir)
     if not rc then
         return false, e:cat(re)
     end
     return true
-end
-
---- validate source configuration, log errors to the debug log
--- @param info the info table
--- @param sourcename the source name
--- @return bool
-function svn.validate_source(info, sourcename)
-    local rc, re = scm.generic_source_validate(info, sourcename)
-    if not rc then
-        -- error in generic configuration. Don't try to go on.
-        return false, re
-    end
-    local src = info.sources[ sourcename ]
-    if not src.sourceid then
-        src.sourceid = {}
-    end
-    local e = err.new("in source %s:", sourcename)
-    rc, re = scm.generic_source_default_working(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
-    e:setcount(0)
-    if not src.server then
-        e:append("source has no `server' attribute")
-    end
-    if not src.licences then
-        e:append("source has no `licences' attribute")
-    end
-    if not src.location then
-        e:append("source has no `location' attribute")
-    end
-    if src.remote then
-        e:append("source has `remote' attribute, not allowed for svn sources")
-    end
-    if not src.branch then
-        e:append("source has no `branch' attribute")
-    end
-    if type(src.tag) ~= "string" then
-        e:append("source has no `tag' attribute or tag attribute has wrong type")
-    end
-    if type(src.workingcopy_subdir) ~= "string" then
-        e2lib.warnf("WDEFAULT", "in source %s", sourcename)
-        e2lib.warnf("WDEFAULT",
-        " workingcopy_subdir defaults to the branch: %s", src.branch)
-        src.workingcopy_subdir = src.branch
-    end
-    if not src.working then
-        e:append("source has no `working' attribute")
-    end
-    local rc, re = tools.check_tool("svn")
-    if not rc then
-        e:cat(re)
-    end
-    if e:getcount() > 0 then
-        return false, e
-    end
-    return true, nil
 end
 
 strict.lock(svn)

@@ -41,6 +41,7 @@ local policy = require("policy")
 local scm = require("scm")
 local chroot = require("chroot")
 local project = require("project")
+local source = require("source")
 
 local function e2_ls_project(arg)
     local rc, re = e2lib.init()
@@ -98,16 +99,16 @@ local function e2_ls_project(arg)
 
     local sources = {}
     if opts.all then
-        for s, _ in pairs(info.sources) do
-            table.insert(sources, s)
+        for sourcename, _ in pairs(source.sources) do
+            table.insert(sources, sourcename)
         end
     else
         local yet = {}
         for _, r in pairs(results) do
-            for _, s in ipairs(info.results[r].sources) do
-                if not yet[s] then
-                    table.insert(sources, s)
-                    yet[s] = true
+            for _, sourcename in ipairs(info.results[r].sources) do
+                if not yet[sourcename] then
+                    table.insert(sources, sourcename)
+                    yet[sourcename] = true
                 end
             end
         end
@@ -241,16 +242,15 @@ local function e2_ls_project(arg)
     local s2 = " "
     p1(s1, s2, "src")
     local len = #sources
-    for _, s in pairs(sources) do
-        local src = info.sources[s]
+    for _, sourcename in pairs(sources) do
         len = len - 1
         if len == 0 then
             s2 = " "
         else
             s2 = "|"
         end
-        p2(s1, s2, src.name)
-        local t, re = scm.display(info, src.name)
+        p2(s1, s2, sourcename)
+        local t, re = source.sources[sourcename]:display()
         if not t then
             error(re)
         end

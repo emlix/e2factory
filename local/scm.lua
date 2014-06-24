@@ -29,11 +29,10 @@
 ]]
 
 local scm = {}
-local e2lib = require("e2lib")
-local environment = require("environment")
+package.loaded["scm"] = scm
 local err = require("err")
-local licence = require("licence")
 local strict = require("strict")
+local source = require("source")
 
 -- scm modules
 local scms = {}
@@ -87,16 +86,21 @@ function scm.register_interface(name)
     end
 
     local function func(info, sourcename, ...)
-        local src = info.sources[sourcename]
+        assert(info)
+        assert(sourcename)
+
+        local typ
         local rc, re, e
+
         e = err.new("calling scm operation failed")
-        if not scms[src.type] then
-            return false, e:append("no such source type: %s", src.type)
+
+        typ = source.sources[sourcename]:get_type()
+        if not scms[typ] then
+            return false, e:append("no such source type: %s", tostring(typ))
         end
-        local f = scms[src.type][name]
+        local f = scms[typ][name]
         if not f then
-            e:append("%s() is not implemented for source type: %s",
-                name, src.type)
+            e:append("%s() is not implemented for source type: %s", name, typ)
             return false, e
         end
         return f(info, sourcename, ...)
@@ -140,120 +144,6 @@ function scm.register_function(scmtype, name, func)
     return true
 end
 
---- apply default values where possible and a source configuration is
--- incomplete
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on failure
-local function source_apply_default_licences(info, sourcename)
-  local e = err.new("applying default licences failed.")
-  local src = info.sources[ sourcename ]
-
-  if not src.licences and src.licence then
-    e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
-    e2lib.warnf("WDEPRECATED",
-		" licence attribute is deprecated. Replace by licences.")
-    src.licences = src.licence
-  end
-  if src.licences == nil then
-    e2lib.warnf("WDEFAULT", "in source %s:", src.name)
-    e2lib.warnf("WDEFAULT",
-		" licences attribute missing. Defaulting to empty list.")
-    src.licences = {}
-  elseif type(src.licences) == "string" then
-    e2lib.warnf("WDEPRECATED", "in source %s:", src.name)
-    e2lib.warnf("WDEPRECATED",
-		" licences attribute is not in table format. Converting.")
-    src.licences = { src.licences }
-  end
-
-  if type(src.licences) ~= "table" then
-      e:append("licences attribute is of invalid type")
-      return false, e
-  end
-
-  for i, s in pairs(src.licences) do
-    if type(i) ~= "number" or type(s) ~= "string" then
-      e:append("licences attribute is not a list of strings")
-      return false, e
-    end
-  end
-  for _,l in ipairs(src.licences) do
-    if not licence.licences[l] then
-      e:append("unknown licence: %s", l)
-      return false, e
-    end
-  end
-  return true
-end
-
---- validate generic source configuration, usable by SCM plugins
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on failure
-function scm.generic_source_validate(info, sourcename)
-    local src = info.sources[sourcename]
-    local rc, re
-    local e
-    if not src then
-        return false, err.new("invalid source: %s", sourcename)
-    end
-    e = err.new("in source %s:", sourcename)
-    rc, re = source_apply_default_licences(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
-    if not src.type then
-        e:append("source has no `type' attribute")
-    end
-    if src.env and type(src.env) ~= "table" then
-        e:append("source has invalid `env' attribute")
-    else
-        if not src.env then
-            e2lib.warnf("WDEFAULT",
-            "source has no `env' attribute. Defaulting to empty dictionary")
-            src.env = {}
-        end
-        src._env = environment.new()
-        for k,v in pairs(src.env) do
-            if type(k) ~= "string" then
-                e:append("in `env' dictionary: key is not a string: %s", tostring(k))
-            elseif type(v) ~= "string" then
-                e:append("in `env' dictionary: value is not a string: %s", tostring(v))
-            else
-                src._env:set(k, v)
-            end
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true, nil
-end
-
---- apply default values where possible
--- @param info the info table
--- @param sourcename the source name
--- @return bool
--- @return an error object on failure
-function scm.generic_source_default_working(info, sourcename)
-    local src
-
-    src = info.sources[sourcename]
-
-    if not src.working then
-        src.working = e2lib.join("in", sourcename)
-
-        e2lib.warnf("WDEFAULT", "in source %s:", sourcename)
-        e2lib.warnf("WDEFAULT", " `working' attribute defaults to '%s'.",
-            src.working)
-    end
-
-    return true
-end
-
 --- do some consistency checks required before using sources
 -- @param info
 -- @param sourcename string: source name
@@ -274,15 +164,12 @@ function scm.generic_source_check(info, sourcename, require_workingcopy)
     return true, nil
 end
 
-scm.register_interface("sourceid")
-scm.register_interface("validate_source")
 scm.register_interface("toresult")
 scm.register_interface("prepare_source")
 scm.register_interface("fetch_source")
 scm.register_interface("update")
 scm.register_interface("check_workingcopy")
 scm.register_interface("working_copy_available")
-scm.register_interface("display")
 scm.register_interface("has_working_copy")
 
 return strict.lock(scm)

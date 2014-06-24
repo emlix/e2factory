@@ -51,6 +51,7 @@ local transport = require("transport")
 local url = require("url")
 local chroot = require("chroot")
 local project = require("project")
+local source = require("source")
 
 -- Build function table, see end of file for details.
 local e2tool_ftab = {}
@@ -296,9 +297,9 @@ local function check_result(info, resultname)
         e:append("source attribute:")
         e:cat(re)
     else
-        for i,s in ipairs(res.sources) do
-            if not info.sources[s] then
-                e:append("source does not exist: %s", s)
+        for _,sourcename in ipairs(res.sources) do
+            if not source.sources[sourcename] then
+                e:append("source does not exist: %s", sourcename)
             end
         end
     end
@@ -707,68 +708,6 @@ function e2tool.src_res_path_to_name(pathname)
     return pathname:gsub("/", ".")
 end
 
---- Load all source configs. Creates and populates the info.sources dictionary.
--- @param info Info table.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function load_source_configs(info)
-    local rc, re, e
-    local sources, list, path, types
-
-    e = err.new("error loading source configuration")
-    info.sources = {}
-    sources, re = gather_source_paths(info)
-    if not sources then
-        return false, e:cat(re)
-    end
-
-    for _,src in ipairs(sources) do
-        path = e2tool.sourceconfig(src, info.root)
-        types = { "e2source", }
-        rc, re = e2tool.verify_src_res_pathname_valid_chars(src)
-        if not rc then
-            e:append("invalid source file name: %s", src)
-            e:cat(re)
-            return false, e
-        end
-
-        list, re = load_user_config2(info, path, types)
-        if not list then
-            return false, e:cat(re)
-        end
-
-        local name
-        for _,item in ipairs(list) do
-            name = item.data.name
-            item.data.directory = src
-            if not name and #list == 1 then
-                e2lib.warnf("WDEFAULT", "`name' attribute missing in source config.")
-                e2lib.warnf("WDEFAULT", " Defaulting to directory name")
-                item.data.name = e2tool.src_res_path_to_name(src)
-                name = item.data.name
-            end
-
-            if not name then
-                return false, e:append("`name' attribute missing in source config")
-            end
-
-            rc, re = e2tool.verify_src_res_name_valid_chars(name)
-            if not rc then
-                e:append("invalid source name: %s", name)
-                e:cat(re)
-                return false, e
-            end
-
-            if info.sources[name] then
-                return false, e:append("duplicate source: %s", name)
-            end
-
-            info.sources[name] = item.data
-        end
-    end
-    return true
-end
-
 --- Get project-relative directory for a result.
 -- Returns the relative path to the resultdir and optionally a name and prefix
 -- (e.g. prefix/res/name).
@@ -933,43 +872,6 @@ local function load_result_configs(info)
     return true
 end
 
---- check source.
-local function check_source(info, sourcename)
-    local src = info.sources[sourcename]
-    local rc, e, re
-    if not src then
-        e = err.new("no source by that name: %s", sourcename)
-        return false, e
-    end
-    e = err.new("in source: %s", sourcename)
-    if not src.type then
-        e2lib.warnf("WDEFAULT", "in source %s", sourcename)
-        e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
-        src.type = "files"
-    end
-    rc, re = scm.validate_source(info, sourcename)
-    if not rc then
-        return false, re
-    end
-    return true
-end
-
---- check sources.
-local function check_sources(info)
-    local rc, re
-    local e = err.new("Error while checking sources")
-    for n,s in pairs(info.sources) do
-        rc, re = check_source(info, n)
-        if not rc then
-            e:cat(re)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    return true
-end
-
 --- Checks project information for consistancy.
 -- @param info Info table.
 -- @return True on success, false on error.
@@ -977,10 +879,7 @@ end
 local function check_project_info(info)
     local rc, re, e
     e = err.new("error in project configuration")
-    rc, re = check_sources(info)
-    if not rc then
-        return false, e:cat(re)
-    end
+
     rc, re = check_results(info)
     if not rc then
         return false, e:cat(re)
@@ -1110,8 +1009,6 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    info.sources = {}
-
     -- read environment configuration
     info.env = {}		-- global and result specfic env (deprecated)
     info.env_files = {}   -- a list of environment files
@@ -1141,7 +1038,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- sources
-    rc, re = load_source_configs(info)
+    rc, re = source.load_source_configs(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1209,21 +1106,12 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    --e2tool.add_source_results(info)
-
     -- provide a sorted list of results
     info.results_sorted = {}
     for r,res in pairs(info.results) do
         table.insert(info.results_sorted, r)
     end
     table.sort(info.results_sorted)
-
-    -- provided sorted list of sources
-    info.sources_sorted = {}
-    for s,src in pairs(info.sources) do
-        table.insert(info.sources_sorted, s)
-    end
-    table.sort(info.sources_sorted)
 
     rc, re = policy.init(info)
     if not rc then
@@ -1645,14 +1533,17 @@ function e2tool.pbuildid(info, resultname)
 
     hash.hash_line(hc, r.name)
 
-    for _,s in ipairs(r.sources) do
-        local src = info.sources[s]
-        local source_set = r.build_mode.source_set()
-        local rc, re, sourceid = scm.sourceid(info, s, source_set)
-        if not rc then
+    for _,sourcename in ipairs(r.sources) do
+        local src, sourceid, sourceset
+
+        src = source.sources[sourcename]
+        sourceset = r.build_mode.source_set()
+        sourceid, re = src:sourceid(sourceset)
+        if not sourceid then
             return false, e:cat(re)
         end
-        hash.hash_line(hc, s)			-- source name
+
+        hash.hash_line(hc, sourcename)		-- source name
         hash.hash_line(hc, sourceid)		-- sourceid
     end
     for _,d in ipairs(r.depends) do
@@ -1728,11 +1619,16 @@ end
 -- @param resultname string: name of a result
 -- @return table: environment variables valid for the result
 function e2tool.env_by_result(info, resultname)
+    assert(type(info) == "table")
+    assert(type(resultname) == "string" and #resultname > 0)
+
+    local src
     local res = info.results[resultname]
     local env = environment.new()
     env:merge(info.global_env, false)
-    for _, s in ipairs(res.sources) do
-        env:merge(info.sources[s]._env, true)
+    for _, sourcename in ipairs(res.sources) do
+        src = source.sources[sourcename]
+        env:merge(src:get_env(), true)
     end
     env:merge(res._env, true)
     return env
