@@ -11,7 +11,7 @@ e2-fetch-sources \- retrieve sources of an e2factory project
 e2-fetch-sources [<option> ... | <source> ... | <result> ...]
 
 .SH DESCRIPTION
-\fBe2-fetch-sources\fR is part of the e2factory commandline tools.
+\fBe2-fetch-sources\fR is part of the e2factory command line tools.
 \fBe2-fetch-sources\fR can operate in two modes, fetch and update.
 
 The \fBfetch\fR mode retrieves sources. Sources can be
@@ -30,34 +30,36 @@ Normally, exit status is 0. On error, it is non-zero.
 .SH OPTIONS
 .TP
 .BR \-\-fetch
-\fBe2-fetch-sources\fR works in fetch mode. This is default.
+\fBe2-fetch-sources\fR works in fetch mode.
+This is the default.
 .TP
 .BR \-\-update
 \fBe2-fetch-sources\fR works in update mode.
 .TP
 .BR \-\-all
-Fetch all sources referred to in the whole project.
+Select all sources in the whole project.
 .TP
 .BR \-\-scm
-Fetch all sources referred by a SCM. This excludes file sources.
+Select all sources using a SCM.
+This is the default.
 .TP
 .BR \-\-files
-Select files sources. Not selected by default.
+Select file sources.
 .TP
 .BR \-\-git
-Fetch sources from a git repository.
+Select sources of type svn.
 .TP
 .BR \-\-svn
-Fetch sources from a svn repository.
+Select sources of type svn.
 .TP
 .BR \-\-cvs
-Fetch sources from a cvs repository.
+Select git type sources.
 .TP
 .BR \-\-source
-Fetch sources by source name.
+Select sources by source name.
 .TP
 .BR \-\-result
-Fetch sources by result name.
+Select sources by result name.
 .TP
 .BR \-\-chroot
 Select chroot files.
@@ -71,7 +73,7 @@ Download all sources and other needed files of an e2factory project.
 e2-fetch-sources --all
 .fi
 .PP
-Update all sources.
+Update all SCM sources.
 .IP
 .nf
 e2-fetch-sources --update
@@ -82,4 +84,4 @@ e2-fetch-sources --update
 .BR e2factory (1)
 
 .SH COPYRIGHT
-(c)2013 emlix GmbH
+(c)2007-2014 emlix GmbH
