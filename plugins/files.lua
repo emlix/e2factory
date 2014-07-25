@@ -328,11 +328,7 @@ function files.files_source:display()
     for f in self:file_iter() do
         s = string.format("file       = %s:%s", f.server, f.location)
         table.insert(d, s)
-    end
-
-    licences = self:get_licences()
-    for licencename in licences:iter_sorted() do
-        table.insert(d, string.format("licence    = %s", licencename))
+        table.insert(d, string.format("licence    = %s", f.licences:concat_sorted(", ")))
     end
 
     if self._sourceid then
