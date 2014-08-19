@@ -53,6 +53,9 @@ local function rsync_ssh(opts, src, dest)
         table.insert(argv, opt)
     end
 
+    table.insert(argv, "-L") -- copy symlinks as real files
+    table.insert(argv, "-k") -- copy dirlinks as directories
+
     local rsh = tools.get_tool("ssh") .. " " .. tools.get_tool_flags("ssh")
     table.insert(argv, "--rsh=" .. rsh)
 
@@ -157,9 +160,21 @@ function transport.fetch_file(surl, location, destdir, destname)
     if not rc then
         return false, e:cat(re)
     end
-    local template = string.format("%s/%s.XXXXXXXXXX", destdir, destname)
-    local tmpfile_path = e2lib.mktempfile(template)
+
+    local template = string.format("%s/%s.XXXXXX", destdir, destname)
+    local tmpfile_path, re = e2lib.mktempfile(template)
+    if not tmpfile_path then
+        return false, e:cat(re)
+    end
     local tmpfile = e2lib.basename(tmpfile_path)
+
+    -- Some tools (rsync) do not return an error code when skipping symlinks,
+    -- device files, etc. Thus we delete the tmp file here, let rsync do its
+    -- job, and detect the silent error condition when moving the file to its
+    -- final destination. Yes there is a race, but we take that chance over
+    -- missing error detection.
+    e2lib.rmtempfile(tmpfile_path)
+
     -- fetch the file to the temporary directory
     if u.transport == "http" or
         u.transport == "https" then
@@ -182,10 +197,8 @@ function transport.fetch_file(surl, location, destdir, destname)
         end
     elseif u.transport == "file" then
         -- rsync "sourcefile" "destdir/destfile"
-        local argv = {}
-        table.insert(argv, "/" .. u.path .. "/" .. location)
-        table.insert(argv, destdir .. "/" .. tmpfile)
-        rc, re = e2lib.rsync(argv)
+        rc, re = rsync_ssh({}, e2lib.join("/", u.path, location),
+            destdir .. "/" .. tmpfile)
         if not rc then
             return false, e:cat(re)
         end
@@ -218,10 +231,9 @@ function transport.fetch_file(surl, location, destdir, destname)
         e:append("fetch file: unhandled transport: %s", u.transport)
         return false, e
     end
-    -- move the file into place atomically
-    local src = string.format("%s/%s", destdir, tmpfile)
-    local dst = string.format("%s/%s", destdir, destname)
-    rc, re = e2lib.mv(src, dst)
+    -- Move the file into place atomically. This may fail when the copy
+    -- operation above failed silently (looking at rsync here).
+    rc, re = e2lib.mv(tmpfile_path, e2lib.join(destdir, destname))
     if not rc then
         return false, e:cat(re)
     end
@@ -256,9 +268,7 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
         local mkdir_perm = ""
         local rsync_argv = {}
         if push_permissions then
-            mkdir_perm = string.format("--mode \"%s\"",
-            push_permissions)
-
+            mkdir_perm = string.format("--mode \"%s\"", push_permissions)
             table.insert(rsync_argv, "--perms")
             table.insert(rsync_argv, "--chmod")
             table.insert(rsync_argv, push_permissions)
@@ -271,11 +281,9 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
                 return false, e:cat(re)
             end
         end
-        table.insert(rsync_argv, sourcefile)
-        table.insert(rsync_argv, destdir .. "/" .. destname)
         local done = false
+        local dst = e2lib.join(destdir, destname)
         if (not push_permissions) and try_hardlink then
-            local dst = string.format("%s/%s", destdir, destname)
             rc, re = e2lib.ln(sourcefile, dst, "--force")
             if rc then
                 done = true
@@ -285,9 +293,9 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
             end
         end
         if not done then
-            rc, re = e2lib.rsync(rsync_argv)
+            rc, re = rsync_ssh(rsync_argv, sourcefile, dst)
             if not rc then
-                return false, re
+                return false, e:cat(re)
             end
         end
     elseif u.transport == "rsync+ssh" then

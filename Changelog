@@ -1,4 +1,5 @@
 NEXT:
+ * Fix rsync silently skipping non-regular files and directories
 
 e2factory-2.3.14p0
  * This release continues to be compatible with 2.3.14 plugins.
