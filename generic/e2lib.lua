@@ -750,42 +750,42 @@ end
 -- @param ... Further path components, following the same rule as "p2".
 -- @return A joined path (string), which may be empty.
 function e2lib.join(p1, p2, ...)
-	assert(type(p1) == "string")
-	assert(p2 == nil or type(p2) == "string")
+    assert(type(p1) == "string")
+    assert(p2 == nil or type(p2) == "string")
 
-	local sep = "/"
-	local args = {p1, p2, ...}
-	local buildpath = ""
-	local sepnext = false
-        local component
+    local sep = "/"
+    local args = {p1, p2, ...}
+    local buildpath = ""
+    local sepnext = false
+    local component
 
-	for i=1,#args do
-                component = args[i]
-		assert(type(component) == "string")
+    for i=1,#args do
+        component = args[i]
+        assert(type(component) == "string")
 
-		if sepnext then
-			-- If the previous or next component already
-			-- has a separator in the right place, we don't
-			-- need to add one. We do however not go to the
-			-- trouble removing multiple separators.
-			if buildpath:sub(-1) == sep or
-				component:sub(1) == sep then
-				-- do nothing
-			else
-				buildpath = buildpath .. sep
-			end
-		end
+        if sepnext then
+            -- If the previous or next component already
+            -- has a separator in the right place, we don't
+            -- need to add one. We do however not go to the
+            -- trouble removing multiple separators.
+            if buildpath:sub(-1) == sep or
+                component:sub(1) == sep then
+                -- do nothing
+            else
+                buildpath = buildpath .. sep
+            end
+        end
 
-		buildpath = buildpath .. component
+        buildpath = buildpath .. component
 
-		if component:len() > 0 then
-			sepnext = true
-		else
-			sepnext = false
-		end
-	end
+        if component:len() > 0 then
+            sepnext = true
+        else
+            sepnext = false
+        end
+    end
 
-	return buildpath
+    return buildpath
 end
 
 --- Checks whether file matches some usual backup file names left behind by vi
