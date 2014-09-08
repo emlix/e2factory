@@ -757,8 +757,10 @@ function e2lib.join(p1, p2, ...)
 	local args = {p1, p2, ...}
 	local buildpath = ""
 	local sepnext = false
+        local component
 
-	for _,component in ipairs(args) do
+	for i=1,#args do
+                component = args[i]
 		assert(type(component) == "string")
 
 		if sepnext then
