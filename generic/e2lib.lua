@@ -567,7 +567,8 @@ end
 -- is true
 -- @param level number: loglevel
 -- @param msg string: log message
-function e2lib.log(level, msg)
+-- @param nonewline Defaults to false. Do not append newline if set to true.
+function e2lib.log(level, msg, nonewline)
     if level < 1 or level > 4 then
         e2lib.log(1, "Internal error: invalid log level")
     end
@@ -578,7 +579,7 @@ function e2lib.log(level, msg)
 
     local log_prefix = "[" .. level .. "] "
 
-    if string.sub(msg, -1) ~= "\n"  then
+    if not nonewline and string.sub(msg, -1) ~= "\n"  then
         msg = msg.."\n"
     end
 
