@@ -98,33 +98,6 @@ function lock.cleanup(l)
     end
 end
 
---[[
-local test=false
-if test then
-    -- some dummy functions to test without context...
-    function err.new(x)
-        return true
-    end
-    e2lib = {}
-    e2lib.mkdir = function(x)
-        print("mkdir " .. x)
-        return true
-    end
-    e2lib.rmdir = function(x)
-        print("rmdir " .. x)
-        return true
-    end
-
-    l = new()
-
-    l:lock("/tmp/foo1")
-    l:lock("/tmp/foo2")
-    l:lock("/tmp/foo3")
-    l:unlock("/tmp/foo2")
-    l:cleanup()
-end
-]]
-
 return strict.lock(lock)
 
 -- vim:sw=4:sts=4:et:
