@@ -32,11 +32,20 @@ local err =  {}
 local e2lib = require("e2lib")
 local strict = require("strict")
 
+local function assert_err(e)
+    assert(type(e) == "table")
+    assert(type(e.count) == "number")
+    assert(type(e.msg) == "table")
+    return true
+end
+
 --- append a string to an error object
 -- @param format string: format string
 -- @param ... list of strings required for the format string
 -- @return table: the error object
 function err.append(e, format, ...)
+    assert_err(e)
+    assert(type(format) == "string")
     e.count = e.count + 1
     table.insert(e.msg, string.format(format, ...))
     return e
@@ -47,6 +56,8 @@ end
 -- @param re table: the error object to insert
 -- @return table: the error object
 function err.cat(e, re)
+    assert_err(e)
+    assert(type(re) == "string" or assert_err(re))
     -- auto-convert strings to error objects before inserting
     if type(re) == "string" then
         re = err.new("%s", re)
@@ -60,6 +71,8 @@ end
 -- @param e table: the error object
 -- @param depth number: used internally to count and display nr. of sub errors
 function err.print(e, depth)
+    assert_err(e)
+    assert(type(depth) == "number" or depth == nil)
     if not depth then
         depth = 1
     else
@@ -84,14 +97,17 @@ end
 -- @param n number: new error counter setting
 -- @return nil
 function err.setcount(e, n)
+    assert_err(e)
+    assert(type(n) == "number")
     e.count = n
 end
 
 --- get the error counter
 -- @param e the error object
--- @param n unused
 -- @return number: the error counter
 function err.getcount(e, n)
+    assert_err(e)
+    assert(n == nil) -- unused, spot uses
     return e.count
 end
 
@@ -100,6 +116,7 @@ end
 -- @param ... list of arguments required for the format string
 -- @return table: the error object
 function err.new(format, ...)
+    assert(type(format) == "string" or format == nil)
     local e = {}
     e.count = 0
     e.msg = {}
@@ -109,14 +126,6 @@ function err.new(format, ...)
         e:append(format, ...)
     end
     return e
-end
-
-function err.toerror(x)
-    if type(x) == "table" then
-        return x
-    else
-        return err.new(x)
-    end
 end
 
 return strict.lock(err)
