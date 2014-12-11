@@ -159,6 +159,42 @@ function Object.static:includes(mixin)
          )
 end
 
+function Object:obj_lock_rw()
+  local mt = getmetatable(self)
+  assert(mt, "object: metatable is missing")
+  assert(mt.__newindex == nil, "object metatable: __newindex in use")
+  mt.__newindex = function (t, k, v)
+      error(string.format("attempt to set uninitialized key in (%s)[%s] to %s",
+      tostring(t), tostring(k), tostring(v)))
+  end
+
+  local idx = rawget(mt, "__index") -- upvalue
+  assert(type(idx) == "table", "object metatable: __index not a table")
+  if type(idx) == "table" then
+    rawset(mt, "__index_orig", idx)
+
+    mt.__index = function (t, k)
+      local r = idx[k]
+      if r == nil then
+        error(string.format("attempted to read nil value from (%s)[%s]",
+          tostring(idx), tostring(k)))
+      end
+      return r
+    end
+
+  end
+end
+
+function Object:obj_unlock_rw()
+  local mt = getmetatable(self)
+  assert(mt, "object lacks metatable!")
+  mt.__newindex = nil
+
+  local idx = rawget(mt, "__index_orig")
+  assert(type(idx) == "table", "object metatable: __index_orig not a table")
+  rawset(mt, "__index", idx)
+end
+
 function Object:initialize() end
 
 function Object:__tostring() return "instance of " .. tostring(self.class) end
@@ -185,3 +221,5 @@ middleclass.Object = Object
 setmetatable(middleclass, { __call = function(_, ...) return middleclass.class(...) end })
 
 return middleclass
+
+-- vim:sw=2:sts=2:et:
