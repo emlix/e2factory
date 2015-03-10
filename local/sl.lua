@@ -24,11 +24,6 @@ local err = require("err")
 local e2lib = require("e2lib")
 local strict = require("strict")
 
--- ----------------------------------------------------------------------------
--- There is plenty of optimization potential here, however the string lists
--- are usually very small: 0 - 100 entries. Don't waste time.
--- ----------------------------------------------------------------------------
-
 --- Class "sl" for keeping string lists.
 -- Trying to use string list with anything but strings throws an exception.
 sl.sl = class("sl")
@@ -45,6 +40,21 @@ function sl.sl:initialize(merge, unique)
     self._merge = merge or false
     self._unique = unique or false
     self._list = {}
+    self._list_sorted = false -- {}
+    self._need_sort = true
+end
+
+function sl.sl:_sort_if_needed()
+    if not self._need_sort then
+        return
+    end
+
+    self._list_sorted = {}
+    for _,v in ipairs(self._list) do
+        table.insert(self._list_sorted, v)
+    end
+    table.sort(self._list_sorted)
+    self._need_sort = false
 end
 
 --- Insert an entry into the string list.
@@ -63,6 +73,34 @@ function sl.sl:insert(entry)
         end
     end
     table.insert(self._list, entry)
+    self._need_sort = true
+    return true
+end
+
+--- Insert entries of a vector into string list.
+--@param entrytbl Vector of entries.
+--@return True on success, false when the entry is not unique.
+function sl.sl:insert_table(entrytbl)
+    assert(type(entrytbl) == "table")
+
+    for _,e in ipairs(entrytbl) do
+        if not self:insert(e) then
+            return false
+        end
+    end
+
+    return true
+end
+
+function sl.sl:insert_sl(entrysl)
+    assert(type(entrysl) == "table")
+
+    for _,e in ipairs(entrysl._list) do
+        if not self:insert(e) then
+            return false
+        end
+    end
+
     return true
 end
 
@@ -84,6 +122,7 @@ function sl.sl:remove(entry)
         end
     end
 
+    self._need_sort = true
     return changed
 end
 
@@ -126,14 +165,11 @@ function sl.sl:iter_sorted()
     local t = {}
     local i = 0
 
-    for _,v in ipairs(self._list) do
-        table.insert(t, v)
-    end
-    table.sort(t)
+    self:_sort_if_needed()
 
     return function()
         i = i + 1
-        return t[i]
+        return self._list_sorted[i]
     end
 end
 
@@ -180,9 +216,14 @@ function sl.sl:totable_inserted()
 end
 
 --- Return string list entries as an array, in insertion order.
--- @return Array in insertion order.
+-- @return Sorted array.
 function sl.sl:totable_sorted()
-    return table.sort(self:totable_inserted())
+    local t = {}
+    self:_sort_if_needed()
+    for _,v in ipairs(self._list_sorted) do
+        table.insert(t, v)
+    end
+    return t
 end
 
 return strict.lock(sl)
