@@ -170,28 +170,27 @@ function hash.hcache_store()
     return true
 end
 
---- Create a hash context.
--- @return Hash context object or false on error.
--- @return Error object on failure.
+--- Create a hash context. Throws error object on failure.
+-- @return Hash context object.
 function hash.hash_start()
     local errstring, hc
-    hc = {}
+    hc = { _data = "" }
 
     hc._ctx, errstring = lsha1.init()
     if not hc._ctx then
-        return false, err.new("initializing SHA1 context failed: %s", errstring)
+        error(err.new("initializing SHA1 context failed: %s", errstring))
     end
-    hc._data = ""
 
     return strict.lock(hc)
 end
 
---- Add data to hash context.
+--- Add data to hash context. Throws error object on failure.
 -- @param hc the hash context
 -- @param data string: data
--- @return True on success, false on error.
--- @return Error object on failure.
 function hash.hash_append(hc, data)
+    assert(type(hc) == "table")
+    assert(type(data) == "string")
+    assert(hc._data and hc._ctx)
     local rc, errstring
 
     hc._data = hc._data .. data
@@ -200,22 +199,18 @@ function hash.hash_append(hc, data)
     if #hc._data >= 64*1024 then
         rc, errstring = lsha1.update(hc._ctx, hc._data)
         if not rc then
-            return false, err.new("%s", re)
+            error(err.new("%s", re))
         end
         hc._data = ""
     end
-
-    return true
 end
 
---- Hash a line.
+--- Hash data with a new-line character. Throws error object on failure.
 -- @param hc the hash context
 -- @param data string: data to hash, a newline is appended
--- @return True on success, false on error.
--- @return Error object on failure.
 -- @see hash_append
 function hash.hash_line(hc, data)
-    return hash.hash_append(hc, data .. "\n")
+    hash.hash_append(hc, data .. "\n")
 end
 
 --- Hash a file.
@@ -224,7 +219,25 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function hash.hash_file(hc, path)
-    local f, rc, re, buf
+
+    local function _hash_file(hc, f)
+        local rc, re, buf
+
+        while true do
+            buf, re = eio.fread(f, 64*1024)
+            if not buf then
+                return false, re
+            elseif buf == "" then
+                break
+            end
+
+            hash.hash_append(hc, buf)
+        end
+
+        return true
+    end
+
+    local f, rc, re, ok
 
     f, re = eio.fopen(path, "r")
     if not f then
@@ -232,32 +245,24 @@ function hash.hash_file(hc, path)
     end
 
     trace.disable()
+    ok, rc, re = e2lib.trycall(_hash_file, hc, f)
+    trace.enable()
 
-    while true do
-        buf, re = eio.fread(f, 64*1024)
-        if not buf then
-            trace.enable()
-            eio.fclose(f)
-            return false, re
-        elseif buf == "" then
-            break
-        end
-
-        rc, re = hash.hash_append(hc, buf)
-        if not rc then
-            trace.enable()
-            eio.fclose(f)
-            return false, re
-        end
+    if not ok then
+        -- rc contains error object/message
+        re = rc
+        rc = false
     end
 
-    trace.enable()
+    if not rc then
+        eio.fclose(f)
+        return false, re
+    end
 
     rc, re = eio.fclose(f)
     if not rc then
         return false, re
     end
-
     return true
 end
 
@@ -346,10 +351,7 @@ function hash.hash_file_once(path)
         return cs
     end
 
-    hc, re = hash.hash_start()
-    if not hc then
-        return false, re
-    end
+    hc = hash.hash_start()
 
     rc, re = hash.hash_file(hc, path)
     if not rc then
@@ -366,21 +368,20 @@ function hash.hash_file_once(path)
     return cs
 end
 
---- Get checksum and release hash context.
+--- Get checksum and release hash context. Throws error object on failure.
 -- @param hc the hash context
--- @return SHA1 Checksum, or false on error.
--- @return Error object on failure.
+-- @return SHA1 Checksum.
 function hash.hash_finish(hc)
     local rc, errstring, cs
 
     rc, errstring = lsha1.update(hc._ctx, hc._data)
     if not rc then
-        return false, err.new("%s", errstring)
+        error(err.new("%s", errstring))
     end
 
     cs, errstring = lsha1.final(hc._ctx)
     if not cs then
-        return false, err.new("%s", errstring)
+        error(err.new("%s", errstring))
     end
 
     -- Destroy the hash context to catch errors
