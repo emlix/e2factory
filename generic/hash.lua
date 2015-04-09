@@ -199,7 +199,7 @@ function hash.hash_append(hc, data)
     if #hc._data >= 64*1024 then
         rc, errstring = lsha1.update(hc._ctx, hc._data)
         if not rc then
-            error(err.new("%s", re))
+            error(err.new("%s", errstring))
         end
         hc._data = ""
     end
