@@ -1,4 +1,5 @@
 NEXT:
+ * Reset all signal handlers to their default values
  * Fix rotating logs when the result name contains a dash
  * Fix rsync silently skipping non-regular files and directories
 

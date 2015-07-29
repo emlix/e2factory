@@ -723,6 +723,46 @@ do_getpid(lua_State *lua) {
 	return 1;
 }
 
+/* e2util.signal_reset()
+ * Reset all (possible) signals back to their default settings
+ */
+static int
+signal_reset(lua_State *L)
+{
+	int s;
+	struct sigaction act;
+
+	for (s = 1; s < NSIG; s++) {
+		if (sigaction(s, NULL, &act) < 0)
+			break; /* end of signals */
+
+		switch (s) {
+		case SIGINT:
+			/* used by e2factory */
+			continue;
+		case SIGFPE:
+			act.sa_handler = SIG_IGN;
+			break;
+		case SIGKILL:
+		case SIGSTOP:
+		case SIGCONT:
+			continue;
+		default:
+			act.sa_handler = SIG_DFL;
+		}
+
+		if (sigaction(s, &act, NULL) < 0) {
+			// fprintf(stderr, "%d is set to %p\n", s, (void *)act.sa_handler);
+			lua_pushboolean(L, 0);
+			lua_pushstring(L, strerror(errno));
+			return 2;
+		}
+	}
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
 /* e2util.catch_interrupt()
 
    Establish signal handler for SIGINT that aborts. */
@@ -782,6 +822,7 @@ static luaL_Reg lib[] = {
 	{ "unsetenv", do_unsetenv },
 	{ "exec", do_exec },
 	{ "getpid", do_getpid },
+	{ "signal_reset", signal_reset },
 	{ NULL, NULL }
 };
 

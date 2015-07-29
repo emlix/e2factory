@@ -133,6 +133,11 @@ function e2lib.init()
     -- DEBUG: change to "cr" to log return from function
     debug.sethook(e2lib.tracer, "c")
 
+    local rc, re = e2util.signal_reset()
+    if not rc then
+        e2lib.abort(re)
+    end
+
     e2lib.globals.warn_category = {
         WDEFAULT = false,
         WDEPRECATED = false,
