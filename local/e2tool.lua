@@ -699,6 +699,7 @@ local function hashcache_setup(info)
     local rc, re
     e2lib.logf(4, "loading hashcache from file: %s", info.hashcache_file)
     info.hashcache = {}
+
     local c, msg = loadfile(info.hashcache_file)
     if not c then
         e2lib.warnf("WHINT", "loading hashcache failed: %s", msg)
@@ -706,24 +707,39 @@ local function hashcache_setup(info)
     end
     -- set empty environment for this chunk
     setfenv(c, {})
-    info.hashcache = c()
-    if type(info.hashcache) ~= "table" then
-        e2lib.warnf("WHINT", "clearing malformed hashcache")
-        info.hashcache = {}
+    local newcache = c()
+
+    if type(newcache) ~= "table" then
+        e2lib.warnf("WHINT", "ignoring malformed hashcache")
         return true
     end
-    for k,hce in pairs(info.hashcache) do
-        if (not k:match("([^:]+):(%S+)")) or
-            type(hce) ~= "table" or
-            type(hce.hash) ~= "string" or
-            type(hce.time) ~= "number" or
-            (not hce.hash:match("^([a-f0-9]+)$")) or
-            #(hce.hash) ~= 40 then
-            e2lib.warnf("WHINT", "clearing malformed hashcache")
-            info.hashcache = {}
-            return true
+
+    for id, hce in pairs(newcache) do
+        if type(id) == "string" and id:match("([^:]+):(%S+)")
+            and type(hce.hash) == "string" and string.len(hce.hash) == 40
+            and type(hce.mtime) == "number"
+            and type(hce.mtime_nsec) == "number"
+            and type(hce.ctime) == "number"
+            and type(hce.ctime_nsec) == "number"
+            and type(hce.size) == "number"
+            and type(hce.dev) == "number"
+            and type(hce.ino) == "number" then
+
+            info.hashcache[id] = {
+                hash = hce.hash,
+                mtime = hce.mtime,
+                mtime_nsec = hce.mtime_nsec,
+                ctime = hce.ctime,
+                ctime_nsec = hce.ctime_nsec,
+                size = hce.size,
+                dev = hce.dev,
+                ino = hce.ino,
+            }
+        else
+            e2lib.warnf("WHINT", "ignoring malformed hashcache entry")
         end
     end
+
     return true
 end
 
@@ -1891,8 +1907,9 @@ local function hashcache_write(info)
     f:write("return {\n")
     for k,hce in pairs(info.hashcache) do
         f:write(string.format(
-        "[\"%s\"] = { hash=\"%s\", time=%d, },\n",
-        k, hce.hash, hce.time))
+            "[%q] = { hash=%q, mtime=%d, mtime_nsec=%d, ctime=%d, ctime_nsec=%d, size=%d, dev=%d, ino=%d },\n",
+            k, hce.hash, hce.mtime, hce.mtime_nsec,
+            hce.ctime, hce.ctime_nsec, hce.size, hce.dev, hce.ino))
     end
     f:write("}\n")
     f:close()
@@ -1903,36 +1920,55 @@ end
 local function hashcache(info, file)
     local e = err.new("getting fileid from hash cache failed")
     local rc, re, fileid
+
     local p, re = info.cache:file_path(file.server,	file.location, {})
     if not p then
         return nil, e:cat(re)
     end
+
     local s, msg = e2util.stat(p)
     if not s then
         return nil, err.new("%s: %s", p, msg)
     end
+
     local id = string.format("%s:%s", file.server, file.location)
-    local fileid
     local hce = info.hashcache[id]
-    if not hce or s.mtime >= hce.time then
-        fileid, re = hash_file(info, file.server, file.location)
-        if not fileid then
-            return nil, e:cat(re)
-        end
-        hce = {
-            hash = fileid,
-            time = s.mtime,
-        }
-        -- update hashcache and the hashcachefile
-        -- TBD: mark hashcache dirty and write hashcachefile once.
-        info.hashcache[id] = hce
-        rc, re = hashcache_write(info)
-        if not rc then
-            return nil, e:cat(re)
-        end
-    else
-        fileid = hce.hash
+    if hce
+        -- We don't just care about the file contents (mtime),
+        -- inode changes could make the file inaccessible, so check ctime too
+        and s.mtime == hce.mtime
+        and s.mtime_nsec == hce.mtime_nsec
+        and s.ctime == hce.ctime
+        and s.ctime_nsec == hce.ctime_nsec
+        and s.size == hce.size
+        and s.dev == hce.dev
+        and s.ino == hce.ino then
+            assert(type(hce.hash) == "string" and string.len(hce.hash) == 40)
+            return hce.hash
     end
+
+    local fileid
+    fileid, re = hash_file(info, file.server, file.location)
+    if not fileid then
+        return nil, e:cat(re)
+    end
+
+    assert(type(fileid) == "string" and string.len(fileid) == 40)
+    hce = {
+        hash = fileid,
+        mtime = s.mtime,
+        mtime_nsec = s.mtime_nsec,
+        ctime = s.ctime,
+        ctime_nsec = s.ctime_nsec,
+        size = s.size,
+        dev = s.dev,
+        ino = s.ino,
+    }
+    -- update hashcache and the hashcachefile
+    -- TBD: mark hashcache dirty and write hashcachefile once.
+    info.hashcache[id] = hce
+    hashcache_write(info) -- an error here is not fatal
+
     return fileid
 end
 
