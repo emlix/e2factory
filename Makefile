@@ -139,16 +139,6 @@ clean:
 		$(MAKE) -C $$s $@ ; \
 	done
 	rm -f $(CLEAN_FILES)
-	if [ -d $(PWD)/test/e2 ]; then \
-	  sudo $(MAKE) -C test clean; \
-	fi
-
-check:
-	@echo building e2...
-	make clean >/dev/null 2>&1
-	make PREFIX=$(PWD)/test/e2 >/dev/null 2>&1
-	sudo make PREFIX=$(PWD)/test/e2 install >/dev/null 2>&1
-	make -C test check
 
 localdist: all
 	if test -z "$(DISTNAME)"; then \
