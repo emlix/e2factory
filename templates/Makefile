@@ -53,7 +53,7 @@ install-local: all
 	install -m 644 local/source.svn $(LOCALLIBDIR)/templates/
 
 %.sh: %.sh.in
-	$(TOPLEVEL)/scripts/genscript.sh $< $@
+	$(GENSCRIPT) $< $@
 
 uninstall:
 	# do not remove possibly valuable templates

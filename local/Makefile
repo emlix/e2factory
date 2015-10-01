@@ -108,7 +108,7 @@ clean:
 	rm -f $(CLEAN_FILES)
 
 %: %.in
-	$(TOPLEVEL)/scripts/genscript.sh $< $@
+	$(GENSCRIPT) $< $@
 
 linux32: linux32.c
 

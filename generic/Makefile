@@ -61,7 +61,7 @@ clean:
 	rm -f $(CLEAN_FILES)
 
 %: %.in
-	$(TOPLEVEL)/scripts/genscript.sh $< $@
+	$(GENSCRIPT) $< $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LUA_CPPFLAGS) $(LDFLAGS) -fPIC -o $@ -c $<

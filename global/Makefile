@@ -106,17 +106,17 @@ clean:
 	rm -f $(CLEAN_FILES)
 
 %.lua: %.lua.in
-	$(TOPLEVEL)/scripts/genscript.sh $< $@
+	$(GENSCRIPT) $< $@
 
 %.sh: %.sh.in
-	$(TOPLEVEL)/scripts/genscript.sh $< $@
+	$(GENSCRIPT) $< $@
 
 e2: e2.lua
 	echo "#!$(LIBEXECDIR)/e2-lua-$(LUA_VERSION)" >$@
 	cat $< >>$@
 
 e2.conf: e2.conf.in
-	$(TOPLEVEL)/scripts/genscript.sh $< $@
+	$(GENSCRIPT) $< $@
 
 sha1.so: sha1.o lsha1.o
 
