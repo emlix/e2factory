@@ -163,6 +163,3 @@ tag:
 
 showtag:
 	@echo $(TAG)
-
-tags:
-	$(CTAGS) -R .
