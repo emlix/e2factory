@@ -1295,8 +1295,11 @@ function e2tool.collect_project_info(info, skip_load_config)
     if not info.chroot_call_prefix[info.project.chroot_arch] then
         e:append("chroot_arch is set to an invalid value")
     end
-    if info.project.chroot_arch == "x86_64" and
-        e2lib.host_system_arch ~= "x86_64" then
+    local host_system_arch, re = e2lib.get_sys_arch()
+    if not host_system_arch then
+        e:cat(re)
+    elseif info.project.chroot_arch == "x86_64" and
+        host_system_arch ~= "x86_64" then
         e:append("running on x86_32: switching to x86_64 mode is impossible.")
     end
     if e:getcount() > 1 then
