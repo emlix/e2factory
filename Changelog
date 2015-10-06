@@ -1,4 +1,5 @@
 NEXT:
+ * Fix incorrect use of shquote(), preventing x86_64 chroot builds
  * Fix regression preventing use of x86_64 chroot
  * Fix hashcache problem causing an incorrect BuildID
  * Reset all signal handlers to their default values

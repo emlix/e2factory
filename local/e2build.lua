@@ -208,7 +208,13 @@ function e2build.build_config(info, r)
     tab.T = string.format("%s/%s/%s/chroot/%s", tmpdir, project, r, builddir)
     tab.Tc = string.format("/%s", builddir)
     tab.r = string.format("%s", r)
-    tab.chroot_call_prefix = info.chroot_call_prefix[info.project.chroot_arch]
+    if info.chroot_call_prefix[info.project.chroot_arch] == "" then
+        -- escape only if non-empty, otherwise we fail to start "''"
+        tab.chroot_call_prefix = ""
+    else
+        tab.chroot_call_prefix =
+            e2lib.shquote(info.chroot_call_prefix[info.project.chroot_arch])
+    end
     tab.buildlog = string.format("%s/log/build.%s.log", info.root, r)
     tab.scriptdir = "script"
     tab.build_driver = ""
@@ -333,9 +339,11 @@ function e2build.enter_playground(info, r, chroot_command)
     e2lib.log(4, "entering playground for " .. r .. " ...")
     local term = e2lib.globals.terminal
     local e2_su = tools.get_tool("e2-su-2.2")
-    local cmd = string.format("%s %s chroot_2_3 '%s' %s",
-    res.build_config.chroot_call_prefix, e2_su,
-    res.build_config.base, chroot_command)
+    local cmd = string.format("%s %s chroot_2_3 %s %s",
+        res.build_config.chroot_call_prefix,
+        e2lib.shquote(e2_su),
+        e2lib.shquote(res.build_config.base),
+        chroot_command)
     e2tool.set_umask(info)
     os.execute(cmd)
     e2tool.reset_umask(info)
@@ -389,9 +397,10 @@ local function runbuild(info, r, return_flags)
     e2lib.shquote(res.build_config.build_driver_file))
     local e2_su = tools.get_tool("e2-su-2.2")
     local cmd = string.format("%s %s chroot_2_3 %s %s",
-    e2lib.shquote(res.build_config.chroot_call_prefix),
-    e2lib.shquote(e2_su),
-    e2lib.shquote(res.build_config.base), runbuild)
+        res.build_config.chroot_call_prefix,
+        e2lib.shquote(e2_su),
+        e2lib.shquote(res.build_config.base),
+        runbuild)
     -- the build log is written to an external logfile
     rc, re = e2lib.rotate_log(res.build_config.buildlog)
     if not rc then
