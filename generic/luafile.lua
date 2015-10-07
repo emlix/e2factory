@@ -141,6 +141,22 @@ function luafile.dup2(oldfd, newfd)
     return nil
 end
 
+
+--- Set the CLOEXEC flag on underlying file descriptor. Throws exception on
+-- invalid input.
+-- @param something can be a file descriptor number, luafile object, or io file
+-- @param set True to set the CLOEXEC, False to unset it. Defaults to True.
+-- @return True on success, False on error.
+function luafile.cloexec(something, set)
+    assert(something ~= nil)
+    assert(set == nil or type(set) == "boolean")
+    if set == nil then
+        set = true
+    end
+
+    return luafile_ll.cloexec(something, set)
+end
+
 return strict.lock(luafile)
 
 -- vim:sw=4:sts=4:et:

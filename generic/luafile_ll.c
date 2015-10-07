@@ -250,6 +250,50 @@ lua_dup2(lua_State *lua)
 	return 1;
 }
 
+static int
+lua_cloexec(lua_State *lua)
+{
+	int fd = -1, rc, cloexec;
+	FILE *f = NULL;
+
+	if (lua_isnumber(lua, 1)) {
+		fd = luaL_checkint(lua, 1);
+	} else if (lua_istable(lua, 1)) {
+		lua_pushstring(lua, "file"); // key
+		lua_gettable(lua, 1);
+		if (!lua_islightuserdata(lua, -1))
+		    luaL_argerror(lua, 1, "not a luafile table");
+		f = (FILE *)lua_topointer(lua, -1);
+	} else if (lua_isuserdata(lua, 1)) {
+		FILE **p;
+		p = (FILE **)luaL_checkudata(lua, 1, LUA_FILEHANDLE);
+		if (*p == NULL) {
+			lua_pushfstring(lua, "%s: closed lua filehandle",
+			    __func__);
+			lua_error(lua);
+		}
+		f = *p;
+	}
+
+	if (f) {
+		fd = fileno(f);
+	}
+
+	if (fd < 0) {
+		luaL_argerror(lua, 1, "fd/luafile/io file required");
+	}
+
+	if (lua_isboolean(lua, 2)) {
+		cloexec = lua_toboolean(lua, 2);
+	} else {
+		luaL_argerror(lua, 2, "boolean required");
+	}
+
+	rc = fcntl(fd, F_SETFD, cloexec ? FD_CLOEXEC : 0);
+	lua_pushboolean(lua, (rc == 0));
+	return 1;
+}
+
 static luaL_Reg lib[] = {
   { "fopen", lua_fopen },
   { "fdopen", lua_fdopen },
@@ -264,6 +308,7 @@ static luaL_Reg lib[] = {
   { "setlinebuf", lua_setlinebuf },
   { "pipe", lua_pipe },
   { "dup2", lua_dup2 },
+  { "cloexec", lua_cloexec },
   { NULL, NULL }
 };
 
