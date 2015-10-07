@@ -138,6 +138,9 @@ function e2lib.init()
         e2lib.abort(re)
     end
 
+    e2util.closefrom(3)
+    -- ignore errors, no /proc should not prevent factory from working
+
     e2lib.globals.warn_category = {
         WDEFAULT = false,
         WDEPRECATED = false,

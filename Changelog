@@ -1,4 +1,6 @@
 NEXT:
+ * On startup, close all file descriptors except for stdin, stdout, and stderr
+   as a precautionary measure.
  * luafile.open() sets FD_CLOEXEC by default
  * Fix incorrect use of shquote(), preventing x86_64 chroot builds
  * Fix regression preventing use of x86_64 chroot
