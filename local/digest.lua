@@ -124,6 +124,8 @@ function digest.parse(filename)
         table.insert(dt, entry)
     end
 
+    fd:close()
+
     return dt
 end
 

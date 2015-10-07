@@ -576,6 +576,9 @@ function e2lib.finish(returncode)
         returncode = 0
     end
     e2lib.cleanup()
+    if e2lib.globals.debuglogfile then
+        e2lib.globals.debuglogfile:close()
+    end
     os.exit(returncode)
 end
 
@@ -702,12 +705,12 @@ function e2lib.read_line(path)
         return false, err.new("%s: %s", path, msg)
     end
     local l, msg = f:read("*l")
+    f:close()
     if not l then
         if not msg then
             msg = "end of file"
         end
 
-        f:close()
         return false, err.new("%s: %s", path, msg)
     end
     return l
@@ -1232,6 +1235,7 @@ function e2lib.parse_versionfile(filename)
         e2lib.abort("can't open version file: " .. filename)
     end
     local l = f:readline()
+    f:close()
     if not l then
         e2lib.abort("can't parse version file: " .. filename)
     end
@@ -1250,6 +1254,7 @@ function e2lib.parse_e2versionfile(filename)
         e2lib.abort("can't open e2version file: " .. filename)
     end
     local l = f:readline()
+    f:close()
     if not l then
         e2lib.abort("can't parse e2version file: " .. filename)
     end
@@ -1806,11 +1811,10 @@ function e2lib.write_file(file, data)
         return false, string.format("open failed: %s", msg)
     end
     local rc, msg = f:write(data)
+    f:close()
     if not rc then
-        f:close()
         return false, string.format("write failed: %s", msg)
     end
-    f:close()
     return true, nil
 end
 
@@ -1824,10 +1828,10 @@ function e2lib.read_file(file)
         return nil, err.new("%s", msg)
     end
     local s, msg = f:read("*a")
+    f:close()
     if not s then
         return nil, err.new("%s", msg)
     end
-    f:close()
     return s, nil
 end
 
