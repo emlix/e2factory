@@ -931,6 +931,9 @@ end
 function e2lib.callcmd_redirect(cmd, out)
     local devnull, pid, rc
     devnull = luafile.open("/dev/null", "r")
+    if not devnull then
+        e2lib.abort("could not open /dev/null")
+    end
     e2lib.log(3, "+ " .. cmd)
     pid = e2util.fork()
     if pid == 0 then
@@ -954,6 +957,11 @@ function e2lib.callcmd_pipe(cmds, infile, outfile)
     local rcs = {}
     local pids = {}
     local ers = {}
+
+    if not i then
+        e2lib.abort("could not open /dev/null")
+    end
+
     for n = 1, c do
         local o, pr, fr, er, ew
         pr, er, ew = luafile.pipe()
@@ -1039,6 +1047,9 @@ function e2lib.callcmd_capture(cmd, capture)
     owrite:setlinebuf()
     oread:setlinebuf()
     devnull = luafile.open("/dev/null", "r")
+    if not devnull then
+        e2lib.abort("could not open /dev/null")
+    end
     e2lib.log(4, "+ " .. cmd)
     pid = e2util.fork()
     if pid == 0 then
