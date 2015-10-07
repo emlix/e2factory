@@ -1,4 +1,5 @@
 NEXT:
+ * luafile.open() sets FD_CLOEXEC by default
  * Fix incorrect use of shquote(), preventing x86_64 chroot builds
  * Fix regression preventing use of x86_64 chroot
  * Fix hashcache problem causing an incorrect BuildID

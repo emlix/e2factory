@@ -29,6 +29,8 @@
    Low-level file-system and process operations.
 */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,12 +45,20 @@ lua_fopen(lua_State *lua)
 {
 	FILE *f;
 	const char *file, *mode;
+	int fd = -1;
+
 	file = luaL_checkstring(lua, 1);
 	mode = luaL_checkstring(lua, 2);
 	f = fopen(file, mode);
-	if(f == NULL) {
+	if (f == NULL) {
 		lua_pushnil(lua);
 	} else {
+		fd = fileno(f);
+		if (fcntl(fd, F_SETFD, FD_CLOEXEC) != 0) {
+			lua_pushfstring(lua, "%s: fcntl(%d): %s: %s", __func__,
+			    fd, file, strerror(errno));
+			lua_error(lua);
+		}
 		lua_pushlightuserdata(lua, (void *)f);
 	}
 	return 1;
