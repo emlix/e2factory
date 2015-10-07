@@ -772,6 +772,58 @@ signal_reset(lua_State *L)
 	return 1;
 }
 
+
+/*
+ * e2util.closefrom() closes all file descriptors >= * fd_from.
+ * closefrom() is commonly available on the BSDs, but on Linux we
+ * have to use this crutch (which fails when /proc is not mounted).
+ *
+ * Lua:
+ * e2util.closefrom(number) returns true OR false and an errno string.
+ * May throw an exception.
+ */
+static int
+closefrom(lua_State *L)
+{
+	DIR *d = NULL;
+	int myself, from, eno = 0;
+	struct dirent *de;
+
+	from = luaL_checkinteger(L, 1);
+
+	d = opendir("/proc/self/fd");
+	if (!d)
+		goto error;
+	/* make sure we don't close our directory fd yet */
+	myself = dirfd(d);
+	if (myself < 0)
+		goto error;
+
+	while ((de = readdir(d)) != NULL) {
+		int fd;
+
+		if (de->d_name[0] < '0' || de->d_name[0] > '9')
+			continue;
+
+		fd = atoi(de->d_name);
+		if (fd < from || fd == myself)
+			continue;
+
+		close(fd);
+	}
+
+	closedir(d);
+	lua_pushboolean(L, 1);
+	return 1;
+error:
+	eno = errno;
+	if (d)
+		closedir(d);
+	lua_pushboolean(L, 0);
+	lua_pushstring(L, strerror(eno));
+	return 2;
+}
+
 /* e2util.catch_interrupt()
 
    Establish signal handler for SIGINT that aborts. */
@@ -832,6 +884,7 @@ static luaL_Reg lib[] = {
 	{ "exec", do_exec },
 	{ "getpid", do_getpid },
 	{ "signal_reset", signal_reset },
+	{ "closefrom", closefrom },
 	{ NULL, NULL }
 };
 
