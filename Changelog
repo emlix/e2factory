@@ -1,4 +1,5 @@
 NEXT:
+ * Provide io.open/io.popen wrappers that set FD_CLOEXEC
  * On startup, close all file descriptors except for stdin, stdout, and stderr
    as a precautionary measure.
  * luafile.open() sets FD_CLOEXEC by default

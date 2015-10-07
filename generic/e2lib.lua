@@ -141,6 +141,31 @@ function e2lib.init()
     e2util.closefrom(3)
     -- ignore errors, no /proc should not prevent factory from working
 
+    -- Overwrite io functions that create a file descriptor to set the
+    -- CLOEXEC flag by default.
+    local realopen = io.open
+    local realpopen = io.popen
+
+    function io.open(...)
+        local ret = {realopen(...)} -- closure
+        if ret[1] then
+            if not luafile.cloexec(ret[1]) then
+                return nil, "Setting CLOEXEC failed"
+            end
+        end
+        return unpack(ret)
+    end
+
+    function io.popen(...)
+        local ret = {realpopen(...)} -- closure
+        if ret[1] then
+            if not luafile.cloexec(ret[1]) then
+                return nil, "Setting CLOEXEC failed"
+            end
+        end
+        return unpack(ret)
+    end
+
     e2lib.globals.warn_category = {
         WDEFAULT = false,
         WDEPRECATED = false,
