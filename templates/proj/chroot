@@ -1,20 +1,21 @@
 -- -*- Mode: Lua; tab-width: 8 -*-
 -- vim:ft=lua:sts=0:noet:nosta:ts=8:
 
--- e2factory chroot configuration file --
-local cp = "emlix/chroot-i386/tags/20080916-stable-5/"
 e2chroot {
 	default_groups = {
 		"base",
 	},
 	groups = {
+		-- Prepare a basic Linux installation to be used
+		-- as the default chroot environment. Specify
+		-- the tar archive, server and checksum down below.
 		{
 			name = "base",
 			server = "chroot",
 			files = {
 				{
-					location = cp.."base.tar.gz",
-					sha1 = "653e4244ee255dd0924296d79a330fd9b350a9b4",
+					location = "base-chroot.tar.gz",
+					sha1 = "",
 				}
 			},
 		},
