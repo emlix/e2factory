@@ -131,7 +131,8 @@ end
 function e2lib.init()
     e2lib.log(4, "e2lib.init()")
     -- DEBUG: change to "cr" to log return from function
-    debug.sethook(e2lib.tracer, "c")
+    local traceflags = os.getenv("E2_TRACE") or "c"
+    debug.sethook(e2lib.tracer, traceflags)
 
     local rc, re = e2util.signal_reset()
     if not rc then
