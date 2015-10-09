@@ -902,12 +902,21 @@ function e2lib.callcmd(infile, outfile, errfile, cmd)
     -- redirect stdin
     io.stdin:close()
     luafile.dup2(infile:fileno(), 0)
+    if infile:fileno() ~= 0 then
+        infile:cloexec()
+    end
     -- redirect stdout
     io.stdout:close()
     luafile.dup2(outfile:fileno(), 1)
+    if outfile:fileno() ~= 1 then
+        outfile:cloexec()
+    end
     -- redirect stderr
     io.stderr:close()
     luafile.dup2(errfile:fileno(), 2)
+    if errfile:fileno() ~= 2 then
+        errfile:cloexec()
+    end
     -- run the command
     local rc = os.execute(cmd)
     return (rc/256)
