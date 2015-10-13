@@ -30,20 +30,22 @@ It needs to be adopted to that machine and it network environment.
 This file is searched in the following places. The first match is taken:
 .PP 
 .IP 1. 
-Argument: \-\-e2\-config=FILE
+Argument: \-\-e2\-config=<FILE>
 .IP 2.
 Environment variable: E2_CONFIG=<FILE>
-.IP 3.
-$HOME/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
+.IP 3
+File location to <FILE> in .e2/e2config
 .IP 4.
-$HOME/.e2/e2.conf-<MAJOR>.<MINOR>
+$HOME/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
 .IP 5.
-$HOME/.e2/e2.conf
+$HOME/.e2/e2.conf-<MAJOR>.<MINOR>
 .IP 6.
-/etc/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
+$HOME/.e2/e2.conf
 .IP 7.
-/etc/.e2/e2.conf-<MAJOR>.<MINOR>
+/etc/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
 .IP 8.
+/etc/.e2/e2.conf-<MAJOR>.<MINOR>
+.IP 9.
 /etc/.e2/e2.conf
 
 
