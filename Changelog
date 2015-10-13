@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.14p1
  * Provide io.open/io.popen wrappers that set FD_CLOEXEC
  * On startup, close all file descriptors except for stdin, stdout, and stderr
    as a precautionary measure.
