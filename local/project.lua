@@ -19,13 +19,16 @@
 -- more details.
 
 local project = {}
+local buildconfig = require("buildconfig")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
+local hash = require("hash")
 local strict = require("strict")
 
 local _prj = {}
 local _config_loaders = {}
+local _projid_cache = false
 
 --- Check and load e2project callback function signature.
 -- @function load_project_config_cb
@@ -187,6 +190,21 @@ function project.deploy_results_iter()
     end
 end
 
+--- Return true if resultname is the list of deploy_results.
+-- @param resultname Result name.
+-- @return True if result name was found, false otherwise.
+function project.deploy_results_lookup(resultname)
+    assert(type(_prj.deploy_results) == "table")
+    assert(type(resultname) == "string")
+
+    for _,r in ipairs(_prj.deploy_results) do
+        if resultname == r then
+            return true
+        end
+    end
+    return false
+end
+
 --- Iterator that returns the default results as string.
 -- @return Iterator function.
 function project.default_results_iter()
@@ -197,6 +215,53 @@ function project.default_results_iter()
         i = i + 1
         return _prj.default_results[i]
     end
+end
+
+--- Calculate the Project ID. The Project ID consists of files in proj/init
+-- as well as some keys from proj/config and buildconfig. Returns a cached
+-- value after the first call.
+-- @return Project ID or false on error.
+-- @return Error object on failure
+function project.projid(info)
+    local re, hc, cs
+
+    if _projid_cache then
+        return _projid_cache
+    end
+
+    -- catch proj/init/*
+    hc = hash.hash_start()
+
+    for f, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
+        if not f then
+            return false, re
+        end
+
+        local location, file, fileid
+        if not e2lib.is_backup_file(f) then
+            location = e2lib.join("proj/init", f)
+            file = {
+                server = info.root_server_name,
+                location = location,
+            }
+
+            fileid, re = e2tool.fileid(info, file)
+            if not fileid then
+                return false, re
+            end
+
+            hash.hash_line(hc, location)   -- the filename
+            hash.hash_line(hc, fileid)     -- the file content cs
+        end
+    end
+    hash.hash_line(hc, project.release_id())
+    hash.hash_line(hc, project.name())
+    hash.hash_line(hc, project.chroot_arch())
+    hash.hash_line(hc, buildconfig.VERSION)
+
+    _projid_cache = hash.hash_finish(hc)
+
+    return _projid_cache
 end
 
 return strict.lock(project)
