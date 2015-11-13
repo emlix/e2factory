@@ -43,7 +43,7 @@ install:
 
 install-local:
 	install -m 755 -d $(LOCALPLUGINDIR)
-	set -e; for p in $(LOCALPLUGINS) ; do \
+	for p in $(LOCALPLUGINS) ; do \
 		install -m 644 $$p $(LOCALPLUGINDIR)/$$p; \
 	done
 

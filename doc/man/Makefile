@@ -70,9 +70,9 @@ install: $(MANPAGES)
 	install -m644 $(MANPAGES5) $(DESTDIR)$(MANDIR)/man5
 
 uninstall:
-	set -e; for x in $(MANPAGES1) ; \
+	for x in $(MANPAGES1) ; \
 		do rm -f $(DESTDIR)$(MANDIR)/man1/$$x ; done
-	set -e; for x in $(MANPAGES5) ; \
+	for x in $(MANPAGES5) ; \
 		do rm -f $(DESTDIR)$(MANDIR)/man5/$$x ; done
 	rmdir $(DESTDIR)$(MANDIR)/man1 || :
 	rmdir $(DESTDIR)$(MANDIR)/man5 || :

@@ -50,7 +50,7 @@ LOCALTOOLS = $(LOCALLUATOOLS)
 all:
 
 install:
-	set -e; for i in $(LOCALTOOLS); do \
+	for i in $(LOCALTOOLS); do \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 
@@ -63,7 +63,7 @@ install-local: local
 	install -d $(LOCALMAKDIR)
 	install -d $(LOCALLIBDIR)
 	install -m 644 $(LOCALLUALIBS) $(LOCALLIBDIR)
-	set -e; for i in $(LOCALLUATOOLS); do \
+	for i in $(LOCALLUATOOLS); do \
 		install -m 755 $$i.lua $(LOCALBINDIR)/$$i; \
 	done
 	install -m755 linux32 $(LOCALBINDIR)/e2-linux32; \
@@ -72,17 +72,17 @@ install-local: local
 	$(MAKE) -C make install-local
 
 doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 uninstall:
-	set -e; for i in $(LOCALTOOLS); do \
+	for i in $(LOCALTOOLS); do \
 		rm -f $(DESTDIR)$(BINDIR)/e2-$$i ; \
 	done
 

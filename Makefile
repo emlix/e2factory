@@ -26,7 +26,7 @@
 #
 
 SUBDIRS    = lua generic global local plugins doc templates extensions
-TOPLEVEL    = .
+TOPLEVEL = .
 
 include $(TOPLEVEL)/make.vars
 
@@ -59,17 +59,17 @@ buildconfig.lua: Makefile make.vars
 	echo 'buildconfig.VERSION="$(VERSION)"' >>$@
 	echo 'buildconfig.VERSIONSTRING="$(VERSIONSTRING)"' >>$@
 	echo 'buildconfig.GLOBAL_INTERFACE_VERSION={' >>$@
-	set -e; for x in $(GLOBAL_INTERFACE_VERSION) ; do \
+	for x in $(GLOBAL_INTERFACE_VERSION) ; do \
 		echo " \"$$x\"," ; done >>$@
 	echo '}' >>$@
 	echo 'buildconfig.SYNTAX={' >>$@
-	set -e; for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
+	for x in $(SYNTAX) ; do echo " \"$$x\"," ; done >>$@
 	echo '}' >>$@
 	echo 'return strict.lock(buildconfig)' >>$@
 
 
 all: buildconfig.lua
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	#$(MAKE) -C lua
@@ -82,7 +82,7 @@ all: buildconfig.lua
 install: all
 	install -d $(DESTDIR)$(LIBDIR)
 	install -m 644 buildconfig.lua $(DESTDIR)$(LIBDIR)
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	#$(MAKE) -C global install
@@ -94,7 +94,7 @@ install: all
 	#$(MAKE) -C extensions install
 
 uninstall:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(DESTDIR)$(LIBDIR)/buildconfig.lua
@@ -108,7 +108,7 @@ uninstall:
 	#rmdir -p $(DESTDIR)$(BINDIR) >/dev/null 2>&1 || :
 
 local: buildconfig.lua
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
@@ -129,25 +129,25 @@ install-local: local
 	#$(MAKE) -C doc install-local
 	install -d $(LOCALLIBDIR)
 	install -m 644 buildconfig.lua $(LOCALLIBDIR)
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
 	install -d -m 755 $(DESTDIR)$(DOCDIR)
 	install -m 644 Changelog $(DESTDIR)$(DOCDIR)/
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 clean:
 	rm -f $(CLEAN_FILES)
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 

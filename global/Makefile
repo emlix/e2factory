@@ -54,11 +54,11 @@ install-dirs:
 
 
 install: all install-dirs
-	set -e; for i in $(GLOBALLUATOOLS) ; do \
+	for i in $(GLOBALLUATOOLS) ; do \
 		install -m 755 $$i.lua $(DESTDIR)$(TOOLDIR)/$$i ; \
 		ln -sf e2 $(DESTDIR)$(BINDIR)/$$i ; \
 	done
-	set -e; for i in $(GLOBALSHTOOLS) ; do \
+	for i in $(GLOBALSHTOOLS) ; do \
 		install -m 755 $$i.sh $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	install -m 755 e2 $(DESTDIR)$(BINDIR)/
@@ -70,11 +70,11 @@ install: all install-dirs
 		$(DESTDIR)$(BINDIR)/
 
 uninstall:
-	set -e; for i in $(GLOBALLUATOOLS) ; do \
+	for i in $(GLOBALLUATOOLS) ; do \
 		rm -f $(DESTDIR)$(TOOLDIR)/$$i ; \
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
-	set -e; for i in $(GLOBALSHTOOLS) ; do \
+	for i in $(GLOBALSHTOOLS) ; do \
 		rm -f $(DESTDIR)$(BINDIR)/$$i ; \
 	done
 	rm -f $(DESTDIR)$(BINDIR)/e2-su-2.2
@@ -91,12 +91,12 @@ uninstall-local:
 	rmdir -p $(LOCALMAKDIR) || true
 
 doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 

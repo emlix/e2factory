@@ -26,7 +26,7 @@
 #
 
 SUBDIRS    =
-TOPLEVEL   = ../..
+TOPLEVEL = ../..
 
 LDOC	= $(TOPLEVEL)/doc/ldoc/ldoc
 
@@ -38,42 +38,42 @@ CLEAN_FILES = e2factory.tar.gz
 	doc
 
 all:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 uninstall:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 local:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-local:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 doc: gen-doc
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 clean: clean-doc
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(CLEAN_FILES)

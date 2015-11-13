@@ -8,42 +8,42 @@ CLEAN_FILES = ldoc
 .PHONY: all install install-local clean local uninstall doc install-doc
 
 all: ldoc
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 uninstall:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 local:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-local:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 install-doc:
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 
 clean: clean-lua-5.1.3 clean-luafilesystem-1.6.2
-	set -e; for s in $(SUBDIRS) ; do \
+	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
 	rm -f $(CLEAN_FILES)

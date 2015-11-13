@@ -25,37 +25,40 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-SUBDIRS    = $(shell ls | grep -v Makefile)
-TOPLEVEL   = ..
+SUBDIRS = $(shell find . -mindepth 1 -maxdepth 1 -type d)
+TOPLEVEL = $(shell pwd)/..
+
+# extensions need a way to locate the source
+export TOPLEVEL
 
 include $(TOPLEVEL)/make.vars
-export SRC = $(shell pwd)/$(TOPLEVEL)
 
 CLEAN_FILES = *~
 
 all:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 
 install:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 
 uninstall:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 
 local:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 
 install-local:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@; done
 
 doc:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 
 install-doc:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 
 clean:
-	set -e; for s in $(SUBDIRS) ; do $(MAKE) -C $$s $@ ; done
+	for s in $(SUBDIRS); do $(MAKE) -C $$s $@; done
 	rm -f $(CLEAN_FILES)
 
 .PHONY: all install local install-local doc install-doc clean
+

@@ -57,7 +57,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-lua-5.1.3
 	rm -f $(DESTDIR)$(LIBEXECDIR)/e2-luac-5.1.3
 	rmdir -p $(DESTDIR)$(LIBEXECDIR)/lua-5.1.3 || true
-	set -e; for x in $(LUA_HEADER) ; do \
+	for x in $(LUA_HEADER) ; do \
 		rm -f $(DESTDIR)$(INCDIR)/lua-5.1.3/$$x ; \
 	done
 	rmdir -p $(DESTDIR)$(INCDIR)/lua-5.1.3 || true

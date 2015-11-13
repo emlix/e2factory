@@ -53,7 +53,7 @@ install: all
 	install -m 644 $(SO_LIBS) $(DESTDIR)$(LIBDIR)
 
 uninstall:
-	set -e; for f in $(LUA_LIBS) $(SO_LIBS); do \
+	for f in $(LUA_LIBS) $(SO_LIBS); do \
 		rm -f "$(DESTDIR)$(LIBDIR)/$$f"; \
 	done
 	rmdir -p $(DESTDIR)$(LIBDIR) || true
@@ -66,7 +66,7 @@ install-local: local
 	install -m 644 $(SO_LIBS) $(LOCALLIBDIR)
 
 uninstall-local:
-	set -e; for f in $(LUA_LIBS) $(SO_LIBS); do \
+	for f in $(LUA_LIBS) $(SO_LIBS); do \
 		rm -f "$(LOCALLIBDIR)/$$f"; \
 	done
 	rmdir -p $(LOCALLIBDIR) || true
