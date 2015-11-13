@@ -105,9 +105,8 @@ end
 --- get the error counter
 -- @param e the error object
 -- @return number: the error counter
-function err.getcount(e, n)
+function err.getcount(e)
     assert_err(e)
-    assert(n == nil) -- unused, spot uses
     return e.count
 end
 
