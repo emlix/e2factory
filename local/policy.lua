@@ -32,9 +32,10 @@ local policy = {}
 local cache = require("cache")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
+local eio = require("eio")
 local err = require("err")
-local strict = require("strict")
 local hash = require("hash")
+local strict = require("strict")
 
 --- Get the source set identifier.
 -- @return string: the source set identifier
@@ -141,20 +142,20 @@ local function buildid_scratch(buildid)
         return buildid_scratch_cache[buildid]
     end
 
-    local rfile, msg, rstr
+    local rfile, re, rstr
     local hc, newbuildid
 
-    rfile, msg = io.open("/dev/urandom")
+    rfile, re = eio.fopen("/dev/urandom", "r")
     if not rfile then
-        e2lib.abort(msg)
+        e2lib.abort(re)
     end
 
-    rstr = rfile:read(16)
+    rstr, re = eio.fread(rfile, 16)
     if not rstr or string.len(rstr) ~= 16 then
-        e2lib.abort("could not get 16 bytes of entrophy")
+        e2lib.abort("could not get 16 bytes of entropy")
     end
 
-    rfile:close()
+    eio.fclose(rfile)
 
     hc = hash.hash_start()
     hash.hash_append(hc, buildid)
