@@ -1,4 +1,5 @@
 NEXT:
+ * on git source update, fetch tags and prevent non-ff merges
 
 e2factory-2.3.14p1
  * Provide io.open/io.popen wrappers that set FD_CLOEXEC

@@ -205,6 +205,10 @@ function git.update(info, sourcename)
     if not rc then
         return false, e:cat(re)
     end
+    rc, re = e2lib.git(nil, "fetch", "--tags")
+    if not rc then
+        return false, e:cat(re)
+    end
     e:append("fetch succeeded")
 
     -- setup the branch tracking its remote. This fails if the branch exists,
@@ -227,7 +231,7 @@ function git.update(info, sourcename)
     if not rc then
         return false, e:append("working copy not available")
     end
-    rc, re = e2lib.git(nil, "pull")
+    rc, re = e2lib.git(nil, "pull", "--ff-only")
     if not rc then
         return false, e:cat(re)
     end
