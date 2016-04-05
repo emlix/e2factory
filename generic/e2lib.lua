@@ -2103,7 +2103,7 @@ end
 -- @param src string: source name
 -- @param dst string: destination name
 -- @return bool
--- @return the last line ouf captured output
+-- @return the last line of captured output
 function e2lib.mv(src, dst)
     assert(type(src) == "string" and type(dst) == "string")
     assert(string.len(src) > 0 and string.len(dst) > 0)
@@ -2116,7 +2116,7 @@ end
 -- @param dst string: destination name
 -- @param recursive True enables recursive copying. The default is false.
 -- @return bool
--- @return the last line ouf captured output
+-- @return the last line of captured output
 function e2lib.cp(src, dst, recursive)
     local argv
 
@@ -2256,7 +2256,7 @@ end
 --- call the gzip command
 -- @param argv table: argument vector
 -- @return bool
--- @return the last line ouf captured output
+-- @return the last line of captured output
 function e2lib.gzip(argv)
     assert(type(argv) == "table")
 
