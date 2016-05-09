@@ -145,17 +145,17 @@ function chroot.chroot:chrootgroupid(info)
         self._name)
 
     hc = hash.hash_start()
-    hash.hash_line(hc, self._name)
+    hash.hash_append(hc, self._name)
 
     local fileid
     for f in self:file_iter() do
-        hash.hash_line(hc, f.server)
-        hash.hash_line(hc, f.location)
+        hash.hash_append(hc, f.server)
+        hash.hash_append(hc, f.location)
         fileid, re = e2tool.fileid(info, f)
         if not fileid then
             return false, e:cat(re)
         end
-        hash.hash_line(hc, fileid)
+        hash.hash_append(hc, fileid)
     end
 
     self._chrootgroupid = hash.hash_finish(hc)
