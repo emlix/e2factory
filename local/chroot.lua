@@ -19,6 +19,7 @@
 -- more details.
 
 local chroot = {}
+package.loaded["chroot"] = chroot
 local cache = require("cache")
 local class = require("class")
 local e2lib = require("e2lib")
