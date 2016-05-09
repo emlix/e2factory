@@ -228,21 +228,21 @@ function cvs.cvs_source:sourceid(sourceset)
     assert(type(info) == "table")
 
     hc = hash.hash_start()
-    hash.hash_line(hc, self._name)
-    hash.hash_line(hc, self._type)
-    hash.hash_line(hc, self._env:id())
+    hash.hash_append(hc, self._name)
+    hash.hash_append(hc, self._type)
+    hash.hash_append(hc, self._env:id())
     licences = self:get_licences()
     for licencename in licences:iter_sorted() do
         lid, re = licence.licences[licencename]:licenceid(info)
         if not lid then
             return false, re
         end
-        hash.hash_line(hc, lid)
+        hash.hash_append(hc, lid)
     end
     -- cvs specific
     if sourceset == "tag" and self._tag ~= "^" then
         -- we rely on tags being unique with cvs
-        hash.hash_line(hc, self._tag)
+        hash.hash_append(hc, self._tag)
     else
         -- the old function took a hash of the CVS/Entries file, but
         -- forgot the subdirecties' CVS/Entries files. We might
@@ -250,9 +250,9 @@ function cvs.cvs_source:sourceid(sourceset)
         return false, err.new("cannot calculate sourceid for source set %s",
             sourceset)
     end
-    hash.hash_line(hc, self._server)
-    hash.hash_line(hc, self._cvsroot)
-    hash.hash_line(hc, self._module)
+    hash.hash_append(hc, self._server)
+    hash.hash_append(hc, self._cvsroot)
+    hash.hash_append(hc, self._module)
 
     self._sourceids[sourceset] = hash.hash_finish(hc)
 
