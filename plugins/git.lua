@@ -206,9 +206,9 @@ function git.git_source:sourceid(sourceset)
     end
 
     hc = hash.hash_start()
-    hash.hash_line(hc, self._name)
-    hash.hash_line(hc, self._type)
-    hash.hash_line(hc, self._env:id())
+    hash.hash_append(hc, self._name)
+    hash.hash_append(hc, self._type)
+    hash.hash_append(hc, self._env:id())
 
     licences = self:get_licences()
     for licencename in licences:iter_sorted() do
@@ -216,13 +216,13 @@ function git.git_source:sourceid(sourceset)
         if not lid then
             return false, re
         end
-        hash.hash_line(hc, lid)
+        hash.hash_append(hc, lid)
     end
 
-    hash.hash_line(hc, self._server)
-    hash.hash_line(hc, self._location)
-    hash.hash_line(hc, self._working)
-    hash.hash_line(hc, id)
+    hash.hash_append(hc, self._server)
+    hash.hash_append(hc, self._location)
+    hash.hash_append(hc, self._working)
+    hash.hash_append(hc, id)
     self._commitids[sourceset] = id
     self._sourceids[sourceset] = hash.hash_finish(hc)
 
