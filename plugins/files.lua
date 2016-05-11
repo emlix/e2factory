@@ -283,21 +283,21 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
     assert(info)
 
     hc = hash.hash_start()
-    hash.hash_line(hc, self._name)
-    hash.hash_line(hc, self._type)
-    hash.hash_line(hc, self._env:id())
+    hash.hash_append(hc, self._name)
+    hash.hash_append(hc, self._type)
+    hash.hash_append(hc, self._env:id())
 
     for f in self:file_iter() do
         local fileid, re = e2tool.fileid(info, f)
         if not fileid then
             return false, re
         end
-        hash.hash_line(hc, fileid)
-        hash.hash_line(hc, f.location)
-        hash.hash_line(hc, f.server)
-        hash.hash_line(hc, tostring(f.unpack))
-        hash.hash_line(hc, tostring(f.patch))
-        hash.hash_line(hc, tostring(f.copy))
+        hash.hash_append(hc, fileid)
+        hash.hash_append(hc, f.location)
+        hash.hash_append(hc, f.server)
+        hash.hash_append(hc, tostring(f.unpack))
+        hash.hash_append(hc, tostring(f.patch))
+        hash.hash_append(hc, tostring(f.copy))
 
         -- per file licence list
         for licencename in f.licences:iter_sorted() do
@@ -305,7 +305,7 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
             if not lid then
                 return false, re
             end
-            hash.hash_line(hc, lid)
+            hash.hash_append(hc, lid)
         end
     end
 
