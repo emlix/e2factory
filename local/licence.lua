@@ -125,17 +125,17 @@ function licence.licence:licenceid(info)
     e = err.new("calculating licence id failed for licence: %s", self._name)
 
     hc = hash.hash_start()
-    hash.hash_line(hc, self._name)
+    hash.hash_append(hc, self._name)
 
     for file in self:file_iter() do
-        hash.hash_line(hc, file.server)
-        hash.hash_line(hc, file.location)
+        hash.hash_append(hc, file.server)
+        hash.hash_append(hc, file.location)
 
         fileid, re = e2tool.fileid(info, file)
         if not fileid then
             return false, e:cat(re)
         end
-        hash.hash_line(hc, fileid)
+        hash.hash_append(hc, fileid)
     end
 
     self._licenceid, re = hash.hash_finish(hc)
