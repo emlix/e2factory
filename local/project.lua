@@ -250,14 +250,14 @@ function project.projid(info)
                 return false, re
             end
 
-            hash.hash_line(hc, location)   -- the filename
-            hash.hash_line(hc, fileid)     -- the file content cs
+            hash.hash_append(hc, location)   -- the filename
+            hash.hash_append(hc, fileid)     -- the file content cs
         end
     end
-    hash.hash_line(hc, project.release_id())
-    hash.hash_line(hc, project.name())
-    hash.hash_line(hc, project.chroot_arch())
-    hash.hash_line(hc, buildconfig.VERSION)
+    hash.hash_append(hc, project.release_id())
+    hash.hash_append(hc, project.name())
+    hash.hash_append(hc, project.chroot_arch())
+    hash.hash_append(hc, buildconfig.VERSION)
 
     _projid_cache = hash.hash_finish(hc)
 
