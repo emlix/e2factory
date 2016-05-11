@@ -48,17 +48,18 @@ local e2lib = {}
 package.loaded["e2lib"] = e2lib
 
 local buildconfig = require("buildconfig")
+local cache = require("cache")
 local console = require("console")
-local lock = require("lock")
+local eio = require("eio")
 local err = require("err")
 local errno = require("errno")
+local globals = require("globals")
+local hash = require("hash")
+local le2lib = require("le2lib")
+local lock = require("lock")
 local plugin = require("plugin")
 local tools = require("tools")
-local cache = require("cache")
-local eio = require("eio")
-local le2lib = require("le2lib")
 local trace = require("trace")
-local hash = require("hash")
 
 e2lib.globals = strict.lock({
     logflags = {
