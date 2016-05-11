@@ -283,9 +283,9 @@ function svn.svn_source:sourceid(sourceset)
     end
 
     hc = hash.hash_start()
-    hash.hash_line(hc, self._name)
-    hash.hash_line(hc, self._type)
-    hash.hash_line(hc, self._env:id())
+    hash.hash_append(hc, self._name)
+    hash.hash_append(hc, self._type)
+    hash.hash_append(hc, self._env:id())
 
     info = e2tool.info()
     assert(type(info) == "table")
@@ -296,7 +296,7 @@ function svn.svn_source:sourceid(sourceset)
         if not lid then
             return false, re
         end
-        hash.hash_line(hc, lid)
+        hash.hash_append(hc, lid)
     end
 
     surl, re = cache.remote_url(info.cache, self._server, self._location)
@@ -309,14 +309,14 @@ function svn.svn_source:sourceid(sourceset)
         return false, re
     end
 
-    hash.hash_line(hc, self._server)
-    hash.hash_line(hc, self._location)
+    hash.hash_append(hc, self._server)
+    hash.hash_append(hc, self._location)
 
     if sourceset == "tag" then
-        hash.hash_line(hc, self._tag)
+        hash.hash_append(hc, self._tag)
         argv = { "info", svnurl.."/"..self._tag }
     elseif sourceset == "branch" then
-        hash.hash_line(hc, self._branch)
+        hash.hash_append(hc, self._branch)
         argv = { "info", svnurl.."/"..self._branch }
     elseif sourceset == "lazytag" then
         return false, err.new("svn source does not support lazytag mode")
@@ -335,7 +335,7 @@ function svn.svn_source:sourceid(sourceset)
     if not svnrev or string.len(svnrev) == 0 then
         return false, err.new("could not find SVN revision")
     end
-    hash.hash_line(hc, svnrev)
+    hash.hash_append(hc, svnrev)
 
     self._sourceids[sourceset] = hash.hash_finish(hc)
 
