@@ -63,7 +63,7 @@ end
 function environment.id(env)
     local hc = hash.hash_start()
     for var, val in env:iter() do
-        hash.hash_append(hc, string.format("%s=%s", var, val))
+        hash.hash_append(hc, var..val)
     end
     return hash.hash_finish(hc)
 end
