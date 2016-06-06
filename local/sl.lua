@@ -24,6 +24,9 @@ local err = require("err")
 local e2lib = require("e2lib")
 local strict = require("strict")
 
+-- TODO: remove _sorted from method names,
+-- insertion order methods were and should not be used
+
 --- Class "sl" for keeping string lists.
 -- Trying to use string list with anything but strings throws an exception.
 sl.sl = class("sl")
@@ -40,21 +43,14 @@ function sl.sl:initialize(merge, unique)
     self._merge = merge or false
     self._unique = unique or false
     self._list = {}
-    self._list_sorted = false -- {}
-    self._need_sort = true
+    self._need_sort = false
 end
 
 function sl.sl:_sort_if_needed()
-    if not self._need_sort then
-        return
+    if self._need_sort then
+        table.sort(self._list)
+        self._need_sort = false
     end
-
-    self._list_sorted = {}
-    for _,v in ipairs(self._list) do
-        table.insert(self._list_sorted, v)
-    end
-    table.sort(self._list_sorted)
-    self._need_sort = false
 end
 
 --- Insert an entry into the string list.
@@ -93,7 +89,7 @@ function sl.sl:insert_table(entrytbl)
 end
 
 function sl.sl:insert_sl(entrysl)
-    assert(type(entrysl) == "table")
+    assert(entrysl:isInstanceOf(sl.sl))
 
     for _,e in ipairs(entrysl._list) do
         if not self:insert(e) then
@@ -117,12 +113,12 @@ function sl.sl:remove(entry)
         if self._list[i] == entry then
             table.remove(self._list, i)
             changed = true
+            self._need_sort = true
         else
             i = i+1
         end
     end
 
-    self._need_sort = true
     return changed
 end
 
@@ -147,18 +143,6 @@ function sl.sl:size()
     return #self._list
 end
 
---- Iterate through the string list in insertion order.
--- @return Iterator function.
-function sl.sl:iter_inserted()
-
-    local i = 0
-
-    return function()
-        i = i + 1
-        return self._list[i]
-    end
-end
-
 --- Iterate through the string list in alphabetical order.
 -- @return Iterator function.
 function sl.sl:iter_sorted()
@@ -169,7 +153,7 @@ function sl.sl:iter_sorted()
 
     return function()
         i = i + 1
-        return self._list_sorted[i]
+        return self._list[i]
     end
 end
 
@@ -177,7 +161,8 @@ end
 -- @return New string list object.
 function sl.sl:copy()
     local c = sl.sl:new(self._merge, self._unique)
-    for e in self:iter_inserted() do
+
+    for _,e in pairs(self._list) do
         assert(c:insert(e))
     end
     assert(self:size() == c:size())
@@ -205,22 +190,12 @@ function sl.sl:concat_sorted(sep)
     return cat
 end
 
---- Return string list entries as an array, in insertion order.
--- @return Array in insertion order.
-function sl.sl:totable_inserted()
-    local t = {}
-    for _,v in ipairs(self._list) do
-        table.insert(t, v)
-    end
-    return t
-end
-
---- Return string list entries as an array, in insertion order.
+--- Return string list entries as an array.
 -- @return Sorted array.
 function sl.sl:totable_sorted()
     local t = {}
     self:_sort_if_needed()
-    for _,v in ipairs(self._list_sorted) do
+    for _,v in ipairs(self._list) do
         table.insert(t, v)
     end
     return t
