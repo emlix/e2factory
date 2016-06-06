@@ -201,6 +201,13 @@ function sl.sl:totable_sorted()
     return t
 end
 
+--- Return string list in unpacked form. Useful when dealing with
+-- vectors, variadic functions, etc.
+-- @return All entries as individual return values, in sorted order.
+function sl.sl:unpack()
+    return unpack(self:totable_sorted())
+end
+
 return strict.lock(sl)
 
 -- vim:sw=4:sts=4:et:
