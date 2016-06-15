@@ -428,7 +428,7 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2lib.init2()
-    local rc, re, e, config, ssh, host_system_arch
+    local rc, re, e, config, ssh
 
     e = err.new("initializing globals (step2)")
 
@@ -461,12 +461,6 @@ function e2lib.init2()
     -- initialize the tools library after resetting tools
     rc, re = tools.init()
     if not rc then
-        return false, e:cat(re)
-    end
-
-    -- get host system architecture
-    host_system_arch, re = e2lib.uname_machine()
-    if not host_system_arch then
         return false, e:cat(re)
     end
 

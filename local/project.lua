@@ -55,7 +55,7 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function load_prj_cfg(prj)
-    local rc, re, e, info
+    local rc, re, e, info, system_arch
 
     info = e2tool.info()
     assert(info)
@@ -103,7 +103,13 @@ local function load_prj_cfg(prj)
     if not info.chroot_call_prefix[prj.chroot_arch] then
         return false, err.new("chroot_arch is set to an invalid value")
     end
-    if prj.chroot_arch == "x86_64" and e2lib.host_system_arch ~= "x86_64" then
+
+    -- get host system architecture
+    system_arch, re = e2lib.uname_machine()
+    if not system_arch then
+        return false, re
+    end
+    if prj.chroot_arch == "x86_64" and system_arch ~= "x86_64" then
         return false,
             err.new("running on x86_32: switching to x86_64 mode is impossible.")
     end
