@@ -54,7 +54,7 @@ local function e2_dsort(arg)
         error(re)
     end
 
-    local d = e2tool.dsort(info)
+    local d = e2tool.dsort()
     if d then
         for _,dep in ipairs(d) do
             console.infonl(dep)

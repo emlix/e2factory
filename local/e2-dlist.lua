@@ -30,9 +30,10 @@
 
 local console = require("console")
 local e2lib = require("e2lib")
-local e2tool = require("e2tool")
 local e2option = require("e2option")
+local e2tool = require("e2tool")
 local err = require("err")
+local result = require("result")
 
 local function e2_dlist(arg)
     local rc, re = e2lib.init()
@@ -56,21 +57,21 @@ local function e2_dlist(arg)
             "no result given - enter `e2-dlist --help' for usage information"))
     elseif #arguments ~= 1 then e2option.usage(1) end
 
-    local result = arguments[1]
+    local resultname = arguments[1]
     info, re = e2tool.collect_project_info(info)
     if not info then
         error(re)
     end
 
-    if not info.results[ result ] then
-       error(err.new("no such result: %s", result))
+    if not result.results[resultname] then
+       error(err.new("no such result: %s", resultname))
     end
 
     local dep, re
     if opts.recursive then
-        dep, re = e2tool.dlist_recursive(info, result)
+        dep, re = e2tool.dlist_recursive(resultname)
     else
-        dep, re = e2tool.dlist(info, result)
+        dep, re = e2tool.dlist(resultname)
     end
     if not dep then
         error(re)

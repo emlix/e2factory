@@ -175,13 +175,13 @@ local function e2_build(arg)
     local sel_res = {}
     if #results > 0 then
         local re
-        sel_res, re = e2tool.dlist_recursive(info, results)
+        sel_res, re = e2tool.dlist_recursive(results)
         if not sel_res then
             error(re)
         end
     else
         local re
-        sel_res, re = e2tool.dsort(info)
+        sel_res, re = e2tool.dsort()
         if not sel_res then
             error(re)
         end
