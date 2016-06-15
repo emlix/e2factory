@@ -123,8 +123,6 @@ end
 
 --- Dictionary holding all source objects indexed by their name.
 source.sources = {}
---- Array holding all source objects in alphabetical order.
-source.sources_sorted = {}
 
 --- Gather source paths.
 -- @param info Info table.
@@ -261,11 +259,6 @@ function source.load_source_configs(info)
         assert(type(src) == "table")
         source.sources[src:get_name()] = src
     end
-
-    for sourcename,_ in pairs(source.sources) do
-        table.insert(source.sources_sorted, sourcename)
-    end
-    table.sort(source.sources_sorted)
 
     return true
 end
