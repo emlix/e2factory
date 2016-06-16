@@ -294,7 +294,7 @@ function e2lib.setenv(var, val, overwrite)
     rc, errstring = le2lib.setenv(var, val, overwrite)
     if not rc then
         return false,
-            err.new("setting environmenv variable %q to $q failed: %s",
+            err.new("setting environment variable %q to $q failed: %s",
             var, val, errstring)
     end
 
