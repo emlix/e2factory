@@ -261,7 +261,6 @@ function cache.file_in_cache(c, server, location)
     if not rc then
         return false
     end
-    e2lib.log(4, "file is in cache")
     return true
 end
 
@@ -296,7 +295,6 @@ function cache.file_local(c, server, location)
     if not e2lib.isfile(path) then
         return false
     end
-    e2lib.log(4, "file is on local server")
     return true
 end
 
