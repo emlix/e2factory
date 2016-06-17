@@ -1045,8 +1045,9 @@ end
 
 --- File descriptor configuration table.
 -- @table fdct
--- @field dup File descriptor in the child process that should be replaced by
---            this configuration.
+-- @field dup File descriptor(s) in the child process that should be replaced by
+--            this configuration. Can be a single descriptor number or a
+--            vector of descriptors (the later works with "writefunc" only).
 -- @field istype Describes the type of fdct. Can be either "readfo" or
 --               "writefunc". For details, check their respective pseudo-tables.
 -- @see fdct_readfo
@@ -1124,9 +1125,19 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
                     e2lib.abort(re)
                 end
 
-                rc, re = eio.dup2(fdct._p.wfd, fdct.dup)
-                if not rc then
-                    e2lib.abort(re)
+                local duptable
+                if type(fdct.dup) == "table" then
+                    duptable = fdct.dup
+                else
+                    duptable = {}
+                    table.insert(duptable, fdct.dup)
+                end
+
+                for _,todup in ipairs(duptable) do
+                    rc, re = eio.dup2(fdct._p.wfd, todup)
+                    if not rc then
+                        e2lib.abort(re)
+                    end
                 end
             elseif fdct.istype == "readfo" then
                 rc, re = eio.dup2(eio.fileno(fdct.file), fdct.dup)
@@ -1434,10 +1445,8 @@ function e2lib.callcmd_capture(cmd, capture, workdir, envdict)
 
     local fdctv = {
         { dup = eio.STDIN, istype = "readfo", file = devnull },
-        { dup = eio.STDOUT, istype = "writefunc",
-            linebuffer = true, callfn=capture },
-        { dup = eio.STDERR, istype = "writefunc",
-            linebuffer = true, callfn=capture },
+        { dup = { [1] = eio.STDOUT, [2] = eio.STDERR },  istype = "writefunc",
+            linebuffer = true, callfn = capture },
     }
 
     rc, re = e2lib.callcmd(cmd, fdctv, workdir, envdict)
