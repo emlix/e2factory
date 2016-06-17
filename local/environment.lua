@@ -52,6 +52,10 @@ end
 -- @param val value
 -- @return env as passed in the first parameter
 function environment.set(env, var, val)
+    assertIsTable(env)
+    assertIsTable(env.sorted)
+    assertIsStringN(var)
+    assertIsString(val)
     env.dict[var] = val
     table.insert(env.sorted, var)
     table.sort(env.sorted)
@@ -61,6 +65,8 @@ end
 --- return a hash representing the environment
 -- @param env environment
 function environment.id(env)
+    assertIsTable(env)
+    assertIsTable(env.sorted)
     local hc = hash.hash_start()
     for var, val in env:iter() do
         hash.hash_append(hc, var..val)
@@ -74,6 +80,11 @@ end
 -- @param override bool: shall vars from merge override vars from env?
 -- @return environment as merged from env and merge
 function environment.merge(env, merge, override)
+    assertIsTable(env)
+    assertIsTable(env.sorted)
+    assertIsTable(merge)
+    assertIsTable(merge.sorted)
+    assertIsBoolean(override)
     for i, var in ipairs(merge.sorted) do
         if not env.dict[var] then
             table.insert(env.sorted, var)
@@ -88,6 +99,8 @@ end
 --- iterate over the environment, in alphabetical order
 -- @param env environment
 function environment.iter(env)
+    assertIsTable(env)
+    assertIsTable(env.sorted)
     local index = nil
     local function _iter(t)
         local var
@@ -101,6 +114,8 @@ end
 -- @param env environment
 -- @return a copy of the dictionary representing the environment
 function environment.get_dict(env)
+    assertIsTable(env)
+    assertIsTable(env.sorted)
     local dict = {}
     for k,v in env:iter() do
         dict[k] = v
@@ -116,6 +131,9 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function environment.tofile(env, file)
+    assertIsTable(env)
+    assertIsTable(env.sorted)
+    assertIsString(file)
     local rc, re, e, out
 
     out = {}
