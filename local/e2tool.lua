@@ -111,14 +111,12 @@ end
 --- set umask to value used for build processes
 -- @param info
 function e2tool.set_umask(info)
-    e2lib.logf(4, "setting umask to %04o", info.chroot_umask)
     e2lib.umask(info.chroot_umask)
 end
 
 -- set umask back to the value used on the host
 -- @param info
 function e2tool.reset_umask(info)
-    e2lib.logf(4, "setting umask to %04o", info.host_umask)
     e2lib.umask(info.host_umask)
 end
 

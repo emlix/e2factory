@@ -1588,7 +1588,6 @@ function e2lib.locate_project_root(path)
     end
     while true do
         if e2lib.exists(".e2") then
-            e2lib.logf(3, "project is located in: %s", path)
             e2lib.chdir(save_path)
             return path
         end
