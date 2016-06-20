@@ -516,7 +516,7 @@ local function check_project_info()
     end
     rc, re = e2tool.dsort()
     if not rc then
-        return false, e:cat("cyclic dependencies")
+        return false, e:cat(re)
     end
     return true
 end
@@ -791,48 +791,64 @@ end
 -- the indirect dependencies. If result is a vector, calculates dependencies
 -- for all results and includes those from result. If result is a result name,
 -- calculates its dependencies but does not include the result itself.
--- @param info Info table
--- @param result Vector of result names or single result name.
+-- @param resultv Vector of result names or single result name.
 -- @return Vector of dependencies of the result, may or may not include result.
 --         False on failure.
 -- @return Error object on failure
 -- @see e2tool.dlist
-function e2tool.dlist_recursive(info, result)
+function e2tool.dlist_recursive(resultv)
+    assert(type(resultv) == "string" or type(resultv) == "table")
+
     local rc, re
-    local had = {}
+    local seen = {}
     local path = {}
     local col = {}
     local t = {}
 
-    if type(result) == "string" then
-        result, re = e2tool.dlist(info, result)
-        if not result then
+    if type(resultv) == "string" then
+        resultv, re = result.results[resultv]:dlist()
+        if not resultv then
             return false, re
         end
     end
 
-    local function visit(res)
+    local function visit(resultname)
         local deps, re
-        if had[res] then
+
+        if seen[resultname] then
+            local removeupto = seen[resultname]-1
+
+            -- remove depends not part of cycle
+            for pos=1,removeupto do
+                table.remove(path, 1)
+            end
+
+            -- improves visualization of cycle
+            table.insert(path, resultname)
+
             return false,
-                err.new("cyclic dependency: %s", table.concat(path, " "))
-        elseif not col[res] then
-            table.insert(path, res)
-            had[res] = true
-            col[res] = true
-            deps, re = e2tool.dlist(info, res)
+                err.new("cyclic dependency: %s", table.concat(path, " -> "))
+        end
+
+        if not col[resultname] then
+            table.insert(path, resultname)
+            seen[resultname] = #path
+            col[resultname] = true
+
+            deps, re = result.results[resultname]:dlist()
             if not deps then
                 return false, re
             end
+
             for _, d in ipairs(deps) do
                 rc, re = visit(d)
                 if not rc then
                     return false, re
                 end
             end
-            table.insert(t, res)
-            had[res] = nil
-            path[#path] = nil
+            table.insert(t, resultname)
+            table.remove(path)
+            seen[resultname] = nil
         end
         return true
     end
