@@ -19,11 +19,13 @@
 -- more details.
 
 local project = {}
+
 local buildconfig = require("buildconfig")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
 local hash = require("hash")
+local projenv = require("projenv")
 local strict = require("strict")
 
 local _prj = {}
@@ -138,7 +140,7 @@ function project.load_project_config(info)
     prj = nil
     local g = {
         e2project = function(data) prj = data end,
-        env = info.env,
+        env = projenv.safe_global_res_env_table(),
         string = e2lib.safe_string_table(),
     }
 

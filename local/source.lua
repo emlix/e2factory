@@ -28,6 +28,7 @@ local e2tool = require("e2tool")
 local environment = require("environment")
 local err = require("err")
 local licence = require("licence")
+local projenv = require("projenv")
 local sl = require("sl")
 local strict = require("strict")
 
@@ -193,7 +194,7 @@ function source.load_source_configs(info)
         loadcnt = 0
         g = {
             e2source = function(data) rawsrc = data loadcnt = loadcnt + 1 end,
-            env = info.env,
+            env = projenv.safe_global_res_env_table(),
             string = e2lib.safe_string_table(),
         }
 

@@ -46,6 +46,7 @@ local licence = require("licence")
 local plugin = require("plugin")
 local policy = require("policy")
 local project = require("project")
+local projenv = require("projenv")
 local result = require("result")
 local scm = require("scm")
 local source = require("source")
@@ -70,14 +71,8 @@ local e2tool_ftab = {}
 -- @field default_files_server string: name of the default files server
 -- @field result_storage (deprecated)
 -- @field project_location string: project location relative to the servers
--- @field env table: env table
--- @field env_files table: list of env files
 -- @field local_template_path Path to the local templates (string).
 local _info = false
-
---- env - environment table from "proj/env"
--- @name env
--- @class table
 
 --- Open debug logfile.
 -- @param info Info table.
@@ -229,78 +224,6 @@ Configuration syntax versions supported by this version of the tools are:]]
     end
     e2lib.logf(2, "Currently configured configuration syntax is: %q", l)
     return false, e:append("configuration syntax mismatch")
-end
-
---- load env config.
-local function load_env_config(info, file)
-    e2lib.logf(4, "loading environment: %s", file)
-    local e = err.new("loading environment: %s", file)
-    local rc, re
-
-    local load_env_config = load_env_config
-    local merge_error = false
-    local function mergeenv(data)
-        -- upvalues: info, load_env_config(), merge_error
-        local rc, re
-        if type(data) == "string" then
-            -- include file
-            rc, re = load_env_config(info, data)
-            if not rc then
-                -- no error checking in place, so set upvalue and return
-                merge_error = re
-                return
-            end
-        else
-            -- environment table
-            for var, val in pairs(data) do
-                if type(var) ~= "string" or
-                    (type(val) ~= "string" and type(val) ~= "table") then
-                    merge_error = err.new("invalid environment entry in %s: %s=%s",
-                    file, tostring(var), tostring(val))
-                    return nil
-                end
-                if type(val) == "string" then
-                    e2lib.logf(4, "global env: %-15s = %-15s", var, val)
-                    info.env[var] = val
-                    info.global_env:set(var, val)
-                elseif type(val) == "table" then
-                    for var1, val1 in pairs(val) do
-                        if type(var1) ~= "string" or
-                            (type(val1) ~= "string" and type(val1) ~= "table") then
-                            merge_error = err.new(
-                            "invalid environment entry in %s [%s]: %s=%s",
-                            file, var, tostring(var1), tostring(val1))
-                            return nil
-                        end
-                        e2lib.logf(4, "result env: %-15s = %-15s [%s]",
-                        var1, val1, var)
-                        info.env[var] = info.env[var] or {}
-                        info.env[var][var1] = val1
-                        info.result_env[var] = info.result_env[var] or environment.new()
-                        info.result_env[var]:set(var1, val1)
-                    end
-                end
-            end
-        end
-        return true
-    end
-
-    table.insert(info.env_files, file)
-    local path = e2lib.join(info.root, file)
-    local g = {
-        e2env = info.env,
-        env = mergeenv,
-        string = e2lib.safe_string_table(),
-    }
-    rc, re = e2lib.dofile2(path, g)
-    if not rc then
-        return false, e:cat(re)
-    end
-    if merge_error then
-        return false, merge_error
-    end
-    e2lib.logf(4, "loading environment done: %s", file)
-    return true
 end
 
 --- Gather source paths.
@@ -625,11 +548,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- read environment configuration
-    info.env = {}		-- global and result specfic env (deprecated)
-    info.env_files = {}   -- a list of environment files
-    info.global_env = environment.new()
-    info.result_env = {} -- result specific env only
-    rc, re = load_env_config(info, "proj/env")
+    rc, re = projenv.load_env_config("proj/env")
     if not rc then
         return false, e:cat(re)
     end
@@ -664,21 +583,12 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    -- distribute result specific environment to the results,
-    -- provide environment for all results, even if it is empty
-    for r, res in pairs(info.results) do
-        if not info.result_env[r] then
-            info.result_env[r] = environment.new()
-        end
-        res._env = info.result_env[r]
+    -- project result envs must be checked after loading results
+    projenv.verify_result_envs()
+    if not rc then
+        return false, e:cat(re)
     end
 
-    -- check for environment for non-existent results
-    for r, t in pairs(info.result_env) do
-        if not info.results[r] then
-            e:append("configured environment for non existent result: %s", r)
-        end
-    end
     if e:getcount() > 1 then
         return false, e
     end

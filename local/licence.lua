@@ -19,11 +19,14 @@
 -- more details.
 
 local licence = {}
+package.loaded["licence"] = licence
+
 local class = require("class")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
 local hash = require("hash")
+local projenv = require("projenv")
 local strict = require("strict")
 
 --- Licence base class.
@@ -163,7 +166,7 @@ function licence.load_licence_config(info)
     ltable = nil
     local g = {
         e2licence = function(data) ltable = data end,
-        env = info.env,
+        env = projenv.safe_global_res_env_table(),
         string = e2lib.safe_string_table(),
     }
 

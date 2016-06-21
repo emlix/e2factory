@@ -28,6 +28,7 @@ local environment = require("environment")
 local err = require("err")
 local hash = require("hash")
 local project = require("project")
+local projenv = require("projenv")
 local sl = require("sl")
 local source = require("source")
 local strict = require("strict")
@@ -571,7 +572,7 @@ local function load_rawres(cfg)
     loadcnt = 0
     g = {
         e2result = function(data) rawres = data loadcnt = loadcnt + 1 end,
-        env = info.env,
+        env = projenv.safe_global_res_env_table(),
         string = e2lib.safe_string_table(),
     }
 
