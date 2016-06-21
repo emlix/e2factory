@@ -19,8 +19,6 @@
 -- more details.
 
 local source = {}
-package.loaded["source"] = source
-
 local cache = require("cache")
 local class = require("class")
 local e2lib = require("e2lib")

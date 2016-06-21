@@ -29,7 +29,6 @@
 ]]
 
 local scm = {}
-package.loaded["scm"] = scm
 local err = require("err")
 local strict = require("strict")
 local source = require("source")
