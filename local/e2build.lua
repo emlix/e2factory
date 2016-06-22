@@ -88,7 +88,7 @@ local function linklast(info, resultname, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 --- Return true if the result given in c is already available, false otherwise
@@ -118,7 +118,7 @@ local function result_available(info, resultname, return_flags)
         0, string.format("building %-20s", resultname),
         columns, string.format("[%s] [playground]", sbid))
         return_flags.stop = false
-        return true, nil
+        return true
     end
     if res:get_build_mode().source_set() == "working-copy" or
         result.build_settings.force_rebuild:lookup(resultname) then
@@ -126,7 +126,7 @@ local function result_available(info, resultname, return_flags)
         0, string.format("building %-20s", resultname),
         columns, string.format("[%s]", sbid))
         return_flags.stop = false
-        return true, nil
+        return true
     end
     local server, location =
         res:get_build_mode().storage(info.project_location, project.release_id())
@@ -150,7 +150,7 @@ local function result_available(info, resultname, return_flags)
         0, string.format("building %-20s", resultname),
         columns, string.format("[%s]", sbid))
         return_flags.stop = false
-        return true, nil
+        return true
     end
     e2lib.log(3, "result is available locally")
     --[[
@@ -170,7 +170,7 @@ local function result_available(info, resultname, return_flags)
     0, string.format("skipping %-20s", resultname),
     columns, string.format("[%s]", sbid))
     return_flags.stop = true
-    return true, nil
+    return true
 end
 
 --- Build config per result. This table is locked.
@@ -261,7 +261,7 @@ local function chroot_lock(info, resultname, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 --- TODO
@@ -274,7 +274,7 @@ local function chroot_unlock(info, resultname, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 --- TODO
@@ -315,7 +315,7 @@ local function setup_chroot(info, resultname, return_flags)
 
         for f in grp:file_iter() do
             local flags = { cache = true }
-            local rc, re = cache.cache_file(info.cache, f.server,
+            rc, re = cache.cache_file(info.cache, f.server,
                 f.location, flags)
             if not rc then
                 return false, e:cat(re)
@@ -346,7 +346,7 @@ local function setup_chroot(info, resultname, return_flags)
             end
         end
     end
-    return true, nil
+    return true
 end
 
 --- Enter playground.
@@ -419,7 +419,7 @@ local function fix_permissions(info, resultname, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    return true, nil
+    return true
 end
 
 --- TODO
@@ -428,10 +428,10 @@ local function playground(info, resultname, return_flags)
     if result.build_settings.playground:lookup(resultname)  then
         return_flags.message = string.format("playground done for: %-20s", resultname)
         return_flags.stop = true
-        return true, nil
+        return true
     end
     -- do nothing...
-    return true, nil
+    return true
 end
 
 --- TODO
@@ -521,7 +521,7 @@ local function chroot_remove(info, resultname, return_flags)
             return false, e:cat(re)
         end
     end
-    return true, nil
+    return true
 end
 
 --- TODO
@@ -540,7 +540,7 @@ local function chroot_cleanup_if_exists(info, resultname, return_flags)
     if chroot_remove(info, resultname, return_flags) then
         return chroot_cleanup(info, resultname, return_flags)
     end
-    return true, nil
+    return true
 end
 
 --- check if a chroot exists for this result
@@ -620,7 +620,7 @@ function e2build.unpack_result(info, resultname, dep, destdir)
     end
 
     e2lib.rmtempdir(tmpdir)
-    return true, nil
+    return true
 end
 
 --- write build driver files
@@ -742,7 +742,7 @@ local function sources(info, resultname, return_flags)
                 return false, e:cat(re)
             end
         end
-        return true, nil
+        return true
     end
 
     local function install_build_script(info, resultname, return_flags)
@@ -756,7 +756,7 @@ local function sources(info, resultname, return_flags)
         if not rc then
             return false, e:cat(re)
         end
-        return true, nil
+        return true
     end
 
     local function install_env(info, resultname, return_flags)
@@ -812,7 +812,7 @@ local function sources(info, resultname, return_flags)
                     string.format("source %s/init/%s", bc.Tc, x))
             end
         end
-        return true, nil
+        return true
     end
 
     local function install_build_driver(info, resultname, return_flags)
@@ -825,7 +825,7 @@ local function sources(info, resultname, return_flags)
         if not rc then
             return false, e:cat(re)
         end
-        return true, nil
+        return true
     end
 
     local function install_build_time_dependencies(info, resultname, return_flags)
@@ -845,7 +845,7 @@ local function sources(info, resultname, return_flags)
                 return false, e:cat(re)
             end
         end
-        return true, nil
+        return true
     end
 
     local function install_sources(info, resultname, return_flags)
@@ -864,7 +864,7 @@ local function sources(info, resultname, return_flags)
                 return false, e:cat(re)
             end
         end
-        return true, nil
+        return true
     end
 
     local steps = {
@@ -883,7 +883,7 @@ local function sources(info, resultname, return_flags)
             return false, re
         end
     end
-    return true, nil
+    return true
 end
 
 --- deploy a result to the archive
@@ -1084,7 +1084,7 @@ local function store_result(info, resultname, return_flags)
     end
 
     e2lib.rmtempdir(tmpdir)
-    return true, nil
+    return true
 end
 
 --- build a result
@@ -1112,14 +1112,14 @@ local function build_result(info, resultname, return_flags)
         end
         if flags.stop then
             -- stop the build process for this result
-            return true, nil
+            return true
         end
         if flags.terminate then
             -- stop the build process for this result and terminate
-            return true, nil
+            return true
         end
     end
-    return true, nil
+    return true
 end
 
 --- Build a set of results.
@@ -1142,11 +1142,11 @@ function e2build.build_results(info, results)
         local deltat = os.difftime(t2, t1)
         e2lib.logf(3, "timing: result [%s] %d", resultname, deltat)
         if flags.stop then
-            return true, nil
+            return true
         end
     end
 
-    return true, nil
+    return true
 end
 
 --- Array of tables containing functions to drive the build process.
@@ -1186,7 +1186,7 @@ function e2build.register_build_function(info, name, func, pos)
         func = func,
     }
     table.insert(build_process, ipos, tab)
-    return true, nil
+    return true
 end
 
 --- TODO
