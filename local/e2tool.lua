@@ -131,8 +131,8 @@ end
 --- Set a new info table.
 -- @param t Table to use for info.
 -- @return The new info table.
-function e2tool.set_info(t)
-    assert(type(t) == "table")
+local function set_info(t)
+    assertIsTable(t)
     _info = t
     return _info
 end
@@ -154,7 +154,7 @@ function e2tool.local_init(path, tool)
     local e = err.new("initializing local tool")
     local info
 
-    info = e2tool.set_info({})
+    info = set_info({})
 
     info.current_tool = tool
 
