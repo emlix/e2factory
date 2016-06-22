@@ -111,7 +111,7 @@ local function result_available(info, resultname, return_flags)
         return false, e:cat(re)
     end
 
-    sbid = e2tool.bid_display(buildid)
+    sbid = string.format("%s...", string.sub(buildid, 1, 8))
 
     if result.build_settings.playground:lookup(resultname) then
         return_flags.message = e2lib.align(columns,

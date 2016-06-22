@@ -945,13 +945,6 @@ function e2tool.fileid(info, file)
     return fileid
 end
 
---- return the first eight digits of buildid hash
--- @param buildid string: hash value
--- @return string: a short representation of the hash value
-function e2tool.bid_display(buildid)
-    return string.format("%s...", string.sub(buildid, 1, 8))
-end
-
 --- Get the buildid for a result, calculating it if required.
 -- @param info Info table.
 -- @param resultname Result name.
