@@ -29,10 +29,11 @@
 ]]
 
 local e2tool = {}
-package.loaded["e2tool"] = e2tool -- stop e2tool loading loop
+package.loaded["e2tool"] = e2tool
 
 local buildconfig = require("buildconfig")
 local cache = require("cache")
+local chroot = require("chroot")
 local digest = require("digest")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
@@ -44,19 +45,19 @@ local hash = require("hash")
 local licence = require("licence")
 local plugin = require("plugin")
 local policy = require("policy")
+local project = require("project")
+local result = require("result")
 local scm = require("scm")
+local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 local transport = require("transport")
 local url = require("url")
-local chroot = require("chroot")
-local project = require("project")
-local source = require("source")
 
 -- Build function table, see end of file for details.
 local e2tool_ftab = {}
 
---- Info table contains sources, results, servers, caches and more...
+--- Info table contains servers, caches and more...
 -- @table info
 -- @field current_tool Name of the current local tool (string).
 -- @field startup_cwd Current working dir at startup (string).
@@ -68,56 +69,11 @@ local e2tool_ftab = {}
 -- @field default_repo_server string: name of the default scm repo server
 -- @field default_files_server string: name of the default files server
 -- @field result_storage (deprecated)
--- @field sources table: sources
--- @field sources_sorted table: sorted list of sources
--- @field results table: results
--- @field results_sorted table: sorted list of results
 -- @field project_location string: project location relative to the servers
 -- @field env table: env table
 -- @field env_files table: list of env files
 -- @field local_template_path Path to the local templates (string).
 local _info = false
-
---- table of sources records, keyed by source names
--- @name sources
--- @class table
--- @field name string: name of the package
--- @field licences table: list of licences
--- @field type string: type of sources ("files", "git", etc)
--- @field server string: server name
--- @field remote string: remote location name
--- @field working string: working directory name
--- @field branch string: branch name
--- @field tag table: table of tag names (strings)
--- @field file table: table of file records (tables)
--- @field fhash string: hash value for this source, for use in buildid
--- 			calculation
--- @field flist table: array of files
--- 			(deprecated, replaced by file records)
-
---- file records in the sources table
--- @name source.file
--- @class table
--- @field name string: filename
--- @field server string: server name
-
---- Table for a single result.
--- @table result
--- @field name string: name of the result
--- @field sources table of strings: array of source names
--- @field files OBSOLETE table of strings: array of result file names
--- @field depends table of strings: list of dependencies
--- @field chroot table of strings: list of chroot groups to use
--- @field env table of strings
--- @field _env
--- @field selected bool: select for build?
--- @field force_rebuild bool: force rebuild?
--- @field build_mode table: build mode policy object
--- @field build_config
--- @field directory
--- @see policy.build_mode
--- @see e2build.build_config
--- @see plugins.collect_project
 
 --- env - environment table from "proj/env"
 -- @name env
@@ -152,252 +108,6 @@ local function opendebuglogfile(info)
     return true
 end
 
---- Load user configuration file.
--- @param info Info table.
--- @param path Path to file (string).
--- @param dest Destination table.
--- @param index Name of the newly created table inside destination (string).
--- @param var Table name in configuration file (string).
--- @return True on success, false on error.
--- @return Error object on failure.
-local function load_user_config(info, path, dest, index, var)
-    local rc, re
-    local e = err.new("loading configuration failed")
-    e2lib.logf(3, "loading %s", path)
-    if not e2lib.exists(path) then
-        return false, e:append("file does not exist: %s", path)
-    end
-
-    local function func(table)
-        dest[index] = table
-    end
-
-    local g = {
-        [var] = func,
-        env = info.env,
-        string = e2lib.safe_string_table(),
-    }
-
-    rc, re = e2lib.dofile2(path, g)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    if not dest[index] then
-        return false, e:append("empty or invalid configuration: %s", path)
-    end
-
-    return true
-end
-
---- config item
--- @class table
--- @class config_item
--- @field data table: config data
--- @field type string: config type
--- @field filename string: config file name
-
---- load config file and return a list of config item tables
--- @param info info table
--- @param path string: file to load
--- @param types list of strings: allowed config types
--- @return List of config items, or false on error.
--- @return Error object on failure
-local function load_user_config2(info, path, types)
-    local e = err.new("loading configuration file failed")
-    local rc, re
-    local list = {}
-
-    -- the list of config types
-    local f = {}
-    f.e2source = function(data)
-        local t = {}
-        t.data = data
-        t.type = "sources"
-        t.filename = path
-        table.insert(list, t)
-    end
-    f.e2result = function(data)
-        local t = {}
-        t.data = data
-        t.type = "result"
-        t.filename = path
-        table.insert(list, t)
-    end
-
-    -- compose the environment for the config file
-    local g = {
-        env = info.env,
-        string = e2lib.safe_string_table(),
-    }
-
-    -- and some config functions
-    for _,typ in ipairs(types) do
-        g[typ] = f[typ]
-    end
-
-    rc, re = e2lib.dofile2(path, g)
-    if not rc then
-        return false, e:cat(re)
-    end
-    return list
-end
-
---- check results.
--- @param info Info table.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function check_results(info)
-    local e, rc, re
-
-    for _,check_result_cb in ipairs(e2tool_ftab.check_result) do
-        for r,_ in pairs(info.results) do
-            rc, re = check_result_cb(info, r)
-            if not rc then
-                e = err.new("Error while checking results")
-                return false, e:cat(re)
-            end
-        end
-    end
-
-    return true
-end
-
---- check result configuration
--- @param info table: the info table
--- @param resultname string: the result to check
-local function check_result(info, resultname)
-    local res = info.results[resultname]
-    local e = err.new("in result %s:", resultname)
-    local rc, re
-
-    if not res then
-        e:append("result does not exist: %s", resultname)
-        return false, e
-    end
-    if res.files then
-        e2lib.warnf("WDEPRECATED", "in result %s", resultname)
-        e2lib.warnf("WDEPRECATED",
-        " files attribute is deprecated and no longer used")
-        res.files = nil
-    end
-    if type(res.sources) == "nil" then
-        e2lib.warnf("WDEFAULT", "in result %s:", resultname)
-        e2lib.warnf("WDEFAULT", " sources attribute not configured." ..
-        "Defaulting to empty list")
-        res.sources = {}
-    elseif type(res.sources) == "string" then
-        e2lib.warnf("WDEPRECATED", "in result %s:", resultname)
-        e2lib.warnf("WDEPRECATED", " sources attribute is string. "..
-        "Converting to list")
-        res.sources = { res.sources }
-    end
-    rc, re = e2lib.vrfy_listofstrings(res.sources, "sources", true, false)
-    if not rc then
-        e:append("source attribute:")
-        e:cat(re)
-    else
-        for _,sourcename in ipairs(res.sources) do
-            if not source.sources[sourcename] then
-                e:append("source does not exist: %s", sourcename)
-            end
-        end
-    end
-    if type(res.depends) == "nil" then
-        e2lib.warnf("WDEFAULT", "in result %s: ", resultname)
-        e2lib.warnf("WDEFAULT", " depends attribute not configured. " ..
-        "Defaulting to empty list")
-        res.depends = {}
-    elseif type(res.depends) == "string" then
-        e2lib.warnf("WDEPRECATED", "in result %s:", resultname)
-        e2lib.warnf("WDEPRECATED", " depends attribute is string. "..
-        "Converting to list")
-        res.depends = { res.depends }
-    end
-    rc, re = e2lib.vrfy_listofstrings(res.depends, "depends", true, false)
-    if not rc then
-        e:append("dependency attribute:")
-        e:cat(re)
-    else
-        for i,d in pairs(res.depends) do
-            if not info.results[d] then
-                e:append("dependency does not exist: %s", d)
-            end
-        end
-    end
-    if type(res.chroot) == "nil" then
-        e2lib.warnf("WDEFAULT", "in result %s:", resultname)
-        e2lib.warnf("WDEFAULT", " chroot groups not configured. " ..
-        "Defaulting to empty list")
-        res.chroot = {}
-    elseif type(res.chroot) == "string" then
-        e2lib.warnf("WDEPRECATED", "in result %s:", resultname)
-        e2lib.warnf("WDEPRECATED", " chroot attribute is string. "..
-        "Converting to list")
-        res.chroot = { res.chroot }
-    end
-    rc, re = e2lib.vrfy_listofstrings(res.chroot, "chroot", true, false)
-    if not rc then
-        e:append("chroot attribute:")
-        e:cat(re)
-    else
-        -- apply default chroot groups
-        for _,g in ipairs(chroot.groups_default) do
-            table.insert(res.chroot, g)
-        end
-        -- The list may have duplicates now. Unify.
-        rc, re = e2lib.vrfy_listofstrings(res.chroot, "chroot", false, true)
-        if not rc then
-            e:append("chroot attribute:")
-            e:cat(re)
-        end
-        for _,g in ipairs(res.chroot) do
-            if not chroot.groups_byname[g] then
-                e:append("chroot group does not exist: %s", g)
-            end
-        end
-        table.sort(res.chroot)
-    end
-    if res.env and type(res.env) ~= "table" then
-        e:append("result has invalid `env' attribute")
-    else
-        if not res.env then
-            e2lib.warnf("WDEFAULT",
-            "result has no `env' attribute. "..
-            "Defaulting to empty dictionary")
-            res.env = {}
-        end
-        for k,v in pairs(res.env) do
-            if type(k) ~= "string" then
-                e:append("in `env' dictionary: "..
-                "key is not a string: %s", tostring(k))
-            elseif type(v) ~= "string" then
-                e:append("in `env' dictionary: "..
-                "value is not a string: %s", tostring(v))
-            else
-                res._env:set(k, v)
-            end
-        end
-    end
-    for r in project.deploy_results_iter() do
-        if r == resultname then
-            res._deploy = true
-            break
-        end
-    end
-    local build_script =
-        e2tool.resultbuildscript(info.results[resultname].directory, info.root)
-    if not e2lib.isfile(build_script) then
-        e:append("build-script does not exist: %s", build_script)
-    end
-
-    if e:getcount() > 1 then
-        return false, e
-    end
-
-    return true
-end
-
 --- set umask to value used for build processes
 -- @param info
 function e2tool.set_umask(info)
@@ -425,19 +135,6 @@ local function init_umask(info)
     e2tool.reset_umask(info)
 end
 
---- get dependencies for use in build order calculation
-local function get_depends(info, resultname)
-    local t = {}
-    local res = info.results[resultname]
-    if not res.depends then
-        return t
-    end
-    for _,d in ipairs(res.depends) do
-        table.insert(t, d)
-    end
-    return t
-end
-
 --- Set a new info table.
 -- @param t Table to use for info.
 -- @return The new info table.
@@ -455,7 +152,7 @@ function e2tool.info()
 end
 
 --- initialize the local library, load and initialize local plugins
--- @param path string: path to project tree
+-- @param path string: path to project tree (optional)
 -- @param tool string: tool name (without the 'e2-' prefix)
 -- @return table: the info table, or false on failure
 -- @return an error object on failure
@@ -479,16 +176,6 @@ function e2tool.local_init(path, tool)
     info.root, re = e2lib.locate_project_root(path)
     if not info.root then
         return false, e:append("not located in a project directory")
-    end
-
-    rc, re = e2tool.register_check_result(info, check_result)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    rc, re = e2tool.register_dlist(info, get_depends)
-    if not rc then
-        return false, e:cat(re)
     end
 
     -- load local plugins
@@ -807,97 +494,27 @@ local function gather_result_paths(info, basedir, results)
     return results
 end
 
---- Load all result configs. Creates and populates the info.results dictionary.
--- @param info Info table.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function load_result_configs(info)
-    local rc, re, e
-    local results, list, path, types
-    e = err.new("error loading result configuration")
-    info.results = {}
-
-    results, re = gather_result_paths(info)
-    if not results then
-        return false, e:cat(re)
-    end
-
-    for _,res in ipairs(results) do
-        path = e2tool.resultconfig(res, info.root)
-        types = { "e2result", }
-
-        rc, re = e2tool.verify_src_res_pathname_valid_chars(res)
-        if not rc then
-            e:append("invalid result file name: %s", res)
-            e:cat(re)
-            return false, e
-        end
-
-        list, re = load_user_config2(info, path, types)
-        if not list then
-            return false, e:cat(re)
-        end
-        if #list ~= 1 then
-            return false, e:append("%s: only one result allowed per config file",
-            path)
-        end
-
-        local name
-        for _,item in ipairs(list) do
-            name = item.data.name
-            item.data.directory = res
-
-            if name and name ~= res then
-                e:append("`name' attribute does not match configuration path")
-                return false, e
-            end
-
-            item.data.name = e2tool.src_res_path_to_name(res)
-            name = item.data.name
-
-            rc, re = e2tool.verify_src_res_name_valid_chars(name)
-            if not rc then
-                e:append("invalid result name: %s",name)
-                e:cat(re)
-                return false, e
-            end
-
-            if info.results[name] then
-                return false, e:append("duplicate result: %s", name)
-            end
-
-            info.results[name] = item.data
-        end
-    end
-    return true
-end
-
 --- Checks project information for consistancy.
--- @param info Info table.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-local function check_project_info(info)
+local function check_project_info()
     local rc, re, e
     e = err.new("error in project configuration")
 
-    rc, re = check_results(info)
-    if not rc then
-        return false, e:cat(re)
-    end
     for r in project.default_results_iter() do
-        if not info.results[r] then
+        if not result.results[r] then
             e:append("default_results: No such result: %s", r)
         end
     end
     for r in project.deploy_results_iter() do
-        if not info.results[r] then
+        if not result.results[r] then
             e:append("deploy_results: No such result: %s", r)
         end
     end
     if e:getcount() > 1 then
         return false, e
     end
-    rc = e2tool.dsort(info)
+    rc, re = e2tool.dsort()
     if not rc then
         return false, e:cat("cyclic dependencies")
     end
@@ -1044,7 +661,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- results
-    rc, re = load_result_configs(info)
+    rc, re = result.load_result_configs(info)
     if not rc then
         return false, e:cat(re)
     end
@@ -1106,13 +723,6 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    -- provide a sorted list of results
-    info.results_sorted = {}
-    for r,res in pairs(info.results) do
-        table.insert(info.results_sorted, r)
-    end
-    table.sort(info.results_sorted)
-
     rc, re = policy.init(info)
     if not rc then
         return false, e:cat(re)
@@ -1159,7 +769,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    rc, re = check_project_info(info)
+    rc, re = check_project_info()
     if not rc then
         return false, re
     end
@@ -1169,23 +779,12 @@ end
 
 --- Returns a sorted vector with all dependencies for the given result
 -- in the project. The result itself is excluded.
--- @param info Info table.
 -- @param resultname Result name.
 -- @return Sorted vector of result dependencies, or false on error.
 -- @return Error object on failure.
-function e2tool.dlist(info, resultname)
-    local t = {}
-    local deps, re
-    for _,dlist_cb in ipairs(e2tool_ftab.dlist) do
-        deps, re = dlist_cb(info, resultname)
-        if not deps then
-            return false, re
-        end
-        for _,d in ipairs(deps) do
-            table.insert(t, d)
-        end
-    end
-    return t
+function e2tool.dlist(resultname)
+    assertIsStringN(resultname)
+    return result.results[resultname]:dlist()
 end
 
 --- Returns a sorted vector with all depdencies of result, and all
@@ -1238,8 +837,8 @@ function e2tool.dlist_recursive(info, result)
         return true
     end
 
-    for _, r in ipairs(result) do
-        rc, re = visit(r)
+    for _,resultname in ipairs(resultv) do
+        rc, re = visit(resultname)
         if not rc then
             return false, re
         end
@@ -1249,16 +848,15 @@ function e2tool.dlist_recursive(info, result)
 end
 
 --- Calls dlist_recursive() with the default results vector of the project.
--- @param info Info table.
 -- @return Vector of results in topological order, or false on error.
 -- @return Error object on failure.
 -- @see e2tool.dlist_recursive
-function e2tool.dsort(info)
+function e2tool.dsort()
     local dr = {}
     for r in project.default_results_iter() do
         table.insert(dr, r)
     end
-    return e2tool.dlist_recursive(info, dr)
+    return e2tool.dlist_recursive(dr)
 end
 
 --- verify that a file addressed by server name and location matches the
@@ -1436,141 +1034,7 @@ end
 -- @return Build ID or false on error
 -- @return Error object on failure
 function e2tool.buildid(info, resultname)
-    local r = info.results[resultname]
-    local id, e = e2tool.pbuildid(info, resultname)
-    if not id then
-        return false, e
-    end
-    local hc = hash.hash_start()
-    hash.hash_line(hc, r.pbuildid)
-    r.buildid = hash.hash_finish(hc)
-    return r.build_mode.buildid(r.buildid)
-end
-
---- envid: calculate a value represennting the environment for a result
--- @param info the info table
--- @param resultname string: name of a result
--- @return string: envid value
-local function envid(info, resultname)
-    return e2tool.env_by_result(info, resultname):id()
-end
-
---- Get the project-wide buildid for a result, calculating it if required.
--- @param info
--- @param resultname
--- @return Build ID or false on error.
--- @return Error object on failure.
-function e2tool.pbuildid(info, resultname)
-    local rc, re, e
-
-    e = err.new("error calculating result id for result: %s", resultname)
-    local r = info.results[resultname]
-    if r.pbuildid then
-        return r.build_mode.buildid(r.pbuildid)
-    end
-    local hc = hash.hash_start()
-
-    hash.hash_line(hc, r.name)
-
-    for _,sourcename in ipairs(r.sources) do
-        local src, sourceid, sourceset
-
-        src = source.sources[sourcename]
-        sourceset = r.build_mode.source_set()
-        sourceid, re = src:sourceid(sourceset)
-        if not sourceid then
-            return false, e:cat(re)
-        end
-
-        hash.hash_line(hc, sourcename)		-- source name
-        hash.hash_line(hc, sourceid)		-- sourceid
-    end
-    for _,d in ipairs(r.depends) do
-        hash.hash_line(hc, d)			-- dependency name
-    end
-
-    if r.chroot then
-        for _,g in ipairs(r.chroot) do
-            local groupid, re = chroot.groups_byname[g]:chrootgroupid(info)
-            if not groupid then
-                return false, e:cat(re)
-            end
-            hash.hash_line(hc, g)
-            hash.hash_line(hc, groupid)
-        end
-    end
-    r.envid = envid(info, resultname)
-    hash.hash_line(hc, r.envid)
-
-    local location = e2tool.resultbuildscript(info.results[resultname].directory)
-    local f = {
-        server = info.root_server_name,
-        location = location,
-    }
-    local fileid, re = e2tool.fileid(info, f)
-    if not fileid then
-        return false, e:cat(re)
-    end
-    hash.hash_line(hc, fileid)			-- build script hash
-
-    for _,resultid_cb in ipairs(e2tool_ftab.resultid) do
-        local rhash, re = resultid_cb(info, resultname)
-        if not rhash then
-            return false, e:cat(re)
-        elseif rhash == true then
-            -- skip
-        else
-            hash.hash_line(hc, rhash)
-        end
-    end
-    r.resultid = hash.hash_finish(hc)	-- result id (without deps)
-
-    local projid, re = projid(info)
-    if not projid then
-        return false, e:cat(re)
-    end
-    hc = hash.hash_start()
-    hash.hash_line(hc, projid)		-- project id
-    hash.hash_line(hc, r.resultid)	-- result id
-    for _,d in ipairs(r.depends) do
-        local id, re = e2tool.pbuildid(info, d)
-        if not id then
-            return false, re
-        end
-        hash.hash_line(hc, id)		-- buildid of dependency
-    end
-    for _,pbuildid_cb in ipairs(e2tool_ftab.pbuildid) do
-        local rhash, re = pbuildid_cb(info, resultname)
-        if not rhash then
-            return false, e:cat(re)
-        elseif rhash == true then
-            -- skip
-        else
-            hash.hash_line(hc, rhash)
-        end
-    end
-    r.pbuildid = hash.hash_finish(hc)	-- buildid (with deps)
-    return r.build_mode.buildid(r.pbuildid)
-end
-
---- return a table of environment variables valid for a result
--- @param info the info table
--- @param resultname string: name of a result
--- @return table: environment variables valid for the result
-function e2tool.env_by_result(info, resultname)
-    assert(type(info) == "table")
-    assert(type(resultname) == "string" and #resultname > 0)
-
-    local src
-    local res = info.results[resultname]
-    local env = environment.new()
-    env:merge(info.global_env, false)
-    for _, sourcename in ipairs(res.sources) do
-        src = source.sources[sourcename]
-        env:merge(src:get_env(), true)
-    end
-    env:merge(res._env, true)
-    return env
+    return result.results[resultname]:buildid()
 end
 
 --- select results based upon a list of results usually given on the
@@ -1650,110 +1114,13 @@ function e2tool.register_collect_project_info(info, func)
     return true
 end
 
---- Check result callback function signature. Called after all config files
--- have been loaded.
--- @function check_result_cb
--- @param info Info table.
--- @param resultname Result name.
--- @return True on success, false on error.
--- @return Error object on failure.
-
---- Register check result.
--- @param info Info table.
--- @param func check_result_cb function.
--- @return True on success, false on error.
--- @return Error object on failure.
--- @see check_result_cb
-function e2tool.register_check_result(info, func)
-    if type(info) ~= "table" or type(func) ~= "function" then
-        return false, err.new("register_check_result: invalid argument")
-    end
-    table.insert(e2tool_ftab.check_result, func)
-    return true
-end
-
---- Calculate ResultID callback function signature.
--- @function resultid_cb
--- @param info Info table.
--- @param resultname Result name.
--- @return SHA1 checksum or true (for skip) on success, false on error.
--- @return Error object on failure.
-
---- Register resultid.
--- @param info Info table.
--- @param func resultid_cb function.
--- @return True on success, false on error.
--- @return Error object on failure.
--- @see resultid_cb
-function e2tool.register_resultid(info, func)
-    if type(info) ~= "table" or type(func) ~= "function" then
-        return false, err.new("register_resultid: invalid argument")
-    end
-    table.insert(e2tool_ftab.resultid, func)
-    return true
-end
-
---- Calculate ProjectBuildID callback function signature.
--- @function pbuildid_cb
--- @param info Info table.
--- @param resultname Result name.
--- @return SHA1 checksum or true (for skip) on success, false on error.
--- @return Error object on failure.
-
---- Register project buildid.
--- @param info Info table.
--- @param func pbuildid_cb function.
--- @return True on success, false on error.
--- @return Error object on failure.
--- @see pbuildid_cb
-function e2tool.register_pbuildid(info, func)
-    if type(info) ~= "table" or type(func) ~= "function" then
-        return false, err.new("register_pbuildid: invalid argument")
-    end
-    table.insert(e2tool_ftab.pbuildid, func)
-    return true
-end
-
---- Get dependency list callback function signature.
--- @function dlist_cb
--- @param info Info table.
--- @param resultname Result name.
--- @return String vector of dependencies for result, false on error.
--- @return Error object on failure.
-
---- Register dlist.
--- @param info Info table.
--- @param func dlist_cb function.
--- @return True on success, false on error.
--- @return Error object on failure.
--- @see dlist_cb
-function e2tool.register_dlist(info, func)
-    if type(info) ~= "table" or type(func) ~= "function" then
-        return false, err.new("register_dlist: invalid argument")
-    end
-    table.insert(e2tool_ftab.dlist, func)
-    return true
-end
-
 --- Function table, driving the build process. Contains further tables to
 -- which e2factory core and plugins add functions that comprise the
 -- build process.
 -- @field collect_project_info Called f(info).
--- @field check_result Called f(info, resultname).
--- @field resultid Called f(info, resultname).
--- @field pbuildid Called f(info, resultname).
--- @field dlist Called f(info, resultname).
 -- @see collect_project_info_cb
--- @see check_result_cb
--- @see resultid_cb
--- @see pbuildid_cb
--- @see dlist_cb
 e2tool_ftab = {
     collect_project_info = {},
-    check_result = {},
-    resultid = {},
-    pbuildid = {},
-    dlist = {},
 }
 
 strict.lock(e2tool_ftab)
