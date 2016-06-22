@@ -457,7 +457,11 @@ local function runbuild(info, resultname, return_flags)
     end
 
     local function logto(output)
-        e2lib.log(3, output)
+        if e2lib.getlog(3) then
+            -- no need to spam debug.log unless requested,
+            -- we're already writing the same output to build.log
+            e2lib.log(3, output)
+        end
         eio.fwrite(out, output)
     end
 
