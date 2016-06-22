@@ -55,9 +55,9 @@ result.basic_result = class("basic_result")
 -- attributes.
 -- @return Nil on success, throws exception on failure.
 function result.basic_result:initialize(rawres)
-    assert(type(rawres) == "table")
-    assert(type(rawres.name) == "string" and rawres.name ~= "")
-    assert(type(rawres.type) == "string" and rawres.type ~= "")
+    assertIsTable(rawres)
+    assertIsStringN(rawres.name)
+    assertIsStringN(rawres.type)
 
     self._name = rawres.name
     self._type = rawres.type
@@ -123,15 +123,15 @@ end
 
 --- Set build_config table for result. XXX: better solution would be nice
 function result.basic_result:set_buildconfig(bc)
-    assert(type(bc) == "table")
-    assert(self.build_config == nil) -- Detect "old" code setting this field
+    assertIsTable(bc)
+    assertIsNil(self.build_config)
     self._build_config = bc
 end
 
 --- Get build_config table if it was set
 function result.basic_result:buildconfig()
-    assert(type(self._build_config) == "table")
-    assert(self.build_config == nil)
+    assertIsTable(self._build_config)
+    assertIsNil(self.build_config)
 
     -- XXX: Returned table can be changed, and the current code relies on it
     -- XXX: It would be nice if this could be fixed, but for now this has to do
@@ -141,15 +141,14 @@ end
 --- Set build_mode table for result:
 -- @param build_mode Build mode table
 function result.basic_result:set_build_mode(build_mode)
-    assert(type(build_mode) == "table")
-    assert(self.build_mode == nil)
-
+    assertIsTable(build_mode)
+    assertIsNil(self.build_mode)
     self._build_mode = build_mode
 end
 
 function result.basic_result:get_build_mode()
-    assert(type(self._build_mode) == "table")
-    assert(self.build_mode == nil)
+    assertIsTable(self._build_mode)
+    assertIsNil(self.build_mode)
 
     -- XXX: comments for buildconfig() apply
     return self._build_mode
@@ -209,8 +208,8 @@ end
 result.result_class = class("result_class", result.basic_result)
 
 function result.result_class:initialize(rawres)
-    assert(type(rawres) == "table")
-    assert(rawres.type == "result")
+    assertIsTable(rawres)
+    assertIs(rawres.type, "result")
 
     result.basic_result.initialize(self, rawres)
 
@@ -426,7 +425,7 @@ function result.result_class:buildid()
 
         src = source.sources[sourcename]
         sourceset = build_mode.source_set()
-        assert(type(sourceset) == "string" and sourceset ~= "")
+        assertIsStringN(sourceset)
         id, re = src:sourceid(sourceset)
         if not id then
             return false, re
@@ -634,7 +633,7 @@ local function load_rawres(cfg)
 end
 
 local function load_one_config(cfg)
-    assert(type(cfg) == "string" and cfg ~= "")
+    assertIsStringN(cfg)
     local rc, re, e, rawres, res
 
     rawres, re = load_rawres(cfg)
@@ -642,8 +641,8 @@ local function load_one_config(cfg)
         return false, re
     end
 
-    assert(type(rawres.type) == "string")
-    assert(type(rawres.name) == "string")
+    assertIsString(rawres.type)
+    assertIsString(rawres.name)
 
     res = result_types[rawres.type]
     rc, re = e2lib.trycall(res.new, res, rawres)
@@ -653,7 +652,7 @@ local function load_one_config(cfg)
     end
 
     res = re
-    assert(type(res) == "table")
+    assertIsTable(res)
     result.results[res:get_name()] = res
 
     return true
@@ -701,7 +700,7 @@ end
 -- field within that table if it recognizes its type.
 -- @param func Function in the form function(rawres)...end
 function result.register_type_detection(func)
-    assert(type(func) == "function")
+    assertIsFunction(func)
     for _,fn in ipairs(type_detection_fns) do
         assert(fn ~= func, err.new("result type detection already registered"))
     end
@@ -716,8 +715,8 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function result.register_result_class(typ, result_class)
-    assert(type(typ) == "string" and typ ~= "")
-    assert(type(result_class) == "table")
+    assertIsStringN(typ)
+    assertIsTable(result_class)
     assert(result_types[typ] == nil,
         err.new("result %q already registered", typ))
 
