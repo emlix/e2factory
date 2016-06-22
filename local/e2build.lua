@@ -1072,10 +1072,9 @@ end
 --- build a result
 -- @param info
 -- @param resultname string: result name
--- @param return_flags
 -- @return bool
 -- @return an error object on failure
-local function build_result(info, resultname, return_flags)
+local function build_result(info, resultname)
     e2lib.logf(3, "building result: %s", resultname)
     local res = result.results[resultname]
     for _,f in ipairs(build_process) do
@@ -1114,18 +1113,14 @@ function e2build.build_results(info, results)
 
     for _, resultname in ipairs(results) do
         local e = err.new("building result failed: %s", resultname)
-        local flags = {}
         local t1 = os.time()
-        local rc, re = build_result(info, resultname, flags)
+        local rc, re = build_result(info, resultname)
         if not rc then
             return false, e:cat(re)
         end
         local t2 = os.time()
         local deltat = os.difftime(t2, t1)
         e2lib.logf(3, "timing: result [%s] %d", resultname, deltat)
-        if flags.stop then
-            return true
-        end
     end
 
     return true
