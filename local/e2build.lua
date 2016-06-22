@@ -689,28 +689,6 @@ function e2build.write_build_driver(info, resultname, destdir)
     return true
 end
 
---- write the environment script for a result into a file
--- @param env env object
--- @param file string: the target filename
--- @return bool
--- @return an error object on failure
-local function write_environment_script(env, file)
-    local rc, re, e, out
-
-    out = {}
-    for var, val in env:iter() do
-        table.insert(out, string.format("%s=%s\n", var, e2lib.shquote(val)))
-    end
-
-    rc, re = eio.file_write(file, table.concat(out))
-    if not rc then
-        e = err.new("writing environment script")
-        return false, e:cat(re)
-    end
-
-    return true
-end
-
 --- TODO
 local function sources(info, resultname, return_flags)
     local e = err.new("installing sources")
@@ -771,7 +749,7 @@ local function sources(info, resultname, return_flags)
 
         -- install builtin environment variables
         local file = e2lib.join(bc.T, "env/builtin")
-        rc, re = write_environment_script(bc.builtin_env, file)
+        rc, re = bc.builtin_env:tofile(file)
         if not rc then
             return false, e:cat(re)
         end
@@ -779,7 +757,7 @@ local function sources(info, resultname, return_flags)
             string.format("source %s/env/builtin", bc.Tc))
         -- install project specific environment variables
         local file = e2lib.join(bc.T, "env/env")
-        rc, re = write_environment_script(res:merged_env(), file)
+        rc, re = res:merged_env():tofile(file)
         if not rc then
             return false, e:cat(re)
         end
