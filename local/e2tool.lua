@@ -104,29 +104,27 @@ local function opendebuglogfile(info)
     return true
 end
 
+-- set the umask value to be used in chroot
+local _chroot_umask = 18 -- 022 octal
+local _host_umask
+
 --- set umask to value used for build processes
--- @param info
-function e2tool.set_umask(info)
-    e2lib.umask(info.chroot_umask)
+function e2tool.set_umask()
+    e2lib.umask(_chroot_umask)
 end
 
 -- set umask back to the value used on the host
--- @param info
-function e2tool.reset_umask(info)
-    e2lib.umask(info.host_umask)
+function e2tool.reset_umask()
+    e2lib.umask(_host_umask)
 end
 
 -- initialize the umask set/reset mechanism (i.e. store the host umask)
--- @param info
-local function init_umask(info)
-    -- set the umask value to be used in chroot
-    info.chroot_umask = 18   -- 022 octal
-
+local function init_umask()
     -- save the umask value we run with
-    info.host_umask = e2lib.umask(info.chroot_umask)
+    _host_umask = e2lib.umask(_chroot_umask)
 
     -- restore the previous umask value again
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
 end
 
 --- Set a new info table.
