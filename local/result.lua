@@ -67,6 +67,7 @@ function result.basic_result:initialize(rawres)
     --
     self._build_config = false
     self._build_mode = false
+    self._build_process = false
     self._chroot_list = sl.sl:new(false, true)
 end
 
@@ -105,6 +106,23 @@ end
 function result.basic_result:buildid()
     error(err.new("called buildid() of result base class, type %s name %s",
         self._type, self._name))
+end
+
+--- Get the build proces to be used for this class
+function result.basic_result:build_process()
+    return self._build_process
+end
+
+--- Set a build process class
+-- @param build_process_class or false
+function result.basic_result:set_build_process(build_process)
+    if build_process == false then
+        self._build_process = false
+    else
+        assertIsTable(build_process)
+        assertIsFunction(build_process.build)
+        self._build_process = build_process
+    end
 end
 
 --- Return list of depdencencies
