@@ -528,22 +528,16 @@ function e2tool.collect_project_info(info, skip_load_config)
     -- if x86_64 mode is requested.
     info.chroot_call_prefix["x86_64"] = ""
 
-    if e2option.opts["check"] then
-        local f = e2lib.join(info.root, e2lib.globals.e2version_file)
-        local v, re = e2lib.parse_e2versionfile(f)
-        if not v then
-            return false, re
-        end
+    local f = e2lib.join(info.root, e2lib.globals.e2version_file)
+    local v, re = e2lib.parse_e2versionfile(f)
+    if not v then
+        return false, re
+    end
 
-        if v.tag == "^" then
-            return false, err.new("local tool version is not configured to " ..
-                "a fixed tag\nfix you configuration in %s before running " ..
-                "e2factory in release mode", f)
-        elseif v.tag ~= buildconfig.VERSIONSTRING then
-            return false, err.new("local tool version does not match the " ..
-                "version configured\n in `%s`\n local tool version is %s\n" ..
-                "required version is %s", f, buildconfig.VERSIONSTRING, v.tag)
-        end
+    if v.tag ~= buildconfig.VERSIONSTRING then
+        return false, err.new("local tool version does not match the " ..
+            "version configured\n in `%s`\nlocal tool version is %s\n" ..
+            "required version is %s", f, buildconfig.VERSIONSTRING, v.tag)
     end
 
     -- read environment configuration

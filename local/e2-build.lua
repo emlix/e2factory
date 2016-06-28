@@ -192,19 +192,6 @@ local function e2_build(arg)
         error(re)
     end
 
-    if opts.release then
-        local version_table, re = e2lib.parse_e2versionfile(
-            e2lib.join(info.root, e2lib.globals.e2version_file))
-        if not version_table then
-           error(re)
-        end
-
-        if version_table.tag == "^" then
-            error(
-                err.new("e2 is on a pseudo tag while building in release mode."))
-        end
-    end
-
     -- calculate buildids for selected results
     for _,r in ipairs(sel_res) do
         local bid, re = e2tool.buildid(info, r)
