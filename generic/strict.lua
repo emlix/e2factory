@@ -74,6 +74,34 @@ function strict.lock(t)
     return t
 end
 
+function strict.readonly(t)
+    assertIsTable(t)
+    local mt = {}
+
+    if getmetatable(t) ~= nil then
+        error("metatable already set")
+    end
+
+    mt.__declared = {} -- for .islocked() compat
+
+    mt.__newindex = function(t, k, v)
+        error(err.new("attempted assignment to read-only (%s) [%s] = %s",
+            tostring(t), tostring(k), tostring(v)))
+    end
+
+    mt.__index = function(t, k)
+        local v = rawget(t, k)
+        if v == nil then
+            error(err.new("attempted read of nil value in (%s) [%s]",
+                tostring(t), tostring(k)))
+        end
+        return v
+    end
+
+    setmetatable(t, mt)
+    return t
+end
+
 --- Unlock a table that was protected against adding and assigning to fields.
 -- @param t table to unlock.
 -- @return the unlocked table.
