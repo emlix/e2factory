@@ -303,8 +303,8 @@ end
 -- @param server the server name
 -- @param location location relative to the server url
 -- @param destdir where to store the file locally
--- @param destname filename of the fetched file
--- @param flags table of flags
+-- @param destname filename of the fetched file (optional)
+-- @param flags table of flags (optional)
 -- @return bool
 -- @return an error object on failure
 function cache.fetch_file(c, server, location, destdir, destname, flags)
@@ -316,6 +316,9 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
     end
     if not destname then
         destname = e2lib.basename(location)
+    end
+    if not flags then
+        flags = {}
     end
     -- fetch the file
     if ce.flags.cache and flags.cache ~= false then
