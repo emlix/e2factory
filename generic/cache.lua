@@ -55,7 +55,6 @@ local url = require("url")
 -- @class table
 -- @name flags
 -- @field cachable treat a server as cachable?
--- @field refresh refresh a cached file?
 -- @field check_only check if a file is in the cache, without fetching
 
 --- Create a new cache.
@@ -505,15 +504,13 @@ function cache.cache_file(c, server, location, flags)
         -- file is in the cache and just checking was requested
         return true
     end
-    if avail and not flags.refresh then
-        -- file is in the cache and no refresh requested
-        return true
-    end
-    local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
-    -- fetch the file to the cache
-    rc, re = transport.fetch_file(ce.remote_url, location, destdir, nil)
-    if not rc then
-        return false, e:cat(re)
+    if not avail then
+        local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
+        -- fetch the file to the cache
+        rc, re = transport.fetch_file(ce.remote_url, location, destdir, nil)
+        if not rc then
+            return false, e:cat(re)
+        end
     end
     return true
 end
