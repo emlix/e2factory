@@ -53,7 +53,6 @@ local scm = require("scm")
 local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
-local transport = require("transport")
 local url = require("url")
 
 -- Build function table, see end of file for details.
@@ -856,18 +855,13 @@ local function verify_remote_fileid(info, file, fileid)
             return false, e:cat(re)
         end
     elseif u.transport == "http" or u.transport == "https" then
-        local ce, re = cache.ce_by_server(info.cache, file.server)
-        if not ce then
-            return false, e:cat(re)
-        end
-
         local tmpfile, re = e2lib.mktempfile()
         if not tmpfile then
             return false, e:cat(re)
         end
 
-        rc, re = transport.fetch_file(ce.remote_url, file.location,
-            e2lib.dirname(tmpfile), e2lib.basename(tmpfile))
+        rc, re = cache.fetch_file(info.cache, file.server, file.location,
+            e2lib.dirname(tmpfile), e2lib.basename(tmpfile), { cache = false })
         if not rc then
             return false, e:cat(re)
         end
@@ -884,9 +878,9 @@ local function verify_remote_fileid(info, file, fileid)
     end
     if fileid ~= remote_fileid then
         return false, err.new(
-        "checksum for remote file %s:%s (%s) does not match" ..
-        " configured checksum (%s)",
-        file.server, file.location, remote_fileid, fileid)
+            "checksum for remote file %s:%s (%s) does not match" ..
+            " configured checksum (%s)",
+            file.server, file.location, remote_fileid, fileid)
     end
     e2lib.logf(4, "checksum for remote file %s:%s matches (%s)",
         file.server, file.location, fileid)
