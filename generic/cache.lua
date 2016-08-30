@@ -340,12 +340,10 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
             return false, e:cat(re)
         end
     end
-    if flags.chmod then
-        rc, re = e2lib.chmod(e2lib.join(destdir, destname), flags.chmod)
-        if not rc then
-            return false, e:cat(re)
-        end
-    end
+
+    -- removed unused flags.chmod feature, keep an assert just to make sure
+    assertIsNil(flags.chmod)
+
     return true
 end
 
