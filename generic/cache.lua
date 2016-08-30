@@ -86,6 +86,31 @@ function cache.servers(c)
     return l
 end
 
+local function assertFlags(flags)
+    flags = flags or {}
+    local known = {
+        cachable = "boolean",
+        cache = "boolean",
+        check_only = "boolean",
+        islocal = "boolean",
+        push_permissions = "string",
+        try_hardlink = "boolean",
+        writeback = "boolean",
+    }
+
+    assertIsTable(flags)
+    for key in pairs(flags) do
+        if known[key] == "string" then
+            assertIsString(flags[key])
+        elseif known[key] == "boolean" then
+            assertIsBoolean(flags[key])
+        else
+            error(err.new("unknown field: flags.%s value: %q type: %s",
+                key, tostring(flags[key]), type(flags[key])))
+        end
+    end
+end
+
 --- create a new cache entry
 -- @param c a cache table
 -- @param server the remote server name
@@ -132,6 +157,8 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     end
     ce.server = server
     ce.remote_url = ru.url
+
+    assertFlags(flags)
 
     ce.flags = {}
     ce.flags.cachable = flags.cachable
@@ -320,6 +347,7 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
     if not flags then
         flags = {}
     end
+    assertFlags(flags)
     -- fetch the file
     if ce.flags.cache and flags.cache ~= false then
         -- cache is enabled:
@@ -341,9 +369,6 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
         end
     end
 
-    -- removed unused flags.chmod feature, keep an assert just to make sure
-    assertIsNil(flags.chmod)
-
     return true
 end
 
@@ -362,6 +387,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
     if not ce then
         return false, e:cat(re)
     end
+    assertFlags(flags)
     if ce.flags.cache and flags.cache ~= false then
         -- cache is enabled:
         -- push the file from source to cache and from cache to
@@ -399,6 +425,7 @@ function cache.writeback_state(c, server, flags)
     assert(type(c) == "table", "invalid cache")
     assert(type(server) == "string" and server ~= "", "invalid server")
     assert(type(flags) == "table", "invalid flags")
+    assertFlags(flags)
 
     local ce, re
 
@@ -426,6 +453,7 @@ end
 function cache.writeback(c, server, location, flags)
     local e = err.new("writeback failed")
     local rc, re
+    assertFlags(flags)
 
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -464,6 +492,7 @@ function cache.cache_file(c, server, location, flags)
     if not ce then
         return false, e:cat(re)
     end
+    assertFlags(flags)
     if not ce.flags.cache then
         return true
     end
@@ -505,6 +534,7 @@ function cache.file_path(c, server, location, flags)
     if not ce then
         return false, e:cat(re)
     end
+    assertFlags(flags)
     if ce.flags.cache then
         -- cache enabled. cache the file and return path to cached
         -- file
