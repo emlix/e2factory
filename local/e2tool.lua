@@ -354,6 +354,8 @@ end
 -- @param prefix Optional prefix path.
 -- @return Path to the resultconfig.
 function e2tool.resultconfig(name, prefix)
+    assert(type(name) == "string")
+    assert(prefix == nil or type(prefix) == "string")
     return e2lib.join(e2tool.resultdir(name, prefix), "config")
 end
 
@@ -362,6 +364,8 @@ end
 -- @param prefix Optional prefix path.
 -- @return Path to the result build-script.
 function e2tool.resultbuildscript(name, prefix)
+    assert(type(name) == "string")
+    assert(prefix == nil or type(prefix) == "string")
     return e2lib.join(e2tool.resultdir(name, prefix), "build-script")
 end
 
@@ -370,6 +374,8 @@ end
 -- @param prefix Optional prefix path.
 -- @return Path to the sourceconfig.
 function e2tool.sourceconfig(name, prefix)
+    assert(type(name) == "string")
+    assert(prefix == nil or type(prefix) == "string")
     return e2lib.join(e2tool.sourcedir(name, prefix), "config")
 end
 
@@ -809,7 +815,7 @@ end
 local function verify_remote_fileid(info, file, fileid)
     local rc, re, hc
     local e = err.new("error calculating remote file id for file: %s:%s",
-    file.server, file.location)
+        file.server, file.location)
     if not cache.cache_enabled(info.cache, file.server) or
         not e2option.opts["check-remote"] then
         e2lib.logf(4, "checksum for remote file %s:%s skip verifying",
@@ -892,7 +898,7 @@ local function verify_remote_fileid(info, file, fileid)
         file.server, file.location, remote_fileid, fileid)
     end
     e2lib.logf(4, "checksum for remote file %s:%s matches (%s)",
-    file.server, file.location, fileid)
+        file.server, file.location, fileid)
     return true
 end
 
