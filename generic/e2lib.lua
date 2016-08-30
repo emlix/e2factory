@@ -564,6 +564,7 @@ end
 -- @param msg string: log message
 -- @param nonewline Defaults to false. Do not append newline if set to true.
 function e2lib.log(level, msg, nonewline)
+    trace.disable()
     if level < 1 or level > 4 then
         e2lib.log(1, "Internal error: invalid log level")
     end
@@ -597,6 +598,7 @@ function e2lib.log(level, msg, nonewline)
             console.eout(msg)
         end
     end
+    trace.enable()
 end
 
 --- Rotate log file.
@@ -1947,14 +1949,17 @@ function e2lib.mkdir_recursive(path, mode)
 
     eexist = errno.def2errnum("EEXIST")
 
+    trace.disable()
     for _,dir in ipairs(dirs) do
         rc, re, errnum = e2lib.mkdir(dir, mode)
         if not rc then
             if errnum ~= eexist then
+                trace.enable()
                 return false, re
             end
         end
     end
+    trace.enable()
 
     return true
 end
