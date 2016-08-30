@@ -348,8 +348,7 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
             table.insert(rsync_argv, push_permissions)
         end
 
-        rc, re = rsync_ssh_mkdir(rsync_argv, u.user,
-        u.servername, destdir)
+        rc, re = rsync_ssh_mkdir(rsync_argv, u.user, u.servername, destdir)
         if not rc then
             return false, re
         end
