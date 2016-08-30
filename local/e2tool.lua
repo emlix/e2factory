@@ -525,15 +525,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     rc = cache.new_cache_entry(info.cache, info.proj_storage_server_name,
         nil, nil, info.default_repo_server, info.project_location)
 
-    -- prefix the chroot call with this tool (switch to 32bit on amd64)
-    -- XXX not in buildid, as it is filesystem location dependent...
-    info.chroot_call_prefix = {}
-    info.chroot_call_prefix["x86_32"] =
-        e2lib.join(info.root, ".e2/bin/e2-linux32")
-    -- either we are on x86_64 or we are on x86_32 and refuse to work anyway
-    -- if x86_64 mode is requested.
-    info.chroot_call_prefix["x86_64"] = ""
-
     local f = e2lib.join(info.root, e2lib.globals.e2version_file)
     local v, re = e2lib.parse_e2versionfile(f)
     if not v then

@@ -19,6 +19,7 @@
 -- more details.
 
 local project = {}
+package.loaded["project"] = project
 
 local buildconfig = require("buildconfig")
 local e2lib = require("e2lib")
@@ -102,8 +103,9 @@ local function load_prj_cfg(prj)
         e2lib.warnf("WDEFAULT", " chroot_arch defaults to x86_32")
         prj.chroot_arch = "x86_32"
     end
-    if not info.chroot_call_prefix[prj.chroot_arch] then
-        return false, err.new("chroot_arch is set to an invalid value")
+
+    if prj.chroot_arch ~= "x86_32" and prj.chroot_arch ~= "x86_64" then
+        return false, err.new("chroot_arch is set to an unknown architecture")
     end
 
     -- get host system architecture
@@ -184,6 +186,18 @@ end
 function project.chroot_arch()
     assert(type(_prj.chroot_arch) == "string")
     return _prj.chroot_arch
+end
+
+function project.chroot_call_prefix()
+    local info
+    info = e2tool.info()
+    assert(info)
+
+    if project.chroot_arch() == "x86_32" then
+	return e2lib.join(info.root, ".e2/bin/e2-linux32")
+    end
+
+    return ""
 end
 
 --- Iterator that returns the deploy results as string.
