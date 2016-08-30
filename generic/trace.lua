@@ -24,6 +24,7 @@ local strict = require("strict")
 
 local module_blacklist = {}
 local function_blacklist = {}
+local trace_flags = "c"
 
 --- Function call tracer. Logs all function calls at debug level while active.
 -- @param event string: type of event
@@ -104,9 +105,7 @@ end
 
 --- Enable function call tracer.
 function trace.enable()
-    e2lib.log(4, "trace.enable()")
-    local flags = os.getenv("E2_TRACE") or "c"
-    debug.sethook(tracer, flags)
+    debug.sethook(tracer, trace_flags)
 end
 
 --- Disable function call tracer.
@@ -137,9 +136,12 @@ end
 
 --- Default filter setup.
 function trace.default_filter()
-    trace.filter_module("C")
+    trace_flags = os.getenv("E2_TRACE") or "c"
     trace.filter_module("<unknown module>")
+    trace.filter_module("C")
+    trace.filter_module("assrt")
     trace.filter_module("err")
+    trace.filter_module("trace")
     trace.filter_function("e2lib", "log")
     trace.filter_function("e2lib", "logf")
     trace.filter_function("e2lib", "getlog")
