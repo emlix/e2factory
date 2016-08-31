@@ -974,9 +974,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
         return false, e:cat(re)
     end
     local location1 = e2lib.join(location, res:get_name(), buildid)
-    local cache_flags = {
-        check_only = true
-    }
+    local cache_flags = {}
     local dst, re = cache.file_path(info.cache, server, location1, cache_flags)
     if not dst then
         return false, e:cat(re)
