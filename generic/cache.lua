@@ -55,7 +55,6 @@ local url = require("url")
 -- @class table
 -- @name flags
 -- @field cachable treat a server as cachable?
--- @field check_only check if a file is in the cache, without fetching
 
 --- Create a new cache.
 -- @param name Cache name.
@@ -90,7 +89,6 @@ local function assertFlags(flags)
     local known = {
         cachable = "boolean",
         cache = "boolean",
-        check_only = "boolean",
         islocal = "boolean",
         push_permissions = "string",
         try_hardlink = "boolean",
@@ -500,9 +498,8 @@ function cache.cache_file(c, server, location, flags)
         return false, e:cat(re)
     end
     local avail, re = cache.file_in_cache(c, server, location)
-    if avail and flags.check_only then
-        -- file is in the cache and just checking was requested
-        return true
+    if re then
+        return false, e:cat(re)
     end
     if not avail then
         local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
