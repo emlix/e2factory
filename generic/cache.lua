@@ -517,31 +517,31 @@ end
 -- @param c the cache data structure
 -- @param server the server where the file is located
 -- @param location the location on the server
--- @param flags unused parameter
 -- @return string the path to the cached file, false on error
 -- @return an error object on failure
-function cache.file_path(c, server, location, flags)
-    local rc, re
-    local e = err.new("providing file path failed")
-    -- get the cache entry
-    local ce, re = cache.ce_by_server(c, server)
+function cache.file_path(c, server, location)
+    local rc, re, e
+    local ce, path
+
+    e = err.new("providing path to file not possible (remote server, no cache?)")
+
+    ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
     end
-    assertFlags(flags)
+
     if ce.flags.cache then
-        -- cache enabled. cache the file and return path to cached
-        -- file
-        local path, re = transport.file_path(ce.cache_url, location)
+        path, re = transport.file_path(ce.cache_url, location)
         if not path then
             return false, e:cat(re)
         end
         return path
     end
+
     -- try if the transport delivers a path directly (works for file://)
-    local path, re = transport.file_path(ce.remote_url, location)
+    path, re = transport.file_path(ce.remote_url, location)
     if not path then
-        e:append("Enable caching for this server.")
+        e:append("Try to enable caching for this server.")
         return false, e:cat(re)
     end
     return path

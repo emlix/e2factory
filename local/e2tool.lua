@@ -909,8 +909,7 @@ function e2tool.fileid(info, file)
             return false, e:cat(re)
         end
 
-        path, re = cache.file_path(info.cache, file.server,
-            file.location, cache_flags)
+        path, re = cache.file_path(info.cache, file.server, file.location)
         if not path then
             return false, e:cat(re)
         end

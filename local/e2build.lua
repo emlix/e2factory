@@ -237,9 +237,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
         e2lib.log(3, "caching result failed")
         -- ignore
     end
-    local cache_flags = {}
-    local path, re = cache.file_path(info.cache, server, result_location,
-        cache_flags)
+    local path, re = cache.file_path(info.cache, server, result_location)
     rc = e2lib.isfile(path)
     if not rc then
         -- result is not available. Build.
@@ -367,8 +365,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
             if not rc then
                 return false, e:cat(re)
             end
-            local path, re = cache.file_path(info.cache, f.server,
-                f.location, flags)
+            local path, re = cache.file_path(info.cache, f.server, f.location)
             if not path then
                 return false, e:cat(re)
             end
@@ -556,7 +553,7 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
         dep:get_name(), server, location)
 
     resulttarpath = e2lib.join(location, dep:get_name(), dep_set, "result.tar")
-    path, re = cache.file_path(info.cache, server, resulttarpath, {})
+    path, re = cache.file_path(info.cache, server, resulttarpath)
     if not path then
         return false, e:cat(re)
     end
@@ -974,8 +971,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
         return false, e:cat(re)
     end
     local location1 = e2lib.join(location, res:get_name(), buildid)
-    local cache_flags = {}
-    local dst, re = cache.file_path(info.cache, server, location1, cache_flags)
+    local dst, re = cache.file_path(info.cache, server, location1)
     if not dst then
         return false, e:cat(re)
     end

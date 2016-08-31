@@ -554,8 +554,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             if not rc then
                 return false, e:cat(re)
             end
-            local path, re = cache.file_path(info.cache, file.server,
-                file.location, cache_flags)
+            local path, re = cache.file_path(info.cache, file.server, file.location)
             if not path then
                 return false, e:cat(re)
             end
@@ -604,8 +603,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 if not rc then
                     return false, e:cat(re)
                 end
-                local path, re = cache.file_path(info.cache, file.server,
-                    file.location, cache_flags)
+                local path, re = cache.file_path(info.cache, file.server, file.location)
                 if not path then
                     return false, e:append(re)
                 end
