@@ -1413,10 +1413,14 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
         return false, re
     end
 
+    e2lib.logf(3, "waiting for %q", table.concat(argv, " "))
     rc, re = e2lib.wait(pid)
     if not rc then
         return false, re
     end
+
+    e2lib.logf(3, "command %q exit with return code %d",
+        table.concat(argv, " "), rc)
 
     return rc
 end
