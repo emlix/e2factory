@@ -1838,41 +1838,53 @@ function e2lib.unlink(pathname)
 end
 
 --- Remove directories and files recursively.
--- @param pathname Directory to delete.
+-- @param pathname File or directory to delete.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2lib.unlink_recursive(pathname)
     local de, rc, re
     local filepath
 
-    for file, re in e2lib.directory(pathname, true) do
-        if not file then
-            return false, re
-        end
-
-        filepath = e2lib.join(pathname, file)
-
-        de, re = e2lib.stat(filepath, false) -- do not follow links
-        if not de then
-            return false, re
-        end
-
-        if de.type == "directory" then
-            rc, re = e2lib.unlink_recursive(filepath)
-            if not rc then
-                return false, re
-            end
-        else
-            rc, re = e2lib.unlink(filepath)
-            if not rc then
-                return false, re
-            end
-        end
+    de, re = e2lib.stat(pathname, false) -- do not follow links
+    if not de then
+        return false, re
     end
 
-    rc, re = e2lib.rmdir(pathname)
-    if not rc then
-        return false, re
+    if de.type == "directory" then
+        for file, re in e2lib.directory(pathname, true) do
+            if not file then
+                return false, re
+            end
+
+            filepath = e2lib.join(pathname, file)
+
+            de, re = e2lib.stat(filepath, false) -- do not follow links
+            if not de then
+                return false, re
+            end
+
+            if de.type == "directory" then
+                rc, re = e2lib.unlink_recursive(filepath)
+                if not rc then
+                    return false, re
+                end
+            else
+                rc, re = e2lib.unlink(filepath)
+                if not rc then
+                    return false, re
+                end
+            end
+        end
+
+        rc, re = e2lib.rmdir(pathname)
+        if not rc then
+            return false, re
+        end
+    else
+        rc, re = e2lib.unlink(pathname)
+        if not rc then
+            return false, re
+        end
     end
 
     return true
