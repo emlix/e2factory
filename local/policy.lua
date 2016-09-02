@@ -191,16 +191,13 @@ function policy.init(info)
         local ce, re = cache.ce_by_server(info.cache, server)
         if not ce then
             se:cat(re)
-        elseif not ce.flags.writeback then
+        elseif not cache.writeback_enabled(info.cache, server) then
             e2lib.warnf("WPOLICY",
             "Results will not be pushed to server: '%s'"..
             " (Writeback disabled)", server)
         end
-        if ce and not (ce.flags.cache or ce.flags.islocal) then
-            se:append(
-            "Building needs local access to build results. "..
-            "Enable cache.")
-        elseif ce and not (ce.flags.writeback or ce.flags.cache) then
+        if ce and not (cache.writeback_enabled(info.cache, server)
+            or cache.cache_enabled(info.cache, server)) then
             se:append(
             "Cannot store results. "..
             "Enable cache or writeback.")

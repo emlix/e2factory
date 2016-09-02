@@ -348,16 +348,15 @@ function files.cache_source(info, sourcename)
 
     -- cache all files for this source
     for f in src:file_iter() do
-        e2lib.logf(4, "files.cache_source: caching file %s:%s", f.server,
-            f.location)
-        local flags = { cache = true }
-        if f.server ~= info.root_server_name then
-            rc, re = cache.cache_file(info.cache, f.server, f.location, flags)
+        if cache.cache_enabled(info.cache, f.server) then
+            e2lib.logf(3, "files.cache_source: caching file %s:%s",
+                f.server, f.location)
+            rc, re = cache.fetch_file_path(info.cache, f.server, f.location)
             if not rc then
                 return false, re
             end
         else
-            e2lib.logf(4, "not caching %s:%s (stored locally)", f.server,
+            e2lib.logf(3, "not caching %s:%s (stored locally)", f.server,
                 f.location)
         end
     end
@@ -548,13 +547,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             end
         end
         if file.unpack then
-            local cache_flags = { cache = true }
-            local rc, re = cache.cache_file(info.cache, file.server,
-                file.location, cache_flags)
-            if not rc then
-                return false, e:cat(re)
-            end
-            local path, re = cache.file_path(info.cache, file.server, file.location)
+            local path, re = cache.fetch_file_path(info.cache,
+                file.server, file.location)
             if not path then
                 return false, e:cat(re)
             end
@@ -597,13 +591,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 end
             end
             if file.patch then
-                local cache_flags = { cache = true }
-                local rc, re = cache.cache_file(info.cache, file.server,
-                    file.location, cache_flags)
-                if not rc then
-                    return false, e:cat(re)
-                end
-                local path, re = cache.file_path(info.cache, file.server, file.location)
+                local path, re = cache.fetch_file_path(info.cache,
+                    file.server, file.location)
                 if not path then
                     return false, e:append(re)
                 end

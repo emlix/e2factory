@@ -270,6 +270,76 @@ function transport.fetch_file(surl, location, destdir, destname)
     return true
 end
 
+--- Check if remote file exists without downloading.
+-- Note that some transports make it difficult to determine errors or can
+-- generate false positives. Don't rely too much on this function.
+-- @param surl Server URL (string)
+-- @param location Path to file relative to server URL.
+-- @return True if file exists, false if it does not exists or an error occurred.
+-- @return Error object on failure.
+function transport.file_exists(surl, location)
+    assertIsStringN(surl)
+    assertIsStringN(location)
+
+    local rc, re, e
+    local u, filename
+
+    e = err.new("checking if file at %s/%s file_exists failed", surl, location)
+    u, re = url.parse(surl)
+    if not u then
+        return false, e:cat(re)
+    end
+
+    if u.transport == "file" then
+        filename = e2lib.join("/", u.path, location)
+        rc, re = e2lib.exists(filename, false)
+        if rc then
+            return true
+        end
+        return false
+    elseif u.transport == "rsync+ssh" then
+        filename = e2lib.join("/", u.path, location)
+        filename = rsync_quote_remote(u.user, u.servername, filename)
+
+        rc, re = rsync_ssh({ "-n" }, filename, "/")
+        -- can't check for real errors easily
+        return rc
+    elseif u.transport == "scp" or u.transport == "ssh" then
+        filename = e2lib.join("/", u.path, location)
+
+        local test_e, test_not_e
+
+        test_e, re = e2lib.ssh_remote_cmd(u, { "test", "-e", filename})
+        test_not_e, re = e2lib.ssh_remote_cmd(u, { "test", "!", "-e", filename})
+
+        if not test_e and not test_not_e then
+            -- both false, we have a connection issue
+            return false, e:cat(re)
+        elseif test_e and not test_not_e then
+            return true
+        end
+        assert(test_e ~= test_not_e, "schroedingers file?")
+        return false
+    elseif u.transport == "http" or u.transport == "https" then
+        local curl_argv = {}
+
+        filename =  string.format("%s/%s",  u.url, location)
+        table.insert(curl_argv, "-o")
+        table.insert(curl_argv, "/dev/null")
+        table.insert(curl_argv, "--silent")
+        table.insert(curl_argv, "--head")
+        table.insert(curl_argv, "--fail")
+        table.insert(curl_argv, filename)
+
+        rc, re = e2lib.curl(curl_argv)
+        -- can't check for real errors easily
+        return rc
+    end
+
+    e:append("file_exists() not implemented for %s://", u.transport)
+    return false, e
+end
+
 --- push a file to a server
 -- @param sourcefile local file
 -- @param durl url to the destination server
@@ -394,24 +464,6 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
         return false, e
     end
     return true, nil
-end
-
---- Get file path to the specified location, if the file is locally accessable.
--- It's the responsibilty of the caller to check whether the file exists.
--- @param surl Url to the server.
--- @param location Location relative to the server url.
--- @return File path on success, false on error.
--- @return Error string on failure.
-function transport.file_path(surl, location)
-    local e = err.new("can't get path to file")
-    local u, re = url.parse(surl)
-    if not u then
-        return false, e:cat(re)
-    end
-    if u.transport ~= "file" then
-        return false, e:append("transport does not support file_path()")
-    end
-    return string.format("/%s/%s", u.path, location)
 end
 
 return strict.lock(transport)

@@ -225,28 +225,28 @@ function e2build.build_process_class:_result_available(res, return_flags)
         return_flags.stop = false
         return true
     end
+
     local server, location =
         res:build_mode().storage(info.project_location, project.release_id())
     local dep_set = res:build_mode().dep_set(buildid)
+    local result_location = e2lib.join(location, res:get_name(),
+        dep_set, "result.tar")
 
-    -- cache the result
-    local result_location = e2lib.join(location, res:get_name(), dep_set, "result.tar")
-    local cache_flags = {}
-    rc, re = cache.cache_file(info.cache, server, result_location, cache_flags)
-    if not rc then
-        e2lib.log(3, "caching result failed")
-        -- ignore
+    rc, re = cache.file_exists(info.cache, server, result_location)
+    if re then
+        return false, e:cat(re)
     end
-    local path, re = cache.file_path(info.cache, server, result_location)
-    rc = e2lib.isfile(path)
+
     if not rc then
         -- result is not available. Build.
         return_flags.message = e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
             columns, string.format("[%s]", sbid))
         return_flags.stop = false
+
         return true
     end
+
     e2lib.log(3, "result is available locally")
     --[[
     rc, re = update_result_timestamp(info, server, location)
@@ -256,11 +256,12 @@ function e2build.build_process_class:_result_available(res, return_flags)
     -- and push the updated metadata to the server again, if the result
     -- exists on the server.
     ]]
+
     rc, re = self:_linklast(res, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    -- return true
+
     return_flags.message = e2lib.align(columns,
         0, string.format("skipping %-20s", res:get_name()),
         columns, string.format("[%s]", sbid))
@@ -354,27 +355,24 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
         return false, e:cat(re)
     end
 
-    local grp
+    local grp, path
     for cgrpnm in res:my_chroot_list():iter_sorted() do
         grp = chroot.groups_byname[cgrpnm]
 
         for f in grp:file_iter() do
-            local flags = { cache = true }
-            rc, re = cache.cache_file(info.cache, f.server,
-                f.location, flags)
-            if not rc then
-                return false, e:cat(re)
-            end
-            local path, re = cache.file_path(info.cache, f.server, f.location)
+
+            path, re = cache.fetch_file_path(info.cache, f.server, f.location)
             if not path then
                 return false, e:cat(re)
             end
+
             if f.sha1 then
                 rc, re = e2tool.verify_hash(info, f.server, f.location, f.sha1)
                 if not rc then
                     return false, e:cat(re)
                 end
             end
+
             local tartype
             tartype, re = e2lib.tartype_by_suffix(path)
             if not tartype then
@@ -553,7 +551,7 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
         dep:get_name(), server, location)
 
     resulttarpath = e2lib.join(location, dep:get_name(), dep_set, "result.tar")
-    path, re = cache.file_path(info.cache, server, resulttarpath)
+    path, re = cache.fetch_file_path(info.cache, server, resulttarpath)
     if not path then
         return false, e:cat(re)
     end
@@ -829,7 +827,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
             return false, re
         end
     end
-    if cache.writeback_state(info.cache, server, cache_flags) == false then
+    if cache.writeback_enabled(info.cache, server, cache_flags) == false then
         e2lib.warnf("WOTHER",
             "Writeback is disabled for server %q. Release not deployed!", server)
     end
@@ -959,41 +957,67 @@ end
 
 --- TODO
 function e2build.build_process_class:_linklast(res, return_flags)
-    local rc, re, info
-    local e = err.new("creating link to last results")
+    local rc, re, e
+    local info, server, location, buildid, dst, lnk
+    
+    e = err.new("creating link to last results")
     info = e2tool.info()
     -- calculate the path to the result
-    local server, location = res:build_mode().storage(info.project_location,
-        project.release_id())
+    server, location = res:build_mode().storage(info.project_location, project.release_id())
 
-    local buildid, re = res:buildid()
+    -- compute the "last" link/directory
+    buildid, re = res:buildid()
     if not buildid then
         return false, e:cat(re)
     end
-    local location1 = e2lib.join(location, res:get_name(), buildid)
-    local dst, re = cache.file_path(info.cache, server, location1)
-    if not dst then
-        return false, e:cat(re)
-    end
-    -- create the last link
-    local lnk_location = e2lib.join("out", res:get_name(), "last")
-    local lnk, re = cache.file_path(info.cache, info.root_server_name, lnk_location)
-    if not lnk then
-        return false, e:cat(re)
-    end
-    rc, re = e2lib.mkdir_recursive(e2lib.dirname(lnk))
-    if not rc then
-        return false, e:cat(re)
+    lnk = e2lib.join(info.root,  "out", res:get_name(), "last")
+    location = e2lib.join(location, res:get_name(), buildid, "result.tar")
+
+    -- if we don't have cache or server on local fs, fetch a copy into "out"
+    if not cache.cache_enabled(info.cache, server) and not
+        cache.islocal_enabled(info.cache, server) then
+        e2lib.logf(3, "%s: copy to out/%s/last, server %q has no cache/not local",
+            res:get_name(), res:get_name(), server)
+
+        if e2lib.stat(lnk, false) then
+            e2lib.unlink_recursive(lnk) -- ignore errors
+        end
+
+        rc, re = e2lib.mkdir_recursive(lnk)
+        if not rc then
+            return e:cat(re)
+        end
+
+        rc, re = cache.fetch_file(info.cache, server, location, lnk, nil)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        return true
+    else -- otherwise create a symlink
+        dst, re = cache.fetch_file_path(info.cache, server, location)
+        if not dst then
+            return false, e:cat(re)
+        end
+
+        dst = e2lib.dirname(dst) -- we only care about the directory
+
+        -- create the last link
+        rc, re = e2lib.mkdir_recursive(e2lib.dirname(lnk))
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        if e2lib.stat(lnk, false) then
+            e2lib.unlink_recursive(lnk) -- ignore errors, symlink will catch it
+        end
+
+        rc, re = e2lib.symlink(dst, lnk)
+        if not rc then
+            return false, e:cat(re)
+        end
     end
 
-    if e2lib.stat(lnk, false) then
-        e2lib.unlink(lnk) -- ignore errors, symlink will catch it
-    end
-
-    rc, re = e2lib.symlink(dst, lnk)		-- create the new link
-    if not rc then
-        return false, e:cat(re)
-    end
     return true
 end
 

@@ -895,7 +895,6 @@ end
 -- @return an error object on failure
 function e2tool.fileid(info, file)
     local rc, re, e, fileid, path
-    local cache_flags = { cache = true }
 
     e = err.new("error calculating file id for file: %s:%s",
         file.server, file.location)
@@ -903,13 +902,7 @@ function e2tool.fileid(info, file)
     if file.sha1 then
         fileid = file.sha1
     else
-        rc, re = cache.cache_file(info.cache, file.server,
-            file.location, cache_flags)
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        path, re = cache.file_path(info.cache, file.server, file.location)
+        path, re = cache.fetch_file_path(info.cache, file.server, file.location)
         if not path then
             return false, e:cat(re)
         end

@@ -85,7 +85,6 @@ function cache.servers(c)
 end
 
 local function assertFlags(flags)
-    flags = flags or {}
     local known = {
         cachable = "boolean",
         cache = "boolean",
@@ -255,23 +254,48 @@ end
 --- check if a cache is enabled
 -- @param c a cache table
 -- @param server the server name
+-- @param flags optional flags table
 -- @return bool
 -- @return an error object on failure
-function cache.cache_enabled(c, server)
+function cache.cache_enabled(c, server, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    flags = flags or {}
+    assertFlags(flags)
+
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, re
     end
-    return ce.flags.cache
+
+    if flags.cache == true then
+        return true
+    elseif ce.flags.cache == true and flags.cache ~= false then
+        return true
+    end
+
+    return false
 end
 
---- check if a file is available in the cache
+--- Check if a file is available in the cache
 -- @param c a cache table
 -- @param server the server name
 -- @param location location relative to the server url
--- @return bool
--- @return an error object on failure
-function cache.file_in_cache(c, server, location)
+-- @param flags optional flags table
+-- @return True if file is in cache, false otherwise
+-- @return Error object on failure
+-- @return Absolute filepath if it is in cache
+local function file_in_cache(c, server, location, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    assertIsStringN(location)
+    flags = flags or {}
+    assertFlags(flags)
+
+    if not cache.cache_enabled(c, server, flags) then
+        return false
+    end
+
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, re
@@ -280,11 +304,113 @@ function cache.file_in_cache(c, server, location)
     if not ceurl then
         return false, re
     end
-    local cf = string.format("/%s/%s", ceurl.path, location)
-    local rc, re = e2lib.isfile(cf)
+    local cf = e2lib.join("/", ceurl.path, location)
+    local rc, re = e2lib.stat(cf)
     if not rc then
         return false
     end
+    return true, nil, cf
+end
+
+function cache.islocal_enabled(c, server, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    flags = flags or {}
+    assertFlags(flags)
+
+    local rc, re, ce
+
+    ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, re
+    end
+
+    if flags.islocal == true then
+        return true
+    elseif ce.flags.islocal == true and flags.islocal ~= false then
+        return true
+    end
+
+    return false
+end
+
+
+local function file_is_local(c, server, location, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    assertIsStringN(location)
+    flags = flags or {}
+    assertFlags(flags)
+
+    local rc, re
+    local ce, u, filepath
+
+    if not cache.islocal_enabled(c, server, flags) then
+        return false
+    end
+
+    ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, re
+    end
+
+    u, re = url.parse(ce.remote_url)
+    if not u then
+        return false, re
+    end
+
+    if u.transport == "file" then
+        filepath = e2lib.join("/", u.path, location)
+        rc, re = e2lib.stat(filepath)
+        if not rc then
+            return false
+        end
+
+        return true, nil, filepath
+    end
+
+    return false
+end
+
+--- cache a file
+-- @param c the cache data structure
+-- @param server the server to fetch the file from
+-- @param location the location on the server
+-- @param flags
+-- @return bool
+-- @return an error object on failure
+local function cache_file(c, server, location, flags)
+    e2lib.logf(4, "called cache_file from here: %s", debug.traceback("", 2))
+    local e = err.new("caching file failed: %s:%s", server, location)
+    local rc, re
+    local ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, e:cat(re)
+    end
+    assertFlags(flags)
+
+    if not cache.cache_enabled(c, server, flags) then
+        return false, e:append("caching is disabled")
+    end
+
+    local ceurl, re = url.parse(ce.cache_url)
+    if not ceurl then
+        return false, e:cat(re)
+    end
+    local avail, re = file_in_cache(c, server, location)
+    if re then
+        return false, e:cat(re)
+    end
+    if not avail then
+        local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
+        -- fetch the file to the cache
+        rc, re = transport.fetch_file(ce.remote_url, location,
+            destdir, e2lib.basename(location))
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+
     return true
 end
 
@@ -298,24 +424,26 @@ end
 -- @return bool
 -- @return an error object on failure
 function cache.fetch_file(c, server, location, destdir, destname, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    assertIsStringN(location)
+    assertIsStringN(destdir)
+    destname = destname or e2lib.basename(location)
+    assertIsStringN(destname)
+    flags = flags or {}
+    assertFlags(flags)
+
     local rc, re
     local e = err.new("cache: fetching file failed")
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
     end
-    if not destname then
-        destname = e2lib.basename(location)
-    end
-    if not flags then
-        flags = {}
-    end
-    assertFlags(flags)
-    -- fetch the file
-    if ce.flags.cache and flags.cache ~= false then
+
+    if cache.cache_enabled(c, server, flags) then
         -- cache is enabled:
         -- fetch from source to cache and from cache to destination
-        rc, re = cache.cache_file(c, server, location, flags)
+        rc, re = cache_file(c, server, location, flags)
         if not rc then
             return false, e:cat(re)
         end
@@ -335,6 +463,122 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
     return true
 end
 
+--- Return file path to requested file. The pathname may either point to
+-- the cache, local server or to a temporary file. Do not modify the file!
+-- If the filepath points to a temporary copy, the third return value
+-- is true.
+-- @param c a cache table
+-- @param server the server name
+-- @param location location relative to the server url
+-- @param flags table of flags (optional)
+-- @return filepath to requested file or false on error
+-- @return error object on failure
+-- @return true if temporary file, nil otherwise
+function cache.fetch_file_path(c, server, location, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    assertIsStringN(location)
+    flags = flags or {}
+    assertFlags(flags)
+
+    local rc, re, e
+    local ce, filepath
+
+    e = err.new("fetching file to provide file path failed")
+    ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, e:cat(re)
+    end
+
+    -- If you enabled the cache, you probably prefer files from there
+    if cache.cache_enabled(c, server, flags) then
+        rc, re = cache_file(c, server, location, flags)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        rc, re, filepath = file_in_cache(c, server, location, flags)
+        if not rc and re then
+            return false, e:cat(re)
+        end
+
+        assertTrue(rc)
+        assertIsNil(re)
+        assertIsStringN(filepath)
+        return filepath
+    end
+
+    -- Second choice, the local filesystem
+    rc, re, filepath = file_is_local(c, server, location, flags)
+    if not rc and re then
+        return false, e:cat(re)
+    elseif rc then
+        assertIsNil(re)
+        assertIsStringN(filepath)
+        return filepath
+    end
+
+    -- OK, we're getting a copy for you.
+    filepath, re = e2lib.mktempdir()
+    if not filepath then
+        return false, e:cat(re)
+    end
+    -- preserve the original name for file suffix info etc.
+    filepath = e2lib.join(filepath, e2lib.basename(location))
+
+    rc, re = cache.fetch_file(c, server, location, e2lib.dirname(filepath),
+        e2lib.basename(filepath), flags)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    return filepath, nil, true
+end
+
+--- Check whether file exists in cache, locally or remote. Please note
+-- error detection doesn't work in all cases, eg. it's difficult to
+-- determine whether a file doesn't exists or there's just a connection problem.
+-- @param c cache
+-- @param server server name
+-- @param location path on server
+-- @param flags table of flags (optional)
+-- @return true if file exists, false otherwise
+-- @return error object if there was an detectable error
+function cache.file_exists(c, server, location, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    assertIsStringN(location)
+    flags = flags or {}
+    assertFlags(flags)
+
+    local rc, re, e
+    local ce
+
+    e = err.new("cache: file_exists failed")
+    ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, e:cat(re)
+    end
+
+    if cache.cache_enabled(c, server, flags) then
+        rc, re = file_in_cache(c, server, location, flags)
+        if re then
+            return false, e:cat(re)
+        end
+
+        if rc then
+            return true
+        end
+    end
+
+    rc, re = transport.file_exists(ce.remote_url, location)
+    if re then
+        return false, e:cat(re)
+    end
+
+    return rc
+end
+
 --- push a file to a server: cache and writeback
 -- @param c a cache table
 -- @param sourcefile where to store the file locally
@@ -344,14 +588,17 @@ end
 -- @return bool
 -- @return an error object on failure
 function cache.push_file(c, sourcefile, server, location, flags)
+    flags = flags or {}
+    assertFlags(flags)
+
     local rc, re
     local e = err.new("error pushing file to cache/server")
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
     end
-    assertFlags(flags)
-    if ce.flags.cache and flags.cache ~= false then
+
+    if cache.cache_enabled(c, server, flags) then
         -- cache is enabled:
         -- push the file from source to cache and from cache to
         -- destination
@@ -384,10 +631,10 @@ end
 -- @param server Server name.
 -- @param flags Flags table.
 -- @return Boolean state of writeback.
-function cache.writeback_state(c, server, flags)
+function cache.writeback_enabled(c, server, flags)
     assert(type(c) == "table", "invalid cache")
     assert(type(server) == "string" and server ~= "", "invalid server")
-    assert(type(flags) == "table", "invalid flags")
+    flags = flags or {}
     assertFlags(flags)
 
     local ce, re
@@ -399,7 +646,7 @@ function cache.writeback_state(c, server, flags)
 
     if flags.writeback == false then
         return false
-    elseif ce.flags.writeback == false and flags.writeback == nil then
+    elseif ce.flags.writeback == false and flags.writeback ~= true then
         return false
     end
 
@@ -428,7 +675,7 @@ function cache.writeback(c, server, location, flags)
         return false, e:cat(re)
     end
 
-    if cache.writeback_state(c, server, flags) == false then
+    if cache.writeback_enabled(c, server, flags) == false then
         return true
     end
 
@@ -439,78 +686,6 @@ function cache.writeback(c, server, location, flags)
         return false, e:cat(re)
     end
     return true
-end
-
---- cache a file
--- @param c the cache data structure
--- @param server the server to fetch the file from
--- @param location the location on the server
--- @param flags
--- @return bool
--- @return an error object on failure
-function cache.cache_file(c, server, location, flags)
-    local e = err.new("caching file failed: %s:%s", server, location)
-    local rc, re
-    local ce, re = cache.ce_by_server(c, server)
-    if not ce then
-        return false, e:cat(re)
-    end
-    assertFlags(flags)
-    if not ce.flags.cache then
-        return true
-    end
-    local ceurl, re = url.parse(ce.cache_url)
-    if not ceurl then
-        return false, e:cat(re)
-    end
-    local avail, re = cache.file_in_cache(c, server, location)
-    if re then
-        return false, e:cat(re)
-    end
-    if not avail then
-        local destdir = e2lib.join("/", ceurl.path, e2lib.dirname(location))
-        -- fetch the file to the cache
-        rc, re = transport.fetch_file(ce.remote_url, location, destdir, nil)
-        if not rc then
-            return false, e:cat(re)
-        end
-    end
-    return true
-end
-
---- get path to a cached file or a file on a local server
--- The user must cache the file first using cache.cache_file()
--- @param c the cache data structure
--- @param server the server where the file is located
--- @param location the location on the server
--- @return string the path to the cached file, false on error
--- @return an error object on failure
-function cache.file_path(c, server, location)
-    local rc, re, e
-    local ce, path
-
-    e = err.new("providing path to file not possible (remote server, no cache?)")
-
-    ce, re = cache.ce_by_server(c, server)
-    if not ce then
-        return false, e:cat(re)
-    end
-
-    if ce.flags.cache then
-        path, re = transport.file_path(ce.cache_url, location)
-        if not path then
-            return false, e:cat(re)
-        end
-        return path
-    end
-
-    -- try if the transport delivers a path directly (works for file://)
-    path, re = transport.file_path(ce.remote_url, location)
-    if not path then
-        e:append("Try to enable caching for this server.")
-        return false, e:cat(re)
-    end
-    return path
 end
 
 --- enable/disable writeback for a server
