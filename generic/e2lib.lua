@@ -1852,7 +1852,7 @@ function e2lib.unlink_recursive(pathname)
 
         filepath = e2lib.join(pathname, file)
 
-        de, re = e2lib.stat(filepath)
+        de, re = e2lib.stat(filepath, false) -- do not follow links
         if not de then
             return false, re
         end
