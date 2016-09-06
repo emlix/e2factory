@@ -367,7 +367,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
             end
 
             if f.sha1 then
-                rc, re = e2tool.verify_hash(info, f.server, f.location, f.sha1)
+                rc, re = e2tool.verify_hash(info, f)
                 if not rc then
                     return false, e:cat(re)
                 end

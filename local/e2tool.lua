@@ -772,56 +772,56 @@ function e2tool.dsort()
     return e2tool.dlist_recursive(dr)
 end
 
---- verify that a file addressed by server name and location matches the
--- checksum given in the sha1 parameter.
--- @param info info structure
--- @param server the server name
--- @param location file location relative to the server
--- @param sha1 string: the hash to verify against
--- @return bool true if verify succeeds, false otherwise
--- @return Error object on failure.
-function e2tool.verify_hash(info, server, location, sha1)
-    local rc, re
-    local e = err.new("error verifying checksum")
-    local is_sha1, re = e2tool.fileid(info, {server=server, location=location})
-    if not is_sha1 then
-        return false, e:cat(re)
+--- Compute checksum of file by retreiving it via the cache transport,
+-- no matter the configuration what and hashing local.
+-- @param file a file table
+-- @return fileid on success, false if an error occured.
+-- @return error object on failure.
+local function compute_fileid(file, flags)
+    assertIsTable(file)
+    assertIsStringN(file.server)
+    assertIsStringN(file.location)
+
+    local rc, re, info, path, fileid
+
+    info = e2tool.info()
+
+    path, re = cache.fetch_file_path(info.cache, file.server, file.location, flags)
+    if not path then
+        return false, re
     end
-    if is_sha1 ~= sha1 then
-        e = err.new("checksum mismatch in file:")
-        return false, e:append("%s:%s", server, location)
+
+    fileid, re = hash.hash_file_once(path)
+    if not fileid then
+        return false, re
     end
-    e2lib.logf(4, "checksum matches: %s:%s", server, location)
-    return true
+
+    return fileid
 end
 
---- verify that remote files match the checksum. The check is skipped when
--- check-remote is not enabled or cache is not enabled.
--- @param info
--- @param file table: file table from configuration
--- @param fileid string: hash to verify against
--- @return bool
--- @return an error object on failure
-local function verify_remote_fileid(info, file, fileid)
-    local rc, re, hc
-    local e = err.new("error calculating remote file id for file: %s:%s",
-        file.server, file.location)
-    if not cache.cache_enabled(info.cache, file.server) or
-        not e2option.opts["check-remote"] then
-        e2lib.logf(4, "checksum for remote file %s:%s skip verifying",
-        file.server, file.location)
-        return true
-    end
-    local surl, re = cache.remote_url(info.cache, file.server, file.location)
+--- Compute checksum of file on the remote server, if transport supports it.
+-- @param file a file table
+-- @return fileid on success, false if computation not possible or on failure
+-- @return error object on failure.
+local function compute_remote_fileid(file)
+    assertIsTable(file)
+    assertIsStringN(file.server)
+    assertIsStringN(file.location)
+
+    local rc, re, info, surl, u, fileid
+
+    info = e2tool.info()
+
+
+    surl, re = cache.remote_url(info.cache, file.server, file.location)
     if not surl then
-        return false, e:cat(re)
-    end
-    local u, re = url.parse(surl)
-    if not u then
-        return false, e:cat(re)
+        return false, re
     end
 
-    local remote_fileid = ""
+    u, re = url.parse(surl)
+    if not u then
+        return false, re
+    end
 
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
@@ -830,61 +830,105 @@ local function verify_remote_fileid(info, file, fileid)
         sha1sum_remote =  { "sha1sum", e2lib.join("/", u.path) }
         rc, re, stdout = e2lib.ssh_remote_cmd(u, sha1sum_remote)
         if not rc then
-            return false, e:cat(re)
+            return false, re
         end
 
         dt, re = digest.parsestring(stdout)
         if not dt then
-            return false, e:cat(re)
+            return false, re
         end
 
         for k,dt_entry in ipairs(dt) do
             if dt_entry.name == e2lib.join("/", u.path) then
-                remote_fileid = dt_entry.checksum
+                fileid = dt_entry.checksum
                 break;
             end
         end
 
-        if #remote_fileid ~= digest.SHA1_LEN then
-            return false,
-                e:cat(err.new("Could not extract digest from digest table"))
-        end
-    elseif u.transport == "file" then
-        remote_fileid, re = hash.hash_file_once(e2lib.join("/", u.path))
-        if not remote_fileid then
-            return false, e:cat(re)
-        end
-    elseif u.transport == "http" or u.transport == "https" then
-        local tmpfile, re = e2lib.mktempfile()
-        if not tmpfile then
-            return false, e:cat(re)
+        if not fileid or #fileid ~= digest.SHA1_LEN then
+            return false, err.new("could not extract fileid from remote output")
         end
 
-        rc, re = cache.fetch_file(info.cache, file.server, file.location,
-            e2lib.dirname(tmpfile), e2lib.basename(tmpfile), { cache = false })
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        remote_fileid, re = hash.hash_file_once(tmpfile)
-        if not remote_fileid then
-            return false, e:cat(re)
-        end
-
-        e2lib.rmtempfile(tmpfile)
-    else
-        return false, err.new("verify remote fileid: transport not supported: %s",
-            u.transport)
+        return fileid
     end
-    if fileid ~= remote_fileid then
-        return false, err.new(
-            "checksum for remote file %s:%s (%s) does not match" ..
-            " configured checksum (%s)",
-            file.server, file.location, remote_fileid, fileid)
+
+    return false
+end
+
+--- verify that a file addressed by server name and location matches the
+-- checksum given in the sha1 parameter.
+-- @param info info structure
+-- @param file table: file table from configuration
+-- @return bool true if verify succeeds, false otherwise
+-- @return Error object on failure.
+-- @return Computed fileid
+function e2tool.verify_hash(info, file)
+    assertIsTable(info)
+    assertIsTable(file)
+    assertIsStringN(file.server)
+    assertIsStringN(file.location)
+    assertIsStringN(file.sha1)
+
+    local rc, re, e, id_cache, id_remote, id_fetch, fileid
+
+    e = err.new("error verifying checksum of %s:%s", file.server, file.location)
+
+    if cache.cache_enabled(info.cache, file.server) then
+        id_cache, re = compute_fileid(file)
+        if not id_cache then
+            return false, e:cat(re)
+        end
     end
-    e2lib.logf(4, "checksum for remote file %s:%s matches (%s)",
-        file.server, file.location, fileid)
-    return true
+
+    -- Server-side checksum computation for ssh-like transports
+    if e2option.opts["check-remote"] then
+        id_remote, re = compute_remote_fileid(file)
+        if re then
+            return false, e:cat(re)
+        end
+    end
+
+    if not id_cache or (e2option.opts["check-remote"] and not id_remote) then
+        id_fetch, re = compute_fileid(file, { cache = false })
+        if not id_fetch then
+            return false, e:cat(re)
+        end
+    end
+
+    assert(id_cache or id_fetch, "verify_hash() failed to report error")
+
+    rc = true
+    if (id_cache and id_fetch) and id_cache ~= id_fetch then
+        e:append("checksum verification failed: cached file checksum differs from fetched file checksum")
+        e:append("cache: %s fetched: %s", id_cache, id_fetch)
+        rc = false
+    end
+
+    if (id_cache and id_remote) and id_cache ~= id_remote then
+        e:append("checksum verification failed: cached file checksum differs from remote file checksum")
+        e:append("cache: %s remote: %s", id_cache, id_remote)
+        rc = false
+    end
+
+    if (id_fetch and id_remote) and id_fetch ~= id_remote then
+        e:append("checksum verification failed: refetched file checksum differs from remote file checksum")
+        e:append("refetched: %s remote: %s", id_fetch, id_remote)
+        rc = false
+    end
+
+    fileid = id_cache or id_fetch
+
+    if file.sha1 ~= fileid then
+        e:append("checksum verification failed: configured file checksum differs from computed file checksum")
+        e:append("configured: %s computed: %s", file.sha1, fileid)
+        rc = false
+    end
+
+    if rc then
+        return true
+    end
+
+    return false, e
 end
 
 --- calculate a representation for file content. The name and location
@@ -894,7 +938,12 @@ end
 -- @return fileid string: hash value, or false on error.
 -- @return an error object on failure
 function e2tool.fileid(info, file)
-    local rc, re, e, fileid, path
+    assertIsTable(info)
+    assertIsTable(file)
+    assertIsStringN(file.server)
+    assertIsStringN(file.location)
+
+    local rc, re, e, fileid, filever
 
     e = err.new("error calculating file id for file: %s:%s",
         file.server, file.location)
@@ -902,18 +951,14 @@ function e2tool.fileid(info, file)
     if file.sha1 then
         fileid = file.sha1
     else
-        path, re = cache.fetch_file_path(info.cache, file.server, file.location)
-        if not path then
-            return false, e:cat(re)
-        end
-
-        fileid, re = hash.hash_file_once(path)
+        fileid, re = compute_fileid(file)
         if not fileid then
             return false, e:cat(re)
         end
     end
 
-    rc, re = verify_remote_fileid(info, file, fileid)
+    filever = { server = file.server, location = file.location, sha1 = fileid }
+    rc, re = e2tool.verify_hash(info, filever)
     if not rc then
         return false, e:cat(re)
     end

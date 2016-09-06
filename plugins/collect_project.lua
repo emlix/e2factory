@@ -342,8 +342,7 @@ local function build_collect_project(info, resultname, return_flags)
         for file in l:file_iter() do
             local cache_flags = {}
             if file.sha1 then
-                rc, re = e2tool.verify_hash(info, file.server,
-                file.location, file.sha1)
+                rc, re = e2tool.verify_hash(info, file)
                 if not rc then
                     return false, e:cat(re)
                 end
