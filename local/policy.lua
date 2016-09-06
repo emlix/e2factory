@@ -97,20 +97,6 @@ local function deploy_storage_default(location, release_id)
     return "releases", string.format("%s/archive/%s", location, release_id)
 end
 
----
--- @param buildid the buildid
--- @return the buildid
-local function dep_set_buildid(buildid)
-    return buildid
-end
-
----
--- @param buildid the buildid
--- @return the buildid
-local function dep_set_last(buildid)
-    return "last"
-end
-
 --- Get the buildid for a build
 -- @param buildid the buildid
 -- @return the buildid
@@ -284,7 +270,6 @@ end
 --- Build mode table for each result.
 -- @table build_mode
 -- @field source_set
--- @field dep_set
 -- @field buildid
 -- @field storage
 -- @field deploy Boolean value, decides whether a result should be deployed.
@@ -298,32 +283,27 @@ function policy.default_build_mode(mode)
 
     if mode == "lazytag" then
         build_mode.source_set = source_set_lazytag
-        build_mode.dep_set = dep_set_buildid
         build_mode.buildid = buildid_buildid
         build_mode.storage = storage_default
         build_mode.deploy = false
     elseif mode == "tag" then
         build_mode.source_set = source_set_tag
-        build_mode.dep_set = dep_set_buildid
         build_mode.buildid = buildid_buildid
         build_mode.storage = storage_default
         build_mode.deploy = false
     elseif mode == "release" then
         build_mode.source_set = source_set_tag
-        build_mode.dep_set = dep_set_buildid
         build_mode.buildid = buildid_buildid
         build_mode.storage = storage_release
         build_mode.deploy = true
         build_mode.deploy_storage = deploy_storage_default
     elseif mode == "branch" then
         build_mode.source_set = source_set_branch
-        build_mode.dep_set = dep_set_buildid
         build_mode.buildid = buildid_buildid
         build_mode.storage = storage_default
         build_mode.deploy = false
     elseif mode == "working-copy" then
         build_mode.source_set = source_set_working_copy
-        build_mode.dep_set = dep_set_last
         build_mode.buildid = buildid_scratch
         build_mode.storage = storage_local
         build_mode.deploy = false

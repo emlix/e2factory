@@ -228,9 +228,8 @@ function e2build.build_process_class:_result_available(res, return_flags)
 
     local server, location =
         res:build_mode().storage(info.project_location, project.release_id())
-    local dep_set = res:build_mode().dep_set(buildid)
     local result_location = e2lib.join(location, res:get_name(),
-        dep_set, "result.tar")
+        buildid, "result.tar")
 
     rc, re = cache.file_exists(info.cache, server, result_location)
     if re then
@@ -530,7 +529,7 @@ end
 
 function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
     local rc, re, e
-    local info, buildid, dep_set, server, location, resulttarpath, tmpdir
+    local info, buildid, server, location, resulttarpath, tmpdir
     local path, resdir, dt, filesdir
 
     e = err.new("unpacking result failed: %s", dep:get_name())
@@ -542,15 +541,13 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
         return false, e:cat(re)
     end
 
-    dep_set = dep:build_mode().dep_set(buildid)
-
     server, location =
         dep:build_mode().storage(info.project_location, project.release_id())
 
     e2lib.logf(3, "searching for dependency %s in %s:%s",
         dep:get_name(), server, location)
 
-    resulttarpath = e2lib.join(location, dep:get_name(), dep_set, "result.tar")
+    resulttarpath = e2lib.join(location, dep:get_name(), buildid, "result.tar")
     path, re = cache.fetch_file_path(info.cache, server, resulttarpath)
     if not path then
         return false, e:cat(re)
