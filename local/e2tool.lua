@@ -943,7 +943,7 @@ function e2tool.fileid(info, file)
     assertIsStringN(file.server)
     assertIsStringN(file.location)
 
-    local rc, re, e, fileid, filever
+    local rc, re, e, fileid
 
     e = err.new("error calculating file id for file: %s:%s",
         file.server, file.location)
@@ -957,10 +957,16 @@ function e2tool.fileid(info, file)
         end
     end
 
-    filever = { server = file.server, location = file.location, sha1 = fileid }
-    rc, re = e2tool.verify_hash(info, filever)
-    if not rc then
-        return false, e:cat(re)
+    if e2option.opts["check-remote"] then
+        local filever = {
+            server = file.server,
+            location = file.location,
+            sha1 = fileid
+        }
+        rc, re = e2tool.verify_hash(info, filever)
+        if not rc then
+            return false, e:cat(re)
+        end
     end
 
     return fileid
