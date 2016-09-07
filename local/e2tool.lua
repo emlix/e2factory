@@ -515,7 +515,12 @@ function e2tool.collect_project_info(info, skip_load_config)
     e2lib.logf(4, "project location is %s", info.project_location)
 
     -- setup cache
-    info.cache, re = e2lib.setup_cache()
+    local config, re = e2lib.get_global_config()
+    if not config then
+        return false, e:cat(re)
+    end
+
+    info.cache, re = cache.setup_cache(config)
     if not info.cache then
         return false, e:cat(re)
     end

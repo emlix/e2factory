@@ -126,7 +126,7 @@ local function e2_create_project(arg)
         error(e:cat(re))
     end
 
-    local scache, re = e2lib.setup_cache()
+    local scache, re = cache.setup_cache(config)
     if not scache then
         error(e:cat(re))
     end

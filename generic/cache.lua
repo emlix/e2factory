@@ -56,6 +56,41 @@ local url = require("url")
 -- @name flags
 -- @field cachable treat a server as cachable?
 
+--- Setup cache from the global server configuration
+-- @param config global config table
+-- @return a cache object
+-- @return an error object on failure
+function cache.setup_cache(config)
+    assertIsTable(config)
+
+    local e = err.new("setting up cache failed")
+
+    if type(config.cache) ~= "table" or type(config.cache.path) ~= "string" then
+        return false, e:append("invalid cache configuration: config.cache.path")
+    end
+
+    local replace = { u = e2lib.globals.osenv["USER"] }
+    local cache_path = e2lib.format_replace(config.cache.path, replace)
+    local cache_url = string.format("file://%s", cache_path)
+    local c, re = cache.new_cache("local cache", cache_url)
+    if not c then
+        return nil, e:cat(re)
+    end
+    for name,server in pairs(config.servers) do
+        local flags = {}
+        flags.cachable = server.cachable
+        flags.cache = server.cache
+        flags.islocal = server.islocal
+        flags.writeback = server.writeback
+        flags.push_permissions = server.push_permissions
+        local rc, re = cache.new_cache_entry(c, name, server.url, flags)
+        if not rc then
+            return nil, e:cat(re)
+        end
+    end
+    return c, nil
+end
+
 --- Create a new cache.
 -- @param name Cache name.
 -- @param url base url for this cache, must use file transport

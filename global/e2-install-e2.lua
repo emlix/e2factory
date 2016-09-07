@@ -28,12 +28,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local buildconfig = require("buildconfig")
+local cache = require("cache")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 local eio = require("eio")
-local generic_git = require("generic_git")
 local err = require("err")
-local buildconfig = require("buildconfig")
+local generic_git = require("generic_git")
 
 local function e2_install_e2(arg)
     local rc, re = e2lib.init()
@@ -73,7 +74,7 @@ local function e2_install_e2(arg)
         error(err.new("no servers configured in global config"))
     end
 
-    local scache, re = e2lib.setup_cache()
+    local scache, re = cache.setup_cache(config)
     if not scache then
         error(e:cat(re))
     end

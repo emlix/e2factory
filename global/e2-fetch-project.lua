@@ -59,8 +59,13 @@ local function e2_fetch_project(arg)
         error(re)
     end
 
+    local config, re = e2lib.get_global_config()
+    if not config then
+        error(e:cat(re))
+    end
+
     -- setup cache
-    local scache, re = e2lib.setup_cache()
+    local scache, re = cache.setup_cache(config)
     if not scache then
         error(e:cat(re))
     end
