@@ -90,7 +90,7 @@ function cache.setup_cache(config)
     local cache_url = string.format("file://%s", cache_path)
     local c, re = new_cache("local cache", cache_url)
     if not c then
-        return nil, e:cat(re)
+        return false, e:cat(re)
     end
     for name,server in pairs(config.servers) do
         local flags = {}
@@ -101,10 +101,10 @@ function cache.setup_cache(config)
         flags.push_permissions = server.push_permissions
         local rc, re = cache.new_cache_entry(c, name, server.url, flags)
         if not rc then
-            return nil, e:cat(re)
+            return false, e:cat(re)
         end
     end
-    return c, nil
+    return c
 end
 
 --- get a sorted list of servers
