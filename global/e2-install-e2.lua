@@ -69,11 +69,6 @@ local function e2_install_e2(arg)
         error(re)
     end
 
-    local servers = config.servers
-    if not servers then
-        error(err.new("no servers configured in global config"))
-    end
-
     local scache, re = cache.setup_cache(config)
     if not scache then
         error(e:cat(re))

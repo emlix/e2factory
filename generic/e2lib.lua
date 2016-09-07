@@ -881,6 +881,11 @@ local function verify_global_config(config)
         return false, re
     end
 
+    rc, re = assert_type(config.servers, "config.servers", "table")
+    if not rc then
+        return false, re
+    end
+
     return true
 end
 
