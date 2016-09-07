@@ -56,6 +56,22 @@ local url = require("url")
 -- @name flags
 -- @field cachable treat a server as cachable?
 
+--- Create a new cache.
+-- @param name Cache name.
+-- @param url base url for this cache, must use file transport
+-- @return a cache table
+local function new_cache(name, url)
+    local c = {}
+    c._name = name
+    c._url = url
+    c._ce = {}
+
+    e2lib.logf(4, "Cache: %s", c._name)
+    e2lib.logf(4, " url: %s", c._url)
+
+    return strict.lock(c)
+end
+
 --- Setup cache from the global server configuration
 -- @param config global config table
 -- @return a cache object
@@ -72,7 +88,7 @@ function cache.setup_cache(config)
     local replace = { u = e2lib.globals.osenv["USER"] }
     local cache_path = e2lib.format_replace(config.cache.path, replace)
     local cache_url = string.format("file://%s", cache_path)
-    local c, re = cache.new_cache("local cache", cache_url)
+    local c, re = new_cache("local cache", cache_url)
     if not c then
         return nil, e:cat(re)
     end
@@ -89,22 +105,6 @@ function cache.setup_cache(config)
         end
     end
     return c, nil
-end
-
---- Create a new cache.
--- @param name Cache name.
--- @param url base url for this cache, must use file transport
--- @return a cache table
-function cache.new_cache(name, url)
-    local c = {}
-    c._name = name
-    c._url = url
-    c._ce = {}
-
-    e2lib.logf(4, "Cache: %s", c._name)
-    e2lib.logf(4, " url: %s", c._url)
-
-    return strict.lock(c)
 end
 
 --- get a sorted list of servers
