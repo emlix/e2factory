@@ -35,6 +35,7 @@ local buildconfig = require("buildconfig")
 local cache = require("cache")
 local chroot = require("chroot")
 local digest = require("digest")
+local e2build = require("e2build")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 local eio = require("eio")
@@ -965,25 +966,63 @@ end
 -- @return bool
 -- @return an error object on failure
 function e2tool.select_results(info, results, force_rebuild, keep_chroot, build_mode, playground)
-    local rc, re, res
+    local rc, re, res, settings
 
-    for _,r in ipairs(results) do
-        rc, re = e2tool.verify_src_res_name_valid_chars(r)
+    for _,resultname in ipairs(results) do
+        rc, re = e2tool.verify_src_res_name_valid_chars(resultname)
         if not rc then
-            return false, err.new("'%s' is not a valid result name", r)
+            return false, err.new("'%s' is not a valid result name", resultname)
         end
 
-        res = info.results[r]
+        res = result.results[resultname]
         if not res then
-            return false, err.new("selecting invalid result: %s", r)
+            return false, err.new("selecting invalid result: %s", resultname)
         end
-        res.selected = true
-        res.force_rebuild = force_rebuild
-        res.keep_chroot = keep_chroot
+
+        settings = res:build_settings()
+
+        settings:selected(true)
+
+        if force_rebuild then
+            settings:force_rebuild(true)
+        end
+
+        if keep_chroot then
+            settings:keep_chroot(true)
+        end
+
+        if playground then
+            settings:prep_playground(true)
+        end
+
         if build_mode then
-            res.build_mode = build_mode
+            res:build_mode(build_mode)
         end
-        res.playground = playground
+    end
+
+    return true
+end
+
+function e2tool.build_results(resultv)
+    e2lib.logf(3, "building results")
+
+    for _, resultname in ipairs(resultv) do
+        local rc, re, res
+        local t1, t2, deltat
+        local e = err.new("building result failed: %s", resultname)
+
+        t1 = os.time()
+
+        res = result.results[resultname]
+
+        rc, re = res:build_process():build(res)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        t2 = os.time()
+        deltat = os.difftime(t2, t1)
+        e2lib.logf(3, "timing: result [%s] %d", resultname, deltat)
     end
 
     return true
@@ -991,20 +1030,24 @@ end
 
 --- print selection status for a list of results
 -- @param info
--- @param results table: list of result names
+-- @param resultvec table: list of result names
 -- @return bool
 -- @return an error object on failure
-function e2tool.print_selection(info, results)
-    for _,r in ipairs(results) do
+function e2tool.print_selection(info, resultvec)
+    for _,resultname in ipairs(resultvec) do
         local e = err.new("error printing selected results")
-        local res = info.results[r]
+        local res = result.results[resultname]
         if not res then
-            return false, e:append("no such result: %s", r)
+            return false, e:append("no such result: %s", resultname)
         end
-        local s = res.selected and "[ selected ]" or "[dependency]"
-        local f = res.force_rebuild and "[force rebuild]" or ""
-        local p = res.playground and "[playground]" or ""
-        e2lib.logf(3, "Selected result: %-20s %s %s %s", r, s, f, p)
+
+        local settings = res:build_settings()
+
+        local s = settings:selected() and "[ selected ]" or "[dependency]"
+        local f = settings:force_rebuild() and "[force rebuild]" or ""
+        local p = settings:prep_playground() and "[playground]" or ""
+
+        e2lib.logf(3, "Selected result: %-20s %s %s %s", resultname, s, f, p)
     end
     return true
 end
