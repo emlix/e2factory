@@ -179,19 +179,17 @@ function result.basic_result:buildconfig()
     return strict.readonly(bc)
 end
 
---- Set build_mode table for result:
--- @param build_mode Build mode table
-function result.basic_result:set_build_mode(build_mode)
-    assertIsTable(build_mode)
-    assertIsNil(self.build_mode)
-    self._build_mode = build_mode
-end
+--- Get/set build_mode table for result. Needs to be set before certain
+-- operations, for example anything calculating the buildid.
+-- @param bm Optional build mode table to set a new one.
+function result.basic_result:build_mode(bm)
+    if bm then
+        assertIsTable(bm)
+        self._build_mode = bm
+    else
+        assertIsTable(self._build_mode)
+    end
 
-function result.basic_result:get_build_mode()
-    assertIsTable(self._build_mode)
-    assertIsNil(self.build_mode)
-
-    -- XXX: comments for buildconfig() apply
     return self._build_mode
 end
 
@@ -451,7 +449,7 @@ end
 -- @return Error object on failure.
 function result.result_class:buildid()
     local e, rc, re, info, hc, id, build_mode
-    build_mode = self:get_build_mode()
+    build_mode = self:build_mode()
 
     if self._buildid then
         return build_mode.buildid(self._buildid)
