@@ -68,7 +68,6 @@ function result.basic_result:initialize(rawres)
     --
     self._build_mode = false
     self._build_process = false
-    self._chroot_list = sl.sl:new(false, true)
 end
 
 --- Constructor that's called by load_result_configs() after all results
@@ -136,6 +135,13 @@ end
 -- @return Environment object
 function result.basic_result:merged_env()
     error(err.new("called merged_env() of result base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Return the list of chroot groups for this result.
+-- @return string list of required chroot groups.
+function result.basic_result:my_chroot_list()
+    error(err.new("called my_chroot_list() of result base class, type %s name %s",
         self._type, self._name))
 end
 
@@ -212,12 +218,6 @@ function result.basic_result:merged_env()
         self._type, self._name))
 end
 
---- Return the list of chroot groups for this result.
--- @return string list of required chroot groups.
-function result.basic_result:my_chroot_list()
-    return self._chroot_list
-end
-
 --- Get/set the settings class. Settings hold per-result information
 -- for the build process. Each result that's passed to a build process needs
 -- a valid settings_class
@@ -267,6 +267,7 @@ function result.result_class:initialize(rawres)
     self.XXXdepends = sl.sl:new(false, true)
     self._buildid = false
     self._sources_list = sl.sl:new(false, true)
+    self._chroot_list = sl.sl:new(false, true)
     self._env = environment.new()
 
     local e = err.new("in result %s:", self._name)
@@ -428,6 +429,10 @@ end
 
 function result.result_class:my_sources_list()
     return self._sources_list
+end
+
+function result.result_class:my_chroot_list()
+    return self._chroot_list
 end
 
 function result.result_class:merged_env()
