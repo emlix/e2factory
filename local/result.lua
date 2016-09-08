@@ -19,10 +19,12 @@
 -- more details.
 
 local result = {}
+package.loaded["result"] = result
 
 local buildconfig = require("buildconfig")
 local chroot = require("chroot")
 local class = require("class")
+local e2build = require("e2build")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local environment = require("environment")
@@ -67,7 +69,6 @@ function result.basic_result:initialize(rawres)
     -- e2build currently needs this stuff in every result.
     --
     self._build_mode = false
-    self._build_process = false
 end
 
 --- Constructor that's called by load_result_configs() after all results
@@ -105,23 +106,6 @@ end
 function result.basic_result:buildid()
     error(err.new("called buildid() of result base class, type %s name %s",
         self._type, self._name))
-end
-
---- Get the build proces to be used for this class
-function result.basic_result:build_process()
-    return self._build_process
-end
-
---- Set a build process class
--- @param build_process_class or false
-function result.basic_result:set_build_process(build_process)
-    if build_process == false then
-        self._build_process = false
-    else
-        assertIsTable(build_process)
-        assertIsFunction(build_process.build)
-        self._build_process = build_process
-    end
 end
 
 --- Return list of depdencencies
@@ -215,6 +199,12 @@ end
 -- @return Environment object
 function result.basic_result:merged_env()
     error(err.new("called merged_env() of result base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Get the build process to be used for this class
+function result.basic_result:build_process()
+    error(err.new("called build_process() of result base class, type %s name %s",
         self._type, self._name))
 end
 
@@ -534,6 +524,13 @@ function result.result_class:buildid()
     self._buildid = hash.hash_finish(hc)
 
     return build_mode.buildid(self._buildid)
+end
+
+
+function result.result_class:build_process()
+    assertIsTable(self._build_mode)
+    assertIsTable(self._build_settings)
+    return e2build.build_process_class:new()
 end
 
 function result.result_class:attribute_table(flagt)
