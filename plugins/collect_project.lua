@@ -233,7 +233,7 @@ function collect_project_class:buildid()
 
     -- buildscript
     local file = {
-        server = info.root_server_name,
+        server = cache.server_names().root_server,
         location = e2tool.resultbuildscript(self:get_name_as_path()),
     }
 
@@ -420,7 +420,7 @@ function cp_build_process_class:_build_collect_project(res, return_flags)
         end
 
         e2lib.logf(3, "init file: %s", f)
-        local server = info.root_server_name
+        local server = cache.server_names().root_server
         local location = e2lib.join("proj/init", f)
         local cache_flags = {}
         rc, re = cache.fetch_file(info.cache, server, location,
@@ -540,7 +540,7 @@ function cp_build_process_class:_build_collect_project(res, return_flags)
             e2tool.resultbuildscript(dep:get_name_as_path())
         }
         for _,file in pairs(files) do
-            local server = info.root_server_name
+            local server = cache.server_names().root_server
             local cache_flags = {}
             rc, re = cache.fetch_file(info.cache, server, file, destdir,
                 nil, cache_flags)
@@ -611,7 +611,7 @@ function cp_build_process_class:_build_collect_project(res, return_flags)
         return false, e:cat(re)
     end
     -- install the global Makefiles
-    local server = info.root_server_name
+    local server = cache.server_names().root_server
     local destdir = e2lib.join(bc.T, "project")
     local cache_flags = {}
     local locations = {

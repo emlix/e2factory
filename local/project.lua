@@ -22,6 +22,7 @@ local project = {}
 package.loaded["project"] = project
 
 local buildconfig = require("buildconfig")
+local cache = require("cache")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
 local err = require("err")
@@ -263,7 +264,7 @@ function project.projid(info)
         if not e2lib.is_backup_file(f) then
             location = e2lib.join("proj/init", f)
             file = {
-                server = info.root_server_name,
+                server = cache.server_names().root_server,
                 location = location,
             }
 

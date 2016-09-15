@@ -67,7 +67,8 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function storage_release(location, release_id)
-    return "results", string.format("%s/release/%s", location, release_id)
+    return cache.server_names().result_server,
+        string.format("%s/release/%s", location, release_id)
 end
 
 --- Get results server and location.
@@ -76,7 +77,8 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function storage_default(location, release_id)
-    return "results", string.format("%s/shared", location)
+    return cache.server_names().result_server,
+        string.format("%s/shared", location)
 end
 
 --- Get local server and location.
@@ -85,7 +87,7 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function storage_local(location, release_id)
-    return "." , string.format("out")
+    return cache.server_names().root_server , string.format("out")
 end
 
 --- Get deploy server and location.
@@ -94,7 +96,8 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function deploy_storage_default(location, release_id)
-    return "releases", string.format("%s/archive/%s", location, release_id)
+    return cache.server_names().releases,
+        string.format("%s/archive/%s", location, release_id)
 end
 
 --- Get the buildid for a build

@@ -65,11 +65,6 @@ local e2tool_ftab = {}
 -- @field chroot_umask Umask setting for chroot (decimal number).
 -- @field host_umask Default umask of the process (decimal number).
 -- @field root Project root directory (string).
--- @field root_server string: url pointing to the project root
--- @field root_server_name string: name of the root server (".")
--- @field default_repo_server string: name of the default scm repo server
--- @field default_files_server string: name of the default files server
--- @field result_storage (deprecated)
 -- @field project_location string: project location relative to the servers
 -- @field local_template_path Path to the local templates (string).
 local _info = false
@@ -481,25 +476,8 @@ function e2tool.collect_project_info(info, skip_load_config)
     e2lib.logf(4, "VERSION:       %s", buildconfig.VERSION)
     e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
 
-    hash.hcache_load(e2lib.join(info.root, ".e2/hashcache"))
     -- no error check required
-
-    --XXX create some policy module where the following policy settings
-    --XXX and functions reside (server names, paths, etc.)
-
-    -- the '.' server as url
-    info.root_server = "file://" .. info.root
-    info.root_server_name = "."
-
-    -- the proj_storage server is equivalent to
-    --  info.default_repo_server:info.project-locaton
-    info.proj_storage_server_name = "proj-storage"
-
-    -- need to configure the results server in the configuration, named 'results'
-    info.result_server_name = "results"
-
-    info.default_repo_server = "projects"
-    info.default_files_server = "upstream"
+    hash.hcache_load(e2lib.join(info.root, ".e2/hashcache"))
 
     -- read .e2/proj-location
     local plf = e2lib.join(info.root, e2lib.globals.project_location_file)
@@ -524,10 +502,11 @@ function e2tool.collect_project_info(info, skip_load_config)
     if not info.cache then
         return false, e:cat(re)
     end
-    rc = cache.new_cache_entry(info.cache, info.root_server_name,
-        info.root_server, { writeback=true },  nil, nil )
-    rc = cache.new_cache_entry(info.cache, info.proj_storage_server_name,
-        nil, nil, info.default_repo_server, info.project_location)
+
+    rc, re = cache.setup_cache_local(info.cache, info.root, info.project_location)
+    if not rc then
+        return false, e:cat(re)
+    end
 
     local f = e2lib.join(info.root, e2lib.globals.e2version_file)
     local v, re = e2lib.parse_e2versionfile(f)

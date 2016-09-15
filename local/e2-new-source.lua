@@ -249,14 +249,14 @@ local function e2_new_source(arg)
             error(err.new("<name> argument required"))
         end
         -- remote
-        local rserver = info.default_repo_server
+        local rserver = cache.server_names().default_repo
         if opts["server"] then
             rserver = opts["server"]
         end
         local name = arguments[1]
         local rlocation = string.format("%s/git/%s.git", info.project_location, name)
         -- local
-        local lserver = info.root_server_name
+        local lserver = cache.server_names().root_server
         local llocation = string.format("in/%s/.git", name)
         local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
             rserver, rlocation)
@@ -270,7 +270,8 @@ local function e2_new_source(arg)
         end
 
         local location = arguments[1]
-        local sl, re = e2lib.parse_server_location(location, info.default_files_server)
+        local sl, re = e2lib.parse_server_location(location,
+            cache.server_names().default_files)
         if not sl then
             error(re)
         end

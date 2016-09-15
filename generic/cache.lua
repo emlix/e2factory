@@ -104,7 +104,65 @@ function cache.setup_cache(config)
             return false, e:cat(re)
         end
     end
+
+    -- It would make sense to check for the required global servers here.
+    -- Required meaning servers to fetch a project.
+
     return c
+end
+
+--- Add local servers to the cache configuration. As the name implies,
+-- this function should not be called from a global context.
+-- @param c cache object
+-- @param project_root path to the local project root
+-- @param project_location location of the project relative to "upstream".
+-- @return True on success, false on error
+-- @return Error object on failure.
+function cache.setup_cache_local(c, project_root, project_location)
+    assertIsTable(c)
+    assertIsStringN(project_root)
+    assertIsString(project_location)
+
+    local rc, re
+    local servers
+
+    servers = cache.server_names()
+
+    rc, re = cache.new_cache_entry(c, servers.root_server,
+        "file://" .. project_root, { writeback=true },  nil, nil)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = cache.new_cache_entry(c, servers.proj_storage,
+        nil, nil, servers.default_repo, project_location)
+    if not rc then
+        return false, re
+    end
+
+    -- Check for required local servers here. These tests are currently
+    -- spread out, but mainly live in policy.init()
+
+    return true
+end
+
+local _server_names = strict.lock({
+    -- XXX: inconsistent, confusing naming scheme
+    root_server = ".",
+    -- the proj_storage server is equivalent to
+    --  default_repo_server:info.project-locaton
+    proj_storage = "proj-storage",
+    default_repo = "projects",
+    default_files = "upstream",
+    result_server = "results",
+    releases = "releases",
+})
+
+--- Return a table of fixed server names whose existence we rely on
+-- throughout the program. The table is locked.
+-- @return Locked dictionary with fixed server names.
+function cache.server_names()
+    return _server_names
 end
 
 --- get a sorted list of servers

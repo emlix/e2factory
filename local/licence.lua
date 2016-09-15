@@ -21,6 +21,7 @@
 local licence = {}
 package.loaded["licence"] = licence
 
+local cache = require("cache")
 local class = require("class")
 local e2lib = require("e2lib")
 local e2tool = require("e2tool")
@@ -244,7 +245,7 @@ function licence.load_licence_config(info)
             if not rc then
                 return false, e:cat(re)
             end
-            if file.server ~= info.root_server_name and not file.sha1 then
+            if file.server ~= cache.server_names().root_server and not file.sha1 then
                 return false, e:append(
                     "file entry for remote file without sha1 attribute")
             end

@@ -411,7 +411,7 @@ function e2build.build_process_class:_install_build_script(res, return_flags)
     destdir = e2lib.join(bc.T, "script")
     info = e2tool.info()
 
-    rc, re = cache.fetch_file(info.cache, info.root_server_name,
+    rc, re = cache.fetch_file(info.cache, cache.server_names().root_server,
         location, destdir)
     if not rc then
         e = err.new("installing build script")
@@ -460,8 +460,8 @@ function e2build.build_process_class:_install_init_files(res, return_flags)
                 abslocation)
             end
 
-            rc, re = cache.fetch_file(info.cache, info.root_server_name,
-                location, destdir)
+            rc, re = cache.fetch_file(info.cache,
+                cache.server_names().root_server, location, destdir)
             if not rc then
                 return false, e:cat(re)
             end

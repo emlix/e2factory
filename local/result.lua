@@ -22,6 +22,7 @@ local result = {}
 package.loaded["result"] = result
 
 local buildconfig = require("buildconfig")
+local cache = require("cache")
 local chroot = require("chroot")
 local class = require("class")
 local e2build = require("e2build")
@@ -492,7 +493,7 @@ function result.result_class:buildid()
 
     -- buildscript
     local file = {
-        server = info.root_server_name,
+        server = cache.server_names().root_server,
         location = e2tool.resultbuildscript(self:get_name_as_path()),
     }
 
