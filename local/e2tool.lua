@@ -655,7 +655,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, re
     end
 
-    return info
+    return strict.lock(info)
 end
 
 --- Returns a sorted vector with all dependencies for the given result
