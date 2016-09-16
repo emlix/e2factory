@@ -758,7 +758,7 @@ function e2lib.join(p1, p2, ...)
 
     for i=1,#args do
         component = args[i]
-        assert(type(component) == "string")
+        assert(type(component) == "string", "join() arg not a string")
 
         if sepnext then
             -- If the previous or next component already
