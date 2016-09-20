@@ -67,7 +67,7 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function storage_release(location, release_id)
-    return cache.server_names().result_server,
+    return cache.server_names().results,
         string.format("%s/release/%s", location, release_id)
 end
 
@@ -77,7 +77,7 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function storage_default(location, release_id)
-    return cache.server_names().result_server,
+    return cache.server_names().results,
         string.format("%s/shared", location)
 end
 

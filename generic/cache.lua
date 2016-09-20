@@ -154,7 +154,7 @@ local _server_names = strict.lock({
     proj_storage = "proj-storage",
     projects = "projects",
     upstream = "upstream",
-    result_server = "results",
+    results = "results",
     releases = "releases",
 })
 
