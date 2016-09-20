@@ -249,7 +249,7 @@ local function e2_new_source(arg)
             error(err.new("<name> argument required"))
         end
         -- remote
-        local rserver = cache.server_names().default_repo
+        local rserver = cache.server_names().projects
         if opts["server"] then
             rserver = opts["server"]
         end

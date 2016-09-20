@@ -135,7 +135,7 @@ function cache.setup_cache_local(c, project_root, project_location)
     end
 
     rc, re = cache.new_cache_entry(c, servers.proj_storage,
-        nil, nil, servers.default_repo, project_location)
+        nil, nil, servers.projects, project_location)
     if not rc then
         return false, re
     end
@@ -150,9 +150,9 @@ local _server_names = strict.lock({
     -- XXX: inconsistent, confusing naming scheme
     root_server = ".",
     -- the proj_storage server is equivalent to
-    --  default_repo_server:info.project-locaton
+    --  projects:info.project-locaton
     proj_storage = "proj-storage",
-    default_repo = "projects",
+    projects = "projects",
     default_files = "upstream",
     result_server = "results",
     releases = "releases",
