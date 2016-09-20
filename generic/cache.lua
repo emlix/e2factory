@@ -128,7 +128,7 @@ function cache.setup_cache_local(c, project_root, project_location)
 
     servers = cache.server_names()
 
-    rc, re = cache.new_cache_entry(c, servers.root_server,
+    rc, re = cache.new_cache_entry(c, servers.dot,
         "file://" .. project_root, { writeback=true },  nil, nil)
     if not rc then
         return false, re
@@ -147,8 +147,7 @@ function cache.setup_cache_local(c, project_root, project_location)
 end
 
 local _server_names = strict.lock({
-    -- XXX: inconsistent, confusing naming scheme
-    root_server = ".",
+    dot = ".",
     -- the proj_storage server is equivalent to
     --  projects:info.project-locaton
     proj_storage = "proj-storage",

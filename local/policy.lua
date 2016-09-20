@@ -87,7 +87,7 @@ end
 -- @return Server name (string).
 -- @return Location path to store results in (string).
 local function storage_local(location, release_id)
-    return cache.server_names().root_server , string.format("out")
+    return cache.server_names().dot , string.format("out")
 end
 
 --- Get deploy server and location.

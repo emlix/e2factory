@@ -245,7 +245,7 @@ function licence.load_licence_config(info)
             if not rc then
                 return false, e:cat(re)
             end
-            if file.server ~= cache.server_names().root_server and not file.sha1 then
+            if file.server ~= cache.server_names().dot and not file.sha1 then
                 return false, e:append(
                     "file entry for remote file without sha1 attribute")
             end

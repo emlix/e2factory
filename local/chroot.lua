@@ -291,7 +291,7 @@ function chroot.load_chroot_config(info)
                 return false, e
             end
 
-            if f.server ~= cache.server_names().root_server and not f.sha1 then
+            if f.server ~= cache.server_names().dot and not f.sha1 then
                 e:append("in group: %s", grp.name)
                 e:append("file entry for remote file without `sha1` attribute")
                 return false, e

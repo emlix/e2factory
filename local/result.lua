@@ -493,7 +493,7 @@ function result.result_class:buildid()
 
     -- buildscript
     local file = {
-        server = cache.server_names().root_server,
+        server = cache.server_names().dot,
         location = e2tool.resultbuildscript(self:get_name_as_path()),
     }
 

@@ -256,7 +256,7 @@ local function e2_new_source(arg)
         local name = arguments[1]
         local rlocation = string.format("%s/git/%s.git", info.project_location, name)
         -- local
-        local lserver = cache.server_names().root_server
+        local lserver = cache.server_names().dot
         local llocation = string.format("in/%s/.git", name)
         local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
             rserver, rlocation)

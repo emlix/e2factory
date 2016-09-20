@@ -145,7 +145,7 @@ function files.files_source:initialize(rawsrc)
         if not f.location then
             error(e:append("file entry without `location' attribute"))
         end
-        if f.server ~= cache.server_names().root_server and not f.sha1 then
+        if f.server ~= cache.server_names().dot and not f.sha1 then
             error(e:append("file entry for remote file without "..
             "`sha1` attribute"))
         end
