@@ -918,13 +918,20 @@ function e2build.build_process_class:_store_result(res, return_flags)
         return false, e:cat(re)
     end
 
-    -- XXX: don't pack ., but individual components
-    rc, re = e2lib.tar({
-        "-cf",  e2lib.join(tmpdir, "result.tar"),
-        "-C", resdir, "." })
+    -- do not include the "." directory in result.tar
+    local argv = { "-cf",  e2lib.join(tmpdir, "result.tar"), "-C", resdir, "--" }
+
+    for entry, re in e2lib.directory(resdir, true) do
+        if not entry then
+            return false, e:cat(re)
+        end
+        table.insert(argv, entry)
+    end
+    rc, re = e2lib.tar(argv)
     if not rc then
         return false, e:cat(re)
     end
+
     local server, location = res:build_mode().storage(info.project_location,
         project.release_id())
 
@@ -956,7 +963,7 @@ end
 function e2build.build_process_class:_linklast(res, return_flags)
     local rc, re, e
     local info, server, location, buildid, dst, lnk
-    
+
     e = err.new("creating link to last results")
     info = e2tool.info()
     -- calculate the path to the result
