@@ -271,7 +271,7 @@ local function e2_new_source(arg)
 
         local location = arguments[1]
         local sl, re = e2lib.parse_server_location(location,
-            cache.server_names().default_files)
+            cache.server_names().upstream)
         if not sl then
             error(re)
         end

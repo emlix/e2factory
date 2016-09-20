@@ -153,7 +153,7 @@ local _server_names = strict.lock({
     --  projects:info.project-locaton
     proj_storage = "proj-storage",
     projects = "projects",
-    default_files = "upstream",
+    upstream = "upstream",
     result_server = "results",
     releases = "releases",
 })
