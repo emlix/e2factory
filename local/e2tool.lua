@@ -55,9 +55,6 @@ local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
 
--- Build function table, see end of file for details.
-local e2tool_ftab = {}
-
 --- Info table contains servers, caches and more...
 -- @table info
 -- @field current_tool Name of the current local tool (string).
@@ -643,13 +640,6 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    for _,collect_project_info_cb in ipairs(e2tool_ftab.collect_project_info) do
-        rc, re = collect_project_info_cb(info)
-        if not rc then
-            return false, e:cat(re)
-        end
-    end
-
     rc, re = check_project_info()
     if not rc then
         return false, re
@@ -1061,39 +1051,6 @@ function e2tool.print_selection(info, resultvec)
     end
     return true
 end
-
---- Collect project info callback function signature.
--- Called to populate the info table, not to be confused with the
--- "collect_project" plugin feature.
--- @function collect_project_info_cb
--- @param info Info table.
--- @return True on success, false on error.
--- @return Error object on failure
-
---- Register collect project info.
--- @param info Info table.
--- @param func collect_project_info_cb function.
--- @return True on success, false on error.
--- @return Error object on failure.
--- @see collect_project_info_cb
-function e2tool.register_collect_project_info(info, func)
-    if type(info) ~= "table" or type(func) ~= "function" then
-        return false, err.new("register_collect_project_info: invalid argument")
-    end
-    table.insert(e2tool_ftab.collect_project_info, func)
-    return true
-end
-
---- Function table, driving the build process. Contains further tables to
--- which e2factory core and plugins add functions that comprise the
--- build process.
--- @field collect_project_info Called f(info).
--- @see collect_project_info_cb
-e2tool_ftab = {
-    collect_project_info = {},
-}
-
-strict.lock(e2tool_ftab)
 
 return strict.lock(e2tool)
 
