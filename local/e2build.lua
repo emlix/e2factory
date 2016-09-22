@@ -49,33 +49,32 @@ local tools = require("tools")
 e2build.build_process_class = class("build_process_class")
 
 function e2build.build_process_class:initialize()
-    self._modes = {
-        build = {
-            { name="result_available", func=self._result_available },
-            { name="chroot_lock", func=self._chroot_lock },
-            { name="chroot_cleanup_if_exists", func=self._chroot_cleanup_if_exists },
-            { name="setup_chroot", func=self._setup_chroot },
-            { name="install_directory_structure", func=self._install_directory_structure },
-            { name="install_build_script", func=self._install_build_script },
-            { name="install_env", func=self._install_env },
-            { name="install_init_files", func=self._install_init_files },
-            { name="install_build_driver", func=self._install_build_driver },
-            { name="install_build_time_dependencies", func=self._install_build_time_dependencies },
-            { name="install_sources", func=self._install_sources },
-            { name="fix_permissions", func=self._fix_permissions},
-            { name="build_playground", func=self._build_playground },
-            { name="runbuild", func=self._runbuild },
-            { name="store_result", func=self._store_result },
-            { name="linklast", func=self._linklast },
-            { name="chroot_cleanup", func=self._chroot_cleanup },
-            { name="chroot_unlock", func=self._chroot_unlock },
-        },
+    self._modes = {}
 
-        playground = {
-            { name="chroot_exists", func=self._chroot_exists },
-            { name="enter_playground", func=self._enter_playground },
-        }
-    }
+    self:add_step("build", "result_available", self._result_available)
+    self:add_step("build", "chroot_lock", self._chroot_lock)
+    self:add_step("build", "chroot_cleanup_if_exists",
+        self._chroot_cleanup_if_exists)
+    self:add_step("build", "setup_chroot", self._setup_chroot)
+    self:add_step("build", "install_directory_structure",
+        self._install_directory_structure)
+    self:add_step("build", "install_build_script", self._install_build_script)
+    self:add_step("build", "install_env", self._install_env)
+    self:add_step("build", "install_init_files", self._install_init_files)
+    self:add_step("build", "install_build_driver", self._install_build_driver)
+    self:add_step("build", "install_build_time_dependencies",
+        self._install_build_time_dependencies)
+    self:add_step("build", "install_sources", self._install_sources)
+    self:add_step("build", "fix_permissions", self._fix_permissions)
+    self:add_step("build", "build_playground", self._build_playground)
+    self:add_step("build", "runbuild", self._runbuild)
+    self:add_step("build", "store_result", self._store_result)
+    self:add_step("build", "linklast", self._linklast)
+    self:add_step("build", "chroot_cleanup", self._chroot_cleanup)
+    self:add_step("build", "chroot_unlock", self._chroot_unlock)
+
+    self:add_step("playground", "chroot_exists", self._chroot_exists)
+    self:add_step("playground", "enter_playground", self._enter_playground)
 end
 
 function e2build.build_process_class:build(res)
@@ -112,6 +111,80 @@ function e2build.build_process_class:build(res)
     end
 
     return true
+end
+
+--- Add a build step
+-- @param mode Build mode
+-- @param name Name of build step
+-- @param func Method of build_process_class implementing the build step.
+function e2build.build_process_class:add_step(mode, name, func)
+    assertIsStringN(mode)
+    assertIsStringN(name)
+    assertIsFunction(func)
+
+    self._modes = self._modes or {}
+    self._modes[mode] = self._modes[mode] or {}
+    table.insert(self._modes[mode], { name = name, func = func })
+end
+
+--- Add build step before specified.
+-- @param mode Build mode
+-- @param before Add build step before this one
+-- @param name Name of build step
+-- @param func Method of build_process_class implementing the build step.
+function e2build.build_process_class:add_step_before(mode, before, name, func)
+    assertIsStringN(mode)
+    assertIsStringN(before)
+    assertIsStringN(name)
+    assertIsFunction(func)
+    assertIsTable(self._modes)
+    assertIsTable(self._modes[mode])
+
+    local pos = false
+
+    for i = 1, #self._modes[mode] do
+        local step = self._modes[mode][i]
+        if step.name == before then
+            pos = i
+            break
+        end
+    end
+
+    if not pos then
+        error(err.new("add_step_before: no step called %s in mode %s", after, mode))
+    end
+
+    table.insert(self._modes[mode], pos, { name = name, func = func })
+end
+
+--- Add build step after specified.
+-- @param mode Build mode
+-- @param before Add build step after this one
+-- @param name Name of build step
+-- @param func Method of build_process_class implementing the build step.
+function e2build.build_process_class:add_step_after(mode, after, name, func)
+    assertIsStringN(mode)
+    assertIsStringN(after)
+    assertIsStringN(name)
+    assertIsFunction(func)
+    assertIsTable(self._modes)
+    assertIsTable(self._modes[mode])
+
+    local pos = false
+
+    for i = 1, #self._modes[mode] do
+        local step = self._modes[mode][i]
+        if step.name == after then
+            pos = i
+            break
+        end
+    end
+
+    if not pos then
+        error(err.new("add_step_after: no step called %s in mode %s", after, mode))
+    end
+
+    table.insert(self._modes[mode], pos + 1, { name = name, func = func })
 end
 
 function e2build.build_process_class:_next_step(mode)
