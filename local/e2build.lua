@@ -77,6 +77,10 @@ function e2build.build_process_class:initialize()
     self:add_step("playground", "enter_playground", self._enter_playground)
 end
 
+--- Build one result.
+--@param res Result object
+--@return True on success, false on error.
+--@return Error object on failure.
 function e2build.build_process_class:build(res)
     assert(res:isInstanceOf(result.basic_result))
     e2lib.logf(3, "building result: %s", res:get_name())
