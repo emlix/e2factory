@@ -292,20 +292,8 @@ end
 function cp_build_process_class:initialize()
     e2build.build_process_class.initialize(self)
 
-    local pos
-
-    for i = 1, #self._modes["build"] do
-        local step = self._modes["build"][i]
-        if step.name == "fix_permissions" then
-            pos = i
-            break
-        end
-    end
-
-    assertIsNumber(pos)
-    table.insert(self._modes["build"], pos,
-        { name="build_collect_project", func=self._build_collect_project })
-
+    self:add_step_before("build", "fix_permissions", "build_collect_project",
+        self._build_collect_project)
 end
 
 --- Create Makefile based structure required to build the project
