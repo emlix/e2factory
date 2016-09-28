@@ -37,6 +37,7 @@ local e2tool = require("e2tool")
 local err = require("err")
 local policy = require("policy")
 local scm = require("scm")
+local result = require("result")
 
 local function e2_build(arg)
     local rc, re = e2lib.init()
@@ -113,38 +114,38 @@ local function e2_build(arg)
 
     perform_writeback_settings(writeback)
 
-    -- apply the standard build mode to all results
-    for _,res in pairs(info.results) do
-        res.build_mode = build_mode
+    -- apply the standard build mode and settings to all results
+    for _,res in pairs(result.results) do
+        res:build_mode(build_mode)
+        res:build_settings(e2build.build_settings_class:new())
     end
 
     -- handle result selection
-    local results = {}
+    local resultvec = {}
 
     if opts["all"] and #arguments ~= 0 then
         e2lib.abort("--all with additional results does not make sense")
     elseif opts["all"] then
-        for r,_ in pairs(info.results) do
-            table.insert(results, r)
+        for r,_ in pairs(result.results) do
+            table.insert(resultvec, r)
         end
     elseif #arguments > 0 then
         for i,r in ipairs(arguments) do
-            table.insert(results, r)
+            table.insert(resultvec, r)
         end
     end
 
     -- handle command line flags
-    local build_mode = nil
+    build_mode = nil
     if opts["branch-mode"] and opts["wc-mode"] then
-        e = err.new("--branch-mode and --wc-mode are mutually exclusive")
-        error(e)
+        error(err.new("--branch-mode and --wc-mode are mutually exclusive"))
     end
     if opts["branch-mode"] then
         -- selected results get a special build mode
         build_mode = policy.default_build_mode("branch")
     end
     if opts["wc-mode"] then
-        if #results == 0 then
+        if #resultvec == 0 then
             e2lib.abort("--wc-mode requires one or more results")
         end
         build_mode = policy.default_build_mode("working-copy")
@@ -165,7 +166,7 @@ local function e2_build(arg)
     local keep_chroot = opts["keep"]
 
     -- apply flags to the selected results
-    rc, re = e2tool.select_results(info, results, force_rebuild,
+    rc, re = e2tool.select_results(info, resultvec, force_rebuild,
         keep_chroot, build_mode, playground)
     if not rc then
         error(re)
@@ -173,9 +174,9 @@ local function e2_build(arg)
 
     -- a list of results to build, topologically sorted
     local sel_res = {}
-    if #results > 0 then
+    if #resultvec > 0 then
         local re
-        sel_res, re = e2tool.dlist_recursive(results)
+        sel_res, re = e2tool.dlist_recursive(resultvec)
         if not sel_res then
             error(re)
         end
@@ -210,7 +211,7 @@ local function e2_build(arg)
         end
     else
         -- build
-        local rc, re = e2build.build_results(info, sel_res)
+        local rc, re = e2tool.build_results(sel_res)
         if not rc then
             error(re)
         end
