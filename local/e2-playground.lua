@@ -31,13 +31,14 @@
 -- playground - enter existing chroot(1) environment -*- Lua -*-
 
 local console = require("console")
-local e2lib = require("e2lib")
-local e2tool = require("e2tool")
 local e2build = require("e2build")
+local e2lib = require("e2lib")
+local e2option = require("e2option")
+local e2tool = require("e2tool")
 local eio = require("eio")
 local err = require("err")
-local e2option = require("e2option")
 local policy = require("policy")
+local result = require("result")
 
 local function e2_playground(arg)
     local rc, re = e2lib.init()
@@ -76,31 +77,38 @@ local function e2_playground(arg)
         e2option.usage(1)
     end
 
-    local r = arguments[1]
+    local res = result.results[arguments[1]]
+    if not res then
+        error(err.new("unknown result: %s", arguments[1]))
+    end
 
     -- apply the standard build mode to all results
-    for _,res in pairs(info.results) do
-        res.build_mode = build_mode
+    for _,res in pairs(result.results) do
+        res:build_mode(build_mode)
     end
-    rc, re = e2build.build_config(info, r, {})
-    if not rc then
-        error(e:cat(re))
+
+    local bc
+    bc, re = res:buildconfig()
+    if not bc then
+        error(re)
     end
-    if not e2build.chroot_exists(info, r) then
-        error(err.new("playground does not exist"))
-    end
+
     if opts.showpath then
-        console.infonl(info.results[r].build_config.c)
+        if not e2lib.isfile(bc.chroot_marker) then
+            error(err.new("playground does not exist"))
+        end
+        console.infonl(bc.c)
         e2lib.finish(0)
     end
+
+    local settings = e2build.playground_settings_class:new()
+
     -- interactive mode, use bash profile
-    local res = info.results[r]
-    local bc = res.build_config
-    local profile = string.format("%s/%s", bc.c, bc.profile)
     local out = {}
     table.insert(out, string.format("export TERM='%s'\n",
         e2lib.globals.osenv["TERM"]))
     table.insert(out, string.format("export HOME=/root\n"))
+
     if opts.runinit then
         table.insert(out, string.format("source %s/script/%s\n",
             bc.Tc, bc.buildrc_file))
@@ -111,24 +119,27 @@ local function e2_playground(arg)
         table.insert(out, string.format("source %s/script/%s\n",
             bc.Tc, bc.buildrc_noinit_file))
     end
-    rc, re = eio.file_write(profile, table.concat(out))
-    if not rc then
-        error(e:cat(re))
-    end
-    local command = nil
+    settings:profile(table.concat(out))
+
+    local command
     if opts.command then
-        command = string.format("/bin/bash --rcfile '%s' -c '%s'", bc.profile,
-        opts.command)
+        settings:command(
+            string.format("/bin/bash --rcfile '%s' -c '%s'", bc.profile,
+            opts.command))
     else
-        command = string.format("/bin/bash --rcfile '%s'", bc.profile)
+        settings:command(string.format("/bin/bash --rcfile '%s'", bc.profile))
     end
-    e2lib.logf(2, "entering playground for %s", r)
+
+    e2lib.logf(2, "entering playground for %s", res:get_name())
+
     if not opts.runinit then
         e2lib.log(2, "type `runinit' to run the init files")
     end
-    rc, re = e2build.enter_playground(info, r, command)
+
+    res:build_settings(settings)
+    rc, re = res:build_process():build(res)
     if not rc then
-        error(re)
+        error(e:cat(re))
     end
 end
 
