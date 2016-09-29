@@ -31,6 +31,7 @@
 -- ls-project - show project information -*- Lua -*-
 
 local cache = require("cache")
+local chroot = require("chroot")
 local console = require("console")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
@@ -38,9 +39,9 @@ local e2tool = require("e2tool")
 local err = require("err")
 local licence = require("licence")
 local policy = require("policy")
-local scm = require("scm")
-local chroot = require("chroot")
 local project = require("project")
+local result = require("result")
+local scm = require("scm")
 local source = require("source")
 
 local function e2_ls_project(arg)
@@ -72,25 +73,25 @@ local function e2_ls_project(arg)
 
     local results = {}
     if opts.all then
-        for r, _ in pairs(info.results) do
-            table.insert(results, r)
+        for resultname, _ in pairs(result.results) do
+            table.insert(results, resultname)
         end
     elseif #arguments > 0 then
-        for _, r in ipairs(arguments) do
-            if info.results[r] then
-                table.insert(results, r)
+        for _, resultname in ipairs(arguments) do
+            if result.results[resultname] then
+                table.insert(results, resultname)
             else
-                error(err.new("not a result: %s", r))
+                error(err.new("not a result: %s", resultname))
             end
         end
     end
     if #results > 0 then
-        results, re = e2tool.dlist_recursive(info, results)
+        results, re = e2tool.dlist_recursive(results)
         if not results then
             error(re)
         end
     else
-        results, re = e2tool.dsort(info)
+        results, re = e2tool.dsort()
         if not results then
             error(re)
         end
@@ -104,11 +105,15 @@ local function e2_ls_project(arg)
         end
     else
         local yet = {}
-        for _, r in pairs(results) do
-            for _, sourcename in ipairs(info.results[r].sources) do
-                if not yet[sourcename] then
-                    table.insert(sources, sourcename)
-                    yet[sourcename] = true
+        for _, resultname in pairs(results) do
+            local res = result.results[resultname]
+
+            if res:isInstanceOf(result.result_class) then
+                for sourcename in res:my_sources_list():iter_sorted() do
+                    if not yet[sourcename] then
+                        table.insert(sources, sourcename)
+                        yet[sourcename] = true
+                    end
                 end
             end
         end
@@ -127,8 +132,13 @@ local function e2_ls_project(arg)
     local function p2(s1, s2, v)
         console.infof("   %s  o--%s\n", s1, v)
     end
-    local function p3(s1, s2, k, v)
-        if v then
+    local function p3(s1, s2, k, ...)
+        local t = {...}
+
+        if #t == 0 then
+            console.infof("   %s  %s  o--%s\n", s1, s2, k)
+        elseif #t == 1 then
+            local v = t[1]
             -- remove leading spaces, that allows easier string
             -- append code below, where collecting multiple items
             while v:sub(1,1) == " " do
@@ -137,34 +147,30 @@ local function e2_ls_project(arg)
             end
             console.infof("   %s  %s  o--%-10s = %s\n", s1, s2, k, v)
         else
-            console.infof("   %s  %s  o--%s\n", s1, s2, k)
-        end
-    end
-
-    local function p3t(s1, s2, k, t)
-        local col = tonumber(e2lib.globals.osenv["COLUMNS"])
-        local header1 = string.format("   %s  %s  o--%-10s =", s1, s2, k)
-        local header2 = string.format("   %s  %s     %-10s  ", s1, s2, "")
-        local header = header1
-        local l = nil
-        local i = 0
-        for _,v in ipairs(t) do
-            i = i + 1
-            if l then
-                if (l:len() + v:len() + 1) > col then
-                    console.infonl(l)
-                    l = nil
+            local col = tonumber(e2lib.globals.osenv["COLUMNS"])
+            local header1 = string.format("   %s  %s  o--%-10s =", s1, s2, k)
+            local header2 = string.format("   %s  %s     %-10s  ", s1, s2, "")
+            local header = header1
+            local l = nil
+            local i = 0
+            for _,v in ipairs(t) do
+                i = i + 1
+                if l then
+                    if (l:len() + v:len() + 1) > col then
+                        console.infonl(l)
+                        l = nil
+                    end
                 end
+                if not l then
+                    l = string.format("%s %s", header, v)
+                else
+                    l = string.format("%s %s", l, v)
+                end
+                header = header2
             end
-            if not l then
-                l = string.format("%s %s", header, v)
-            else
-                l = string.format("%s %s", l, v)
+            if l then
+                console.infonl(l)
             end
-            header = header2
-        end
-        if l then
-            console.infonl(l)
         end
     end
 
@@ -172,8 +178,8 @@ local function e2_ls_project(arg)
         local arrow = "->"
         console.infof("digraph \"%s\" {\n", project.name())
         for _, r in pairs(results) do
-            local res = info.results[r]
-            local deps, re = e2tool.dlist(info, r)
+            local res = result.results[r]
+            local deps, re = e2tool.dlist(r)
             if not deps then
                 error(re)
             end
@@ -188,8 +194,8 @@ local function e2_ls_project(arg)
             else
                 console.infof("  \"%s\"\n", r)
             end
-            if opts["dot-sources"] then
-                for _, src in ipairs(res.sources) do
+            if opts["dot-sources"] and res:isInstanceOf(result.result_class) then
+                for src in res:my_sources_list():iter_sorted() do
                     if opts.swap then
                         console.infof("  \"%s-src\" %s \"%s\"\n", src, arrow, r)
                     else
@@ -266,22 +272,21 @@ local function e2_ls_project(arg)
     pempty(s1, s2, s3)
     s2 = " "
     p1(s1, s2, "res")
+
     local len = #results
-    for _, r in pairs(results) do
-        local res = info.results[r]
-        p2(s1, s2, r)
+    for _, resultname in pairs(results) do
+        local res = result.results[resultname]
+        p2(s1, s2, res:get_name())
+
         len = len - 1
         if len == 0 then
             s2 = " "
         else
             s2 = "|"
         end
-        p3t(s1, s2, "sources", res.sources)
-        p3t(s1, s2, "depends", res.depends)
-        if res.collect_project then
-            p3(s1, s2, "collect_project", "enabled")
-            p3(s1, s2, "collect_project_default_result",
-            res.collect_project_default_result)
+
+        for _,at in ipairs(res:attribute_table({env = true, chroot=true})) do
+            p3(s1, s2, unpack(at))
         end
     end
 
