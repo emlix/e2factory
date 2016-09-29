@@ -31,12 +31,13 @@
 -- fetch-sources - Retrieve sources for project -*- Lua -*-
 
 local cache = require("cache")
+local chroot = require("chroot")
 local e2lib = require("e2lib")
 local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
+local result = require("result")
 local scm = require("scm")
-local chroot = require("chroot")
 local source = require("source")
 
 local function e2_fetch_source(arg)
@@ -189,10 +190,11 @@ local function e2_fetch_source(arg)
             if source.sources[srcresname] and not opts.result then
                 e2lib.logf(3, "is regarded as source: %s", srcresname)
                 sel[srcresname] = true
-            elseif info.results[srcresname] and opts.result then
+            elseif result.results[srcresname] and opts.result then
                 e2lib.logf(3, "is regarded as result: %s", srcresname)
-                local res = info.results[srcresname]
-                for _, sourcename in ipairs(res.sources) do
+                local res = result.results[srcresname]
+
+                for sourcename in res:my_sources_list():iter_sorted() do
                     sel[sourcename] = true
                 end
             elseif opts.result then
