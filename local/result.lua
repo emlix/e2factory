@@ -662,23 +662,8 @@ local function load_rawres(cfg)
         return false, e:append("duplicate result: %s", rawres.name)
     end
 
-    if not rawres.type then
-        for _,type_detection in ipairs(type_detection_fns) do
-            -- Do not shortcut type detection on success.
-            -- Some functions may need to see the raw result even if it
-            -- does not match their type.
-            type_detection(rawres)
-        end
-
-        -- If the type can't be guessed, assume it's a standard result
-        if not rawres.type then
-            rawres.type = "result"
-        end
-    end
-
-    if not result_types[rawres.type] then
-        return false,
-            e:append("don't know how to handle %q result type", rawres.type)
+    if rawres.type and type(rawres.type) ~= "string" then
+        return false, e:append("invalid result type: %s", tostring(rawres.type))
     end
 
     return rawres
@@ -724,10 +709,20 @@ function result.load_result_configs(info)
     end
 
     for _,cfg in ipairs(configs) do
-        rc, re = load_one_config(cfg)
-        if not rc then
+        local rawres, obj
+
+        rawres, re = load_rawres(cfg)
+        if not rawres then
             return false, re
         end
+
+        obj, re = result.instantiate_object(rawres)
+        if not obj then
+            return false, re
+        end
+
+        assertIsTable(obj)
+        result.results[obj:get_name()] = obj
     end
 
     for resultname,_ in pairs(result.results) do
@@ -747,6 +742,50 @@ function result.load_result_configs(info)
     return true
 end
 
+--- Create an instance of the outermost result type of rawres.
+-- Type detection is expected to have set up the 'type' field properly.
+-- @param rawres Raw result table.
+-- @return Any result object or false on error
+-- @return Error object on failure.
+function result.instantiate_object(rawres)
+    assertIsTable(rawres)
+
+    local e, rc, re, outertype, theclass, obj
+
+    for _,type_detection in ipairs(type_detection_fns) do
+        -- Do not shortcut type detection on success.
+        -- Some functions may need to see the raw result even if it
+        -- does not match their type.
+        rc = type_detection(rawres)
+        assert(rc == nil, "type_detection return value is ignored!")
+    end
+
+    if type(rawres.type) ~= "string" then
+        return false, err.new("no type in result %q detected (plugin missing?)",
+            rawres.name)
+    end
+
+    if not result_types[rawres.type] then
+        return false, err.new(
+            "unknown type %q in result %q found (plugin missing?)",
+            rawres.type, rawres.name)
+    end
+
+    e2lib.logf(3, "instantiating %s of type %s", rawres.name, rawres.type)
+
+    theclass = result_types[rawres.type]
+    assertIsTable(theclass)
+    rc, re = e2lib.trycall(theclass.new, theclass, rawres)
+    if not rc then
+        e = err.new("error in result %q", rawres.name)
+        return false, e:cat(re)
+    end
+
+    obj = re
+    assertIsTable(obj)
+    return obj
+end
+
 --- Registers a function that detects the type of a raw result config table.
 -- The registered function is passed a "rawres" table, and must set the "type"
 -- field within that table if it recognizes its type.
@@ -756,7 +795,7 @@ function result.register_type_detection(func)
     for _,fn in ipairs(type_detection_fns) do
         assert(fn ~= func, err.new("result type detection already registered"))
     end
-    table.insert(type_detection_fns, func)
+    table.insert(type_detection_fns, 1, func)
 
     return true
 end
@@ -777,7 +816,15 @@ function result.register_result_class(typ, result_class)
     return true
 end
 
+local function detect_result(rawres)
+    if not rawres.type then
+        rawres.type = "result"
+    end
+end
+
 result.register_result_class("result", result.result_class)
+result.register_type_detection(detect_result)
+
 
 return strict.lock(result)
 
