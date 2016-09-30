@@ -51,10 +51,8 @@ function collect_project_class:initialize(rawres)
 
     result.basic_result.initialize(self, rawres)
 
-    self._buildid = false
     self._default_result = false
-    self._chroot_list = sl.sl:new(false, true)
-    self._env = environment.new()
+    self._stdresult = false
 
     local rc, re, e
 
@@ -62,24 +60,6 @@ function collect_project_class:initialize(rawres)
     if type(rawres.collect_project) ~= "boolean"
         or rawres.collect_project ~= true then
         error(e:append("collect_project must be true"))
-    end
-
-    rc, re = e2lib.vrfy_dict_exp_keys(rawres, "e2result config", {
-        "chroot",
-        "collect_project",
-        "collect_project_default_result",
-        "env",
-        "name",
-        "type",
-    })
-    if not rc then
-        error(e:cat(re))
-    end
-
-    if type(rawres.collect_project) ~= "boolean" then
-        e:append("collect_project is not a boolean")
-    elseif rawres.collect_project == false then
-        e:append("'collect_project' cannot be false")
     end
 
     if rawres.collect_project_default_result == nil then
@@ -90,74 +70,22 @@ function collect_project_class:initialize(rawres)
         self._default_result = rawres.collect_project_default_result
     end
 
-    -- Logic stolen from result_class
-    if rawres.chroot == nil then
-        e2lib.warnf("WDEFAULT", "in result %s:", self._name)
-        e2lib.warnf("WDEFAULT", " chroot groups not configured. " ..
-            "Defaulting to empty list")
-        rawres.chroot = {}
-    elseif type(rawres.chroot) == "string" then
-        e2lib.warnf("WDEPRECATED", "in result %s:", self._name)
-        e2lib.warnf("WDEPRECATED", " chroot attribute is string. "..
-            "Converting to list")
-        rawres.chroot = { rawres.chroot }
-    end
-    rc, re = e2lib.vrfy_listofstrings(rawres.chroot, "chroot", true, false)
+    -- we're done, remove everything collect project from the result
+    rawres.type = nil
+    rawres.collect_project = nil
+    rawres.collect_project_default_result = nil
+
+    rc, re = result.instantiate_object(rawres)
     if not rc then
-        e:append("chroot attribute:")
         e:cat(re)
-    else
-        -- apply default chroot groups
-        for _,g in ipairs(chroot.groups_default) do
-            table.insert(rawres.chroot, g)
-        end
-        -- The list may have duplicates now. Unify.
-        rc, re = e2lib.vrfy_listofstrings(rawres.chroot, "chroot", false, true)
-        if not rc then
-            e:append("chroot attribute:")
-            e:cat(re)
-        end
-        for _,g in ipairs(rawres.chroot) do
-            if not chroot.groups_byname[g] then
-                e:append("chroot group does not exist: %s", g)
-            end
-
-            self:my_chroot_list():insert(g)
-        end
-    end
-
-    if rawres.env and type(rawres.env) ~= "table" then
-        e:append("result has invalid `env' attribute")
-    else
-        if not rawres.env then
-            e2lib.warnf("WDEFAULT", "result has no `env' attribute. "..
-                "Defaulting to empty dictionary")
-            rawres.env = {}
-        end
-
-        for k,v in pairs(rawres.env) do
-            if type(k) ~= "string" then
-                e:append("in `env' dictionary: "..
-                "key is not a string: %s", tostring(k))
-            elseif type(v) ~= "string" then
-                e:append("in `env' dictionary: "..
-                "value is not a string: %s", tostring(v))
-            else
-                self._env:set(k, v)
-            end
-        end
-    end
-
-    local info = e2tool.info()
-    local build_script =
-        e2tool.resultbuildscript(self:get_name_as_path(), info.root)
-    if not e2lib.isfile(build_script) then
-        e:append("build-script does not exist: %s", build_script)
     end
 
     if e:getcount() > 1 then
         error(e)
     end
+
+    self._stdresult = rc
+    assertIsTable(self._stdresult)
 end
 
 function collect_project_class:post_initialize()
@@ -176,118 +104,70 @@ function collect_project_class:post_initialize()
 end
 
 function collect_project_class:default_result()
+    -- TODO: rename to cp_default_result(), internal method
+    assertIsStringN(self._default_result)
     return self._default_result
 end
 
-function collect_project_class:my_chroot_list()
-    return self._chroot_list
-end
-
 function collect_project_class:dlist()
-    return { self:default_result() }
-end
+    local l
 
-function collect_project_class:my_sources_list()
-    return sl.sl:new(true, false)
-end
+    l = sl.sl:new(true) -- merge
+    l:insert_table(self._stdresult:dlist())
+    l:insert(self:default_result())
 
-function collect_project_class:merged_env()
-    local e = environment.new()
-
-    -- Global env
-    e:merge(projenv.get_global_env(), false)
-
-    -- Global result specific env
-    e:merge(projenv.get_result_env(self._name), true)
-
-    -- Result specific env
-    e:merge(self._env, true)
-
-    return e
+    return l:totable_sorted()
 end
 
 function collect_project_class:buildid()
-    local e, re, hc, id
+    local rc, re, bid, hc
 
-    if self._buildid then
-        return self._buildid
-    end
-
-    e = err.new("error calculating BuildID for result: %s", self:get_name())
-    hc = hash.hash_start()
-
-    -- basic_result
-    hash.hash_append(hc, self:get_name())
-    hash.hash_append(hc, self:get_type())
-
-    -- chroot
-    local info = e2tool.info()
-    for groupname in self:my_chroot_list():iter_sorted() do
-
-        id, re = chroot.groups_byname[groupname]:chrootgroupid(info)
-        if not id then
-            return false, e:cat(re)
-        end
-        hash.hash_append(hc, id)
-    end
-
-    -- buildscript
-    local file = {
-        server = cache.server_names().dot,
-        location = e2tool.resultbuildscript(self:get_name_as_path()),
-    }
-
-    id, re = e2tool.fileid(info, file)
-    if not id then
+    bid, re = self._stdresult:buildid()
+    if not bid then
         return false, re
     end
-    hash.hash_append(hc, id)
 
-    -- env
-    hash.hash_append(hc, self:merged_env():id())
+    hc = hash.hash_start()
+    hash.hash_append(hc, bid)
+    hash.hash_append(hc, self:default_result())
+    bid = hash.hash_finish(hc)
 
-    -- default_result
-    id, re = result.results[self:default_result()]:buildid()
-    if not id then
-        return false, e:cat(re)
-    end
-    hash.hash_append(hc, id)
+    assertIsStringN(bid)
 
-    -- projectid
-    id, re = project.projid(info)
-    if not id then
-        return false, e:cat(re)
-    end
-    hash.hash_append(hc, id)
+    return bid
+end
 
-    self._buildid = hash.hash_finish(hc)
-
-    return self._buildid
+function collect_project_class:build_mode(bm)
+    return self._stdresult:build_mode(bm)
 end
 
 function collect_project_class:build_process()
-    assertIsTable(self._build_mode)
-    assertIsTable(self._build_settings)
     return cp_build_process_class:new()
 end
 
+function collect_project_class:my_chroot_list()
+    return self._stdresult:my_chroot_list()
+end
+
+function collect_project_class:merged_env()
+    return self._stdresult:merged_env()
+end
+
+function collect_project_class:my_sources_list()
+    return self._stdresult:my_sources_list()
+end
+
 function collect_project_class:attribute_table(flagt)
-    local t = {}
-    flagt = flagt or {}
-    table.insert(t, {"type", self:get_type()})
-    table.insert(t, {"collect_project_default_result", self._default_result})
-    if flagt.chroot then
-        table.insert(t, {"chroot", self:my_chroot_list():unpack()})
-    end
-    if flagt.env then
-        local tenv = { "env" }
-        for k, v in self:merged_env():iter() do
-            table.insert(tenv, string.format("%s=%s", k, v))
-        end
-        table.insert(t, tenv)
-    end
+    local t
+
+    t = self._stdresult:attribute_table(flagt)
+    assertIsTable(t)
+    table.insert(t, { "collect_project_default_result", self:default_result()})
+
     return t
 end
+
+--------------------------------------------------------------------------------
 
 function cp_build_process_class:initialize()
     e2build.build_process_class.initialize(self)
@@ -630,15 +510,14 @@ function cp_build_process_class:_build_collect_project(res, return_flags)
     return true
 end
 
+--------------------------------------------------------------------------------
+
 local function detect_cp_result(rawres)
     assertIsTable(rawres)
 
-    if rawres.collect_project ~= nil then
+    if not rawres.type and rawres.collect_project ~= nil then
         rawres.type = "collect_project"
-        return true
     end
-
-    return false
 end
 
 local function collect_project_init(ctx)
@@ -663,7 +542,7 @@ local function collect_project_exit(ctx)
 end
 
 plugin_descriptor = {
-    description = "collect_project Plugin",
+    description = "collect_project plugin",
     init = collect_project_init,
     exit = collect_project_exit,
 }
