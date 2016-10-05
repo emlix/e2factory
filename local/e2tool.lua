@@ -50,6 +50,7 @@ local project = require("project")
 local projenv = require("projenv")
 local result = require("result")
 local scm = require("scm")
+local sl = require("sl")
 local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
@@ -648,16 +649,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     return strict.lock(info)
 end
 
---- Returns a sorted vector with all dependencies for the given result
--- in the project. The result itself is excluded.
--- @param resultname Result name.
--- @return Sorted vector of result dependencies, or false on error.
--- @return Error object on failure.
-function e2tool.dlist(resultname)
-    assertIsStringN(resultname)
-    return result.results[resultname]:dlist()
-end
-
 --- Returns a sorted vector with all depdencies of result, and all
 -- the indirect dependencies. If result is a vector, calculates dependencies
 -- for all results and includes those from result. If result is a result name,
@@ -666,7 +657,6 @@ end
 -- @return Vector of dependencies of the result, may or may not include result.
 --         False on failure.
 -- @return Error object on failure
--- @see e2tool.dlist
 function e2tool.dlist_recursive(resultv)
     assert(type(resultv) == "string" or type(resultv) == "table")
 
@@ -675,12 +665,14 @@ function e2tool.dlist_recursive(resultv)
     local path = {}
     local col = {}
     local t = {}
+    local depends
 
     if type(resultv) == "string" then
-        resultv, re = result.results[resultv]:dlist()
-        if not resultv then
-            return false, re
-        end
+        assertIsTable(result.results[resultv])
+        depends = result.results[resultv]:depends_list()
+    else
+        depends = sl.sl:new(true)
+        depends:insert_table(resultv)
     end
 
     local function visit(resultname)
@@ -706,12 +698,9 @@ function e2tool.dlist_recursive(resultv)
             seen[resultname] = #path
             col[resultname] = true
 
-            deps, re = result.results[resultname]:dlist()
-            if not deps then
-                return false, re
-            end
+            deps = result.results[resultname]:depends_list()
 
-            for _, d in ipairs(deps) do
+            for d in deps:iter_sorted() do
                 rc, re = visit(d)
                 if not rc then
                     return false, re
@@ -724,7 +713,7 @@ function e2tool.dlist_recursive(resultv)
         return true
     end
 
-    for _,resultname in ipairs(resultv) do
+    for resultname in depends:iter_sorted() do
         rc, re = visit(resultname)
         if not rc then
             return false, re

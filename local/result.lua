@@ -109,13 +109,8 @@ function result.basic_result:buildid()
         self._type, self._name))
 end
 
---- Return list (table) of depdencencies
-function result.basic_result:dlist()
-    error(err.new("called dlist() of result base class, type %s name %s",
-        self._type, self._name))
-end
-
---- Return a string list of dependent results.
+--- Return a string list of depdenant results.
+-- @return String list of dependency names.
 function result.basic_result:depends_list()
     error(err.new("called depends_list() of result base class, type %s name %s",
         self._type, self._name))
@@ -418,12 +413,8 @@ function result.result_class:post_initialize()
     return true
 end
 
-function result.result_class:dlist()
-    return self:depends_list():totable_sorted()
-end
-
 function result.result_class:depends_list()
-    return self._depends_list
+    return self._depends_list:copy()
 end
 
 function result.result_class:my_sources_list()

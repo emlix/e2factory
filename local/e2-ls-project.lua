@@ -179,7 +179,7 @@ local function e2_ls_project(arg)
         console.infof("digraph \"%s\" {\n", project.name())
         for _, r in pairs(results) do
             local res = result.results[r]
-            local deps, re = e2tool.dlist(r)
+            local deps, re = res:depends_list():totable_sorted()
             if not deps then
                 error(re)
             end

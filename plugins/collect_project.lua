@@ -109,14 +109,11 @@ function collect_project_class:default_result()
     return self._default_result
 end
 
-function collect_project_class:dlist()
-    local l
+function collect_project_class:depends_list()
+    local deps = self._stdresult:depends_list()
+    deps:insert(self:default_result())
 
-    l = sl.sl:new(true) -- merge
-    l:insert_table(self._stdresult:dlist())
-    l:insert(self:default_result())
-
-    return l:totable_sorted()
+    return deps
 end
 
 function collect_project_class:buildid()

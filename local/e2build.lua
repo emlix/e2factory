@@ -684,15 +684,11 @@ function e2build.build_process_class:_install_build_time_dependencies(res, retur
     local e, rc, re
     local dependslist, info, dep, destdir
 
-    dependslist, re = res:dlist()
-    if not dependslist then
-        e = err.new("installing build time dependencies")
-        return false, e:cat(re)
-    end
+    dependslist = res:depends_list()
 
     info = e2tool.info()
 
-    for _,dependsname in ipairs(dependslist) do
+    for dependsname in dependslist:iter_sorted() do
         dep = result.results[dependsname]
         destdir = e2lib.join(res:buildconfig().T, "dep", dep:get_name())
 
