@@ -109,9 +109,15 @@ function result.basic_result:buildid()
         self._type, self._name))
 end
 
---- Return list of depdencencies
+--- Return list (table) of depdencencies
 function result.basic_result:dlist()
     error(err.new("called dlist() of result base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Return a string list of dependent results.
+function result.basic_result:depends_list()
+    error(err.new("called depends_list() of result base class, type %s name %s",
         self._type, self._name))
 end
 
@@ -253,7 +259,7 @@ function result.result_class:initialize(rawres)
 
     result.basic_result.initialize(self, rawres)
 
-    self.XXXdepends = sl.sl:new(false, true)
+    self._depends_list = sl.sl:new(true)
     self._buildid = false
     self._sources_list = sl.sl:new(false, true)
     self._chroot_list = sl.sl:new(false, true)
@@ -319,7 +325,7 @@ function result.result_class:initialize(rawres)
     else
         for _,depname in ipairs(rawres.depends) do
             -- Delay depends checking until all results are loaded.
-            self.XXXdepends:insert(depname)
+            self._depends_list:insert(depname)
         end
     end
 
@@ -398,7 +404,7 @@ end
 function result.result_class:post_initialize()
     local e
 
-    for depname in self.XXXdepends:iter_sorted() do
+    for depname in self:depends_list():iter_sorted() do
         if not result.results[depname] then
             e = e or err.new("in result %s:", self:get_name())
             e:append("dependency does not exist: %s", depname)
@@ -413,7 +419,11 @@ function result.result_class:post_initialize()
 end
 
 function result.result_class:dlist()
-    return self.XXXdepends:totable_sorted()
+    return self:depends_list():totable_sorted()
+end
+
+function result.result_class:depends_list()
+    return self._depends_list
 end
 
 function result.result_class:my_sources_list()
@@ -505,7 +515,7 @@ function result.result_class:buildid()
 
 
     -- depends
-    for depname in self.XXXdepends:iter_sorted() do
+    for depname in self:depends_list():iter_sorted() do
         id, re = result.results[depname]:buildid()
         if not id then
             return false, re
@@ -539,7 +549,7 @@ function result.result_class:attribute_table(flagt)
     flagt = flagt or {}
 
     table.insert(t, { "sources", self:my_sources_list():unpack()})
-    table.insert(t, { "depends", self.XXXdepends:unpack()})
+    table.insert(t, { "depends", self:depends_list():unpack()})
     if flagt.chroot then
         table.insert(t, { "chroot", self:my_chroot_list():unpack()})
     end
