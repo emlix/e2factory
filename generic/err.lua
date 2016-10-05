@@ -33,7 +33,7 @@ local e2lib = require("e2lib")
 local strict = require("strict")
 
 local function assert_err(e)
-    assert(type(e) == "table", "No error table supplied")
+    assert(type(e) == "table", "No error table supplied: "..debug.traceback())
     assert(type(e.count) == "number", "Error count is not a number")
     assert(type(e.msg) == "table", "Error message table of wrong type")
     return true
