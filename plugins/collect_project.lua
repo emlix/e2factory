@@ -38,148 +38,18 @@ local sl = require("sl")
 local source = require("source")
 local strict = require("strict")
 
-local cp_build_process_class = class("cp_build_process_class",
-    e2build.build_process_class)
-
-local collect_project_class = class("collect_project_class",
-    result.basic_result)
-
-function collect_project_class:initialize(rawres)
-    assertIsTable(rawres)
-    assertNotNil(rawres.collect_project)
-    assertStrMatches(rawres.type, "collect_project")
-
-    result.basic_result.initialize(self, rawres)
-
-    self._default_result = false
-    self._stdresult = false
-
-    local rc, re, e
-
-    e = err.new("in result %s:", self:get_name())
-    if type(rawres.collect_project) ~= "boolean"
-        or rawres.collect_project ~= true then
-        error(e:append("collect_project must be true"))
-    end
-
-    if rawres.collect_project_default_result == nil then
-        e:append("collect_project_default_result is not set")
-    elseif type(rawres.collect_project_default_result) ~= "string" then
-        e:append("collect_project_default_result is not a string")
-    else
-        self._default_result = rawres.collect_project_default_result
-    end
-
-    -- we're done, remove everything collect project from the result
-    rawres.type = nil
-    rawres.collect_project = nil
-    rawres.collect_project_default_result = nil
-
-    rc, re = result.instantiate_object(rawres)
-    if not rc then
-        e:cat(re)
-    end
-
-    if e:getcount() > 1 then
-        error(e)
-    end
-
-    self._stdresult = rc
-    assertIsTable(self._stdresult)
-end
-
-function collect_project_class:post_initialize()
-    assertIsString(self:default_result())
-    local e, re, rc, dependsvec
-
-    e = err.new("in result %s:", self:get_name())
-
-    if not result.results[self:default_result()] then
-        e:append("collect_project_default_result is set to "..
-            "an invalid result: %s", self:default_result())
-        return false, e
-    end
-
-    return true
-end
-
-function collect_project_class:default_result()
-    -- TODO: rename to cp_default_result(), internal method
-    assertIsStringN(self._default_result)
-    return self._default_result
-end
-
-function collect_project_class:depends_list()
-    local deps = self._stdresult:depends_list()
-    deps:insert(self:default_result())
-
-    return deps
-end
-
-function collect_project_class:buildid()
-    local rc, re, bid, hc
-
-    bid, re = self._stdresult:buildid()
-    if not bid then
-        return false, re
-    end
-
-    hc = hash.hash_start()
-    hash.hash_append(hc, bid)
-    hash.hash_append(hc, self:default_result())
-    bid = hash.hash_finish(hc)
-
-    assertIsStringN(bid)
-
-    return bid
-end
-
-function collect_project_class:build_mode(bm)
-    return self._stdresult:build_mode(bm)
-end
-
-function collect_project_class:build_process()
-    return cp_build_process_class:new()
-end
-
-function collect_project_class:my_chroot_list()
-    return self._stdresult:my_chroot_list()
-end
-
-function collect_project_class:merged_env()
-    return self._stdresult:merged_env()
-end
-
-function collect_project_class:my_sources_list()
-    return self._stdresult:my_sources_list()
-end
-
-function collect_project_class:attribute_table(flagt)
-    local t
-
-    t = self._stdresult:attribute_table(flagt)
-    assertIsTable(t)
-    table.insert(t, { "collect_project_default_result", self:default_result()})
-
-    return t
-end
-
 --------------------------------------------------------------------------------
-
-function cp_build_process_class:initialize()
-    e2build.build_process_class.initialize(self)
-
-    self:add_step_before("build", "fix_permissions", "build_collect_project",
-        self._build_collect_project)
-end
+-- collect project build process step first because real forward declarations
+-- aren't a thing in Lua.
 
 --- Create Makefile based structure required to build the project
 -- without e2factory
--- @param res Result object
+-- @param self A build_process_class instance
+-- @param res Result object to build
 -- @param return_flags
 -- @return bool
 -- @return an error object on failure
-function cp_build_process_class:_build_collect_project(res, return_flags)
+local function _build_collect_project(self, res, return_flags)
 
     local function write_build_driver(info, resultname, destdir)
         local rc, re, e, res, bd, buildrc_noinit_file, buildrc_file, bc
@@ -508,6 +378,141 @@ function cp_build_process_class:_build_collect_project(res, return_flags)
 end
 
 --------------------------------------------------------------------------------
+
+local collect_project_class = class("collect_project_class",
+    result.basic_result)
+
+function collect_project_class:initialize(rawres)
+    assertIsTable(rawres)
+    assertNotNil(rawres.collect_project)
+    assertStrMatches(rawres.type, "collect_project")
+
+    result.basic_result.initialize(self, rawres)
+
+    self._default_result = false
+    self._stdresult = false
+
+    local rc, re, e
+
+    e = err.new("in result %s:", self:get_name())
+    if type(rawres.collect_project) ~= "boolean"
+        or rawres.collect_project ~= true then
+        error(e:append("collect_project must be true"))
+    end
+
+    if rawres.collect_project_default_result == nil then
+        e:append("collect_project_default_result is not set")
+    elseif type(rawres.collect_project_default_result) ~= "string" then
+        e:append("collect_project_default_result is not a string")
+    else
+        self._default_result = rawres.collect_project_default_result
+    end
+
+    -- we're done, remove everything collect project from the result
+    rawres.type = nil
+    rawres.collect_project = nil
+    rawres.collect_project_default_result = nil
+
+    rc, re = result.instantiate_object(rawres)
+    if not rc then
+        e:cat(re)
+    end
+
+    if e:getcount() > 1 then
+        error(e)
+    end
+
+    self._stdresult = rc
+    assertIsTable(self._stdresult)
+end
+
+function collect_project_class:post_initialize()
+    assertIsString(self:default_result())
+    local e, re, rc, dependsvec
+
+    e = err.new("in result %s:", self:get_name())
+
+    if not result.results[self:default_result()] then
+        e:append("collect_project_default_result is set to "..
+            "an invalid result: %s", self:default_result())
+        return false, e
+    end
+
+    return true
+end
+
+function collect_project_class:default_result()
+    -- TODO: rename to cp_default_result(), internal method
+    assertIsStringN(self._default_result)
+    return self._default_result
+end
+
+function collect_project_class:depends_list()
+    local deps = self._stdresult:depends_list()
+    deps:insert(self:default_result())
+
+    return deps
+end
+
+function collect_project_class:buildid()
+    local rc, re, bid, hc
+
+    bid, re = self._stdresult:buildid()
+    if not bid then
+        return false, re
+    end
+
+    hc = hash.hash_start()
+    hash.hash_append(hc, bid)
+    hash.hash_append(hc, self:default_result())
+    bid = hash.hash_finish(hc)
+
+    assertIsStringN(bid)
+
+    return bid
+end
+
+function collect_project_class:build_mode(bm)
+    return self._stdresult:build_mode(bm)
+end
+
+function collect_project_class:build_settings(bs)
+    return self._stdresult:build_settings(bs)
+end
+
+function collect_project_class:build_process()
+    local bp = self._stdresult:build_process()
+
+    bp:add_step_before("build", "fix_permissions", "build_collect_project",
+        _build_collect_project)
+
+    return bp
+end
+
+function collect_project_class:my_chroot_list()
+    return self._stdresult:my_chroot_list()
+end
+
+function collect_project_class:merged_env()
+    return self._stdresult:merged_env()
+end
+
+function collect_project_class:my_sources_list()
+    return self._stdresult:my_sources_list()
+end
+
+function collect_project_class:attribute_table(flagt)
+    local t
+
+    t = self._stdresult:attribute_table(flagt)
+    assertIsTable(t)
+    table.insert(t, { "collect_project_default_result", self:default_result()})
+
+    return t
+end
+
+--------------------------------------------------------------------------------
+
 
 local function detect_cp_result(rawres)
     assertIsTable(rawres)
