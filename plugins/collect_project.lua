@@ -127,10 +127,10 @@ local function _build_collect_project(self, res, return_flags)
     for depname in cp_depends:iter_sorted() do
         local dep = result.results[depname]
 
-        if not dep:isInstanceOf(result.result_class) then
+        if dep:get_type() ~= "result" then
             return false,
-                e:append("collect_project cannot work with this result type: %q",
-                    dep:get_name())
+                err.new("can not convert result %q, type %q is unsupported",
+                    dep:get_name(), dep:get_type())
         end
         cp_chroot:insert_sl(dep:my_chroot_list())
         cp_sources:insert_sl(dep:my_sources_list())
