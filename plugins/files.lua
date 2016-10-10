@@ -412,7 +412,7 @@ local function gen_dest_dir_name(buildpath, sourcename, copypath, location,
         destdir = destination
         destname = e2lib.basename(location)
     else
-        -- '.' and '..' or not path components as such, but refer
+        -- '.' and '..' are not path components as such, but refer
         -- to the current and previous directory instead.
         -- Fixup path by appending a harmless slash, to simplify
         -- the logic below.
