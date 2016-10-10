@@ -54,13 +54,18 @@ end
 --- insert an error object into another one
 -- @param e table: the error object
 -- @param re table: the error object to insert
+-- @param ... list of strings required for the format string
 -- @return table: the error object
-function err.cat(e, re)
+function err.cat(e, re, ...)
     assert_err(e)
     assert(type(re) == "string" or assert_err(re))
     -- auto-convert strings to error objects before inserting
     if type(re) == "string" then
-        re = err.new("%s", re)
+        if #{...} > 0 then
+            re = err.new(re, ...)
+        else
+            re = err.new("%s", re)
+        end
     end
     table.insert(e.msg, re)
     e.count = e.count + 1
