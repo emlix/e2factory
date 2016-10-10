@@ -648,12 +648,19 @@ function files.toresult(info, sourcename, sourceset, directory)
     for file in src:file_iter() do
         e2lib.logf(4, "export file: %s", file.location)
         local destdir = string.format("%s/%s", directory, source)
-        local destname = nil
+        local destname = e2lib.basename(file.location)
 
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
+
+        if e2lib.stat(e2lib.join(destdir, destname)) then
+            return false,
+                e:cat("can not convert source %q due to multiple files named %q",
+                sourcename, destname)
+        end
+
         rc, re = cache.fetch_file(info.cache, file.server, file.location,
             destdir, destname, {})
         if not rc then
