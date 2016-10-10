@@ -118,7 +118,7 @@ local function _build_collect_project(self, res, return_flags)
     info = e2tool.info()
 
     -- calculate depends, sources, licences and chroot
-    rc, re = e2tool.dlist_recursive({res:default_result()})
+    rc, re = e2tool.dlist_recursive({res:cp_default_result()})
     if not rc then
         return false, e:cat(re)
     end
@@ -169,7 +169,7 @@ local function _build_collect_project(self, res, return_flags)
     out = {
         string.format("name='%s'\n", project.name()),
         string.format("release_id='%s'\n", project.release_id()),
-        string.format("default_results='%s'\n", res:default_result()),
+        string.format("default_results='%s'\n", res:cp_default_result()),
         string.format("chroot_arch='%s'\n", project.chroot_arch())
     }
 
@@ -427,29 +427,28 @@ function collect_project_class:initialize(rawres)
 end
 
 function collect_project_class:post_initialize()
-    assertIsString(self:default_result())
+    assertIsString(self:cp_default_result())
     local e, re, rc, dependsvec
 
     e = err.new("in result %s:", self:get_name())
 
-    if not result.results[self:default_result()] then
+    if not result.results[self:cp_default_result()] then
         e:append("collect_project_default_result is set to "..
-            "an invalid result: %s", self:default_result())
+            "an invalid result: %s", self:cp_default_result())
         return false, e
     end
 
     return true
 end
 
-function collect_project_class:default_result()
-    -- TODO: rename to cp_default_result(), internal method
+function collect_project_class:cp_default_result()
     assertIsStringN(self._default_result)
     return self._default_result
 end
 
 function collect_project_class:depends_list()
     local deps = self._stdresult:depends_list()
-    deps:insert(self:default_result())
+    deps:insert(self:cp_default_result())
 
     return deps
 end
@@ -464,7 +463,7 @@ function collect_project_class:buildid()
 
     hc = hash.hash_start()
     hash.hash_append(hc, bid)
-    hash.hash_append(hc, self:default_result())
+    hash.hash_append(hc, self:cp_default_result())
     bid = hash.hash_finish(hc)
 
     assertIsStringN(bid)
@@ -506,7 +505,7 @@ function collect_project_class:attribute_table(flagt)
 
     t = self._stdresult:attribute_table(flagt)
     assertIsTable(t)
-    table.insert(t, { "collect_project_default_result", self:default_result()})
+    table.insert(t, { "collect_project_default_result", self:cp_default_result()})
 
     return t
 end
