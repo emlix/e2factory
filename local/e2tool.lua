@@ -217,47 +217,6 @@ Configuration syntax versions supported by this version of the tools are:]]
     return false, e:append("configuration syntax mismatch")
 end
 
---- Gather source paths.
--- @param info Info table.
--- @param basedir Nil or directory from where to start scanning for more
---                sources. Only for recursion.
--- @param sources Nil or table of source paths. Only for recursion.
--- @return Table with source paths, or false on error.
--- @return Error object on failure.
-local function gather_source_paths(info, basedir, sources)
-    local rc, re
-    local currdir, sdir, sconfig, s
-    sources = sources or {}
-
-    currdir = e2tool.sourcedir(basedir, info.root)
-    for entry, re in e2lib.directory(currdir) do
-        if not entry then
-            return false, re
-        end
-
-        if basedir then
-            entry = e2lib.join(basedir, entry)
-        end
-
-        sdir = e2tool.sourcedir(entry, info.root)
-        sconfig = e2tool.sourceconfig(entry, info.root)
-        s = e2lib.stat(sdir, false)
-        if s.type == "directory" then
-            if e2lib.exists(sconfig) then
-                table.insert(sources, entry)
-            else
-                -- try subfolder
-                rc, re = gather_source_paths(info, entry, sources)
-                if not rc then
-                    return false, re
-                end
-            end
-        end
-    end
-
-    return sources
-end
-
 --- Verify that a result or source file pathname in the form
 -- "group1/group2/name" contains only valid characters.
 -- Note that the path to the project root does not share the same constraints,
@@ -369,47 +328,6 @@ function e2tool.sourceconfig(name, prefix)
     assert(type(name) == "string")
     assert(prefix == nil or type(prefix) == "string")
     return e2lib.join(e2tool.sourcedir(name, prefix), "config")
-end
-
---- Gather result paths.
--- @param info Info table.
--- @param basedir Nil or directory from where to start scanning for more
---                results. Only for recursion.
--- @param results Nil or table of result paths. Only for recursion.
--- @return Table with result paths, or false on error.
--- @return Error object on failure.
-local function gather_result_paths(info, basedir, results)
-    local rc, re
-    local currdir, resdir, resconfig, s
-
-    results = results or {}
-    currdir = e2tool.resultdir(basedir, info.root)
-    for entry, re in e2lib.directory(currdir) do
-        if not entry then
-            return false, re
-        end
-
-        if basedir then
-            entry = e2lib.join(basedir, entry)
-        end
-
-        resdir = e2tool.resultdir(entry, info.root)
-        resconfig = e2tool.resultconfig(entry, info.root)
-        s = e2lib.stat(resdir, false)
-        if s.type == "directory" then
-            if e2lib.exists(resconfig) then
-                table.insert(results, entry)
-            else
-                -- try subfolder
-                rc, re = gather_result_paths(info, entry, results)
-                if not rc then
-                    return false, re
-                end
-            end
-        end
-    end
-
-    return results
 end
 
 --- Checks project information for consistancy.
