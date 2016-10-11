@@ -1,6 +1,7 @@
 .e2/bin
 .e2/doc
 .e2/e2
+.e2/e2config
 .e2/global-version
 .e2/hashcache
 .e2/lib
