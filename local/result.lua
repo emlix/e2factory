@@ -589,7 +589,7 @@ local function gather_result_paths(info, basedir, results)
 
         resdir = e2tool.resultdir(entry, info.root)
         resconfig = e2tool.resultconfig(entry, info.root)
-        s = e2lib.stat(resdir, false)
+        s = e2lib.stat(resdir)
         if s.type == "directory" then
             if e2lib.exists(resconfig) then
                 table.insert(results, entry)

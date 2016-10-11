@@ -379,7 +379,7 @@ function e2build.build_process_class:helper_chroot_remove(res)
         return false, e:cat(re)
     end
     local f = e2lib.join(info.root, "playground")
-    local s = e2lib.stat(f)
+    local s = e2lib.lstat(f)
     if s and s.type == "symbolic-link" then
         rc, re = e2lib.unlink(f)
         if not rc then
@@ -1056,7 +1056,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
         e2lib.logf(3, "%s: copy to out/%s/last, server %q has no cache/not local",
             res:get_name(), res:get_name(), server)
 
-        if e2lib.stat(lnk, false) then
+        if e2lib.lstat(lnk) then
             e2lib.unlink_recursive(lnk) -- ignore errors
         end
 
@@ -1085,7 +1085,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
             return false, e:cat(re)
         end
 
-        if e2lib.stat(lnk, false) then
+        if e2lib.lstat(lnk) then
             e2lib.unlink_recursive(lnk) -- ignore errors, symlink will catch it
         end
 

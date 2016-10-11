@@ -162,15 +162,29 @@ end
 
 --- Get file status information.
 -- @param path Path to the file, including special files.
--- @param followlinks Whether symlinks should be followed, or information
---        about the link should be returned (boolean).
 -- @return Dirent table containing attributes (see @{dirent}), or false on error
 -- @return Error object on failure.
-function e2lib.stat(path, followlinks)
-    local dirent, errstring = le2lib.stat(path, followlinks)
+function e2lib.stat(path)
+    local dirent, errstring
 
+    dirent, errstring = le2lib.stat(path, true)
     if not dirent then
         return false, err.new("stat failed: %s: %s", path, errstring)
+    end
+
+    return dirent
+end
+
+--- Get file status information, don't follow symbolic links.
+-- @param path Path to the file, including special files.
+-- @return Dirent table containing attributes (see @{dirent}), or false on error
+-- @return Error object on failure.
+function e2lib.lstat(path)
+    local dirent, errstring
+
+    dirent, errstring = le2lib.stat(path, false)
+    if not dirent then
+        return false, err.new("lstat failed: %s: %s", path, errstring)
     end
 
     return dirent
@@ -613,7 +627,7 @@ function e2lib.rotate_log(file)
     local files = {}
     local dst
 
-    if not e2lib.stat(file) then
+    if not e2lib.lstat(file) then -- file may be an invalid symlink
         return true
     end
 
@@ -1850,7 +1864,7 @@ function e2lib.unlink_recursive(pathname)
     local de, rc, re
     local filepath
 
-    de, re = e2lib.stat(pathname, false) -- do not follow links
+    de, re = e2lib.lstat(pathname) -- do not follow links
     if not de then
         return false, re
     end
@@ -1863,7 +1877,7 @@ function e2lib.unlink_recursive(pathname)
 
             filepath = e2lib.join(pathname, file)
 
-            de, re = e2lib.stat(filepath, false) -- do not follow links
+            de, re = e2lib.lstat(filepath) -- do not follow links
             if not de then
                 return false, re
             end
@@ -2232,7 +2246,7 @@ end
 -- @param dir string: path
 -- @return bool
 function e2lib.isdir(dir)
-    local t = e2lib.stat(dir, true)
+    local t = e2lib.stat(dir)
     if t and t.type == "directory" then
         return true
     end
@@ -2244,7 +2258,7 @@ end
 -- @param dir string: path
 -- @return bool
 function e2lib.isfile(path)
-    local t = e2lib.stat(path, true)
+    local t = e2lib.stat(path)
     if t and t.type == "regular" then
         return true
     end

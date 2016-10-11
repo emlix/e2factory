@@ -147,7 +147,7 @@ local function gather_source_paths(info, basedir, sources)
 
         sdir = e2tool.sourcedir(entry, info.root)
         sconfig = e2tool.sourceconfig(entry, info.root)
-        s = e2lib.stat(sdir, false)
+        s = e2lib.stat(sdir)
         if s.type == "directory" then
             if e2lib.exists(sconfig) then
                 table.insert(sources, entry)

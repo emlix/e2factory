@@ -566,7 +566,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             end
 
             local expected_location = e2lib.join(buildpath, file.unpack)
-            if not e2lib.stat(expected_location, true) then
+            if not e2lib.stat(expected_location) then
                 return false, err.new("expected unpack location '%s' does not exist",
                     expected_location)
             end
