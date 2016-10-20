@@ -2,7 +2,7 @@
 -- based project tar archive.
 -- @module plugins.collect_project
 
--- Copyright (C) 2007-2014 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
