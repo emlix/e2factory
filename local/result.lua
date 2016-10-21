@@ -162,14 +162,8 @@ end
 -- a valid settings_class
 -- @param bs Optional settings_class
 function result.basic_result:build_settings(bs)
-    if bs then
-        assertIsTable(bs)
-        self._build_settings = bs
-    else
-        assertIsTable(self._build_settings)
-    end
-
-    return self._build_settings
+    error(err.new("called build_settings() of result base class, type %s name %s",
+        self._type, self._name))
 end
 
 --- Textual free-form representation of the result.
@@ -209,6 +203,7 @@ function result.result_class:initialize(rawres)
     self._chroot_list = sl.sl:new(false, true)
     self._env = environment.new()
     self._build_mode = false
+    self._build_settings = false
 
     local e = err.new("in result %s:", self._name)
     local rc, re, info
@@ -430,6 +425,17 @@ function result.result_class:build_mode(bm)
     end
 
     return self._build_mode
+end
+
+function result.result_class:build_settings(bs)
+    if bs then
+        assertIsTable(bs)
+        self._build_settings = bs
+    else
+        assertIsTable(self._build_settings)
+    end
+
+    return self._build_settings
 end
 
 function result.result_class:merged_env()
