@@ -111,6 +111,13 @@ function result.basic_result:depends_list()
         self._type, self._name))
 end
 
+--- Return a string list of sources.
+-- @return String list of source names.
+function result.basic_result:sources_list()
+    error(err.new("called sources_list() of result base class, type %s name %s",
+        self._type, self._name))
+end
+
 --- Return the complete and merged environment for this result.
 -- Does NOT include the builtin environment from build_config.
 -- @return Environment object
@@ -362,7 +369,7 @@ function result.result_class:depends_list()
     return self._depends_list:copy()
 end
 
-function result.result_class:my_sources_list()
+function result.result_class:sources_list()
     return self._sources_list
 end
 
@@ -479,7 +486,7 @@ function result.result_class:buildid()
     hash.hash_append(hc, self:get_type())
 
     -- sources
-    for sourcename in self:my_sources_list():iter_sorted() do
+    for sourcename in self:sources_list():iter_sorted() do
         local src, sourceset
 
         src = source.sources[sourcename]
@@ -552,7 +559,7 @@ function result.result_class:attribute_table(flagt)
     local t = {}
     flagt = flagt or {}
 
-    table.insert(t, { "sources", self:my_sources_list():unpack()})
+    table.insert(t, { "sources", self:sources_list():unpack()})
     table.insert(t, { "depends", self:depends_list():unpack()})
     if flagt.chroot then
         table.insert(t, { "chroot", self:chroot_list():unpack()})

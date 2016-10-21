@@ -182,7 +182,7 @@ local function e2_fetch_source(arg)
                 e2lib.logf(3, "is regarded as result: %s", srcresname)
                 local res = result.results[srcresname]
 
-                for sourcename in res:my_sources_list():iter_sorted() do
+                for sourcename in res:sources_list():iter_sorted() do
                     sel[sourcename] = true
                 end
             elseif opts.result then

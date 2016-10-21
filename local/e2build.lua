@@ -697,7 +697,7 @@ function e2build.build_process_class:_install_sources(res, return_flags)
     bc = res:build_config()
     info = e2tool.info()
 
-    for sourcename in res:my_sources_list():iter_sorted() do
+    for sourcename in res:sources_list():iter_sorted() do
         e = err.new("installing source failed: %s", sourcename)
 
         destdir = e2lib.join(bc.T, "build")

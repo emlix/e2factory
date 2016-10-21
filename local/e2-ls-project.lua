@@ -97,7 +97,7 @@ local function e2_ls_project(arg)
             local res = result.results[resultname]
 
             if res:isInstanceOf(result.result_class) then
-                for sourcename in res:my_sources_list():iter_sorted() do
+                for sourcename in res:sources_list():iter_sorted() do
                     if not yet[sourcename] then
                         table.insert(sources, sourcename)
                         yet[sourcename] = true
@@ -183,7 +183,7 @@ local function e2_ls_project(arg)
                 console.infof("  \"%s\"\n", r)
             end
             if opts["dot-sources"] and res:isInstanceOf(result.result_class) then
-                for src in res:my_sources_list():iter_sorted() do
+                for src in res:sources_list():iter_sorted() do
                     if opts.swap then
                         console.infof("  \"%s-src\" %s \"%s\"\n", src, arrow, r)
                     else
