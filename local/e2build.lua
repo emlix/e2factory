@@ -197,7 +197,7 @@ end
 -- @param resultname Result name
 -- @return True if chroot for result could be found, false otherwise.
 function e2build.build_process_class:_chroot_exists(res, return_flags)
-    local bc = res:buildconfig()
+    local bc = res:build_config()
     if not e2lib.isfile(bc.chroot_marker) then
         return false, err.new("playground does not exist")
     end
@@ -213,7 +213,7 @@ end
 function e2build.build_process_class:_enter_playground(res, return_flags)
     local rc, re, e, e2_su, cmd, bc
 
-    bc = res:buildconfig()
+    bc = res:build_config()
     e = err.new("entering playground")
    
     rc, re = eio.file_write(e2lib.join(bc.c, bc.profile),
@@ -341,7 +341,7 @@ function e2build.build_process_class:_chroot_lock(res, return_flags)
     local rc, re, bc
     local e = err.new("error locking chroot")
 
-    bc = res:buildconfig()
+    bc = res:build_config()
     rc, re = e2lib.mkdir_recursive(bc.c)
     if not rc then
         return false, e:cat(re)
@@ -357,7 +357,7 @@ function e2build.build_process_class:helper_chroot_remove(res)
     local e = err.new("removing chroot failed")
     local rc, re, bc
     local info = e2tool.info()
-    bc = res:buildconfig()
+    bc = res:build_config()
     e2tool.set_umask(info)
     rc, re = e2lib.e2_su_2_2({"remove_chroot_2_3", bc.base})
     e2tool.reset_umask(info)
@@ -395,7 +395,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
     local e = err.new("error setting up chroot")
     -- create the chroot path and create the chroot marker file without root
     -- permissions. That makes sure we have write permissions here.
-    bc = res:buildconfig()
+    bc = res:build_config()
     rc, re = e2lib.mkdir_recursive(bc.c)
     if not rc then
         return false, e:cat(re)
@@ -459,7 +459,7 @@ end
 
 function e2build.build_process_class:_install_directory_structure(res, return_flags)
     local rc, re, e, bc, dirs
-    bc = res:buildconfig()
+    bc = res:build_config()
     dirs = {"out", "init", "script", "build", "root", "env", "dep"}
     for _, v in pairs(dirs) do
         rc, re = e2lib.mkdir_recursive(e2lib.join(bc.T, v))
@@ -473,7 +473,7 @@ end
 
 function e2build.build_process_class:_install_build_script(res, return_flags)
     local rc, re, e, bc, location, destdir, info
-    bc = res:buildconfig()
+    bc = res:build_config()
     location = e2tool.resultbuildscript(res:get_name_as_path())
     destdir = e2lib.join(bc.T, "script")
     info = e2tool.info()
@@ -490,7 +490,7 @@ end
 function e2build.build_process_class:_install_env(res, return_flags)
     local rc, re, e, bc
     e = err.new("installing environment files failed")
-    bc = res:buildconfig()
+    bc = res:build_config()
 
     -- install builtin environment variables
     rc, re = bc.builtin_env:tofile(e2lib.join(bc.T, "env/builtin"))
@@ -507,7 +507,7 @@ end
 
 function e2build.build_process_class:_install_init_files(res, return_flags)
     local rc, re, info
-    local bc = res:buildconfig()
+    local bc = res:build_config()
     local e = err.new("installing init files")
 
     info = e2tool.info()
@@ -543,7 +543,7 @@ function e2build.build_process_class:_install_build_driver(res, return_flags)
     local build_driver_file
     e = err.new("generating build driver script failed")
 
-    bc = res:buildconfig()
+    bc = res:build_config()
 
     destdir = e2lib.join(bc.T, bc.scriptdir)
 
@@ -646,7 +646,7 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
         return false, e:cat(re)
     end
 
-    -- bc = dep:buildconfig()
+    -- bc = dep:build_config()
     -- destdir = e2lib.join(bc.T, "dep", dep:get_name())
 
     rc, re = e2lib.mkdir_recursive(destdir)
@@ -680,7 +680,7 @@ function e2build.build_process_class:_install_build_time_dependencies(res, retur
 
     for dependsname in dependslist:iter_sorted() do
         dep = result.results[dependsname]
-        destdir = e2lib.join(res:buildconfig().T, "dep", dep:get_name())
+        destdir = e2lib.join(res:build_config().T, "dep", dep:get_name())
 
         rc, re = self:helper_unpack_result(res, dep, destdir)
         if not rc then
@@ -694,7 +694,7 @@ end
 function e2build.build_process_class:_install_sources(res, return_flags)
     local rc, re, e, bc, destdir, source_set, info
 
-    bc = res:buildconfig()
+    bc = res:build_config()
     info = e2tool.info()
 
     for sourcename in res:my_sources_list():iter_sorted() do
@@ -718,7 +718,7 @@ function e2build.build_process_class:_fix_permissions(res, return_flags)
     e2lib.log(3, "fix permissions")
 
     e2tool.set_umask(info)
-    bc = res:buildconfig()
+    bc = res:build_config()
     local argv = { "chroot_2_3", bc.base, "chown", "-R", "root:root", bc.Tc }
     rc, re = e2lib.e2_su_2_2(argv)
     e2tool.reset_umask(info)
@@ -756,7 +756,7 @@ function e2build.build_process_class:_runbuild(res, return_flags)
     if not e2_su then
         return false, e:cat(re)
     end
-    bc = res:buildconfig()
+    bc = res:build_config()
     -- the build log is written to an external logfile
     rc, re = e2lib.rotate_log(bc.buildlog)
     if not rc then
@@ -901,7 +901,7 @@ end
 -- @return bool
 -- @return an error object on failure
 function e2build.build_process_class:_store_result(res, return_flags)
-    local bc = res:buildconfig()
+    local bc = res:build_config()
     local rc, re
     local e = err.new("fetching build results from chroot")
     local dt
@@ -1104,7 +1104,7 @@ end
 function e2build.build_process_class:_chroot_unlock(res, return_flags)
     local rc, re, bc
     local e = err.new("error unlocking chroot")
-    bc = res:buildconfig()
+    bc = res:build_config()
     rc, re = e2lib.globals.lock:unlock(bc.chroot_lock)
     if not rc then
         return false, e:cat(re)

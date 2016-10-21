@@ -117,7 +117,7 @@ function result.basic_result:depends_list()
 end
 
 --- Return the complete and merged environment for this result.
--- Does NOT include the builtin environment from buildconfig.
+-- Does NOT include the builtin environment from build_config.
 -- @return Environment object
 function result.basic_result:merged_env()
     error(err.new("called merged_env() of result base class, type %s name %s",
@@ -131,11 +131,11 @@ function result.basic_result:my_chroot_list()
         self._type, self._name))
 end
 
---- Return locked buildconfig table
+--- Return locked build_config table
 -- XXX: This is more like "chroot-config"
--- @return buildconfig table (locked) or false on error
+-- @return build_config table (locked) or false on error
 -- @return error object.
-function result.basic_result:buildconfig()
+function result.basic_result:build_config()
     local rc, re, e, buildid, bc, tmpdir, builddir, info
 
     info = e2tool.info()

@@ -58,7 +58,7 @@ local function _build_collect_project(self, res, return_flags)
         e = err.new("generating build driver script failed")
 
         res = result.results[resultname]
-        bc = res:buildconfig()
+        bc = res:build_config()
 
         bd = {
             string.format("source %s/env/builtin\n", bc.Tc),
@@ -108,7 +108,7 @@ local function _build_collect_project(self, res, return_flags)
     end
 
     local out, rc, re, info
-    local bc = res:buildconfig()
+    local bc = res:build_config()
     local e = err.new("providing project data to this build failed")
     local cp_sources = sl.sl:new(true, false)
     local cp_depends = sl.sl:new(true, false)
@@ -261,7 +261,7 @@ local function _build_collect_project(self, res, return_flags)
     for depname in cp_depends:iter_sorted() do
         e2lib.logf(3, "result: %s", depname)
         local dep = result.results[depname]
-        local depbc = dep:buildconfig()
+        local depbc = dep:build_config()
 
         local destdir =
             e2lib.join(bc.T, "project", e2tool.resultdir(depname))

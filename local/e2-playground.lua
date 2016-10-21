@@ -76,7 +76,7 @@ local function e2_playground(arg)
     end
 
     local bc
-    bc, re = res:buildconfig()
+    bc, re = res:build_config()
     if not bc then
         error(re)
     end
