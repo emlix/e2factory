@@ -28,6 +28,7 @@ local e2tool = require("e2tool")
 local err = require("err")
 local hash = require("hash")
 local projenv = require("projenv")
+local result = require("result")
 local strict = require("strict")
 
 local _prj = {}
@@ -165,6 +166,34 @@ function project.load_project_config(info)
         end
     end
 
+    return true
+end
+
+--- Checks project information for consistancy once results are loaded.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function project.verify_project_config()
+    local rc, re, e
+    e = err.new("error in project configuration")
+
+    for r in project.default_results_iter() do
+        if not result.results[r] then
+            e:append("default_results: No such result: %s", r)
+        end
+    end
+    for r in project.deploy_results_iter() do
+        if not result.results[r] then
+            e:append("deploy_results: No such result: %s", r)
+        end
+    end
+    if e:getcount() > 1 then
+        return false, e
+    end
+
+    rc, re = e2tool.dsort()
+    if not rc then
+        return false, e:cat(re)
+    end
     return true
 end
 

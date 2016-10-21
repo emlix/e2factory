@@ -320,33 +320,6 @@ function e2tool.sourceconfig(name, prefix)
     return e2lib.join(e2tool.sourcedir(name, prefix), "config")
 end
 
---- Checks project information for consistancy.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function check_project_info()
-    local rc, re, e
-    e = err.new("error in project configuration")
-
-    for r in project.default_results_iter() do
-        if not result.results[r] then
-            e:append("default_results: No such result: %s", r)
-        end
-    end
-    for r in project.deploy_results_iter() do
-        if not result.results[r] then
-            e:append("deploy_results: No such result: %s", r)
-        end
-    end
-    if e:getcount() > 1 then
-        return false, e
-    end
-    rc, re = e2tool.dsort()
-    if not rc then
-        return false, e:cat(re)
-    end
-    return true
-end
-
 --- collect project info.
 -- @param info Info table.
 -- @param skip_load_config If true, skip loading config files etc.
@@ -468,6 +441,12 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
+    -- after results are loaded, verify the project configuration
+    rc, re = project.verify_project_config()
+    if not rc then
+        return false, e:cat(re)
+    end
+
     if e:getcount() > 1 then
         return false, e
     end
@@ -547,11 +526,6 @@ function e2tool.collect_project_info(info, skip_load_config)
             e:append("verifying remote tag failed")
             return false, e:cat(re)
         end
-    end
-
-    rc, re = check_project_info()
-    if not rc then
-        return false, re
     end
 
     return strict.lock(info)
