@@ -463,7 +463,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- project result envs must be checked after loading results
-    projenv.verify_result_envs()
+    rc, re = projenv.verify_result_envs()
     if not rc then
         return false, e:cat(re)
     end
