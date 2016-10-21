@@ -471,6 +471,10 @@ function collect_project_class:buildid()
     return bid
 end
 
+function collect_project_class:build_config()
+    return self._stdresult:build_config()
+end
+
 function collect_project_class:build_mode(bm)
     return self._stdresult:build_mode(bm)
 end

@@ -136,49 +136,8 @@ end
 -- @return build_config table (locked) or false on error
 -- @return error object.
 function result.basic_result:build_config()
-    local rc, re, e, buildid, bc, tmpdir, builddir, info
-
-    info = e2tool.info()
-    assertIsTable(info)
-    e = err.new("preparing build config for %s failed", self:get_name())
-
-    buildid, re = self:buildid()
-    if not buildid then
-        return false, e:cat(re)
-    end
-
-    bc = {}
-    tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
-        e2lib.globals.tmpdir, buildconfig.MAJOR, buildconfig.MINOR,
-        buildconfig.PATCHLEVEL, e2lib.globals.osenv["USER"])
-    builddir = "tmp/e2"
-
-    bc.base = e2lib.join(tmpdir, project.name(), self:get_name())
-    bc.c = e2lib.join(bc.base, "chroot")
-    bc.chroot_marker = e2lib.join(bc.base, "e2factory-chroot")
-    bc.chroot_lock = e2lib.join(bc.base, "e2factory-chroot-lock")
-    bc.T = e2lib.join(bc.c, builddir)
-    bc.Tc = e2lib.join("/", builddir)
-    bc.r = self:get_name()
-    bc.chroot_call_prefix = project.chroot_call_prefix()
-    bc.buildlog = string.format("%s/log/build.%s.log", info.root, self:get_name())
-    bc.scriptdir = "script"
-    bc.build_driver_file = "build-driver"
-    bc.buildrc_file = "buildrc"
-    bc.buildrc_noinit_file = "buildrc-noinit"
-    bc.profile = "/tmp/bashrc"
-
-    bc.builtin_env = environment.new()
-    bc.builtin_env:set("E2_TMPDIR", bc.Tc)
-    bc.builtin_env:set("E2_RESULT", self:get_name())
-    bc.builtin_env:set("E2_RELEASE_ID", project.release_id())
-    bc.builtin_env:set("E2_PROJECT_NAME", project.name())
-    bc.builtin_env:set("E2_BUILDID", buildid)
-    bc.builtin_env:set("T", bc.Tc)
-    bc.builtin_env:set("r", self:get_name())
-    bc.builtin_env:set("R", self:get_name())
-
-    return strict.readonly(bc)
+    error(err.new("called build_config() of result base class, type %s name %s",
+        self._type, self._name))
 end
 
 --- Get/set build_mode table for result. Needs to be set before certain
@@ -423,6 +382,52 @@ end
 
 function result.result_class:my_chroot_list()
     return self._chroot_list
+end
+
+function result.result_class:build_config()
+    local rc, re, e, buildid, bc, tmpdir, builddir, info
+
+    info = e2tool.info()
+    assertIsTable(info)
+    e = err.new("preparing build config for %s failed", self:get_name())
+
+    buildid, re = self:buildid()
+    if not buildid then
+        return false, e:cat(re)
+    end
+
+    bc = {}
+    tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
+        e2lib.globals.tmpdir, buildconfig.MAJOR, buildconfig.MINOR,
+        buildconfig.PATCHLEVEL, e2lib.globals.osenv["USER"])
+    builddir = "tmp/e2"
+
+    bc.base = e2lib.join(tmpdir, project.name(), self:get_name())
+    bc.c = e2lib.join(bc.base, "chroot")
+    bc.chroot_marker = e2lib.join(bc.base, "e2factory-chroot")
+    bc.chroot_lock = e2lib.join(bc.base, "e2factory-chroot-lock")
+    bc.T = e2lib.join(bc.c, builddir)
+    bc.Tc = e2lib.join("/", builddir)
+    bc.r = self:get_name()
+    bc.chroot_call_prefix = project.chroot_call_prefix()
+    bc.buildlog = string.format("%s/log/build.%s.log", info.root, self:get_name())
+    bc.scriptdir = "script"
+    bc.build_driver_file = "build-driver"
+    bc.buildrc_file = "buildrc"
+    bc.buildrc_noinit_file = "buildrc-noinit"
+    bc.profile = "/tmp/bashrc"
+
+    bc.builtin_env = environment.new()
+    bc.builtin_env:set("E2_TMPDIR", bc.Tc)
+    bc.builtin_env:set("E2_RESULT", self:get_name())
+    bc.builtin_env:set("E2_RELEASE_ID", project.release_id())
+    bc.builtin_env:set("E2_PROJECT_NAME", project.name())
+    bc.builtin_env:set("E2_BUILDID", buildid)
+    bc.builtin_env:set("T", bc.Tc)
+    bc.builtin_env:set("r", self:get_name())
+    bc.builtin_env:set("R", self:get_name())
+
+    return strict.readonly(bc)
 end
 
 function result.result_class:merged_env()
