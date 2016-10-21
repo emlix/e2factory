@@ -65,11 +65,6 @@ function result.basic_result:initialize(rawres)
 
     self._name = rawres.name
     self._type = rawres.type
-
-    --
-    -- e2build currently needs this stuff in every result.
-    --
-    self._build_mode = false
 end
 
 --- Constructor that's called by load_result_configs() after all results
@@ -143,15 +138,10 @@ end
 --- Get/set build_mode table for result. Needs to be set before certain
 -- operations, for example anything calculating the buildid.
 -- @param bm Optional build mode table to set a new one.
+-- @see policy.build_mode
 function result.basic_result:build_mode(bm)
-    if bm then
-        assertIsTable(bm)
-        self._build_mode = bm
-    else
-        assertIsTable(self._build_mode)
-    end
-
-    return self._build_mode
+    error(err.new("called build_mode() of result base class, type %s name %s",
+        self._type, self._name))
 end
 
 --- Return the complete and merged environment for this result.
@@ -218,6 +208,7 @@ function result.result_class:initialize(rawres)
     self._sources_list = sl.sl:new(false, true)
     self._chroot_list = sl.sl:new(false, true)
     self._env = environment.new()
+    self._build_mode = false
 
     local e = err.new("in result %s:", self._name)
     local rc, re, info
@@ -428,6 +419,17 @@ function result.result_class:build_config()
     bc.builtin_env:set("R", self:get_name())
 
     return strict.readonly(bc)
+end
+
+function result.result_class:build_mode(bm)
+    if bm then
+        assertIsTable(bm)
+        self._build_mode = bm
+    else
+        assertIsTable(self._build_mode)
+    end
+
+    return self._build_mode
 end
 
 function result.result_class:merged_env()
