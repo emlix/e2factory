@@ -121,8 +121,8 @@ end
 
 --- Return the list of chroot groups for this result.
 -- @return string list of required chroot groups.
-function result.basic_result:my_chroot_list()
-    error(err.new("called my_chroot_list() of result base class, type %s name %s",
+function result.basic_result:chroot_list()
+    error(err.new("called chroot_list() of result base class, type %s name %s",
         self._type, self._name))
 end
 
@@ -300,7 +300,7 @@ function result.result_class:initialize(rawres)
                 e:append("chroot group does not exist: %s", g)
             end
 
-            self:my_chroot_list():insert(g)
+            self:chroot_list():insert(g)
         end
     end
 
@@ -366,7 +366,7 @@ function result.result_class:my_sources_list()
     return self._sources_list
 end
 
-function result.result_class:my_chroot_list()
+function result.result_class:chroot_list()
     return self._chroot_list
 end
 
@@ -494,7 +494,7 @@ function result.result_class:buildid()
     end
 
     -- chroot
-    for groupname in self:my_chroot_list():iter_sorted() do
+    for groupname in self:chroot_list():iter_sorted() do
         id, re = chroot.groups_byname[groupname]:chrootgroupid(info)
         if not id then
             return false, e:cat(re)
@@ -555,7 +555,7 @@ function result.result_class:attribute_table(flagt)
     table.insert(t, { "sources", self:my_sources_list():unpack()})
     table.insert(t, { "depends", self:depends_list():unpack()})
     if flagt.chroot then
-        table.insert(t, { "chroot", self:my_chroot_list():unpack()})
+        table.insert(t, { "chroot", self:chroot_list():unpack()})
     end
     if flagt.env then
         local tenv = { "env" }

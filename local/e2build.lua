@@ -422,7 +422,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
     end
 
     local grp, path
-    for cgrpnm in res:my_chroot_list():iter_sorted() do
+    for cgrpnm in res:chroot_list():iter_sorted() do
         grp = chroot.groups_byname[cgrpnm]
 
         for f in grp:file_iter() do
