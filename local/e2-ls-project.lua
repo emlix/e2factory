@@ -48,6 +48,8 @@ local function e2_ls_project(arg)
     e2option.flag("dot-sources", "generate dot(1) graph with sources included")
     e2option.flag("swap", "swap arrow directions in dot graph")
     e2option.flag("all", "show unused results and sources, too")
+    e2option.flag("chroot", "show chroot groups as well")
+    e2option.flag("env", "show environment vars as well")
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
@@ -96,12 +98,10 @@ local function e2_ls_project(arg)
         for _, resultname in pairs(results) do
             local res = result.results[resultname]
 
-            if res:isInstanceOf(result.result_class) then
-                for sourcename in res:sources_list():iter_sorted() do
-                    if not yet[sourcename] then
-                        table.insert(sources, sourcename)
-                        yet[sourcename] = true
-                    end
+            for sourcename in res:sources_list():iter_sorted() do
+                if not yet[sourcename] then
+                    table.insert(sources, sourcename)
+                    yet[sourcename] = true
                 end
             end
         end
@@ -182,7 +182,7 @@ local function e2_ls_project(arg)
             else
                 console.infof("  \"%s\"\n", r)
             end
-            if opts["dot-sources"] and res:isInstanceOf(result.result_class) then
+            if opts["dot-sources"] then
                 for src in res:sources_list():iter_sorted() do
                     if opts.swap then
                         console.infof("  \"%s-src\" %s \"%s\"\n", src, arrow, r)
@@ -273,7 +273,8 @@ local function e2_ls_project(arg)
             s2 = "|"
         end
 
-        for _,at in ipairs(res:attribute_table({env = true, chroot=true})) do
+        local flagt = { env = opts.env, chroot = opts.chroot }
+        for _,at in ipairs(res:attribute_table(flagt)) do
             p3(s1, s2, unpack(at))
         end
     end

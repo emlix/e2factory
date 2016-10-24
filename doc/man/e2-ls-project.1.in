@@ -1,8 +1,8 @@
 .\" Man page for e2-ls-project
 .\"
-.\" (c)2007, 2012 emlix GmbH
+.\" (c)2007-2016 emlix GmbH
 .\"
-.TH e2-ls-project 1 "Oct 16, 2012" "@VERSION@"
+.TH e2-ls-project 1 "@VERSION@"
 
 .SH NAME
 e2-ls-project \- show project information of an e2factory project
@@ -35,6 +35,12 @@ As "\-\-dot", but also show sources.
 .BR \-\-swap
 Swaps the direction of the graphs.
 .TP
+.BR \-\-chroot
+Also show chroot groups.
+.TP
+.BR \-\-env
+Also show env variables.
+.TP
 For further global options, see \fBe2factory\fR(1).
 .TP
 .BR \-\-check
@@ -56,4 +62,4 @@ e2-ls-project --dot | dot -Tpdf > project.pdf
 .BR e2factory (1)
 
 .SH COPYRIGHT
-(c)2013 emlix GmbH
+(c)2007-2016 emlix GmbH
