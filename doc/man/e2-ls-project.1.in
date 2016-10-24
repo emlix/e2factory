@@ -42,15 +42,6 @@ Also show chroot groups.
 Also show env variables.
 .TP
 For further global options, see \fBe2factory\fR(1).
-.TP
-.BR \-\-check
-Performs all checks that can be done without server access.
-This option works only with results which are built in "tag" build-mode.
-.TP
-.BR \-\-check-remote
-This will perform all check that can be done with server access.
-This option works only results which are build in tag mode.
-
 .SH EXAMPLES
 Generate a graph and convert it to pdf.
 .IP
