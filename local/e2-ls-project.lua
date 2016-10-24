@@ -56,6 +56,12 @@ local function e2_ls_project(arg)
         error(arguments)
     end
 
+    -- get build mode from the command line
+    local build_mode, re = policy.handle_commandline_options(opts, true)
+    if not build_mode then
+        error(re)
+    end
+
     info, re = e2tool.collect_project_info(info)
     if not info then
         error(re)
