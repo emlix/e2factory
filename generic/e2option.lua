@@ -267,6 +267,8 @@ local function userdefaultoptions(opts)
             else
                 opts[opt] = options[opt].proc(val)
             end
+        elseif val and options[opt].type == "option" then
+            opts[opt] = val
         elseif options[opt].default then
             opts[opt] = options[opt].default
         else
