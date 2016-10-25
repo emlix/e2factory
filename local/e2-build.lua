@@ -26,8 +26,9 @@ local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
 local policy = require("policy")
-local scm = require("scm")
+local project = require("project")
 local result = require("result")
+local scm = require("scm")
 
 local function e2_build(arg)
     local rc, re = e2lib.init()
@@ -175,6 +176,27 @@ local function e2_build(arg)
         sel_res, re = e2tool.dsort()
         if not sel_res then
             error(re)
+        end
+    end
+
+    -- in --release mode, warn about builds not including the
+    -- configured deploy results
+    if opts.release then
+        for deployresname in project.deploy_results_iter() do
+            local included = false
+
+            for _, resultname in ipairs(sel_res) do
+                if deployresname == resultname then
+                    included = true
+                    break
+                end
+            end
+
+            if not included then
+                e2lib.warnf("WOTHER",
+                    "release build does not include deploy result: %s",
+                    deployresname)
+            end
         end
     end
 
