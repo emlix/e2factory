@@ -179,7 +179,7 @@ function files.files_source:initialize(rawsrc)
             end
 
             licences = self:get_licences()
-            llist = sl.sl:new(false, true)
+            llist = sl.sl:new(true)
 
             for _,licencename in ipairs(f.licences) do
                 if not licence.licences[licencename] then
@@ -187,10 +187,10 @@ function files.files_source:initialize(rawsrc)
                         laerr, licencename))
                 end
 
-                -- Make sure the _licences list contains every licence in the
-                -- entire source. Duplicates are rejected by unique string list.
+                -- Make sure the main licences list contains every licence in
+                -- the entire source.
                 licences:insert(licencename)
-                assert(llist:insert(licencename))
+                llist:insert(licencename)
             end
 
             self:set_licences(licences)
