@@ -171,7 +171,7 @@ function files.files_source:initialize(rawsrc)
         local llist, licences
 
         if f.licences == nil then
-            f.licences = self:get_licences():copy()
+            f.licences = self:get_licences()
         elseif type(f.licences == "table") then
             rc, re = e2lib.vrfy_listofstrings(f.licences, laerr, true, false)
             if not rc then
