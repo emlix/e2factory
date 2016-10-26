@@ -31,17 +31,12 @@ local strict = require("strict")
 -- Trying to use string list with anything but strings throws an exception.
 sl.sl = class("sl")
 
---- Initialize string list [sl:new()]. Merge and unique can't be set both.
+--- Initialize string list [sl:new()]
 -- @param merge Whether entries are to be merged, defaults to false (boolean).
--- @param unique Whether inserting duplicate entries raises errors,
---               defaults to false (boolean).
-function sl.sl:initialize(merge, unique)
+function sl.sl:initialize(merge)
+    assert(merge, debug.traceback())
     assert(merge == nil or type(merge) == "boolean")
-    assert(unique == nil or type(unique) == "boolean")
-    assert(not (merge and unique))
-
     self._merge = merge or false
-    self._unique = unique or false
     self._list = {}
     self._need_sort = false
 end
@@ -55,49 +50,36 @@ end
 
 --- Insert an entry into the string list.
 -- @param entry The entry.
--- @return True on success, false when the entry is not unique.
 function sl.sl:insert(entry)
     assert(type(entry) == "string")
 
     if self._merge then
         if self:lookup(entry) then
-            return true
-        end
-    elseif self._unique then
-        if self:lookup(entry) then
-            return false
+            return
         end
     end
     table.insert(self._list, entry)
     self._need_sort = true
-    return true
 end
 
 --- Insert entries of a vector into string list.
 --@param entrytbl Vector of entries.
---@return True on success, false when the entry is not unique.
 function sl.sl:insert_table(entrytbl)
     assert(type(entrytbl) == "table")
 
     for _,e in ipairs(entrytbl) do
-        if not self:insert(e) then
-            return false
-        end
+        self:insert(e)
     end
-
-    return true
 end
 
+-- Insert entries from another string list.
+-- @param entrysl string list input
 function sl.sl:insert_sl(entrysl)
     assert(entrysl:isInstanceOf(sl.sl))
 
     for _,e in ipairs(entrysl._list) do
-        if not self:insert(e) then
-            return false
-        end
+        self:insert(e)
     end
-
-    return true
 end
 
 --- Remove *all* matching entries from the string list.
@@ -160,10 +142,10 @@ end
 --- Create in independent string list copy.
 -- @return New string list object.
 function sl.sl:copy()
-    local c = sl.sl:new(self._merge, self._unique)
+    local c = sl.sl:new(self._merge)
 
     for _,e in pairs(self._list) do
-        assert(c:insert(e))
+        c:insert(e)
     end
     assert(self:size() == c:size())
     return c
