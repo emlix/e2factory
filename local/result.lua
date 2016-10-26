@@ -206,8 +206,8 @@ function result.result_class:initialize(rawres)
 
     self._depends_list = sl.sl:new(true)
     self._buildid = false
-    self._sources_list = sl.sl:new(false, true)
-    self._chroot_list = sl.sl:new(false, true)
+    self._sources_list = sl.sl:new(true)
+    self._chroot_list = sl.sl:new(true)
     self._env = environment.new()
     self._build_mode = false
     self._build_settings = false
