@@ -27,16 +27,14 @@ local strict = require("strict")
 -- TODO: remove _sorted from method names,
 -- insertion order methods were and should not be used
 
---- Class "sl" for keeping string lists.
+--- String list class that keeps entries in sorted order
+-- while ignoring duplicate entries.
 -- Trying to use string list with anything but strings throws an exception.
 sl.sl = class("sl")
 
 --- Initialize string list [sl:new()]
--- @param merge Whether entries are to be merged, defaults to false (boolean).
-function sl.sl:initialize(merge)
-    assert(merge, debug.traceback())
-    assert(merge == nil or type(merge) == "boolean")
-    self._merge = merge or false
+-- @return new string list object
+function sl.sl:initialize()
     self._list = {}
     self._need_sort = false
 end
@@ -53,10 +51,8 @@ end
 function sl.sl:insert(entry)
     assert(type(entry) == "string")
 
-    if self._merge then
-        if self:lookup(entry) then
-            return
-        end
+    if self:lookup(entry) then
+        return
     end
     table.insert(self._list, entry)
     self._need_sort = true
@@ -142,7 +138,7 @@ end
 --- Create in independent string list copy.
 -- @return New string list object.
 function sl.sl:copy()
-    local c = sl.sl:new(self._merge)
+    local c = sl.sl:new()
 
     for _,e in pairs(self._list) do
         c:insert(e)
