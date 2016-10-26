@@ -313,11 +313,14 @@ function files.files_source:display()
 
     d = {}
     table.insert(d, string.format("type       = %s", self:get_type()))
+    table.insert(d, string.format("licences   = %s",
+        self:get_licences():concat_sorted(" ")))
 
     for f in self:file_iter() do
         s = string.format("file       = %s:%s", f.server, f.location)
         table.insert(d, s)
-        table.insert(d, string.format("licence    = %s", f.licences:concat_sorted(", ")))
+        table.insert(d, string.format("licences   = %s",
+            f.licences:concat_sorted(" ")))
     end
 
     if self._sourceid then
