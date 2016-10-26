@@ -553,7 +553,7 @@ function e2tool.dlist_recursive(resultv)
         assertIsTable(result.results[resultv])
         depends = result.results[resultv]:depends_list()
     else
-        depends = sl.sl:new(true)
+        depends = sl.sl:new()
         depends:insert_table(resultv)
     end
 

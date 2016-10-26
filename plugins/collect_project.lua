@@ -110,10 +110,10 @@ local function _build_collect_project(self, res, return_flags)
     local out, rc, re, info
     local bc = res:build_config()
     local e = err.new("providing project data to this build failed")
-    local cp_sources = sl.sl:new(true, false)
-    local cp_depends = sl.sl:new(true, false)
-    local cp_chroot = sl.sl:new(true, false)
-    local cp_licences = sl.sl:new(true, false)
+    local cp_sources = sl.sl:new()
+    local cp_depends = sl.sl:new()
+    local cp_chroot = sl.sl:new()
+    local cp_licences = sl.sl:new()
 
     info = e2tool.info()
 

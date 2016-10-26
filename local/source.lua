@@ -291,7 +291,7 @@ function source.generic_source_validate_licences(rawsrc, src)
 
     local rc, re, licences
 
-    licences = sl.sl:new(true)
+    licences = sl.sl:new()
 
     --[[if not rawsrc.licences and rawsrc.licence then
         e2lib.warnf("WDEPRECATED", "in source %s:", src.name)

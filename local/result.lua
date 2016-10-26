@@ -204,10 +204,10 @@ function result.result_class:initialize(rawres)
 
     result.basic_result.initialize(self, rawres)
 
-    self._depends_list = sl.sl:new(true)
+    self._depends_list = sl.sl:new()
     self._buildid = false
-    self._sources_list = sl.sl:new(true)
-    self._chroot_list = sl.sl:new(true)
+    self._sources_list = sl.sl:new()
+    self._chroot_list = sl.sl:new()
     self._env = environment.new()
     self._build_mode = false
     self._build_settings = false

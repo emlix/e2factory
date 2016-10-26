@@ -179,7 +179,7 @@ function files.files_source:initialize(rawsrc)
             end
 
             licences = self:get_licences()
-            llist = sl.sl:new(true)
+            llist = sl.sl:new()
 
             for _,licencename in ipairs(f.licences) do
                 if not licence.licences[licencename] then
