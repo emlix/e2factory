@@ -277,6 +277,15 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
     hash.hash_append(hc, self._type)
     hash.hash_append(hc, self._env:id())
 
+    -- all licences
+    for licencename in self:get_licences():iter_sorted() do
+        local lid, re = licence.licences[licencename]:licenceid(info)
+        if not lid then
+            return false, re
+        end
+        hash.hash_append(hc, lid)
+    end
+
     for f in self:file_iter() do
         local fileid, re = e2tool.fileid(info, f)
         if not fileid then
