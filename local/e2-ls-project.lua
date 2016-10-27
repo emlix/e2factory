@@ -104,7 +104,7 @@ local function e2_ls_project(arg)
         for _, resultname in pairs(results) do
             local res = result.results[resultname]
 
-            for sourcename in res:sources_list():iter_sorted() do
+            for sourcename in res:sources_list():iter() do
                 if not yet[sourcename] then
                     table.insert(sources, sourcename)
                     yet[sourcename] = true
@@ -173,7 +173,7 @@ local function e2_ls_project(arg)
         console.infof("digraph \"%s\" {\n", project.name())
         for _, r in pairs(results) do
             local res = result.results[r]
-            local deps, re = res:depends_list():totable_sorted()
+            local deps, re = res:depends_list():totable()
             if not deps then
                 error(re)
             end
@@ -189,7 +189,7 @@ local function e2_ls_project(arg)
                 console.infof("  \"%s\"\n", r)
             end
             if opts["dot-sources"] then
-                for src in res:sources_list():iter_sorted() do
+                for src in res:sources_list():iter() do
                     if opts.swap then
                         console.infof("  \"%s-src\" %s \"%s\"\n", src, arrow, r)
                     else

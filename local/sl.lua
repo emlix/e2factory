@@ -24,9 +24,6 @@ local err = require("err")
 local e2lib = require("e2lib")
 local strict = require("strict")
 
--- TODO: remove _sorted from method names,
--- insertion order methods were and should not be used
-
 --- String list class that keeps entries in sorted order
 -- while ignoring duplicate entries.
 -- Trying to use string list with anything but strings throws an exception.
@@ -123,7 +120,7 @@ end
 
 --- Iterate through the string list in alphabetical order.
 -- @return Iterator function.
-function sl.sl:iter_sorted()
+function sl.sl:iter()
     local t = {}
     local i = 0
 
@@ -150,13 +147,13 @@ end
 --- Concatenate the string list in alphabetical order.
 -- @param sep Separator, defaults to empty string.
 -- @return Concatenated string.
-function sl.sl:concat_sorted(sep)
+function sl.sl:concat(sep)
     assert(sep == nil or type(sep) == "string")
     local first = true
     local cat = ""
     sep = sep or ""
 
-    for e in self:iter_sorted() do
+    for e in self:iter() do
         if first then
             cat = e
             first = false
@@ -170,7 +167,7 @@ end
 
 --- Return string list entries as an array.
 -- @return Sorted array.
-function sl.sl:totable_sorted()
+function sl.sl:totable()
     local t = {}
     self:_sort_if_needed()
     for _,v in ipairs(self._list) do
@@ -183,7 +180,7 @@ end
 -- vectors, variadic functions, etc.
 -- @return All entries as individual return values, in sorted order.
 function sl.sl:unpack()
-    return unpack(self:totable_sorted())
+    return unpack(self:totable())
 end
 
 return strict.lock(sl)

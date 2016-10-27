@@ -201,7 +201,7 @@ function git.git_source:sourceid(sourceset)
     hash.hash_append(hc, self._env:id())
 
     licences = self:get_licences()
-    for licencename in licences:iter_sorted() do
+    for licencename in licences:iter() do
         local lid, re = licence.licences[licencename]:licenceid(info)
         if not lid then
             return false, re
@@ -244,7 +244,7 @@ function git.git_source:display()
     table.insert(d, string.format("working    = %s", self._working))
 
     licences = self:get_licences()
-    for licencename in licences:iter_sorted() do
+    for licencename in licences:iter() do
         table.insert(d, string.format("licence    = %s", licencename))
     end
 
@@ -713,7 +713,7 @@ function git.toresult(info, sourcename, sourceset, directory)
     local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licences = src:get_licences()
-    local licence_list = licences:concat_sorted("\n") .. "\n"
+    local licence_list = licences:concat("\n") .. "\n"
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)

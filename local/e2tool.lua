@@ -582,7 +582,7 @@ function e2tool.dlist_recursive(resultv)
 
             deps = result.results[resultname]:depends_list()
 
-            for d in deps:iter_sorted() do
+            for d in deps:iter() do
                 rc, re = visit(d)
                 if not rc then
                     return false, re
@@ -595,7 +595,7 @@ function e2tool.dlist_recursive(resultv)
         return true
     end
 
-    for resultname in depends:iter_sorted() do
+    for resultname in depends:iter() do
         rc, re = visit(resultname)
         if not rc then
             return false, re

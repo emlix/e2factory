@@ -422,7 +422,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
     end
 
     local grp, path
-    for cgrpnm in res:chroot_list():iter_sorted() do
+    for cgrpnm in res:chroot_list():iter() do
         grp = chroot.groups_byname[cgrpnm]
 
         for f in grp:file_iter() do
@@ -678,7 +678,7 @@ function e2build.build_process_class:_install_build_time_dependencies(res, retur
 
     info = e2tool.info()
 
-    for dependsname in dependslist:iter_sorted() do
+    for dependsname in dependslist:iter() do
         dep = result.results[dependsname]
         destdir = e2lib.join(res:build_config().T, "dep", dep:get_name())
 
@@ -697,7 +697,7 @@ function e2build.build_process_class:_install_sources(res, return_flags)
     bc = res:build_config()
     info = e2tool.info()
 
-    for sourcename in res:sources_list():iter_sorted() do
+    for sourcename in res:sources_list():iter() do
         e = err.new("installing source failed: %s", sourcename)
 
         destdir = e2lib.join(bc.T, "build")

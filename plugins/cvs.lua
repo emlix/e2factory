@@ -222,7 +222,7 @@ function cvs.cvs_source:sourceid(sourceset)
     hash.hash_append(hc, self._type)
     hash.hash_append(hc, self._env:id())
     licences = self:get_licences()
-    for licencename in licences:iter_sorted() do
+    for licencename in licences:iter() do
         lid, re = licence.licences[licencename]:licenceid(info)
         if not lid then
             return false, re
@@ -265,7 +265,7 @@ function cvs.cvs_source:display()
     table.insert(d, string.format("working    = %s", self._working))
 
     licences = self:get_licences()
-    for licencename in licences:iter_sorted() do
+    for licencename in licences:iter() do
         table.insert(d, string.format("licence    = %s", licencename))
     end
 
@@ -476,7 +476,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     local destdir = string.format("%s/licences", directory)
     local fname = string.format("%s/%s.licences", destdir, archive)
     local licenses = src:get_licences()
-    local licence_list = licenses:concat_sorted("\n").."\n"
+    local licence_list = licenses:concat("\n").."\n"
 
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then

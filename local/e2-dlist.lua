@@ -61,7 +61,7 @@ local function e2_dlist(arg)
     if opts.recursive then
         dep, re = e2tool.dlist_recursive(resultname)
     else
-        dep, re = result.results[resultname]:depends_list():totable_sorted()
+        dep, re = result.results[resultname]:depends_list():totable()
     end
     if not dep then
         error(re)

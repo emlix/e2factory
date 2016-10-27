@@ -278,7 +278,7 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
     hash.hash_append(hc, self._env:id())
 
     -- all licences
-    for licencename in self:get_licences():iter_sorted() do
+    for licencename in self:get_licences():iter() do
         local lid, re = licence.licences[licencename]:licenceid(info)
         if not lid then
             return false, re
@@ -299,7 +299,7 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
         hash.hash_append(hc, tostring(f.copy))
 
         -- per file licence list
-        for licencename in f.licences:iter_sorted() do
+        for licencename in f.licences:iter() do
             local lid, re = licence.licences[licencename]:licenceid(info)
             if not lid then
                 return false, re
@@ -323,13 +323,13 @@ function files.files_source:display()
     d = {}
     table.insert(d, string.format("type       = %s", self:get_type()))
     table.insert(d, string.format("licences   = %s",
-        self:get_licences():concat_sorted(" ")))
+        self:get_licences():concat(" ")))
 
     for f in self:file_iter() do
         s = string.format("file       = %s:%s", f.server, f.location)
         table.insert(d, s)
         table.insert(d, string.format("licences   = %s",
-            f.licences:concat_sorted(" ")))
+            f.licences:concat(" ")))
     end
 
     if self._sourceid then
@@ -746,7 +746,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         local destdir = string.format("%s/licences", directory)
         local fname = string.format("%s/%s.licences", destdir,
             e2lib.basename(file.location))
-        local licence_list = file.licences:concat_sorted("\n") .. "\n"
+        local licence_list = file.licences:concat("\n") .. "\n"
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)

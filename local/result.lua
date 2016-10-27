@@ -351,7 +351,7 @@ end
 function result.result_class:post_initialize()
     local e
 
-    for depname in self:depends_list():iter_sorted() do
+    for depname in self:depends_list():iter() do
         if not result.results[depname] then
             e = e or err.new("in result %s:", self:get_name())
             e:append("dependency does not exist: %s", depname)
@@ -452,7 +452,7 @@ function result.result_class:merged_env()
     e:merge(projenv.get_global_env(), false)
 
     -- Sources env
-    for sourcename in self._sources_list:iter_sorted() do
+    for sourcename in self._sources_list:iter() do
         local src = source.sources[sourcename]
         e:merge(src:get_env(), true)
     end
@@ -486,7 +486,7 @@ function result.result_class:buildid()
     hash.hash_append(hc, self:get_type())
 
     -- sources
-    for sourcename in self:sources_list():iter_sorted() do
+    for sourcename in self:sources_list():iter() do
         local src, sourceset
 
         src = source.sources[sourcename]
@@ -501,7 +501,7 @@ function result.result_class:buildid()
     end
 
     -- chroot
-    for groupname in self:chroot_list():iter_sorted() do
+    for groupname in self:chroot_list():iter() do
         id, re = chroot.groups_byname[groupname]:chrootgroupid(info)
         if not id then
             return false, e:cat(re)
@@ -526,7 +526,7 @@ function result.result_class:buildid()
 
 
     -- depends
-    for depname in self:depends_list():iter_sorted() do
+    for depname in self:depends_list():iter() do
         id, re = result.results[depname]:buildid()
         if not id then
             return false, re
