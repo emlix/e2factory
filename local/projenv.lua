@@ -111,9 +111,16 @@ local function _load_env_config(file)
 
     local mt = {
         __index = function(t, key)
+            local v
             -- simulate a table that's updating itself as we read the config
             -- called for env[key] and e2env[key]
-            return projenv.safe_global_res_env_table()[key]
+            v = projenv.safe_global_res_env_table()[key]
+            if v == nil then
+                e2lib.warnf("WOTHER",
+                    "in project environment, key lookup for %q returned 'nil'",
+                    tostring(key))
+            end
+            return v
         end,
         __call = function(t, data)
             -- called for env "string" and env {}
