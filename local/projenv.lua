@@ -61,6 +61,8 @@ local function _load_env_config(file)
         -- upvalues: file, _load_env_config(), merge_error
         local rc, re
 
+        assert(merge_error == false, "merge_error already set")
+
         if type(data) == "string" then
             -- filename
             rc, re = _load_env_config(data)
@@ -115,7 +117,8 @@ local function _load_env_config(file)
             -- simulate a table that's updating itself as we read the config
             -- called for env[key] and e2env[key]
             v = projenv.safe_global_res_env_table()[key]
-            if v == nil then
+            if v == nil and merge_error == false then
+                -- if merge_error is set, don't spew false warnings
                 e2lib.warnf("WOTHER",
                     "in project environment, key lookup for %q returned 'nil'",
                     tostring(key))
@@ -135,13 +138,15 @@ local function _load_env_config(file)
         string = e2lib.safe_string_table(),
     }
     rc, re = e2lib.dofile2(path, g)
+    -- report the most precise error first
+    if merge_error then
+        return false, e:cat(merge_error)
+    end
+
     if not rc then
         return false, e:cat(re)
     end
 
-    if merge_error then
-        return false, merge_error
-    end
     return true
 end
 
