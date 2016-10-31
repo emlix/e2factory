@@ -186,13 +186,6 @@ function result.basic_result:attribute_table(flagt)
         self._type, self._name))
 end
 
---- Dot representation
-function result.basic_result:dot(flagt)
-    assert(flagt == nil or type(flagt) == "table")
-    error(err.new("called todot() of result base class, type %s name %s",
-        self._type, self._name))
-end
-
 --------------------------------------------------------------------------------
 --- Result class (standard).
 --------------------------------------------------------------------------------
@@ -573,12 +566,6 @@ function result.result_class:attribute_table(flagt)
     end
 
     return t
-end
-
-function result.result_class:todot(flagt)
-    assert(flagt == nil or type(flagt) == "table")
-    flagt = flagt or {}
-    error("todot missing implementation")
 end
 
 --------------------------------------------------------------------------------
