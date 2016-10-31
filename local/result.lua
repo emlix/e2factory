@@ -134,7 +134,6 @@ function result.basic_result:chroot_list()
 end
 
 --- Return locked build_config table
--- XXX: This is more like "chroot-config"
 -- @return build_config table (locked) or false on error
 -- @return error object.
 function result.basic_result:build_config()
