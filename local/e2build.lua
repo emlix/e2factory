@@ -36,8 +36,16 @@ local scm = require("scm")
 local strict = require("strict")
 local tools = require("tools")
 
+--- Return_flags table. Provide build status info back to the caller.
+-- @table return_flags
+-- @field stop boolean: stop the build process
+-- @field message false or string with a message
+
+--- Build process class. Every result is given to an instance of this class.
+-- @type build_process_class
 e2build.build_process_class = class("build_process_class")
 
+---
 function e2build.build_process_class:initialize()
     self._modes = {}
 
@@ -153,7 +161,7 @@ end
 
 --- Add build step after specified.
 -- @param mode Build mode
--- @param before Add build step after this one
+-- @param after Add build step after this one
 -- @param name Name of build step
 -- @param func Method of build_process_class implementing the build step.
 function e2build.build_process_class:add_step_after(mode, after, name, func)
@@ -181,6 +189,7 @@ function e2build.build_process_class:add_step_after(mode, after, name, func)
     table.insert(self._modes[mode], pos + 1, { name = name, func = func })
 end
 
+---
 function e2build.build_process_class:_next_step(mode)
     assertIsStringN(mode)
     assertIsTable(self._modes[mode])
@@ -193,8 +202,8 @@ function e2build.build_process_class:_next_step(mode)
 end
 
 --- check if a chroot exists for this result
--- @param info Info table
--- @param resultname Result name
+-- @param res Result object
+-- @param return_flags return_flags
 -- @return True if chroot for result could be found, false otherwise.
 function e2build.build_process_class:_chroot_exists(res, return_flags)
     local bc = res:build_config()
@@ -205,9 +214,8 @@ function e2build.build_process_class:_chroot_exists(res, return_flags)
 end
 
 --- Enter playground.
--- @param info
--- @param resultname
--- @param chroot_command (optional)
+-- @param res Result object
+-- @param return_flags return_flags
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2build.build_process_class:_enter_playground(res, return_flags)
@@ -258,9 +266,8 @@ end
 --- Return true if the result given in c is already available, false otherwise
 -- return the path to the result
 -- check if a result is already available
--- @param info
--- @param resultname string: result name
--- @param return_flags table: return values through this table
+-- @param res Result object
+-- @param return_flags return_flags
 -- @return bool
 -- @return an error object on failure
 function e2build.build_process_class:_result_available(res, return_flags)
@@ -336,7 +343,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_chroot_lock(res, return_flags)
     local rc, re, bc
     local e = err.new("error locking chroot")
@@ -353,6 +360,7 @@ function e2build.build_process_class:_chroot_lock(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:helper_chroot_remove(res)
     local e = err.new("removing chroot failed")
     local rc, re, bc
@@ -379,6 +387,7 @@ function e2build.build_process_class:helper_chroot_remove(res)
     return true
 end
 
+---
 function e2build.build_process_class:_chroot_cleanup_if_exists(res, return_flags)
     local rc, re
 
@@ -389,7 +398,7 @@ function e2build.build_process_class:_chroot_cleanup_if_exists(res, return_flags
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_setup_chroot(res, return_flags)
     local rc, re, bc, info
     local e = err.new("error setting up chroot")
@@ -457,6 +466,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:_install_directory_structure(res, return_flags)
     local rc, re, e, bc, dirs
     bc = res:build_config()
@@ -471,6 +481,7 @@ function e2build.build_process_class:_install_directory_structure(res, return_fl
     return true
 end
 
+---
 function e2build.build_process_class:_install_build_script(res, return_flags)
     local rc, re, e, bc, location, destdir, info
     bc = res:build_config()
@@ -487,6 +498,7 @@ function e2build.build_process_class:_install_build_script(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:_install_env(res, return_flags)
     local rc, re, e, bc
     e = err.new("installing environment files failed")
@@ -505,6 +517,7 @@ function e2build.build_process_class:_install_env(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:_install_init_files(res, return_flags)
     local rc, re, info
     local bc = res:build_config()
@@ -537,6 +550,7 @@ function e2build.build_process_class:_install_init_files(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:_install_build_driver(res, return_flags)
     local e, rc, re
     local bc, bd, destdir, buildrc_noinit_file, info, buildrc_file
@@ -594,6 +608,7 @@ function e2build.build_process_class:_install_build_driver(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
     local rc, re, e
     local info, buildid, server, location, resulttarpath, tmpdir
@@ -670,6 +685,7 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
     return true
 end
 
+---
 function e2build.build_process_class:_install_build_time_dependencies(res, return_flags)
     local e, rc, re
     local dependslist, info, dep, destdir
@@ -691,6 +707,7 @@ function e2build.build_process_class:_install_build_time_dependencies(res, retur
     return true
 end
 
+---
 function e2build.build_process_class:_install_sources(res, return_flags)
     local rc, re, e, bc, destdir, source_set, info
 
@@ -710,7 +727,7 @@ function e2build.build_process_class:_install_sources(res, return_flags)
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_fix_permissions(res, return_flags)
     local rc, re, bc
     local e = err.new("fixing permissions failed")
@@ -735,7 +752,7 @@ function e2build.build_process_class:_fix_permissions(res, return_flags)
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_build_playground(res, return_flags)
 
     if res:build_settings():prep_playground()  then
@@ -746,7 +763,7 @@ function e2build.build_process_class:_build_playground(res, return_flags)
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_runbuild(res, return_flags)
     local rc, re, out, bc
     local e = err.new("build failed")
@@ -1022,7 +1039,7 @@ function e2build.build_process_class:_store_result(res, return_flags)
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_linklast(res, return_flags)
     local rc, re, e
     local info, server, location, buildid, dst, lnk
@@ -1088,7 +1105,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
     return true
 end
 
---- TODO
+---
 function e2build.build_process_class:_chroot_cleanup(res, return_flags)
     local rc, re
     -- do not remove chroot if the user requests to keep it
@@ -1101,6 +1118,7 @@ function e2build.build_process_class:_chroot_cleanup(res, return_flags)
     return true
 end
 
+---
 function e2build.build_process_class:_chroot_unlock(res, return_flags)
     local rc, re, bc
     local e = err.new("error unlocking chroot")
@@ -1113,15 +1131,21 @@ function e2build.build_process_class:_chroot_unlock(res, return_flags)
 end
 
 --------------------------------------------------------------------------------
+--- Base class for settings provided to the build process
+-- @type settings_class
 e2build.settings_class = class("settings")
 
+---
 function e2build.settings_class:mode()
     error("called settings_class:mode() of base class")
 end
 
 --------------------------------------------------------------------------------
+--- Build Settings class.
+-- @type build_settings_class
 e2build.build_settings_class = class("build_settings", e2build.settings_class)
 
+---
 function e2build.build_settings_class:initialize()
         self._selected = false
         self._force_rebuild = false
@@ -1133,6 +1157,7 @@ function e2build.build_settings_class:mode()
     return "build"
 end
 
+---
 function e2build.build_settings_class:selected(value)
     if value then
         assertIsBoolean(value)
@@ -1141,6 +1166,7 @@ function e2build.build_settings_class:selected(value)
     return self._selected
 end
 
+---
 function e2build.build_settings_class:force_rebuild(value)
     if value then
         assertIsBoolean(value)
@@ -1149,6 +1175,7 @@ function e2build.build_settings_class:force_rebuild(value)
     return self._force_rebuild
 end
 
+---
 function e2build.build_settings_class:keep_chroot(value)
     if value then
         assertIsBoolean(value)
@@ -1157,6 +1184,7 @@ function e2build.build_settings_class:keep_chroot(value)
     return self._keep_chroot
 end
 
+---
 function e2build.build_settings_class:prep_playground(value)
     if value then
         assertIsBoolean(value)
@@ -1166,8 +1194,11 @@ function e2build.build_settings_class:prep_playground(value)
 end
 
 --------------------------------------------------------------------------------
+--- Playground Settings class.
+-- @type playground_settings_class
 e2build.playground_settings_class = class("playground_settings", e2build.settings_class)
 
+---
 function e2build.playground_settings_class:initialize()
     self._profile = false
     self._command = false
@@ -1177,6 +1208,7 @@ function e2build.playground_settings_class:mode()
     return "playground"
 end
 
+---
 function e2build.playground_settings_class:profile(value)
     if value then
         assertIsString(value)
@@ -1186,6 +1218,7 @@ function e2build.playground_settings_class:profile(value)
     return self._profile
 end
 
+---
 function e2build.playground_settings_class:command(value)
     if value then
         assertIsString(value)
