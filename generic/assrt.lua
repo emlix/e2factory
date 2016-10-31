@@ -115,10 +115,12 @@ local function _str_match(s, pattern, start, final)
     return false
 end
 
+---
 function assrt.assertAlmostEquals()
     assert(false, "assertAlmostEquals not implemented")
 end
 
+---
 function assrt.assertEquals(a, b)
     assert(type(a) == type(b))
     if type(a) == "table" then
@@ -128,70 +130,87 @@ function assrt.assertEquals(a, b)
     end
 end
 
+---
 function assrt.assertError(a)
     assert(false, "assertError not implemented")
 end
 
+---
 function assrt.assertErrorMsgContains()
     assert(false, "assertErrorMsgContains not implemented")
 end
 
+---
 function assrt.assertErrorMsgEquals()
     assert(false, "assertErrorMsgEquals not implemented")
 end
 
+---
 function assrt.assertErrorMsgMatches()
     assert(false, "assertErrorMsgMatches not implemented")
 end
 
+---
 function assrt.assertFalse(v)
     assert(not v)
 end
 
+---
 function assrt.assertIs(a, b)
     assert(a == b)
 end
 
+---
 function assrt.assertIsBoolean(v)
     assert(type(v) == "boolean")
 end
 
+---
 function assrt.assertIsFunction(v)
     assert(type(v) == "function")
 end
 
+---
 function assrt.assertIsNil(v)
     assert(type(v) == "nil")
 end
 
+---
 function assrt.assertIsNumber(v)
     assert(type(v) == "number")
 end
 
+---
 function assrt.assertIsString(v)
     assert(type(v) == "string")
 end
 
+---
 function assrt.assertIsStringN(v)
     assert(type(v) == "string" and v ~= "")
 end
 
+---
 function assrt.assertIsTable(v)
     assert(type(v) == "table")
 end
 
+---
 function assrt.assertItemsEquals(a, b)
     assert(_is_table_equals(a, b) == true)
 end
 
+---
 function assrt.assertNil(v)
     assert(v == nil)
 end
 
+---
 function assrt.assertNotAlmostEquals()
     assert(false, "assertNotAlmostEquals not implemented")
 end
 
+---
 function assrt.assertNotEquals(a, b)
     if type(a) == "table" and type(b) == "table" then
         assert(_is_table_equals(a, b) == false)
@@ -200,44 +219,52 @@ function assrt.assertNotEquals(a, b)
     end
 end
 
+---
 function assrt.assertNotIs(a, b)
     assert(a ~= b)
 end
 
+---
 function assrt.assertNotNil(v)
     assert(v ~= nil)
 end
 
+---
 function assrt.assertNotStrContains(str, sub, regexp)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str, sub, 1, not regexp --[[plain=true]]) == nil)
 end
 
+---
 function assrt.assertNotStrIContains(str, sub)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str:lower(), sub:lower(), 1, true) == nil)
 end
 
+---
 function assrt.assertStrContains(str, sub, regexp)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str, sub, 1, not regexp --[[plain=true]]) ~= nil)
 end
 
+---
 function assrt.assertStrIContains(str, sub)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str:lower(), sub:lower(), 1, true) ~= nil)
 end
 
+---
 function assrt.assertStrMatches(s, pattern, start, final)
     assrt.assertIsString(s)
     assrt.assertIsString(pattern)
     assert(_str_match(s, pattern, start, final) == true)
 end
 
+---
 function assrt.assertTrue(v)
     assert(v == true)
 end
