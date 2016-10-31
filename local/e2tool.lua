@@ -620,6 +620,7 @@ end
 --- Compute checksum of file by retreiving it via the cache transport,
 -- no matter the configuration what and hashing local.
 -- @param file a file table
+-- @param flags cache flags
 -- @return fileid on success, false if an error occured.
 -- @return error object on failure.
 local function compute_fileid(file, flags)
