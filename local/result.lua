@@ -51,7 +51,7 @@ local result_types = {}
 
 --------------------------------------------------------------------------------
 --- Result base class.
---------------------------------------------------------------------------------
+--@type basic_result
 result.basic_result = class("basic_result")
 
 --- Result base constructor. Assert error on invalid input.
@@ -188,9 +188,10 @@ end
 
 --------------------------------------------------------------------------------
 --- Result class (standard).
---------------------------------------------------------------------------------
+-- @type result_class
 result.result_class = class("result_class", result.basic_result)
 
+---
 function result.result_class:initialize(rawres)
     assertIsTable(rawres)
     assertIs(rawres.type, "result")
@@ -341,6 +342,7 @@ function result.result_class:initialize(rawres)
 
 end
 
+---
 function result.result_class:post_initialize()
     local e
 
@@ -358,18 +360,22 @@ function result.result_class:post_initialize()
     return true
 end
 
+---
 function result.result_class:depends_list()
     return self._depends_list:copy()
 end
 
+---
 function result.result_class:sources_list()
     return self._sources_list
 end
 
+---
 function result.result_class:chroot_list()
     return self._chroot_list
 end
 
+---
 function result.result_class:build_config()
     local rc, re, e, buildid, bc, tmpdir, builddir, info
 
@@ -416,6 +422,7 @@ function result.result_class:build_config()
     return strict.readonly(bc)
 end
 
+---
 function result.result_class:build_mode(bm)
     if bm then
         assertIsTable(bm)
@@ -427,6 +434,7 @@ function result.result_class:build_mode(bm)
     return self._build_mode
 end
 
+---
 function result.result_class:build_settings(bs)
     if bs then
         assertIsTable(bs)
@@ -438,6 +446,7 @@ function result.result_class:build_settings(bs)
     return self._build_settings
 end
 
+---
 function result.result_class:merged_env()
     local e = environment.new()
 
@@ -539,13 +548,14 @@ function result.result_class:buildid()
     return build_mode.buildid(self._buildid)
 end
 
-
+---
 function result.result_class:build_process()
     assertIsTable(self._build_mode)
     assertIsTable(self._build_settings)
     return e2build.build_process_class:new()
 end
 
+---
 function result.result_class:attribute_table(flagt)
     assert(flagt == nil or type(flagt) == "table")
 
@@ -571,6 +581,7 @@ end
 --------------------------------------------------------------------------------
 -- Result loading and plugin hookup
 --------------------------------------------------------------------------------
+-- @section end
 
 --- Gather result paths.
 -- @param info Info table.
@@ -613,6 +624,7 @@ local function gather_result_paths(info, basedir, results)
     return results
 end
 
+---
 local function load_rawres(cfg)
     local e, rc, re
     local rawres, loadcnt, g, path, res, info
@@ -677,6 +689,7 @@ local function load_rawres(cfg)
     return rawres
 end
 
+---
 local function load_one_config(cfg)
     assertIsStringN(cfg)
     local rc, re, e, rawres, res
@@ -824,6 +837,7 @@ function result.register_result_class(typ, result_class)
     return true
 end
 
+---
 local function detect_result(rawres)
     if not rawres.type then
         rawres.type = "result"
@@ -832,7 +846,6 @@ end
 
 result.register_result_class("result", result.result_class)
 result.register_type_detection(detect_result)
-
 
 return strict.lock(result)
 
