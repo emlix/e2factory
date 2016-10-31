@@ -14,3 +14,6 @@ SHA-1 implementation by Steve Reid:
 
 Middleclass by Enrique García Cota
  - generic/class.lua
+
+_is_table_equals() and _str_match() by Philippe Fremy
+ - generic/assrt.lua
