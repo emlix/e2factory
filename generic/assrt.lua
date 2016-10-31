@@ -5,6 +5,23 @@
 -- left unimplemented for now.
 -- @module generic.assert
 
+-- Copyright (C) 2016 emlix GmbH, see file AUTHORS
+--
+-- This file is part of e2factory, the emlix embedded build system.
+-- For more information see http://www.e2factory.org
+--
+-- e2factory is a registered trademark of emlix GmbH.
+--
+-- e2factory is free software: you can redistribute it and/or modify it under
+-- the terms of the GNU General Public License as published by the
+-- Free Software Foundation, either version 3 of the License, or (at your
+-- option) any later version.
+--
+-- This program is distributed in the hope that it will be useful, but WITHOUT
+-- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+-- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+-- more details.
+
 local assrt = {}
 local strict = require('strict')
 
@@ -12,14 +29,14 @@ local strict = require('strict')
 -- following license:
 --
 -- This software is distributed under the BSD License.
--- 
+--
 -- Copyright (c) 2005-2014, Philippe Fremy <phil at freehackers dot org>
 -- All rights reserved.
--- 
+--
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are
 -- met:
--- 
+--
 -- Redistributions of source code must retain the above copyright notice,
 -- this list of conditions and the following disclaimer.  Redistributions
 -- in binary form must reproduce the above copyright notice, this list of
