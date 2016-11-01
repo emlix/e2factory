@@ -1,7 +1,7 @@
 --- Universal string list. Handy for storing result-, licence-, source names.
 -- @module local.sl
 
--- Copyright (C) 2014 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2014-2016 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -77,7 +77,7 @@ function sl.sl:insert_sl(entrysl)
     end
 end
 
---- Remove matching entry from string list.
+--- Remove matching from the string list.
 -- @param entry The entry.
 -- @return True when one or more entries were removed, false otherwise.
 function sl.sl:remove(entry)
