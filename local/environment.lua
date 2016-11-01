@@ -114,8 +114,7 @@ function environment.get_dict(env)
 end
 
 --- Write environment as key=value\n... string to file. File is created or
--- truncated. Value is quoted with e2lib.shquote() so the file can be sourced
--- by a shell.
+-- overwritten.
 -- @param env Environment.
 -- @param file File name.
 -- @return True on success, false on error.
@@ -128,7 +127,8 @@ function environment.tofile(env, file)
 
     out = {}
     for var, val in env:iter() do
-        table.insert(out, string.format("%s=%s\n", var, e2lib.shquote(val)))
+        -- no e2lib.shquote(), some projects depend on shell variable expansion
+        table.insert(out, string.format("%s=\"%s\"\n", var, val))
     end
 
     rc, re = eio.file_write(file, table.concat(out))
