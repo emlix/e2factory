@@ -60,10 +60,7 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function load_prj_cfg(prj)
-    local rc, re, e, info, system_arch
-
-    info = e2tool.info()
-    assert(info)
+    local rc, re, e, system_arch
 
     rc, re = e2lib.vrfy_dict_exp_keys(prj, "e2project",
         { "name", "release_id", "deploy_results",
