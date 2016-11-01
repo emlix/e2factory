@@ -33,6 +33,8 @@ local options = {}
 local aliases = {}
 local optionlist = {} -- ordered list of option names
 
+--- e2option.parse() result is stored in this table for later reference.
+-- @table opts
 e2option.opts = {}
 
 --- register a flag option
@@ -88,6 +90,7 @@ function e2option.alias(alias, option)
     aliases[alias] = option
 end
 
+--- Sets up default options for all commands.
 local function defaultoptions()
     local category = "Verbosity Control Options"
     e2option.option("e2-config", "specify configuration file", nil,
@@ -216,6 +219,7 @@ local function defaultoptions()
     category)
 end
 
+--- Load user default options if set in $HOME/.e2/e2rc
 local function userdefaultoptions(opts)
     local home = e2lib.globals.osenv["HOME"]
     if not home then

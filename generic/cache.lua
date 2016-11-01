@@ -394,6 +394,12 @@ local function file_in_cache(c, server, location, flags)
     return true, nil, cf
 end
 
+--- Check whether islocal is enabled or not.
+-- @param c cache table.
+-- @param server server name.
+-- @param flags cache flags.
+-- @return True if local, false if not.
+-- @return Error object on error.
 function cache.islocal_enabled(c, server, flags)
     assertIsTable(c)
     assertIsStringN(server)

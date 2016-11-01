@@ -34,6 +34,7 @@ local strict = require("strict")
 local source_types = {}
 
 --- Source base class.
+-- @type basic_source
 source.basic_source = class("basic_source")
 
 --- Source base constructor. Assert error on invalid input.
@@ -119,6 +120,8 @@ function source.basic_source:display()
     error(err.new("called display() of source base class, type %s name %s",
         self._type, self._name))
 end
+
+--- @section end
 
 --- Dictionary holding all source objects indexed by their name.
 source.sources = {}

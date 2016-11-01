@@ -24,9 +24,11 @@ local err = require("err")
 local e2lib = require("e2lib")
 local strict = require("strict")
 
---- String list class that keeps entries in sorted order
--- while ignoring duplicate entries.
--- Trying to use string list with anything but strings throws an exception.
+--- String list.
+-- String list class that keeps entries in sorted order while ignoring
+-- duplicate entries. Trying to use string list with anything but strings throws
+-- an exception.
+-- @type sl
 sl.sl = class("sl")
 
 --- Initialize string list [sl:new()]
@@ -75,7 +77,7 @@ function sl.sl:insert_sl(entrysl)
     end
 end
 
---- Remove *all* matching entries from the string list.
+--- Remove matching entry from string list.
 -- @param entry The entry.
 -- @return True when one or more entries were removed, false otherwise.
 function sl.sl:remove(entry)
@@ -182,6 +184,8 @@ end
 function sl.sl:unpack()
     return unpack(self:totable())
 end
+
+--- @section end
 
 return strict.lock(sl)
 

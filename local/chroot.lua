@@ -58,7 +58,7 @@ chroot.groups_byname = {}
 chroot.groups_sorted = {}
 
 --- Chroot class.
--- @see generic.class
+-- @type chroot
 chroot.chroot = class("chroot")
 
 --- Chroot group object constructor.
@@ -162,6 +162,7 @@ function chroot.chroot:chrootgroupid(info)
     self._chrootgroupid = hash.hash_finish(hc)
     return self._chrootgroupid
 end
+--- @section end
 
 --- Load and validate chroot configuration. Populates chroot.groups_byname,
 -- chroot.groups_sorted and chroot.groups_default.

@@ -103,7 +103,7 @@ local buildid_scratch_cache = {}
 -- @param buildid the buildid
 -- @return the buildid
 local function buildid_scratch(buildid)
-    --- XXX: Always returning a fixed buildid string does not work when
+    -- XXX: Always returning a fixed buildid string does not work when
     -- the scratch results gets used by results not in scratch mode.
     -- eg. if we have a result graph like this: root->tag->wc-mode->tag
     -- the final tag would only be built once and then cached globally.

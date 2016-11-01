@@ -95,12 +95,12 @@ function e2tool.set_umask()
     e2lib.umask(_chroot_umask)
 end
 
--- set umask back to the value used on the host
+--- set umask back to the value used on the host
 function e2tool.reset_umask()
     e2lib.umask(_host_umask)
 end
 
--- initialize the umask set/reset mechanism (i.e. store the host umask)
+--- initialize the umask set/reset mechanism (i.e. store the host umask)
 local function init_umask()
     -- save the umask value we run with
     _host_umask = e2lib.umask(_chroot_umask)
@@ -827,7 +827,7 @@ function e2tool.buildid(info, resultname)
     return result.results[resultname]:buildid()
 end
 
---- select results based upon a list of results usually given on the
+--- select (mark) results based upon a list of results usually given on the
 -- command line. Parameters are assigned to all selected results.
 -- @param info the info structure
 -- @param results table: list of result names
@@ -875,6 +875,10 @@ function e2tool.select_results(info, results, force_rebuild, keep_chroot, build_
     return true
 end
 
+--- Build all results in resultv in-order.
+-- @param resultv Result name vector.
+-- @return True on success, false on error.
+-- @return Error object on failure.
 function e2tool.build_results(resultv)
     e2lib.logf(3, "building results")
 
@@ -900,7 +904,7 @@ function e2tool.build_results(resultv)
     return true
 end
 
---- print selection status for a list of results
+--- Print selection status for a list of results
 -- @param info
 -- @param resultvec table: list of result names
 -- @return bool

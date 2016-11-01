@@ -51,6 +51,8 @@ local plugin = require("plugin")
 local tools = require("tools")
 local trace = require("trace")
 
+--- Various global settings
+-- @table globals
 e2lib.globals = strict.lock({
     logflags = {
         { "v1", true },    -- minimal

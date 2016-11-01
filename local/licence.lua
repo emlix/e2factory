@@ -30,14 +30,15 @@ local hash = require("hash")
 local projenv = require("projenv")
 local strict = require("strict")
 
---- Licence base class.
--- @see generic.class
-licence.licence = class("licence")
-
 --- Dictionary of loaded licence objects, indexed by name.
 licence.licences = {}
+
 --- Vector of loaded licence objects, sorted by name.
 licence.licences_sorted = {}
+
+--- Licence base class.
+-- @type licence
+licence.licence = class("licence")
 
 --- Create a new licence object.
 -- @param name Licence name string.
@@ -149,6 +150,7 @@ function licence.licence:licenceid(info)
 
     return self._licenceid
 end
+--- @section end
 
 --- Load project licence config, validate, and populate the licences,
 -- licences_sorted tables with licence objects.
