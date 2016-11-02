@@ -121,6 +121,11 @@ local function e2_create_project(arg)
         error(e:cat(re))
     end
 
+    rc, re = cache.setup_cache_apply_opts(scache)
+    if not rc then
+        error(e:cat(re))
+    end
+
     if #arguments ~= 1 then
         e2option.usage(1)
     end

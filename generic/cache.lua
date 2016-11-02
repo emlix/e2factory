@@ -27,6 +27,19 @@ local strict = require("strict")
 local transport = require("transport")
 local url = require("url")
 
+--- Vector for keeping delayed flag options,
+-- set to false once options are processed.
+-- @field table containing the following fields:
+-- @field server server name, validated later
+-- @field flag operation name, currently only "writeback"
+-- @field value value for operation
+-- @see cache.setup_cache_apply_opts
+-- @see cache.set_writeback
+local _opts = {
+    -- { server=.., flag=.., value=.. },
+    -- ...
+}
+
 --- Internal representation of a cache. This table is locked.
 -- @table cache
 -- @field _name Human readable name.
@@ -132,6 +145,32 @@ function cache.setup_cache_local(c, project_root, project_location)
 
     -- Check for required local servers here. These tests are currently
     -- spread out, but mainly live in policy.init()
+
+    return true
+end
+
+--- Apply delayed commandline options once cache is set up and disable
+-- the delayed mechanism
+-- @param c cache object
+-- @return True on success, false on error
+-- @return Error object on failure
+function cache.setup_cache_apply_opts(c)
+    local rc, re, opts
+
+    opts = _opts
+    _opts = false -- stop delayed processing
+
+    for _, opt in ipairs(opts) do
+        if opt.flag == "writeback" then
+            rc, re = cache.set_writeback(c, opt.server, opt.value)
+            if not rc then
+                return false, re
+            end
+        else
+            return false,
+                err.new("unknown delayed option: %s", opt.flag)
+        end
+    end
 
     return true
 end
@@ -777,12 +816,24 @@ function cache.writeback_enabled(c, server, flags)
 end
 
 --- enable/disable writeback for a server
--- @param c the cache data structure
+-- @param c the cache data structure or nil when the cache is not yet set up
 -- @param server the server where the file is located
 -- @param value boolean: the new setting
 -- @return boolean
 -- @return an error object on failure
 function cache.set_writeback(c, server, value)
+
+    if _opts then
+        e2lib.logf(3, "delaying cache.set_writeback(%s, %s, %s)",
+            tostring(c), tostring(server), tostring(value))
+        table.insert(_opts,
+            { flag = "writeback", server = server, value = value })
+
+        return true
+    end
+
+    assertIsTable(c)
+
     if type(value) ~= "boolean" then
         return false, err.new(
         "cache.set_writeback(): value is not boolean")

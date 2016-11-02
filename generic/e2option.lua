@@ -28,6 +28,7 @@ local plugin = require("plugin")
 local err = require("err")
 local strict = require("strict")
 local tools = require("tools")
+local cache = require("cache")
 
 local options = {}
 local aliases = {}
@@ -95,6 +96,19 @@ local function defaultoptions()
         e2lib.globals.e2config = arg
     end,
     "FILE")
+
+    local function disable_writeback(server)
+        cache.set_writeback(nil, server, false)
+    end
+
+    e2option.option("disable-writeback", "disable writeback for server", nil,
+        disable_writeback, "SERVER")
+
+    local function enable_writeback(server)
+        cache.set_writeback(nil, server, true)
+    end
+    e2option.option("enable-writeback", "enable writeback for server", nil,
+        enable_writeback, "SERVER")
 
     e2option.flag("quiet", "disable all log levels",
     function()

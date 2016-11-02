@@ -387,6 +387,11 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
+    rc, re = cache.setup_cache_apply_opts(info.cache)
+    if not rc then
+        return false, e:cat(re)
+    end
+
     local f = e2lib.join(info.root, e2lib.globals.e2version_file)
     local v, re = e2lib.parse_e2versionfile(f)
     if not v then

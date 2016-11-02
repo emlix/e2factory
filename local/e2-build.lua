@@ -49,43 +49,6 @@ local function e2_build(arg)
     e2option.flag("playground", "prepare environment but do not build")
     e2option.flag("keep", "do not remove chroot environment after build")
     e2option.flag("buildid", "display buildids and exit")
-    -- cache is not yet initialized when parsing command line options, so
-    -- remember settings in order of appearance, and perform settings as soon
-    -- as the cache is initialized.
-    local writeback = {}
-    local function disable_writeback(server)
-        table.insert(writeback, { set = "disable", server = server })
-    end
-    local function enable_writeback(server)
-        table.insert(writeback, { set = "enable", server = server })
-    end
-    local function perform_writeback_settings(writeback)
-        local rc, re
-        local enable_msg = "enabling writeback for server '%s' [--enable-writeback]"
-        local disable_msg =
-        "disabling writeback for server '%s' [--disable-writeback]"
-        for _,set in ipairs(writeback) do
-            if set.set == "disable" then
-                e2lib.logf(3, disable_msg, set.server)
-                rc, re = cache.set_writeback(info.cache, set.server, false)
-                if not rc then
-                    local e = err.new(disable_msg, set.server)
-                    error(e:cat(re))
-                end
-            elseif set.set == "enable" then
-                e2lib.logf(3, enable_msg, set.server)
-                rc, re = cache.set_writeback(info.cache, set.server, true)
-                if not rc then
-                    local e = err.new(enable_msg, set.server)
-                    error(e:cat(re))
-                end
-            end
-        end
-    end
-    e2option.option("disable-writeback", "disable writeback for server", nil,
-    disable_writeback, "SERVER")
-    e2option.option("enable-writeback", "enable writeback for server", nil,
-    enable_writeback, "SERVER")
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
@@ -102,8 +65,6 @@ local function e2_build(arg)
     if not info then
         error(re)
     end
-
-    perform_writeback_settings(writeback)
 
     -- apply the standard build mode and settings to all results
     for _,res in pairs(result.results) do

@@ -64,6 +64,11 @@ local function e2_install_e2(arg)
         error(e:cat(re))
     end
 
+    rc, re = cache.setup_cache_apply_opts(scache)
+    if not rc then
+        error(e:cat(re))
+    end
+
     -- standard global tool setup finished
 
     if #arguments > 0 then
