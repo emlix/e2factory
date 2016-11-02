@@ -163,7 +163,8 @@ function transport.fetch_file(surl, location, destdir, destname)
     end
 
     local rc, re
-    local e = err.new("transport: fetching file failed")
+    local e = err.new("downloading %s/%s to %s/%s",
+        surl, location, destdir, destname)
     local u, re = url.parse(surl)
     if not u then
         return false, e:cat(re)
@@ -347,12 +348,14 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
     assert(try_hardlink == nil or type(try_hardlink) == "boolean")
 
     local rc, e
-    e = err.new("error pushing file to server")
     durl = string.format("%s/%s", durl, location)
+    e = err.new("uploading %s to %s/%s", sourcefile, durl, location)
+
     local u, re = url.parse(durl)
     if not u then
         return false, e:cat(re)
     end
+
     if u.transport == "file" then
         local destdir = string.format("/%s", e2lib.dirname(u.path))
         local destname = e2lib.basename(u.path)
@@ -449,8 +452,8 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
             return false, re
         end
     else
-        e:append("push_file is not implemented for this transport: %s",
-        u.transport)
+        e:cat("uploading files to %s:// transports is not supported",
+            u.transport)
         return false, e
     end
     return true, nil
