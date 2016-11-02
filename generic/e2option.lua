@@ -31,7 +31,6 @@ local tools = require("tools")
 
 local options = {}
 local aliases = {}
-local optionlist = {} -- ordered list of option names
 
 --- e2option.parse() result is stored in this table for later reference.
 -- @table opts
@@ -55,7 +54,6 @@ function e2option.flag(name, doc, func, category)
         default = true,
         category = category
     }
-    table.insert(optionlist, name)
 end
 
 --- register an option with argument
@@ -76,7 +74,6 @@ function e2option.option(name, doc, default, func, argname)
         default=default or true,
         argumentname=argname or "ARGUMENT"
     }
-    table.insert(optionlist, name)
 end
 
 --- register an alias for an option
