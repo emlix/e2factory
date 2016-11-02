@@ -667,6 +667,41 @@ function cache.file_exists(c, server, location, flags)
     return rc
 end
 
+--- writeback a cached file
+-- @param c the cache data structure
+-- @param server Server to write the file back to.
+-- @param location Path to the file in cache and on the server.
+-- @param flags
+-- @return bool
+-- @return an error object on failure
+local function cache_writeback(c, server, location, flags)
+    local e = err.new("writeback failed")
+    local rc, re
+    assertFlags(flags)
+
+    local ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, e:cat(re)
+    end
+
+    local ceurl, re = url.parse(ce.cache_url)
+    if not ceurl then
+        return false, e:cat(re)
+    end
+
+    if cache.writeback_enabled(c, server, flags) == false then
+        return true
+    end
+
+    local sourcefile = string.format("/%s/%s", ceurl.path, location)
+    rc, re = transport.push_file(sourcefile, ce.remote_url, location,
+        ce.flags.push_permissions, flags.try_hardlink)
+    if not rc then
+        return false, e:cat(re)
+    end
+    return true
+end
+
 --- push a file to a server: cache and writeback
 -- @param c a cache table
 -- @param sourcefile where to store the file locally
@@ -696,7 +731,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
             return false, e:cat(re)
         end
 
-        rc, re = cache.writeback(c, server, location, flags)
+        rc, re = cache_writeback(c, server, location, flags)
         if not rc then
             return false, e:cat(re)
         end
@@ -738,41 +773,6 @@ function cache.writeback_enabled(c, server, flags)
         return false
     end
 
-    return true
-end
-
---- writeback a cached file
--- @param c the cache data structure
--- @param server Server to write the file back to.
--- @param location Path to the file in cache and on the server.
--- @param flags
--- @return bool
--- @return an error object on failure
-function cache.writeback(c, server, location, flags)
-    local e = err.new("writeback failed")
-    local rc, re
-    assertFlags(flags)
-
-    local ce, re = cache.ce_by_server(c, server)
-    if not ce then
-        return false, e:cat(re)
-    end
-
-    local ceurl, re = url.parse(ce.cache_url)
-    if not ceurl then
-        return false, e:cat(re)
-    end
-
-    if cache.writeback_enabled(c, server, flags) == false then
-        return true
-    end
-
-    local sourcefile = string.format("/%s/%s", ceurl.path, location)
-    rc, re = transport.push_file(sourcefile, ce.remote_url, location,
-        ce.flags.push_permissions, flags.try_hardlink)
-    if not rc then
-        return false, e:cat(re)
-    end
     return true
 end
 
