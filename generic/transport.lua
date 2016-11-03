@@ -331,6 +331,9 @@ function transport.file_exists(surl, location)
     return false, e
 end
 
+local _scp_warning = true
+local _scp_warning_pp = true
+
 --- push a file to a server
 -- @param sourcefile local file
 -- @param durl url to the destination server
@@ -426,16 +429,25 @@ function transport.push_file(sourcefile, durl, location, push_permissions, try_h
         u.transport == "ssh" then
         -- scp does not remove partial destination files when
         -- interrupted. Don't use.
-        if push_permissions then
-            e:append("ssh/scp transport does not support "..
-            "permission settings")
-            return false, e
-        end
         local destdir = string.format("/%s", e2lib.dirname(u.path))
         local destname = e2lib.basename(u.path)
         local user = ""
         if u.user then
             user = string.format("%s@", u.user)
+        end
+
+        if _scp_warning then
+            e2lib.warnf("WOTHER",
+                "ssh:// and scp:// transports may create incomplete uploads,"..
+                " please consider using rsync")
+            _scp_warning = false
+        end
+
+        if _scp_warning_pp and push_permissions then
+            e2lib.warnf("WOTHER",
+                "ssh:// and scp:// transports ignore the push_permissions "..
+                "setting, please consider using rsync")
+            _scp_warning_pp = false
         end
 
         rc, re = e2lib.ssh_remote_cmd(u, { "mkdir", "-p", destdir })
