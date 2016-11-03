@@ -281,15 +281,13 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     ce.flags.cachable = flags.cachable
     ce.flags.cache = flags.cache and flags.cachable
     ce.flags.push_permissions = flags.push_permissions
+    ce.flags.writeback = flags.writeback or false
     if flags.islocal ~= nil then
         ce.flags.islocal = flags.islocal
     elseif ru.transport == "file" then
         ce.flags.islocal = true
     else
         ce.flags.islocal = false
-    end
-    if flags.writeback ~= nil then
-        ce.flags.writeback = flags.writeback
     end
     if ce.flags.cache then
         ce.cache_url = cache_url
