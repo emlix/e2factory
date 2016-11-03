@@ -936,6 +936,7 @@ function e2build.build_process_class:_store_result(res, return_flags)
     local rfilesdir = e2lib.join(bc.T, "out")
     local filesdir = e2lib.join(tmpdir, "result/files")
     local resdir = e2lib.join(tmpdir, "result")
+
     rc, re = e2lib.mkdir_recursive(filesdir)
     if not rc then
         return false, e:cat(re)
@@ -945,16 +946,29 @@ function e2build.build_process_class:_store_result(res, return_flags)
         e2lib.logf(3, "result file: %s", f)
         local s = e2lib.join(rfilesdir, f)
         local d = e2lib.join(filesdir, f)
+
+        -- Change owner and group of output files to match destination
+        -- directory and make hardlink() happy on security sensitive kernels.
+        local sb, re = e2lib.stat(filesdir)
+        if not sb then
+            return false, e:cat(re)
+        end
+
+        local argv = { "chroot_2_3", bc.base, "chown", "--",
+            string.format("%s:%s", sb.uid, sb.gid),
+            e2lib.join(bc.Tc, "out", f)
+        }
+
+        rc, re = e2lib.e2_su_2_2(argv)
+        if not rc then
+            return false, e:cat(re)
+        end
+
         rc, re = e2lib.hardlink(s, d)
         if not rc then
-            -- There are three reasons this might fail
+            -- Hardlink may fail for two reasons:
             -- a) Legitimate IO etc. errors.
             -- b) Source and destination are not on the same filesystem.
-            -- c) The file being linked to is owned by root, but the process is
-            --    not root. It would be nice to fix this case by changing
-            --    ownership of the source before copying, since this security
-            --    feature (of recentish Linux) basically makes the optimization
-            --    moot.
             rc, re = e2lib.cp(s, d)
             if not rc then
                 return false, e:cat(re)
