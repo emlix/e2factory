@@ -739,6 +739,8 @@ local function cache_writeback(c, server, location, flags)
     return true
 end
 
+local _pp_warn = true
+
 --- push a file to a server: cache and writeback
 -- @param c a cache table
 -- @param sourcefile where to store the file locally
@@ -756,6 +758,12 @@ function cache.push_file(c, sourcefile, server, location, flags)
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
+    end
+
+    if _pp_warn and not ce.flags.push_permissions then
+        e2lib.warnf("WOTHER", "push_permissions for server %s not set, "..
+            "file permissions may be wrong", server)
+        _pp_warn = false
     end
 
     if cache.cache_enabled(c, server, flags) then
