@@ -136,6 +136,15 @@ local function e2_create_project(arg)
         error(e:cat(re))
     end
 
+    if not cache.writeback_enabled(scache, sl.server) then
+        e2lib.warnf("WOTHER", "enabling writeback for server: %s",
+            sl.server)
+        rc, re = cache.set_writeback(scache, sl.server, true)
+        if not rc then
+            error(e:cat(re))
+        end
+    end
+
     local p = {}
     p.version = buildconfig.GLOBAL_INTERFACE_VERSION[1] -- the project version
     p.e2version = string.format("%s %s",
@@ -176,7 +185,7 @@ local function e2_create_project(arg)
         end
 
         flocation = e2lib.join(p.location, f.filename)
-        rc, re = cache.push_file(scache, sourcefile, p.server, flocation, {})
+        rc, re = cache.push_file(scache, sourcefile, p.server, flocation)
         if not rc then
             error(e:cat(re))
         end
