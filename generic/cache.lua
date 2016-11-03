@@ -298,6 +298,7 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     if c._ce[server] then
         return false, e:append("cache entry for server exists")
     end
+
     c._ce[server] = strict.lock(ce)
     e2lib.logf(4, "cache entry: %s (%s)", ce.server, c._name)
     e2lib.logf(4, " remote url: %s", ce.remote_url)
@@ -712,18 +713,17 @@ end
 -- @return bool
 -- @return an error object on failure
 local function cache_writeback(c, server, location, flags)
-    local e = err.new("writeback failed")
     local rc, re
     assertFlags(flags)
 
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
-        return false, e:cat(re)
+        return false, re
     end
 
     local ceurl, re = url.parse(ce.cache_url)
     if not ceurl then
-        return false, e:cat(re)
+        return false, re
     end
 
     if cache.writeback_enabled(c, server, flags) == false then
@@ -734,7 +734,7 @@ local function cache_writeback(c, server, location, flags)
     rc, re = transport.push_file(sourcefile, ce.remote_url, location,
         ce.flags.push_permissions, flags.try_hardlink)
     if not rc then
-        return false, e:cat(re)
+        return false, re
     end
     return true
 end
@@ -752,7 +752,7 @@ function cache.push_file(c, sourcefile, server, location, flags)
     assertFlags(flags)
 
     local rc, re
-    local e = err.new("error pushing file to cache/server")
+    local e = err.new("error pushing file to %s:%s", server, location)
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
         return false, e:cat(re)
@@ -791,6 +791,7 @@ end
 -- @param server Server name.
 -- @param flags Flags table.
 -- @return Boolean state of writeback.
+-- @raise Error if server is invalid
 function cache.writeback_enabled(c, server, flags)
     assert(type(c) == "table", "invalid cache")
     assert(type(server) == "string" and server ~= "", "invalid server")
