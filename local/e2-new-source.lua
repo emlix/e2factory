@@ -189,18 +189,25 @@ local function new_files_source(c, server, location, source_file, checksum_file,
         end
     end
 
-    local flags = { writeback = true } -- !!
+    if not cache.writeback_enabled(c, server) then
+        e2lib.warnf("WOTHER", "enabling writeback for server: %s",
+            server)
+        rc, re = cache.set_writeback(c, server, true)
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
 
     -- upload checksum to cache (maybe) and server (always)
     local rc, re = cache.push_file(c, source.localfn_digest, server,
-        source.rlocation_digest, flags)
+        source.rlocation_digest)
     if not rc then
         return false, e:cat(re)
     end
 
     -- upload source file, see above.
     local rc, re = cache.push_file(c, source.localfn, server,
-        source.rlocation, flags)
+        source.rlocation)
     if not rc then
         return false, e:cat(re)
     end
