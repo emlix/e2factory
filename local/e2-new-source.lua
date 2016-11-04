@@ -189,6 +189,12 @@ local function new_files_source(c, server, location, source_file, checksum_file,
         end
     end
 
+    -- print checksum
+    if source.dtentry.digest == digest.SHA1 then
+        assert(#source.dtentry.checksum == 40)
+        e2lib.logf(1, "sha1 = \"%s\"", source.dtentry.checksum)
+    end
+
     if not cache.writeback_enabled(c, server) then
         e2lib.warnf("WOTHER", "enabling writeback for server: %s",
             server)
