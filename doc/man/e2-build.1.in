@@ -66,12 +66,6 @@ It is recommend to not use it.
 .BR \-\-buildid
 Display all buildIDs without actually building any results.
 .TP
-.BR \-\-enable-writeback
-This option overrides the writeback option from server configuration and set it to enable.
-.TP
-.BR \-\-disable-writeback
-This option overrides the writeback option from server configuration and set it to disable.
-.TP
 For further global options and environment variables, see \fBe2factory\fR(1).
 
 .SH EXAMPLES

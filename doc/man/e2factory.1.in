@@ -60,6 +60,12 @@ All tools support the following common set of options:
 .BR \-\-e2\-config=<file>
 Specify an e2factory configuration file.
 .TP
+.BR \-\-enable-writeback=<server>
+Overrides the writeback option from server configuration and sets it to true.
+.TP
+.BR \-\-disable-writeback=<server>
+Overrides the writeback option from server configuration and sets it to false.
+.TP
 .BR \-\-help
 Show usage information.
 .TP
