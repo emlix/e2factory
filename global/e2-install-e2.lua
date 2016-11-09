@@ -143,13 +143,10 @@ local function e2_install_e2(arg)
     end
 
     for _,ex in ipairs(extensions) do
-        local ref
-        if ex.ref:match("/") then
-            ref = ex.ref
-        else
-            ref = string.format("refs/tags/%s", ex.ref)
+        if not ex.ref:match("/") then
+            ex.ref = string.format("refs/tags/%s", ex.ref)
         end
-        e2lib.logf(2, "fetching extension: %s (%s)", ex.name, ref)
+        e2lib.logf(2, "fetching extension: %s (%s)", ex.name, ex.ref)
         local server = config.site.e2_server
         local location = string.format("%s/%s.git", config.site.e2_base, ex.name)
         local destdir = e2lib.join(root, ".e2/e2/extensions", ex.name)
@@ -167,7 +164,7 @@ local function e2_install_e2(arg)
             error(e:cat(re))
         end
 
-        rc, re = generic_git.git_checkout1(destdir, ref)
+        rc, re = generic_git.git_checkout1(destdir, ex.ref)
         if not rc then
             error(e:cat(re))
         end
