@@ -1002,8 +1002,31 @@ function e2lib.read_extension_config(root)
         return false, e:cat(re)
     end
 
-    if not data then
-        return false, e:append("invalid extension configuration")
+    if type(data) ~= "table" then
+        return false, e:cat("invalid extension configuration, missing table")
+    end
+
+    for _, entry in ipairs(data) do
+        if type(entry) ~= "table" then
+            return false, e:cat("extension entry is not a table")
+        end
+
+        rc, re = e2lib.vrfy_dict_exp_keys(entry, "extension config",
+            { "ref", "name" })
+
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        for _, field in ipairs({"ref", "name"}) do
+            if entry[field] == nil then
+                return false, e:cat("field '%s' is mandatory", field)
+            end
+
+            if type(entry[field]) ~= "string" then
+                return false, e:cat("field '%s' takes a string value", field)
+            end
+        end
     end
 
     return data
