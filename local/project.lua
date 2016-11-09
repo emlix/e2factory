@@ -316,12 +316,8 @@ function project.projid(info)
     end
 
     for _,entry in ipairs(extensions) do
-        if type(entry.ref) == "string" then
-            hash.hash_append(hc, entry.ref)
-        end
-        if type(entry.name) == "string" then
-            hash.hash_append(hc, entry.name)
-        end
+        hash.hash_append(hc, entry.ref)
+        hash.hash_append(hc, entry.name)
     end
 
     _projid_cache = hash.hash_finish(hc)
