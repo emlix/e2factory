@@ -308,6 +308,22 @@ function project.projid(info)
     hash.hash_append(hc, project.chroot_arch())
     hash.hash_append(hc, buildconfig.VERSION)
 
+    -- .e2/extensions
+    local extensions
+    extensions, re = e2lib.read_extension_config(info.root)
+    if not extensions then
+        return false, re
+    end
+
+    for _,entry in ipairs(extensions) do
+        if type(entry.ref) == "string" then
+            hash.hash_append(hc, entry.ref)
+        end
+        if type(entry.name) == "string" then
+            hash.hash_append(hc, entry.name)
+        end
+    end
+
     _projid_cache = hash.hash_finish(hc)
 
     return _projid_cache
