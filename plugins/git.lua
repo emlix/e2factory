@@ -211,7 +211,6 @@ function git.git_source:sourceid(sourceset)
 
     hash.hash_append(hc, self._server)
     hash.hash_append(hc, self._location)
-    hash.hash_append(hc, self._working)
     hash.hash_append(hc, id)
     self._commitids[sourceset] = id
     self._sourceids[sourceset] = hash.hash_finish(hc)
