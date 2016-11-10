@@ -262,7 +262,7 @@ function cvs.cvs_source:display()
     table.insert(d, string.format("server     = %s", self._server))
     table.insert(d, string.format("cvsroot    = %s", self._cvsroot))
     table.insert(d, string.format("module     = %s", self._module))
-    table.insert(d, string.format("working    = %s", self._working))
+    table.insert(d, string.format("working    = %s", self:get_working()))
 
     licences = self:get_licences()
     for licencename in licences:iter() do

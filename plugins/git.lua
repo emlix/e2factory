@@ -241,7 +241,7 @@ function git.git_source:display()
     table.insert(d, string.format("tag        = %-15s %s", self._tag, rev_tag))
     table.insert(d, string.format("server     = %s", self._server))
     table.insert(d, string.format("location   = %s", self._location))
-    table.insert(d, string.format("working    = %s", self._working))
+    table.insert(d, string.format("working    = %s", self:get_working()))
 
     licences = self:get_licences()
     for licencename in licences:iter() do

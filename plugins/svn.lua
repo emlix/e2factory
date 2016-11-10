@@ -346,7 +346,7 @@ function svn.svn_source:display()
     table.insert(d, string.format("remote     = %s", self._location))
     table.insert(d, string.format("branch     = %s", self._branch))
     table.insert(d, string.format("tag        = %s", self._tag))
-    table.insert(d, string.format("working    = %s", self._working))
+    table.insert(d, string.format("working    = %s", self:get_working()))
 
     licences = self:get_licences()
     for licencename in licences:iter() do
