@@ -236,8 +236,6 @@ function policy.handle_commandline_options(opts, use_default)
         return false, err.new("multiple build modes are not supported")
     end
     if not opts["build-mode"] and use_default then
-        e2lib.warnf("WDEFAULT", "build-mode defaults to '%s'",
-            default_build_mode_name)
         opts["build-mode"] = default_build_mode_name
     end
 

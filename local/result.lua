@@ -221,9 +221,6 @@ function result.result_class:initialize(rawres)
     end
 
     if rawres.sources == nil then
-        e2lib.warnf("WDEFAULT", "in result %s:", self._name)
-        e2lib.warnf("WDEFAULT", " sources attribute not configured." ..
-            "Defaulting to empty list")
         rawres.sources = {}
     elseif type(rawres.sources) == "string" then
         e2lib.warnf("WDEPRECATED", "in result %s:", self._name)
@@ -248,9 +245,6 @@ function result.result_class:initialize(rawres)
 
 
     if rawres.depends == nil then
-        e2lib.warnf("WDEFAULT", "in result %s: ", self._name)
-        e2lib.warnf("WDEFAULT", " depends attribute not configured. " ..
-        "Defaulting to empty list")
         rawres.depends = {}
     elseif type(rawres.depends) == "string" then
         e2lib.warnf("WDEPRECATED", "in result %s:", self._name)
@@ -270,9 +264,6 @@ function result.result_class:initialize(rawres)
     end
 
     if rawres.chroot == nil then
-        e2lib.warnf("WDEFAULT", "in result %s:", self._name)
-        e2lib.warnf("WDEFAULT", " chroot groups not configured. " ..
-            "Defaulting to empty list")
         rawres.chroot = {}
     elseif type(rawres.chroot) == "string" then
         e2lib.warnf("WDEPRECATED", "in result %s:", self._name)
@@ -311,8 +302,6 @@ function result.result_class:initialize(rawres)
         e:append("result has invalid `env' attribute")
     else
         if not rawres.env then
-            e2lib.warnf("WDEFAULT", "result has no `env' attribute. "..
-                "Defaulting to empty dictionary")
             rawres.env = {}
         end
 

@@ -214,8 +214,6 @@ function source.load_source_configs(info)
         end
 
         if not rawsrc.name then
-            e2lib.warnf("WDEFAULT", "`name' attribute missing in source config.")
-            e2lib.warnf("WDEFAULT", " Defaulting to directory name")
             rawsrc.name = e2tool.src_res_path_to_name(cfg)
         end
 
@@ -239,8 +237,6 @@ function source.load_source_configs(info)
         -- source with no type field is treated as file source
         if not rawsrc.type then
             rawsrc.type = "files"
-            e2lib.warnf("WDEFAULT", "in source %s", rawsrc.name)
-            e2lib.warnf("WDEFAULT", " type attribute defaults to `files'")
         end
 
         if not source_types[rawsrc.type] then
@@ -353,8 +349,6 @@ function source.generic_source_validate_env(rawsrc, src)
     end
 
     if not rawsrc.env then
-        e2lib.warnf("WDEFAULT",
-            "source has no `env' attribute. Defaulting to empty dictionary")
         rawsrc.env = {}
     end
 
