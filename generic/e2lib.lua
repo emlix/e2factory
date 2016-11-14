@@ -1142,6 +1142,12 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
                 fdct._p.rfd = rc
                 fdct._p.wfd = re
                 fdct._p.buffer = ""
+
+                rc, re = eio.cloexec(fdct._p.wfd)
+                if not rc then
+                    return false, re
+                end
+
             elseif fdct.istype == "readfo" then
             else
                 return false, err.new("while setting up parent file " ..
