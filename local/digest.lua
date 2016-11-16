@@ -263,13 +263,13 @@ local function compute_checksum_entry(pos, entry, directory, verify)
     local filename, computedcs
 
     if directory then
-        filename = e2lib.join("/", directory, entry.name)
+        filename = e2lib.join(directory, entry.name)
     else
         if not entry.name2check then
             return false, err.new("internal error: name2check requested but "..
                 "unset")
         end
-        filename = e2lib.join("/", entry.name2check)
+        filename = entry.name2check
     end
 
     if entry.digest == digest.SHA1 then
