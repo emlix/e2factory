@@ -8,9 +8,9 @@ config {
 		logrotate = 5,
 	},
 	site = {
-		e2_server = "projects",
-		e2_location = "emlix/e2/git/e2factory.git",
-		e2_base = "emlix/e2/git/",
+		e2_server = "e2factory_org",
+		e2_location = "git/e2factory.git",
+		e2_base = "git",
 		e2_branch = "@DEFAULT_LOCAL_BRANCH@",
 		e2_tag = "@DEFAULT_LOCAL_TAG@",
 		default_extensions = {
@@ -30,14 +30,14 @@ config {
 			url = "file://@LOCALSTATEDIR@/upstream",
 			cachable = true,
 			cache = true,
-			-- push_permissions does not work with ssh/scp.
+			writeback = true,
 			push_permissions = "ug+rwX,o-rwX",
 		},
 		projects = {
 			url = "file://@LOCALSTATEDIR@/projects",
 			cachable = true,
 			cache = true,
-			-- push_permissions does not work with ssh/scp.
+			writeback = true,
 			push_permissions = "ug+rwX,o-rwX",
 		},
 		chroot = {
@@ -50,16 +50,17 @@ config {
 			cachable = true,
 			cache = true,
 			writeback = true,
-			-- push_permissions does not work with ssh/scp.
 			push_permissions = "u=rwX,go-rwX",
 		},
 		releases = {
-			url="file://@LOCALSTATEDIR@/releases",
+			url = "file://@LOCALSTATEDIR@/releases",
 			cachable = true,
 			cache = true,
 			writeback = true,
-			-- push_permissions does not work with ssh/scp.
 			push_permissions = "ug+rwX,o-rwX",
+		},
+		e2factory_org = {
+			url = "https://git.e2factory.org",
 		},
 	},
 }
