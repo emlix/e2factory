@@ -62,12 +62,7 @@ all: buildconfig.lua
 	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
-	#$(MAKE) -C lua
-	#$(MAKE) -C generic
-	#$(MAKE) -C global
-	#$(MAKE) -C doc/man
-	#$(MAKE) -C templates all
-	#$(MAKE) -C extensions all
+	@echo "Build successful!"
 
 install: all
 	install -d $(DESTDIR)$(LIBDIR)
@@ -75,13 +70,7 @@ install: all
 	for s in $(SUBDIRS) ; do \
 		$(MAKE) -C $$s $@ ;\
 	done
-	#$(MAKE) -C global install
-	#$(MAKE) -C lua install
-	#$(MAKE) -C generic install
-	#$(MAKE) -C local install
-	#$(MAKE) -C doc/man install
-	#$(MAKE) -C templates install
-	#$(MAKE) -C extensions install
+	@echo "Installation successful!"
 
 uninstall:
 	for s in $(SUBDIRS) ; do \
@@ -90,12 +79,6 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/buildconfig.lua
 	rmdir -p $(DESTDIR)$(LIBDIR) || true
 	rmdir -p $(DESTDIR)$(DOCDIR) || true
-	#rmdir -p $(DESTDIR)$(TOOLDIR) >/dev/null 2>&1 || :
-	#rmdir -p $(DESTDIR)$(MANDIR) >/dev/null 2>&1 || :
-	#rmdir -p $(DESTDIR)$(INCDIR) >/dev/null 2>&1 || :
-	#rmdir -p $(DESTDIR)$(LIBEXECDIR) >/dev/null 2>&1 || :
-	#rmdir -p $(DESTDIR)$(LIBDIR) >/dev/null 2>&1 || :
-	#rmdir -p $(DESTDIR)$(BINDIR) >/dev/null 2>&1 || :
 
 local: buildconfig.lua
 	for s in $(SUBDIRS) ; do \
@@ -111,12 +94,6 @@ install-local: local
 	rm -rf $(LOCALDOCDIR)
 	@echo removing old plugins...
 	rm -rf $(LOCALPLUGINDIR)
-	#$(MAKE) -C generic install-local
-	#$(MAKE) -C local install-local
-	#$(MAKE) -C plugins install-local
-	#$(MAKE) -C templates install-local
-	#$(MAKE) -C extensions install-local
-	#$(MAKE) -C doc install-local
 	install -d $(LOCALLIBDIR)
 	install -m 644 buildconfig.lua $(LOCALLIBDIR)
 	for s in $(SUBDIRS) ; do \
