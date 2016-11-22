@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.15
  * result.tar does not contain leading ./ prefix any more
  * added typo detection in source and result config files
