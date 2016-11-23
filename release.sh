@@ -4,8 +4,6 @@ if [ "$EDITOR" = "" ]; then
 	EDITOR="vi"
 fi
 
-#E=echo
-E=""
 cat <<EOF
 Release Checklist:
 
@@ -21,22 +19,22 @@ sed -i -r -e s,"^NEXT:.*","$TAG", Changelog
 $EDITOR Changelog
 echo "Release name will be: $TAG"
 echo "Changes in the final commit:"
-$E git diff HEAD Changelog make.vars
+git diff HEAD Changelog make.vars
 echo ""
 read -p "Release? Type yes to proceed> " OK
 if [ "$OK" != "yes" ] ; then
 	exit 1
 fi
-$E git commit -s -m "release $TAG" Changelog make.vars
-$E git tag "$TAG"
+git commit -s -m "release $TAG" Changelog make.vars
+git tag "$TAG"
 cat - Changelog >Changelog.new <<EOF
 NEXT:
 
 EOF
 mv Changelog.new Changelog
-$E git commit -s -m "create next changelog entry" Changelog
+git commit -s -m "create next changelog entry" Changelog
 
-$E git archive --format=tar --prefix=$TAG/ refs/tags/$TAG |gzip >$TAG.tar.gz
+git archive --format=tar --prefix=$TAG/ refs/tags/$TAG |gzip >$TAG.tar.gz
 sha1sum $TAG.tar.gz >$TAG.tar.gz.sha1
 
 
