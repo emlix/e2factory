@@ -506,7 +506,6 @@ end
 -- @return bool
 -- @return an error object on failure
 local function cache_file(c, server, location, flags)
-    e2lib.logf(4, "called cache_file from here: %s", debug.traceback("", 2))
     local e = err.new("caching file failed: %s:%s", server, location)
     local rc, re
     local ce, re = cache.ce_by_server(c, server)
