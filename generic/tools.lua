@@ -233,7 +233,7 @@ function tools.check_tool(name)
         if not rc then
             return false, re
         elseif rc ~= 0 then
-            return false, err.new("tool %q not found in PATH", tool.name)
+            return false
         end
 
         tool.path = string.sub(table.concat(out), 1, -2)

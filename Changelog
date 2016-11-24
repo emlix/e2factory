@@ -1,4 +1,5 @@
 NEXT:
+ * Remove error message when an optional tool isn't present
 
 e2factory-2.3.15
  * result.tar does not contain leading ./ prefix any more
