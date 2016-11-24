@@ -132,7 +132,7 @@ function cache.setup_cache_local(c, project_root, project_location)
     servers = cache.server_names()
 
     rc, re = cache.new_cache_entry(c, servers.dot,
-        "file://" .. project_root, { writeback=true },  nil, nil)
+        "file://" .. project_root, { writeback=true, --[[no pp]] },  nil, nil)
     if not rc then
         return false, re
     end
@@ -759,7 +759,9 @@ function cache.push_file(c, sourcefile, server, location, flags)
         return false, e:cat(re)
     end
 
-    if _pp_warn and not ce.flags.push_permissions then
+    if _pp_warn
+        and not ce.flags.push_permissions
+        and server ~= cache.server_names().dot then
         e2lib.warnf("WOTHER", "push_permissions for server %s not set, "..
             "file permissions may be wrong", server)
         _pp_warn = false
