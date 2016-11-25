@@ -167,22 +167,18 @@ local function e2_build(arg)
     end
 
     -- calculate buildids for selected results
-    for _,r in ipairs(sel_res) do
-        local bid, re = e2tool.buildid(info, r)
+    for _,resultname in ipairs(sel_res) do
+        local bid, re = result.results[resultname]:buildid()
         if not bid then
             error(re)
         end
+
+        if opts.buildid then
+            console.infof("%-20s [%s]\n", resultname, bid)
+        end
     end
 
-    if opts["buildid"] then
-        for _,r in ipairs(sel_res) do
-            local bid, re = e2tool.buildid(info, r)
-            if not bid then
-                error(re)
-            end
-            console.infof("%-20s [%s]\n", r, bid)
-        end
-    else
+    if not opts.buildid then
         -- build
         local rc, re = e2tool.build_results(sel_res)
         if not rc then

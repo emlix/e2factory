@@ -987,15 +987,6 @@ function e2tool.fileid(info, file)
     return fileid
 end
 
---- Get the buildid for a result, calculating it if required.
--- @param info Info table.
--- @param resultname Result name.
--- @return Build ID or false on error
--- @return Error object on failure
-function e2tool.buildid(info, resultname)
-    return result.results[resultname]:buildid()
-end
-
 --- select (mark) results based upon a list of results usually given on the
 -- command line. Parameters are assigned to all selected results.
 -- @param info the info structure
