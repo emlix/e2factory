@@ -108,6 +108,12 @@ function e2tool.file_class:to_config_table()
     return t
 end
 
+--- Formatted server:location string.
+-- @return server:location string
+function e2tool.file_class:servloc()
+    return self._server .. ":" .. self._location
+end
+
 --- Set or return the server attribute.
 -- Server name is any name known to cache.
 -- @param server Optional server name to set
@@ -887,7 +893,7 @@ function e2tool.verify_hash(info, file)
 
     local rc, re, e, id_cache, id_remote, id_fetch, fileid
 
-    e = err.new("error verifying checksum of %s:%s", file:server(), file:location())
+    e = err.new("error verifying checksum of %s", file:servloc())
 
     if cache.cache_enabled(info.cache, file:server()) then
         id_cache, re = compute_fileid(file)
@@ -960,8 +966,7 @@ function e2tool.fileid(info, file)
 
     local rc, re, e, fileid
 
-    e = err.new("error calculating file id for file: %s:%s",
-        file:server(), file:location())
+    e = err.new("error calculating file id for file: %s", file:servloc())
 
     if file:sha1() then
         fileid = file:sha1()

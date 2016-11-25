@@ -306,7 +306,7 @@ function files.files_source:display()
         self:get_licences():concat(" ")))
 
     for file in self:file_iter() do
-        s = string.format("file       = %s:%s", file:server(), file:location())
+        s = string.format("file       = %s", file:servloc())
         table.insert(d, s)
         table.insert(d, string.format("licences   = %s",
             file:licences():concat(" ")))
@@ -331,15 +331,13 @@ function files.cache_source(info, sourcename)
     -- cache all files for this source
     for file in src:file_iter() do
         if cache.cache_enabled(info.cache, file:server()) then
-            e2lib.logf(3, "files.cache_source: caching file %s:%s",
-                file:server(), file:location())
+            e2lib.logf(3, "files.cache_source: caching file %s", file:servloc())
             rc, re = cache.fetch_file_path(info.cache, file:server(), file:location())
             if not rc then
                 return false, re
             end
         else
-            e2lib.logf(3, "not caching %s:%s (stored locally)", file:server(),
-                file:location())
+            e2lib.logf(3, "not caching %s (stored locally)", file:servloc())
         end
     end
     return true
@@ -581,7 +579,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 local argv = { "-p", file:patch(), "-d", symlink, "-i", path }
                 rc, re = patch_tool(argv)
                 if not rc then
-                    e:append("applying patch: \"%s:%s\"", file:server(), file:location())
+                    e:append("applying patch: \"%s\"", file:servloc())
                     return false, e:cat(re)
                 end
             elseif file:copy() then
