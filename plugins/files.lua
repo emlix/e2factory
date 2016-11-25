@@ -268,9 +268,15 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
         hash.hash_append(hc, fileid)
         hash.hash_append(hc, file:location())
         hash.hash_append(hc, file:server())
-        hash.hash_append(hc, tostring(file:unpack()))
-        hash.hash_append(hc, tostring(file:patch()))
-        hash.hash_append(hc, tostring(file:copy()))
+        if file:unpack() then
+            hash.hash_append(hc, file:unpack())
+        elseif file:patch() then
+            hash.hash_append(hc, file:patch())
+        elseif file:copy() then
+            hash.hash_append(hc, file:copy())
+        else
+            assert(false, "no file attribute set")
+        end
 
         -- per file licence list
         for licencename in file:licences():iter() do

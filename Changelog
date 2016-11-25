@@ -1,4 +1,5 @@
 NEXT:
+ * Fix SourceID calculation in files plugin under artificial conditions
  * Remove error message when an optional tool isn't present
 
 e2factory-2.3.15
