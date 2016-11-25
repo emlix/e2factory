@@ -59,7 +59,7 @@ end
 -- @param sha1 SHA1 checksum string. If file is local sha1 may be nil
 -- @return May throw error(err) on invalid input.
 function licence.licence:add_file(location, server, sha1)
-    local t, ok, re
+    local file, ok, re
 
     ok, re = e2lib.vrfy_string_len(location, "licence location")
     if not ok then
@@ -80,12 +80,9 @@ function licence.licence:add_file(location, server, sha1)
 
     self._licenceid = false
 
-    t = {
-        location = location,
-        server = server,
-        sha1 = sha1,
-    }
-    table.insert(self._files, t)
+    file = e2tool.file_class:new(server, location)
+    file:sha1(sha1)
+    table.insert(self._files, file)
 end
 
 --- Iterator that returns file tables in the order they were added.
@@ -96,12 +93,7 @@ function licence.licence:file_iter()
         i = i + 1
 
         if self._files[i] then
-            -- return a copy
-            return {
-                location = self._files[i].location,
-                server = self._files[i].server,
-                sha1 = self._files[i].sha1,
-            }
+            return self._files[i]:instance_copy()
         end
 
         return nil
@@ -133,8 +125,8 @@ function licence.licence:licenceid(info)
     hash.hash_append(hc, self._name)
 
     for file in self:file_iter() do
-        hash.hash_append(hc, file.server)
-        hash.hash_append(hc, file.location)
+        hash.hash_append(hc, file:server())
+        hash.hash_append(hc, file:location())
 
         fileid, re = e2tool.fileid(info, file)
         if not fileid then
@@ -213,8 +205,8 @@ function licence.load_licence_config(info)
             return false, e:append("files attribute in %s not a table", name)
         end
 
-        for _,file in ipairs(l.files) do
-            rc, re = e2lib.vrfy_dict_exp_keys(file, "file",
+        for _,f in ipairs(l.files) do
+            rc, re = e2lib.vrfy_dict_exp_keys(f, "file",
                 { "server", "location", "sha1" })
             if not rc then
                 return false, e:cat(re)
@@ -243,11 +235,11 @@ function licence.load_licence_config(info)
             }
 
 
-            rc, re = e2lib.vrfy_table_attributes(file, keys, inherit)
+            rc, re = e2lib.vrfy_table_attributes(f, keys, inherit)
             if not rc then
                 return false, e:cat(re)
             end
-            if file.server ~= cache.server_names().dot and not file.sha1 then
+            if f.server ~= cache.server_names().dot and not f.sha1 then
                 return false, e:append(
                     "file entry for remote file without sha1 attribute")
             end
@@ -256,9 +248,8 @@ function licence.load_licence_config(info)
 
         licence.licences[name] = licence.licence:new(name)
 
-        for _,file in ipairs(l.files) do
-            licence.licences[name]:add_file(
-                file.location, file.server, file.sha1)
+        for _,f in ipairs(l.files) do
+            licence.licences[name]:add_file(f.location, f.server, f.sha1)
         end
     end
 

@@ -173,10 +173,10 @@ local function _build_collect_project(self, res, return_flags)
         string.format("chroot_arch='%s'\n", project.chroot_arch())
     }
 
-    local file, destdir
+    local fn, destdir
     destdir = e2lib.join(bc.T, "project/proj")
-    file = e2lib.join(destdir, "config")
-    rc, re = eio.file_write(file, table.concat(out))
+    fn = e2lib.join(destdir, "config")
+    rc, re = eio.file_write(fn, table.concat(out))
     if not rc then
         return false, e:cat(re)
     end
@@ -196,17 +196,17 @@ local function _build_collect_project(self, res, return_flags)
 
         for file in grp:file_iter() do
             local cache_flags = {}
-            rc, re = cache.fetch_file(info.cache, file.server,
-                file.location, destdir, nil, cache_flags)
+            rc, re = cache.fetch_file(info.cache, file:server(),
+                file:location(), destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
             end
-            if file.sha1 then
+            if file:sha1() then
                 local checksum_file = string.format(
-                    "%s/%s.sha1", destdir, e2lib.basename(file.location))
-                local filename = e2lib.basename(file.location)
+                    "%s/%s.sha1", destdir, e2lib.basename(file:location()))
+                local filename = e2lib.basename(file:location())
                 rc, re = eio.file_write(checksum_file,
-                    string.format("%s  %s", file.sha1, filename))
+                    string.format("%s  %s", file:sha1(), filename))
                 if not rc then
                     return false, e:cat(re)
                 end
@@ -214,13 +214,13 @@ local function _build_collect_project(self, res, return_flags)
                     e2lib.basename(checksum_file)))
             end
             local tartype
-            tartype, re = e2lib.tartype_by_suffix(file.location)
+            tartype, re = e2lib.tartype_by_suffix(file:location())
             if not tartype then
                 return false, e:cat(re)
             end
             table.insert(out, string.format(
                 "\te2-su-2.2 extract_tar_2_3 $(chroot_base) \"%s\" '%s'\n",
-                tartype, e2lib.basename(file.location)))
+                tartype, e2lib.basename(file:location())))
         end
 
         local makefile = e2lib.join(destdir, "Makefile")
@@ -243,13 +243,13 @@ local function _build_collect_project(self, res, return_flags)
 
         for file in lic:file_iter() do
             local cache_flags = {}
-            if file.sha1 then
+            if file:sha1() then
                 rc, re = e2tool.verify_hash(info, file)
                 if not rc then
                     return false, e:cat(re)
                 end
             end
-            rc, re = cache.fetch_file(info.cache, file.server, file.location,
+            rc, re = cache.fetch_file(info.cache, file:server(), file:location(),
                 destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)

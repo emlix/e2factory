@@ -299,8 +299,8 @@ local function e2_ls_project(arg)
             s2 = " "
         end
         p2(s1, s2, lic:get_name())
-        for f in lic:file_iter() do
-            p3(s1, s2, "file", string.format("%s:%s", f.server, f.location))
+        for file in lic:file_iter() do
+            p3(s1, s2, "file", string.format("%s:%s", file:server(), file:location()))
         end
     end
 
@@ -320,8 +320,8 @@ local function e2_ls_project(arg)
             s2 = " "
         end
         p2(s1, s2, grp:get_name(), grp:get_name())
-        for f in grp:file_iter() do
-            p3(s1, s2, "file", string.format("%s:%s", f.server, f.location))
+        for file in grp:file_iter() do
+            p3(s1, s2, "file", string.format("%s:%s", file:server(), file:location()))
         end
         --[[if grp.groupid then
             p3(s1, s2, "groupid", grp.groupid)

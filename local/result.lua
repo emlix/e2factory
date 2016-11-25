@@ -503,10 +503,10 @@ function result.result_class:buildid()
     hash.hash_append(hc, self:merged_env():id())
 
     -- buildscript
-    local file = {
-        server = cache.server_names().dot,
-        location = e2tool.resultbuildscript(self:get_name_as_path()),
-    }
+    local file = e2tool.file_class:new(
+        cache.server_names().dot,
+        e2tool.resultbuildscript(self:get_name_as_path())
+        )
 
     id, re = e2tool.fileid(info, file)
     if not id then

@@ -24,6 +24,7 @@ package.loaded["e2tool"] = e2tool
 local buildconfig = require("buildconfig")
 local cache = require("cache")
 local chroot = require("chroot")
+local class = require("class")
 local digest = require("digest")
 local e2build = require("e2build")
 local e2lib = require("e2lib")
@@ -45,6 +46,174 @@ local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
+
+--- @type file_class
+e2tool.file_class = class("file_class")
+
+--- File_class constructor.
+-- A file_class represents a single file entry in various e2 config files.
+-- Server name and location are required, everything else is optional and some
+-- attributes are not universal. Most error checking is thus left to other
+-- layers, except for some basic assert statements.
+-- @param server Server name (as known to cache)
+-- @param location Path to file relative to server
+-- @raise Assert on bad input
+function e2tool.file_class:initialize(server, location)
+    assertIsStringN(server)
+    self._server = server
+
+    assertIsStringN(location)
+    self._location = location
+end
+
+--- Create a new instance.
+-- Note that the licences sl is NOT copied.
+-- @return object copy
+-- @see sl.sl
+function e2tool.file_class:instance_copy()
+    local c = e2tool.file_class:new(self:server(), self:location())
+    c:sha1(self:sha1())
+    c:licences(self:licences()) -- stringlist, doesn't create a copy
+    c:unpack(self:unpack())
+    c:copy(self:copy())
+    c:patch(self:patch())
+    return c
+end
+
+--- Turn a file object into a table.
+-- File entry like in e2source, chroot, etc.
+-- @return file table
+function e2tool.file_class:to_config_table()
+    local t = {}
+
+    t.server = self:server()
+    t.location = self:location()
+
+    if self:sha1() then
+        t.sha1 = self:sha1()
+    end
+    if self:unpack() then
+        t.unpack = self:unpack()
+    end
+    if self:copy() then
+        t.copy = self:copy()
+    end
+    if self:patch() then
+        t.patch = self:patch()
+    end
+    if self:licences() then
+        t.licences = self:licences():totable()
+    end
+
+    return t
+end
+
+--- Set or return the server attribute.
+-- Server name is any name known to cache.
+-- @param server Optional server name to set
+-- @return Server name
+-- @raise Assert on bad input or unset server name
+function e2tool.file_class:server(server)
+    if server then
+        assertIsStringN(server)
+        self._server = server
+    else
+        assertIsStringN(self._server)
+    end
+
+    return self._server
+end
+
+--- Set or return the location attribute.
+-- File path relative to server.
+-- @param location Optional location to set
+-- @return Location
+-- @raise Assert on bad input or unset location
+function e2tool.file_class:location(location)
+    if location then
+        assertIsStringN(location)
+        self._location = location
+    else
+        assertIsStringN(self._location)
+    end
+
+    return self._location
+end
+
+--- Get or set the <b>configured</b> SHA1 sum.
+-- @param sha1 Optional SHA1 sum to set
+-- @return SHA1 sum or false (unset)
+-- @raise Assert on bad input
+function e2tool.file_class:sha1(sha1)
+    if sha1 then
+        assertIsString(sha1)
+        assert(#sha1 == digest.SHA1_LEN)
+        self._sha1 = sha1
+    end
+
+    return self._sha1 or false
+end
+
+--- Get or set per-file licence list.
+-- @param lic_sl Optional licences stringlist to set
+-- @return licence stringlist or false (unset)
+-- @raise Assert on bad input
+function e2tool.file_class:licences(lic_sl)
+    if lic_sl then
+        assertIsTable(lic_sl)
+        assert(lic_sl:isInstanceOf(sl.sl))
+        self._licences = lic_sl
+    end
+
+    return self._licences or false
+end
+
+--- Get or set the unpack attribute.
+-- unpack, copy and patch are exclusive attributes, only one can be set
+-- @param unpack Optional unpack attribute to set
+-- @return Unpack attribute or false (unset)
+-- @raise Assert on bad input
+function e2tool.file_class:unpack(unpack)
+    if unpack then
+        assertIsString(unpack)
+        assert(not self._copy and not self._patch)
+        self._unpack = unpack
+    end
+
+    return self._unpack or false
+end
+
+--- Get or set the copy attribute.
+-- unpack, copy and patch are exclusive attributes, only one can be set
+-- @param copy Optional copy attribute to set
+-- @return Copy attribute or false (unset)
+-- @raise Assert on bad input
+function e2tool.file_class:copy(copy)
+    if copy then
+        assertIsString(copy)
+        assert(not self._unpack and not self._patch)
+        self._copy = copy
+    end
+
+    return self._copy or false
+end
+
+--- Get or set the patch attribute.
+-- unpack, copy and patch are exclusive attributes, only one can be set
+-- @param patch Optional patch attribute to set
+-- @return Patch attribute or false (unset)
+-- @raise Assert on bad input
+function e2tool.file_class:patch(patch)
+    if patch then
+        assertIsStringN(patch)
+        assert(not self._unpack and not self._copy)
+        self._patch = patch
+    end
+
+    return self._patch or false
+end
+
+--- @section end
 
 --- Info table contains servers, caches and more...
 -- @table info
@@ -630,14 +799,13 @@ end
 -- @return error object on failure.
 local function compute_fileid(file, flags)
     assertIsTable(file)
-    assertIsStringN(file.server)
-    assertIsStringN(file.location)
+    assert(file:isInstanceOf(e2tool.file_class))
 
     local rc, re, info, path, fileid
 
     info = e2tool.info()
 
-    path, re = cache.fetch_file_path(info.cache, file.server, file.location, flags)
+    path, re = cache.fetch_file_path(info.cache, file:server(), file:location(), flags)
     if not path then
         return false, re
     end
@@ -656,15 +824,14 @@ end
 -- @return error object on failure.
 local function compute_remote_fileid(file)
     assertIsTable(file)
-    assertIsStringN(file.server)
-    assertIsStringN(file.location)
+    assert(file:isInstanceOf(e2tool.file_class))
 
     local rc, re, info, surl, u, fileid
 
     info = e2tool.info()
 
 
-    surl, re = cache.remote_url(info.cache, file.server, file.location)
+    surl, re = cache.remote_url(info.cache, file:server(), file:location())
     if not surl then
         return false, re
     end
@@ -716,15 +883,13 @@ end
 function e2tool.verify_hash(info, file)
     assertIsTable(info)
     assertIsTable(file)
-    assertIsStringN(file.server)
-    assertIsStringN(file.location)
-    assertIsStringN(file.sha1)
+    assert(file:isInstanceOf(e2tool.file_class))
 
     local rc, re, e, id_cache, id_remote, id_fetch, fileid
 
-    e = err.new("error verifying checksum of %s:%s", file.server, file.location)
+    e = err.new("error verifying checksum of %s:%s", file:server(), file:location())
 
-    if cache.cache_enabled(info.cache, file.server) then
+    if cache.cache_enabled(info.cache, file:server()) then
         id_cache, re = compute_fileid(file)
         if not id_cache then
             return false, e:cat(re)
@@ -769,9 +934,9 @@ function e2tool.verify_hash(info, file)
 
     fileid = id_cache or id_fetch
 
-    if file.sha1 ~= fileid then
+    if file:sha1() ~= fileid then
         e:append("checksum verification failed: configured file checksum differs from computed file checksum")
-        e:append("configured: %s computed: %s", file.sha1, fileid)
+        e:append("configured: %s computed: %s", file:sha1(), fileid)
         rc = false
     end
 
@@ -791,16 +956,15 @@ end
 function e2tool.fileid(info, file)
     assertIsTable(info)
     assertIsTable(file)
-    assertIsStringN(file.server)
-    assertIsStringN(file.location)
+    assert(file:isInstanceOf(e2tool.file_class))
 
     local rc, re, e, fileid
 
     e = err.new("error calculating file id for file: %s:%s",
-        file.server, file.location)
+        file:server(), file:location())
 
-    if file.sha1 then
-        fileid = file.sha1
+    if file:sha1() then
+        fileid = file:sha1()
     else
         fileid, re = compute_fileid(file)
         if not fileid then
@@ -809,11 +973,11 @@ function e2tool.fileid(info, file)
     end
 
     if e2option.opts["check-remote"] then
-        local filever = {
-            server = file.server,
-            location = file.location,
-            sha1 = fileid
-        }
+        local filever
+
+        filever = file:instance_copy()
+        filever:sha1(fileid)
+
         rc, re = e2tool.verify_hash(info, filever)
         if not rc then
             return false, e:cat(re)

@@ -199,36 +199,23 @@ function files.files_source:initialize(rawsrc)
             error(e:append("%s must be a table", laerr))
         end
 
+        local file
+        file = e2tool.file_class:new(f.server, f.location)
+        file:sha1(f.sha1)
+        file:licences(f.licences)
+
         if f.unpack then
             assert(type(f.unpack) == "string")
-
-            table.insert(self._files, {
-                location=f.location,
-                server=f.server,
-                sha1=f.sha1,
-                unpack=f.unpack,
-                licences=f.licences,
-            })
+            file:unpack(f.unpack)
+            table.insert(self._files, file)
         elseif f.copy then
             assert(type(f.copy) == "string")
-
-            table.insert(self._files, {
-                location=f.location,
-                server=f.server,
-                sha1=f.sha1,
-                copy=f.copy,
-                licences=f.licences,
-            })
+            file:copy(f.copy)
+            table.insert(self._files, file)
         elseif f.patch then
             assert(type(f.patch) == "string")
-
-            table.insert(self._files, {
-                location=f.location,
-                server=f.server,
-                sha1=f.sha1,
-                patch=f.patch,
-                licences=f.licences,
-            })
+            file:patch(f.patch)
+            table.insert(self._files, file)
         else
             assert("internal error" == true)
         end
@@ -242,20 +229,7 @@ function files.files_source:file_iter()
         i = i + 1
 
         if self._files[i] then
-            -- return a copy so nobody can mess with the internals
-            local f = {
-                location = self._files[i].location,
-                server = self._files[i].server,
-                sha1 = self._files[i].sha1,
-                licences = self._files[i].licences:copy()
-            }
-            for _,attr in ipairs({ "copy", "unpack", "patch" }) do
-                if self._files[i][attr] then
-                    f[attr] = self._files[i][attr]
-                    break
-                end
-            end
-            return f
+            return self._files[i]:instance_copy()
         end
 
         return nil
@@ -286,20 +260,20 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
         hash.hash_append(hc, lid)
     end
 
-    for f in self:file_iter() do
-        local fileid, re = e2tool.fileid(info, f)
+    for file in self:file_iter() do
+        local fileid, re = e2tool.fileid(info, file)
         if not fileid then
             return false, re
         end
         hash.hash_append(hc, fileid)
-        hash.hash_append(hc, f.location)
-        hash.hash_append(hc, f.server)
-        hash.hash_append(hc, tostring(f.unpack))
-        hash.hash_append(hc, tostring(f.patch))
-        hash.hash_append(hc, tostring(f.copy))
+        hash.hash_append(hc, file:location())
+        hash.hash_append(hc, file:server())
+        hash.hash_append(hc, tostring(file:unpack()))
+        hash.hash_append(hc, tostring(file:patch()))
+        hash.hash_append(hc, tostring(file:copy()))
 
         -- per file licence list
-        for licencename in f.licences:iter() do
+        for licencename in file:licences():iter() do
             local lid, re = licence.licences[licencename]:licenceid(info)
             if not lid then
                 return false, re
@@ -325,11 +299,11 @@ function files.files_source:display()
     table.insert(d, string.format("licences   = %s",
         self:get_licences():concat(" ")))
 
-    for f in self:file_iter() do
-        s = string.format("file       = %s:%s", f.server, f.location)
+    for file in self:file_iter() do
+        s = string.format("file       = %s:%s", file:server(), file:location())
         table.insert(d, s)
         table.insert(d, string.format("licences   = %s",
-            f.licences:concat(" ")))
+            file:licences():concat(" ")))
     end
 
     if self._sourceid then
@@ -349,17 +323,17 @@ function files.cache_source(info, sourcename)
     local src = source.sources[sourcename]
 
     -- cache all files for this source
-    for f in src:file_iter() do
-        if cache.cache_enabled(info.cache, f.server) then
+    for file in src:file_iter() do
+        if cache.cache_enabled(info.cache, file:server()) then
             e2lib.logf(3, "files.cache_source: caching file %s:%s",
-                f.server, f.location)
-            rc, re = cache.fetch_file_path(info.cache, f.server, f.location)
+                file:server(), file:location())
+            rc, re = cache.fetch_file_path(info.cache, file:server(), file:location())
             if not rc then
                 return false, re
             end
         else
-            e2lib.logf(3, "not caching %s:%s (stored locally)", f.server,
-                f.location)
+            e2lib.logf(3, "not caching %s:%s (stored locally)", file:server(),
+                file:location())
         end
     end
     return true
@@ -383,7 +357,7 @@ function files.has_working_copy(info, sourcename)
     return false
 end
 
---- Handle file.copy in a way that appears intuitive to the user. Returns
+--- Handle file:copy() in a way that appears intuitive to the user. Returns
 -- a directory and filename that can be passed to eg. mkdir -p and cp.
 -- @param buildpath Base build path (string).
 -- @param sourcename Name of the source (string).
@@ -542,15 +516,15 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
     local src = source.sources[sourcename]
 
     for file in src:file_iter() do
-        if file.sha1 then
+        if file:sha1() then
             rc, re = e2tool.verify_hash(info, file)
             if not rc then
                 return false, e:cat(re)
             end
         end
-        if file.unpack then
+        if file:unpack() then
             local path, re = cache.fetch_file_path(info.cache,
-                file.server, file.location)
+                file:server(), file:location())
             if not path then
                 return false, e:cat(re)
             end
@@ -567,7 +541,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 return false, e:cat(re)
             end
 
-            local expected_location = e2lib.join(buildpath, file.unpack)
+            local expected_location = e2lib.join(buildpath, file:unpack())
             if not e2lib.stat(expected_location) then
                 return false, err.new("expected unpack location '%s' does not exist",
                     expected_location)
@@ -575,8 +549,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
 
             if not symlink then
                 symlink = buildpath .. "/" .. sourcename
-                if file.unpack ~= sourcename then
-                    rc, re = e2lib.symlink(file.unpack, symlink)
+                if file:unpack() ~= sourcename then
+                    rc, re = e2lib.symlink(file:unpack(), symlink)
                     if not rc then
                         return false, e:cat(re)
                     end
@@ -592,22 +566,22 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:cat(re)
                 end
             end
-            if file.patch then
+            if file:patch() then
                 local path, re = cache.fetch_file_path(info.cache,
-                    file.server, file.location)
+                    file:server(), file:location())
                 if not path then
                     return false, e:append(re)
                 end
-                local argv = { "-p", file.patch, "-d", symlink, "-i", path }
+                local argv = { "-p", file:patch(), "-d", symlink, "-i", path }
                 rc, re = patch_tool(argv)
                 if not rc then
-                    e:append("applying patch: \"%s:%s\"", file.server, file.location)
+                    e:append("applying patch: \"%s:%s\"", file:server(), file:location())
                     return false, e:cat(re)
                 end
-            elseif file.copy then
+            elseif file:copy() then
                 local destdir, destname
                 destdir, destname = gen_dest_dir_name(buildpath, sourcename,
-                    file.copy, file.location)
+                    file:copy(), file:location())
 
                 rc, re = e2lib.mkdir_recursive(destdir)
                 if not rc then
@@ -615,14 +589,14 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:cat(re)
                 end
 
-                local rc, re = cache.fetch_file(info.cache, file.server,
-                    file.location, destdir, destname, {})
+                local rc, re = cache.fetch_file(info.cache, file:server(),
+                    file:location(), destdir, destname, {})
                 if not rc then
                     return false, e:cat(re)
                 end
             else
                 return false, err.new("missing destination for file %s (%s)",
-                    file.location, file.server)
+                    file:location(), file:server())
             end
         end
     end
@@ -648,9 +622,9 @@ function files.toresult(info, sourcename, sourceset, directory)
 
     out = { ".PHONY: place\n\nplace:\n" }
     for file in src:file_iter() do
-        e2lib.logf(4, "export file: %s", file.location)
+        e2lib.logf(4, "export file: %s", file:location())
         local destdir = string.format("%s/%s", directory, source)
-        local destname = e2lib.basename(file.location)
+        local destname = e2lib.basename(file:location())
 
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
@@ -663,26 +637,26 @@ function files.toresult(info, sourcename, sourceset, directory)
                 sourcename, destname)
         end
 
-        rc, re = cache.fetch_file(info.cache, file.server, file.location,
+        rc, re = cache.fetch_file(info.cache, file:server(), file:location(),
             destdir, destname, {})
         if not rc then
             return false, e:cat(re)
         end
-        if file.sha1 then
-            local filename = e2lib.basename(file.location)
+        if file:sha1() then
+            local filename = e2lib.basename(file:location())
             local checksum_file = string.format("%s/%s.sha1",
                 destdir, filename)
             rc, re = eio.file_write(checksum_file,
-                string.format("%s  %s", file.sha1, filename))
+                string.format("%s  %s", file:sha1(), filename))
             if not rc then
                 return false, e:cat(re)
             end
             table.insert(out, string.format("\tcd source && sha1sum -c '%s'\n",
                 e2lib.basename(checksum_file)))
         end
-        if file.unpack then
-            local physpath = e2lib.join(destdir, e2lib.basename(file.location))
-            local virtpath = e2lib.join(source, e2lib.basename(file.location))
+        if file:unpack() then
+            local physpath = e2lib.join(destdir, e2lib.basename(file:location()))
+            local virtpath = e2lib.join(source, e2lib.basename(file:location()))
             local rc, re = gen_unpack_command(physpath, virtpath, "$(BUILD)")
             if not rc then
                 e:cat("unable to generate unpack command")
@@ -701,18 +675,18 @@ function files.toresult(info, sourcename, sourceset, directory)
             end
             table.insert(out, "\n")
 
-            if file.unpack ~= sourcename then
+            if file:unpack() ~= sourcename then
                 table.insert(out, string.format("\tln -s %s $(BUILD)/%s\n",
-                    file.unpack, sourcename))
+                    file:unpack(), sourcename))
             end
         end
-        if file.copy then
+        if file:copy() then
             local to, from
             from = e2lib.shquote(
-                e2lib.join(source, e2lib.basename(file.location)))
+                e2lib.join(source, e2lib.basename(file:location())))
 
             local destdir, destname = gen_dest_dir_name("/", sourcename,
-                file.copy, file.location, "isdir")
+                file:copy(), file:location(), "isdir")
             --
             -- is a directory?
             --
@@ -726,8 +700,8 @@ function files.toresult(info, sourcename, sourceset, directory)
             --
             -- not a directory
             --
-            destdir, destname = gen_dest_dir_name("/", sourcename, file.copy,
-                file.location, "no")
+            destdir, destname = gen_dest_dir_name("/", sourcename, file:copy(),
+                file:location(), "no")
 
             to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
             table.insert(out, string.format('\t\tmkdir -p %s; \\\n', to))
@@ -737,16 +711,16 @@ function files.toresult(info, sourcename, sourceset, directory)
             table.insert(out, string.format('\t\tcp %s %s; \\\n', from, to))
             table.insert(out, '\tfi\n')
         end
-        if file.patch then
+        if file:patch() then
             table.insert(out, string.format(
                 "\tpatch -p%s -d \"$(BUILD)/%s\" -i \"$(shell pwd)/%s/%s\"\n",
-                file.patch, sourcename, source, e2lib.basename(file.location)))
+                file:patch(), sourcename, source, e2lib.basename(file:location())))
         end
         -- write licences
         local destdir = string.format("%s/licences", directory)
         local fname = string.format("%s/%s.licences", destdir,
-            e2lib.basename(file.location))
-        local licence_list = file.licences:concat("\n") .. "\n"
+            e2lib.basename(file:location()))
+        local licence_list = file:licences():concat("\n") .. "\n"
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
@@ -755,7 +729,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         if not rc then
             return false, e:cat(re)
         end
-        e2lib.logf(4, "export file: %s done", file.location)
+        e2lib.logf(4, "export file: %s done", file:location())
     end
 
     rc, re = eio.file_write(makefile, table.concat(out))

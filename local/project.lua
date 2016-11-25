@@ -289,11 +289,7 @@ function project.projid(info)
         local location, file, fileid
         if not e2lib.is_backup_file(f) then
             location = e2lib.join("proj/init", f)
-            file = {
-                server = cache.server_names().dot,
-                location = location,
-            }
-
+            file = e2tool.file_class:new(cache.server_names().dot, location)
             fileid, re = e2tool.fileid(info, file)
             if not fileid then
                 return false, re

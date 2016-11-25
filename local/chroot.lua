@@ -86,7 +86,7 @@ end
 -- @param sha1 SHA1 checksum string. If file is local sha1 may be nil
 -- @return May throw error(err) on invalid input.
 function chroot.chroot:add_file(location, server, sha1)
-    local t, ok, re
+    local t, ok, re, file
 
     ok, re = e2lib.vrfy_string_len(location, "chroot location")
     if not ok then
@@ -106,7 +106,9 @@ function chroot.chroot:add_file(location, server, sha1)
     end
 
     self._chrootgroupid = false
-    table.insert(self._files, { location=location, server=server, sha1=sha1 })
+    file = e2tool.file_class:new(server, location)
+    file:sha1(sha1)
+    table.insert(self._files, file)
 end
 
 --- Iterator that returns file tables in the order they were added.
@@ -120,11 +122,7 @@ function chroot.chroot:file_iter()
 
         if self._files[i] then
             -- return a copy
-            return {
-                location = self._files[i].location,
-                server = self._files[i].server,
-                sha1 = self._files[i].sha1,
-            }
+            return self._files[i]:instance_copy()
         end
 
         return nil
@@ -149,10 +147,10 @@ function chroot.chroot:chrootgroupid(info)
     hash.hash_append(hc, self._name)
 
     local fileid
-    for f in self:file_iter() do
-        hash.hash_append(hc, f.server)
-        hash.hash_append(hc, f.location)
-        fileid, re = e2tool.fileid(info, f)
+    for file in self:file_iter() do
+        hash.hash_append(hc, file:server())
+        hash.hash_append(hc, file:location())
+        fileid, re = e2tool.fileid(info, file)
         if not fileid then
             return false, e:cat(re)
         end
