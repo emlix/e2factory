@@ -114,6 +114,61 @@ function e2tool.file_class:servloc()
     return self._server .. ":" .. self._location
 end
 
+--- Compute checksum of file by retreiving it via the cache transport,
+-- no matter the configuration what and hashing local.
+-- @return fileid on success, false if an error occured.
+-- @return error object on failure.
+function e2tool.file_class:_compute_fileid(flags)
+    local rc, re, info, path, fileid
+
+    info = e2tool.info()
+
+    path, re = cache.fetch_file_path(info.cache, self:server(), self:location())
+    if not path then
+        return false, re
+    end
+
+    fileid, re = hash.hash_file_once(path)
+    if not fileid then
+        return false, re
+    end
+
+    return fileid
+end
+
+--- Calculate the FileID for a file.
+-- The name and location attributes are not included.
+-- @return FileID string: hash value, or false on error.
+-- @return an error object on failure
+function e2tool.file_class:fileid()
+    local rc, re, e, fileid
+
+    e = err.new("error calculating file id for file: %s", self:servloc())
+
+    if self:sha1() then
+        fileid = self:sha1()
+    else
+        fileid, re = self:_compute_fileid(self)
+        if not fileid then
+            return false, e:cat(re)
+        end
+    end
+
+    if e2option.opts["check-remote"] then
+        local filever
+
+        filever = self:instance_copy()
+        filever:sha1(fileid)
+
+        rc, re = e2tool.verify_hash(e2tool.info(), filever)
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+
+    return fileid
+end
+
 --- Set or return the server attribute.
 -- Server name is any name known to cache.
 -- @param server Optional server name to set
@@ -951,45 +1006,6 @@ function e2tool.verify_hash(info, file)
     end
 
     return false, e
-end
-
---- calculate a representation for file content. The name and location
--- attributes are not included.
--- @param info info table
--- @param file table: file table from configuration
--- @return fileid string: hash value, or false on error.
--- @return an error object on failure
-function e2tool.fileid(info, file)
-    assertIsTable(info)
-    assertIsTable(file)
-    assert(file:isInstanceOf(e2tool.file_class))
-
-    local rc, re, e, fileid
-
-    e = err.new("error calculating file id for file: %s", file:servloc())
-
-    if file:sha1() then
-        fileid = file:sha1()
-    else
-        fileid, re = compute_fileid(file)
-        if not fileid then
-            return false, e:cat(re)
-        end
-    end
-
-    if e2option.opts["check-remote"] then
-        local filever
-
-        filever = file:instance_copy()
-        filever:sha1(fileid)
-
-        rc, re = e2tool.verify_hash(info, filever)
-        if not rc then
-            return false, e:cat(re)
-        end
-    end
-
-    return fileid
 end
 
 --- select (mark) results based upon a list of results usually given on the

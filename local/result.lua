@@ -508,7 +508,7 @@ function result.result_class:buildid()
         e2tool.resultbuildscript(self:get_name_as_path())
         )
 
-    id, re = e2tool.fileid(info, file)
+    id, re = file:fileid()
     if not id then
         return false, re
     end

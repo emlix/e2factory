@@ -128,7 +128,7 @@ function licence.licence:licenceid(info)
         hash.hash_append(hc, file:server())
         hash.hash_append(hc, file:location())
 
-        fileid, re = e2tool.fileid(info, file)
+        fileid, re = file:fileid()
         if not fileid then
             return false, e:cat(re)
         end

@@ -261,7 +261,7 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
     end
 
     for file in self:file_iter() do
-        local fileid, re = e2tool.fileid(info, file)
+        local fileid, re = file:fileid()
         if not fileid then
             return false, re
         end
