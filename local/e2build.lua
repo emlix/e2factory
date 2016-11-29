@@ -435,17 +435,14 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
         grp = chroot.groups_byname[cgrpnm]
 
         for file in grp:file_iter() do
+            rc, re = file:checksum_verify()
+            if not rc then
+                return false, e:cat(re)
+            end
 
             path, re = cache.fetch_file_path(info.cache, file:server(), file:location())
             if not path then
                 return false, e:cat(re)
-            end
-
-            if file:sha1() then
-                rc, re = e2tool.verify_hash(info, file)
-                if not rc then
-                    return false, e:cat(re)
-                end
             end
 
             local tartype

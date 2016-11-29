@@ -500,11 +500,9 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
     local src = source.sources[sourcename]
 
     for file in src:file_iter() do
-        if file:sha1() then
-            rc, re = e2tool.verify_hash(info, file)
-            if not rc then
-                return false, e:cat(re)
-            end
+        rc, re = file:checksum_verify()
+        if not rc then
+            return false, e:cat(re)
         end
         if file:unpack() then
             local path, re = cache.fetch_file_path(info.cache,

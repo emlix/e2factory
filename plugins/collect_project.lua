@@ -243,11 +243,9 @@ local function _build_collect_project(self, res, return_flags)
 
         for file in lic:file_iter() do
             local cache_flags = {}
-            if file:sha1() then
-                rc, re = e2tool.verify_hash(info, file)
-                if not rc then
-                    return false, e:cat(re)
-                end
+            rc, re = file:checksum_verify()
+            if not rc then
+                return false, e:cat(re)
             end
             rc, re = cache.fetch_file(info.cache, file:server(), file:location(),
                 destdir, nil, cache_flags)
