@@ -126,7 +126,7 @@ function e2tool.file_class:_compute_fileid(flags)
 
     info = e2tool.info()
 
-    path, re = cache.fetch_file_path(info.cache, self:server(), self:location())
+    path, re = cache.fetch_file_path(info.cache, self:server(), self:location(), flags)
     if not path then
         return false, re
     end
@@ -139,8 +139,8 @@ function e2tool.file_class:_compute_fileid(flags)
     return fileid
 end
 
---- Calculate the FileID for a file.
--- The name and location attributes are not included.
+--- Calculate the FileID for a file. This includes the checksum of the file
+-- as well as all set attributes.
 -- @return FileID string: hash value, or false on error.
 -- @return an error object on failure
 function e2tool.file_class:fileid()
@@ -169,7 +169,35 @@ function e2tool.file_class:fileid()
         end
     end
 
-    return fileid
+    local hc, info
+    info = e2tool.info()
+    hc = hash.hash_start()
+    hash.hash_append(hc, self._server)
+    hash.hash_append(hc, self._location)
+
+    hash.hash_append(hc, fileid)
+
+    if self._licences then
+        local lid
+
+        for licencename in self._licences:iter() do
+            local lid, re = licence.licences[licencename]:licenceid(info)
+            if not lid then
+                return false, e:cat(re)
+            end
+            hash.hash_append(hc, lid)
+        end
+    end
+
+    if self._unpack then
+        hash.hash_append(hc, self._unpack)
+    elseif self._patch then
+        hash.hash_append(hc, self._patch)
+    elseif self._copy then
+        hash.hash_append(hc, self._copy)
+    end
+
+    return hash.hash_finish(hc)
 end
 
 --- Set or return the server attribute.

@@ -148,8 +148,6 @@ function chroot.chroot:chrootgroupid(info)
 
     local fileid
     for file in self:file_iter() do
-        hash.hash_append(hc, file:server())
-        hash.hash_append(hc, file:location())
         fileid, re = file:fileid()
         if not fileid then
             return false, e:cat(re)
