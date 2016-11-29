@@ -284,6 +284,7 @@ end
 -- @field root Project root directory (string).
 -- @field project_location string: project location relative to the servers
 -- @field local_template_path Path to the local templates (string).
+-- @field cache The cache object.
 local _info = false
 
 --- Open debug logfile.
