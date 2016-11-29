@@ -60,10 +60,14 @@ e2tool.file_class = class("file_class")
 -- @raise Assert on bad input
 function e2tool.file_class:initialize(server, location)
     assertIsStringN(server)
-    self._server = server
-
     assertIsStringN(location)
+    self._server = server
     self._location = location
+    self._sha1 = nil
+    self._licences = nil
+    self._unpack = nil
+    self._copy = nil
+    self._patch = nil
 end
 
 --- Create a new instance.
@@ -71,12 +75,12 @@ end
 -- @return object copy
 -- @see sl.sl
 function e2tool.file_class:instance_copy()
-    local c = e2tool.file_class:new(self:server(), self:location())
-    c:sha1(self:sha1())
-    c:licences(self:licences()) -- stringlist, doesn't create a copy
-    c:unpack(self:unpack())
-    c:copy(self:copy())
-    c:patch(self:patch())
+    local c = e2tool.file_class:new(self._server, self._location)
+    c:sha1(self._sha1)
+    c:licences(self._licences) -- stringlist, doesn't create a copy
+    c:unpack(self._unpack)
+    c:copy(self._copy)
+    c:patch(self._patch)
     return c
 end
 
@@ -86,23 +90,21 @@ end
 function e2tool.file_class:to_config_table()
     local t = {}
 
-    t.server = self:server()
-    t.location = self:location()
+    t.server = self._server
+    t.location = self._location
 
-    if self:sha1() then
-        t.sha1 = self:sha1()
+    if self._sha1 then
+        t.sha1 = self._sha1
     end
-    if self:unpack() then
-        t.unpack = self:unpack()
+    if self._licences then
+        t.licences = self._licences:totable()
     end
-    if self:copy() then
-        t.copy = self:copy()
-    end
-    if self:patch() then
-        t.patch = self:patch()
-    end
-    if self:licences() then
-        t.licences = self:licences():totable()
+    if self._unpack then
+        t.unpack = self._unpack
+    elseif self._copy then
+        t.copy = self._copy
+    elseif self._patch then
+        t.patch = self._patch
     end
 
     return t
@@ -116,6 +118,7 @@ end
 
 --- Compute checksum of file by retreiving it via the cache transport,
 -- no matter the configuration what and hashing local.
+-- @param flags cache flags
 -- @return fileid on success, false if an error occured.
 -- @return error object on failure.
 function e2tool.file_class:_compute_fileid(flags)
@@ -148,7 +151,7 @@ function e2tool.file_class:fileid()
     if self:sha1() then
         fileid = self:sha1()
     else
-        fileid, re = self:_compute_fileid(self)
+        fileid, re = self:_compute_fileid()
         if not fileid then
             return false, e:cat(re)
         end
@@ -178,8 +181,6 @@ function e2tool.file_class:server(server)
     if server then
         assertIsStringN(server)
         self._server = server
-    else
-        assertIsStringN(self._server)
     end
 
     return self._server
@@ -194,8 +195,6 @@ function e2tool.file_class:location(location)
     if location then
         assertIsStringN(location)
         self._location = location
-    else
-        assertIsStringN(self._location)
     end
 
     return self._location
