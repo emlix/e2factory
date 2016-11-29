@@ -198,7 +198,7 @@ function git.git_source:sourceid(sourceset)
     hc = hash.hash_start()
     hash.hash_append(hc, self._name)
     hash.hash_append(hc, self._type)
-    hash.hash_append(hc, self._env:id())
+    hash.hash_append(hc, self._env:envid())
 
     licences = self:get_licences()
     for licencename in licences:iter() do

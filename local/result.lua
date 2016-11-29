@@ -500,7 +500,7 @@ function result.result_class:buildid()
     end
 
     -- environment
-    hash.hash_append(hc, self:merged_env():id())
+    hash.hash_append(hc, self:merged_env():envid())
 
     -- buildscript
     local file = e2tool.file_class:new(

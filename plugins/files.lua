@@ -249,7 +249,7 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
     hc = hash.hash_start()
     hash.hash_append(hc, self._name)
     hash.hash_append(hc, self._type)
-    hash.hash_append(hc, self._env:id())
+    hash.hash_append(hc, self._env:envid())
 
     -- all licences
     for licencename in self:get_licences():iter() do

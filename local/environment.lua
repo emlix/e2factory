@@ -54,7 +54,7 @@ end
 
 --- return a hash representing the environment
 -- @param env environment
-function environment.id(env)
+function environment.envid(env)
     assertIsTable(env)
     assertIsTable(env.sorted)
     local hc = hash.hash_start()
