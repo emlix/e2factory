@@ -107,12 +107,9 @@ function licence.licence:get_name()
 end
 
 --- Calculate the LicenceID
--- @param info Info table.
 -- @return LicenceID or false on error.
 -- @return Error object on failure.
-function licence.licence:licenceid(info)
-    assert(type(info) == "table", "info invalid")
-
+function licence.licence:licenceid()
     local rc, re, e, hc, fileid
 
     if self._licenceid then

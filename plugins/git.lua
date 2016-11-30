@@ -202,7 +202,7 @@ function git.git_source:sourceid(sourceset)
 
     licences = self:get_licences()
     for licencename in licences:iter() do
-        local lid, re = licence.licences[licencename]:licenceid(info)
+        local lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
         end

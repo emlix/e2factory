@@ -277,17 +277,17 @@ function svn.svn_source:sourceid(sourceset)
     hash.hash_append(hc, self._type)
     hash.hash_append(hc, self._env:envid())
 
-    info = e2tool.info()
-    assert(type(info) == "table")
-
     licences = self:get_licences()
     for licencename in licences:iter() do
-        lid, re = licence.licences[licencename]:licenceid(info)
+        lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
         end
         hash.hash_append(hc, lid)
     end
+
+    info = e2tool.info()
+    assert(type(info) == "table")
 
     surl, re = cache.remote_url(info.cache, self._server, self._location)
     if not surl then

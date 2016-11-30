@@ -216,8 +216,7 @@ function e2tool.file_class:fileid()
         end
     end
 
-    local hc, info
-    info = e2tool.info()
+    local hc
     hc = hash.hash_start()
     hash.hash_append(hc, self._server)
     hash.hash_append(hc, self._location)
@@ -228,7 +227,7 @@ function e2tool.file_class:fileid()
         local lid
 
         for licencename in self._licences:iter() do
-            local lid, re = licence.licences[licencename]:licenceid(info)
+            local lid, re = licence.licences[licencename]:licenceid()
             if not lid then
                 return false, e:cat(re)
             end

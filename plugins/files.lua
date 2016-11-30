@@ -237,14 +237,11 @@ function files.files_source:file_iter()
 end
 
 function files.files_source:sourceid(sourceset --[[always ignored for files]])
-    local hc, info, licences
+    local hc, licences
 
     if self._sourceid then
         return self._sourceid
     end
-
-    info = e2tool.info()
-    assert(info)
 
     hc = hash.hash_start()
     hash.hash_append(hc, self._name)
@@ -253,7 +250,7 @@ function files.files_source:sourceid(sourceset --[[always ignored for files]])
 
     -- all licences
     for licencename in self:get_licences():iter() do
-        local lid, re = licence.licences[licencename]:licenceid(info)
+        local lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
         end

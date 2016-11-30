@@ -208,14 +208,11 @@ end
 function cvs.cvs_source:sourceid(sourceset)
     assert(type(sourceset) == "string" and #sourceset > 0)
 
-    local rc, re, hc, lid, info, licences
+    local rc, re, hc, lid, licences
 
     if self._sourceids[sourceset] then
         return self._sourceids[sourceset]
     end
-
-    info = e2tool.info()
-    assert(type(info) == "table")
 
     hc = hash.hash_start()
     hash.hash_append(hc, self._name)
@@ -223,7 +220,7 @@ function cvs.cvs_source:sourceid(sourceset)
     hash.hash_append(hc, self._env:envid())
     licences = self:get_licences()
     for licencename in licences:iter() do
-        lid, re = licence.licences[licencename]:licenceid(info)
+        lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
         end
