@@ -601,7 +601,11 @@ function files.toresult(info, sourcename, sourceset, directory)
 
     out = { ".PHONY: place\n\nplace:\n" }
     for file in src:file_iter() do
-        e2lib.logf(4, "export file: %s", file:location())
+        rc, re = file:checksum_verify()
+        if not rc then
+            return false, e:cat(re)
+        end
+
         local destdir = string.format("%s/%s", directory, source)
         local destname = e2lib.basename(file:location())
 
