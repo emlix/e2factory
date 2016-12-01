@@ -122,7 +122,7 @@ end
 -- @return SHA1 checksum on success, false if an error occured.
 -- @return error object on failure.
 function e2tool.file_class:_compute_checksum(flags)
-    local rc, re, info, path, checksum
+    local rc, re, info, path, dt
 
     info = e2tool.info()
 
@@ -132,12 +132,14 @@ function e2tool.file_class:_compute_checksum(flags)
         return false, re
     end
 
-    checksum, re = hash.hash_file_once(path)
-    if not checksum then
+    dt = digest.new()
+    digest.new_entry(dt, digest.SHA1, nil--[[checksum]], nil--[[name]], path)
+    rc, re = digest.checksum(dt, false)
+    if not rc then
         return false, re
     end
 
-    return checksum
+    return dt[1].checksum
 end
 
 --- Compute checksum of file on the remote server, if transport supports it.
