@@ -197,7 +197,7 @@ end
 -- @param path string: the full path to the file
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function hash.hash_file(hc, path)
+local function hash_file(hc, path)
 
     local function _hash_file(hc, f)
         local rc, re, buf
@@ -332,7 +332,7 @@ function hash.hash_file_once(path)
 
     hc = hash.hash_start()
 
-    rc, re = hash.hash_file(hc, path)
+    rc, re = hash_file(hc, path)
     if not rc then
         hash.hash_finish(hc)
         return false, re
