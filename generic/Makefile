@@ -23,7 +23,7 @@ LUA_LIBS = strict.lua plugin.lua e2lib.lua console.lua class.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
 LUA_LIBS += generic_git.lua eio.lua err.lua lock.lua errno.lua trace.lua
 LUA_LIBS += assrt.lua
-SO_LIBS = lsha1.so leio.so le2lib.so
+SO_LIBS = lsha1.so lsha.so leio.so le2lib.so
 
 CLEAN_FILES = *~ *.o *.so
 
@@ -33,6 +33,16 @@ CLEAN_FILES = *~ *.o *.so
 all: $(SO_LIBS)
 
 lsha1.so: lsha1.o sha1.o
+
+lsha.so: lsha.o sha1.o sha2.o
+
+sha2.o: sha2.c sha2.h
+	$(CC) $(CFLAGS) $(BUILD_LUA_CPPFLAGS) $(LDFLAGS) \
+		-fno-strict-aliasing -DSHA2_USE_INTTYPES_H -fPIC -o $@ -c $<
+
+lsha.o: lsha.c sha1.h sha2.h
+	$(CC) $(CFLAGS) $(BUILD_LUA_CPPFLAGS) $(LDFLAGS) \
+		-DSHA2_USE_INTTYPES_H -fPIC -o $@ -c $<
 
 leio.so: leio.o
 
