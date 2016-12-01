@@ -23,7 +23,7 @@ LUA_LIBS = strict.lua plugin.lua e2lib.lua console.lua class.lua
 LUA_LIBS += e2option.lua hash.lua tools.lua transport.lua cache.lua url.lua
 LUA_LIBS += generic_git.lua eio.lua err.lua lock.lua errno.lua trace.lua
 LUA_LIBS += assrt.lua
-SO_LIBS = lsha1.so lsha.so leio.so le2lib.so
+SO_LIBS = lsha.so leio.so le2lib.so
 
 CLEAN_FILES = *~ *.o *.so
 
@@ -31,8 +31,6 @@ CLEAN_FILES = *~ *.o *.so
 .PHONY: all install uninstall local install-local clean
 
 all: $(SO_LIBS)
-
-lsha1.so: lsha1.o sha1.o
 
 lsha.so: lsha.o sha1.o sha2.o
 

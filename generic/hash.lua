@@ -22,7 +22,7 @@ local hash = {}
 local e2lib = require("e2lib")
 local eio = require("eio")
 local err = require("err")
-local lsha1 = require("lsha1")
+local lsha = require("lsha")
 local strict = require("strict")
 local trace = require("trace")
 
@@ -162,14 +162,8 @@ end
 --- Create a hash context. Throws error object on failure.
 -- @return Hash context object.
 function hash.hash_start()
-    local errstring, hc
-    hc = { _data = "" }
-
-    hc._ctx, errstring = lsha1.init()
-    if not hc._ctx then
-        error(err.new("initializing SHA1 context failed: %s", errstring))
-    end
-
+    local hc = { _data = "" }
+    hc._ctx = lsha.sha1_init()
     return strict.lock(hc)
 end
 
@@ -180,16 +174,12 @@ function hash.hash_append(hc, data)
     assert(type(hc) == "table")
     assert(type(data) == "string")
     assert(hc._data and hc._ctx)
-    local rc, errstring
 
     hc._data = hc._data .. data
 
     -- Consume data and update hash whenever 64KB are available
-    if #hc._data >= 64*1024 then
-        rc, errstring = lsha1.update(hc._ctx, hc._data)
-        if not rc then
-            error(err.new("%s", errstring))
-        end
+    if #hc._data >= 65536 then
+        lsha.sha1_update(hc._ctx, hc._data)
         hc._data = ""
     end
 end
@@ -348,11 +338,7 @@ function hash.hash_file_once(path)
         return false, re
     end
 
-    cs, re = hash.hash_finish(hc)
-    if not cs then
-        return false, re
-    end
-
+    cs = hash.hash_finish(hc)
     hcache_add(path, cs)
     return cs
 end
@@ -361,22 +347,14 @@ end
 -- @param hc the hash context
 -- @return SHA1 Checksum.
 function hash.hash_finish(hc)
-    local rc, errstring, cs
+    local cs
 
-    rc, errstring = lsha1.update(hc._ctx, hc._data)
-    if not rc then
-        error(err.new("%s", errstring))
-    end
-
-    cs, errstring = lsha1.final(hc._ctx)
-    if not cs then
-        error(err.new("%s", errstring))
-    end
+    lsha.sha1_update(hc._ctx, hc._data)
+    cs = lsha.sha1_final(hc._ctx)
 
     -- Destroy the hash context to catch errors
-    for k,_ in pairs(hc) do
-        hc[k] = nil
-    end
+    hc._data = nil
+    hc._ctx = nil
 
     return cs
 end
