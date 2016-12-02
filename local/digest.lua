@@ -25,9 +25,10 @@ local digest = {}
 
 local e2lib = require("e2lib")
 local eio = require("eio")
-local hash = require("hash")
 local err = require("err")
+local lsha = require("lsha")
 local strict = require("strict")
+local trace = require("trace")
 
 --- Digest table.
 -- Contains an array of digest entries.
@@ -50,6 +51,14 @@ digest.SHA1 = 2
 
 --- Length of an alphanumeric SHA1 sum string.
 digest.SHA1_LEN = 40
+
+--- SHA256 digest type.
+-- Used to denote the checksum type.
+-- @see dt_entry
+digest.SHA256 = 3
+
+--- Length of an alphanumeric SHA256 sum string.
+digest.SHA256_LEN = 64
 
 --- Digest entry table.
 -- Holds the actual fields of a message digest entry.
@@ -168,7 +177,8 @@ local function parse_line(line)
         return false, err.new("digest line parsing incomplete")
     end
 
-    if #cs ~= digest.MD5_LEN and #cs ~= digest.SHA1_LEN then
+    if #cs ~= digest.MD5_LEN and #cs ~= digest.SHA1_LEN
+        and #cs ~= digest.SHA256_LEN then
         return false, err.new("checksum of unknown length, unknown digest type")
     end
 
@@ -214,6 +224,8 @@ function digest.parsestring(data)
             digest.new_entry(dt, digest.MD5, checksum, filenm)
         elseif string.len(checksum) == digest.SHA1_LEN then
             digest.new_entry(dt, digest.SHA1, checksum, filenm)
+        elseif string.len(checksum) == digest.SHA256_LEN then
+            digest.new_entry(dt, digest.SHA256, checksum, filenm)
         else
             return false, err.new("unknown digest type in line %d", linenr)
         end
@@ -258,6 +270,112 @@ function digest.new_entry(dt, digest, checksum, name, name2check)
     return entry
 end
 
+--- Compute SHA1 checksum of named file.
+-- @param filename string: the full filename to the file
+-- @return SHA1 sum on success, false on error
+-- @return Error object on failure.
+local function compute_sha1_checksum(filename)
+
+    local function compute_checksum(ctx, f)
+        local rc, re, buf
+
+        while true do
+            buf, re = eio.fread(f, 262144)
+            if not buf then
+                return false, re
+            elseif buf == "" then
+                break
+            end
+
+            lsha.sha1_update(ctx, buf)
+        end
+
+        return true
+    end
+
+    local f, rc, re, ok, ctx, sha1
+
+    f, re = eio.fopen(filename, "r")
+    if not f then
+        return false, re
+    end
+
+    ctx = lsha.sha1_init()
+
+    trace.disable()
+    ok, rc, re = e2lib.trycall(compute_checksum, ctx, f)
+    trace.enable()
+    eio.fclose(f)
+
+    if not ok then
+        -- rc contains error object/message
+        re = rc
+        rc = false
+    end
+
+    if not rc then
+        return false, re
+    end
+
+    sha1 = lsha.sha1_final(ctx)
+    assert(#sha1 == digest.SHA1_LEN)
+
+    return sha1
+end
+
+--- Compute SHA256 checksum of named file.
+-- @param filename string: the full filename to the file
+-- @return SHA256 sum on success, false on error
+-- @return Error object on failure.
+local function compute_sha256_checksum(filename)
+
+    local function compute_checksum(ctx, f)
+        local rc, re, buf
+
+        while true do
+            buf, re = eio.fread(f, 262144)
+            if not buf then
+                return false, re
+            elseif buf == "" then
+                break
+            end
+
+            lsha.sha256_update(ctx, buf)
+        end
+
+        return true
+    end
+
+    local f, rc, re, ok, ctx, sha256
+
+    f, re = eio.fopen(filename, "r")
+    if not f then
+        return false, re
+    end
+
+    ctx = lsha.sha256_init()
+
+    trace.disable()
+    ok, rc, re = e2lib.trycall(compute_checksum, ctx, f)
+    trace.enable()
+    eio.fclose(f)
+
+    if not ok then
+        -- rc contains error object/message
+        re = rc
+        rc = false
+    end
+
+    if not rc then
+        return false, re
+    end
+
+    sha256 = lsha.sha256_final(ctx)
+    assert(#sha256 == digest.SHA256_LEN)
+
+    return sha256
+end
+
 local function compute_checksum_entry(pos, entry, directory, verify)
     local rc, re
     local filename, computedcs
@@ -273,8 +391,12 @@ local function compute_checksum_entry(pos, entry, directory, verify)
     end
 
     if entry.digest == digest.SHA1 then
-        -- XXX: We assume the hash module returns SHA1 checksums. Not nice.
-        computedcs, re = hash.hash_file_once(filename)
+        computedcs, re = compute_sha1_checksum(filename)
+        if not computedcs then
+            return false, re
+        end
+    elseif entry.digest == digest.SHA256 then
+        computedcs, re = compute_sha256_checksum(filename)
         if not computedcs then
             return false, re
         end
@@ -282,6 +404,8 @@ local function compute_checksum_entry(pos, entry, directory, verify)
         -- XXX: Fix this for backwards compat.
         return false, err.new("Computing MD5 checksums is currently not "..
             "supported")
+    else
+        error("unsupported entry.digest type")
     end
 
     if verify then
