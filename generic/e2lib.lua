@@ -677,12 +677,30 @@ function e2lib.rotate_log(file)
     return true
 end
 
+local _cleanup = {}
+
+--- Register a callback that runs during e2lib.cleanup()
+-- @param name Name of the function, for logging.
+-- @param func Funtion to be run
+-- @param ... Any number of arguments to be passed to function when it runs.
+function e2lib.register_cleanup(name, func, ...)
+    assertIsStringN(name)
+    assertIsFunction(func)
+    table.insert(_cleanup, #_cleanup+1, { name=name, func=func, args = {...}})
+end
+
 --- Clean up temporary files and directories, shut down plugins.
 function e2lib.cleanup()
     local rc, re = plugin.exit_plugins()
     if not rc then
         e2lib.log(1, "deinitializing plugins failed (ignoring)")
     end
+
+    for _,entry in ipairs(_cleanup) do
+        e2lib.logf(4, "running cleanup callback %s()", tostring(entry.name))
+        entry.func(unpack(entry.args))
+    end
+
     e2lib.rmtempdirs()
     e2lib.rmtempfiles()
     if e2lib.globals.lock then
