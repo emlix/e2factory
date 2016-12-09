@@ -37,14 +37,13 @@ local e2lib = {}
 -- table that we are going to fill later (after the require block below).
 package.loaded["e2lib"] = e2lib
 
+local assrt = require("assrt")
 local buildconfig = require("buildconfig")
 local cache = require("cache")
 local console = require("console")
 local eio = require("eio")
 local err = require("err")
 local errno = require("errno")
-local assrt = require("assrt")
-local hash = require("hash")
 local le2lib = require("le2lib")
 local lock = require("lock")
 local plugin = require("plugin")
@@ -702,7 +701,6 @@ function e2lib.finish(returncode)
     if not returncode then
         returncode = 0
     end
-    hash.hcache_store()
     e2lib.cleanup()
     if e2lib.globals.debuglogfile then
         eio.fclose(e2lib.globals.debuglogfile)
