@@ -730,9 +730,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     e2lib.logf(4, "VERSION:       %s", buildconfig.VERSION)
     e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
 
-    -- no error check required
-    hash.hcache_load(e2lib.join(info.root, ".e2/hashcache"))
-
     -- read .e2/proj-location
     local plf = e2lib.join(info.root, e2lib.globals.project_location_file)
     local line, re = eio.file_read_line(plf)
