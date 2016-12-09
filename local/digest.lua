@@ -22,6 +22,7 @@
 -- more details.
 
 local digest = {}
+package.loaded["digest"] = digest
 
 local e2lib = require("e2lib")
 local eio = require("eio")
@@ -29,6 +30,7 @@ local err = require("err")
 local lsha = require("lsha")
 local strict = require("strict")
 local trace = require("trace")
+local cscache = require("cscache")
 
 --- Digest table.
 -- Contains an array of digest entries.
@@ -323,6 +325,22 @@ local function compute_sha1_checksum(filename)
     return sha1
 end
 
+local function compute_sha1_checksum_once(filename)
+    local sha1, re
+
+    sha1 = cscache:lookup(filename, digest.SHA1)
+    if sha1 then
+        return sha1
+    end
+
+    sha1, re = compute_sha1_checksum(filename)
+    if sha1 then
+        cscache:insert(filename, sha1, digest.SHA1)
+    end
+
+    return sha1, re
+end
+
 --- Compute SHA256 checksum of named file.
 -- @param filename string: the full filename to the file
 -- @return SHA256 sum on success, false on error
@@ -376,6 +394,21 @@ local function compute_sha256_checksum(filename)
     return sha256
 end
 
+local function compute_sha256_checksum_once(filename)
+    local sha256, re
+
+    sha256 = cscache:lookup(filename, digest.SHA256)
+    if sha256 then
+        return sha256
+    end
+
+    sha256, re = compute_sha256_checksum(filename)
+    if sha256 then
+        cscache:insert(filename, sha256, digest.SHA256)
+    end
+    return sha256, re
+end
+
 local function compute_checksum_entry(pos, entry, directory, verify)
     local rc, re
     local filename, computedcs
@@ -391,12 +424,12 @@ local function compute_checksum_entry(pos, entry, directory, verify)
     end
 
     if entry.digest == digest.SHA1 then
-        computedcs, re = compute_sha1_checksum(filename)
+        computedcs, re = compute_sha1_checksum_once(filename)
         if not computedcs then
             return false, re
         end
     elseif entry.digest == digest.SHA256 then
-        computedcs, re = compute_sha256_checksum(filename)
+        computedcs, re = compute_sha256_checksum_once(filename)
         if not computedcs then
             return false, re
         end
