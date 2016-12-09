@@ -192,59 +192,6 @@ function hash.hash_line(hc, data)
     hash.hash_append(hc, data .. "\n")
 end
 
---- Hash a file.
--- @param hc the hash context
--- @param path string: the full path to the file
--- @return True on success, false on error.
--- @return Error object on failure.
-local function hash_file(hc, path)
-
-    local function _hash_file(hc, f)
-        local rc, re, buf
-
-        while true do
-            buf, re = eio.fread(f, 64*1024)
-            if not buf then
-                return false, re
-            elseif buf == "" then
-                break
-            end
-
-            hash.hash_append(hc, buf)
-        end
-
-        return true
-    end
-
-    local f, rc, re, ok
-
-    f, re = eio.fopen(path, "r")
-    if not f then
-        return false, re
-    end
-
-    trace.disable()
-    ok, rc, re = e2lib.trycall(_hash_file, hc, f)
-    trace.enable()
-
-    if not ok then
-        -- rc contains error object/message
-        re = rc
-        rc = false
-    end
-
-    if not rc then
-        eio.fclose(f)
-        return false, re
-    end
-
-    rc, re = eio.fclose(f)
-    if not rc then
-        return false, re
-    end
-    return true
-end
-
 --- Lookup the checksum for a file in the hashcache.
 -- @param path Absolute path to the file.
 -- @return Checksum or false if path is not in the cache or an error occured.
@@ -314,33 +261,6 @@ local function hcache_add(path, hash)
     }
 
     return true
-end
-
---- Hash a file at once. Unlike hash_file(), this function makes use of a
--- persistent cache.
--- @param path Full path to the file.
--- @return Checksum string, or false on error.
--- @return Error object on failure.
--- @see hcache_load
-function hash.hash_file_once(path)
-    local rc, re, hc, cs
-
-    cs = hcache_lookup(path)
-    if cs then
-        return cs
-    end
-
-    hc = hash.hash_start()
-
-    rc, re = hash_file(hc, path)
-    if not rc then
-        hash.hash_finish(hc)
-        return false, re
-    end
-
-    cs = hash.hash_finish(hc)
-    hcache_add(path, cs)
-    return cs
 end
 
 --- Get checksum and release hash context. Throws error object on failure.
