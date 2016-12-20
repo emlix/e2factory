@@ -64,7 +64,7 @@ local function load_prj_cfg(prj)
 
     rc, re = e2lib.vrfy_dict_exp_keys(prj, "e2project",
         { "name", "release_id", "deploy_results",
-        "default_results", "chroot_arch" })
+        "default_results", "chroot_arch", "checksums" })
     if not rc then
         return false, re
     end
@@ -115,6 +115,37 @@ local function load_prj_cfg(prj)
     if prj.chroot_arch == "x86_64" and system_arch ~= "x86_64" then
         return false,
             err.new("running on x86_32: switching to x86_64 mode is impossible.")
+    end
+
+    -- checksums
+    if prj.checksums == nil then
+        prj.checksums = {}
+    end
+
+    rc, re = e2lib.vrfy_dict_exp_keys(prj.checksums, "e2project.checksums",
+        { "sha1", "sha256" })
+    if not rc then
+        return false, re
+    end
+
+    if prj.checksums.sha1 ~= nil then
+        if type(prj.checksums.sha1) ~= "boolean" then
+            return false, err.new("e2project.checksums.sha1 is not a boolean")
+        end
+    else
+        prj.checksums.sha1 = true
+    end
+
+    if prj.checksums.sha256 ~= nil then
+        if type(prj.checksums.sha256) ~= "boolean" then
+            return false, err.new("e2project.checksums.sha256 is not a boolean")
+        end
+    else
+        prj.checksums.sha256 = false
+    end
+
+    if not (prj.checksums.sha1 or prj.checksums.sha256) then
+        return false, err.new("at least one checksum algorithm is required")
     end
 
     _prj = prj
@@ -266,6 +297,16 @@ function project.default_results_iter()
     end
 end
 
+---
+function project.checksums_sha1()
+    return _prj.checksums.sha1
+end
+
+---
+function project.checksums_sha256()
+    return _prj.checksums.sha256
+end
+
 --- Calculate the Project ID. The Project ID consists of files in proj/init
 -- as well as some keys from proj/config and buildconfig. Returns a cached
 -- value after the first call.
@@ -302,6 +343,8 @@ function project.projid(info)
     hash.hash_append(hc, project.release_id())
     hash.hash_append(hc, project.name())
     hash.hash_append(hc, project.chroot_arch())
+    hash.hash_append(hc, tostring(project.checksums_sha1()))
+    hash.hash_append(hc, tostring(project.checksums_sha256()))
     hash.hash_append(hc, buildconfig.VERSION)
 
     -- .e2/extensions
