@@ -595,6 +595,32 @@ function digest.write(dt, filename)
     return true
 end
 
+---
+function digest.type_to_string(digest_type)
+    assert(digest_type == digest.SHA1 or digest_type == digest.SHA256)
+    if digest_type == digest.SHA1 then
+        return "SHA1"
+    else
+        return "SHA256"
+    end
+end
+
+---
+function digest.assertSha1(dgst)
+    assert(type(dgst) == "string")
+    assert(#dgst == digest.SHA1_LEN)
+    local s, e = dgst:find("[a-f0-9]*")
+    assert(s == 1 and e == digest.SHA1_LEN)
+end
+
+---
+function digest.assertSha256(dgst)
+    assert(type(dgst) == "string")
+    assert(#dgst == digest.SHA256_LEN)
+    local s, e = dgst:find("[a-f0-9]*")
+    assert(s == 1 and e == digest.SHA256_LEN)
+end
+
 return strict.lock(digest)
 
 -- vim:sw=4:sts=4:et:
