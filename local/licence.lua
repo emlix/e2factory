@@ -54,38 +54,17 @@ function licence.licence:initialize(name)
 end
 
 --- Add a file to a licence.
--- @param location Path to licence file.
--- @param server Server name.
--- @param sha1 SHA1 checksum string. If file is local sha1 may be nil
+-- @param file add file_class object
 -- @return May throw error(err) on invalid input.
-function licence.licence:add_file(location, server, sha1)
-    local file, ok, re
-
-    ok, re = e2lib.vrfy_string_len(location, "licence location")
-    if not ok then
-        error(re)
-    end
-
-    ok, re = e2lib.vrfy_string_len(server, "licence server")
-    if not ok then
-        error(re)
-    end
-
-    if sha1 then
-        ok, re = e2lib.vrfy_string_len(sha1, "licence sha1")
-        if not ok then
-            error(re)
-        end
-    end
-
+-- @see e2tool.file_class
+function licence.licence:add_file(file)
+    assertIsTable(file)
+    assert(file:isInstanceOf(e2tool.file_class))
     self._licenceid = false
-
-    file = e2tool.file_class:new(server, location)
-    file:sha1(sha1)
     table.insert(self._files, file)
 end
 
---- Iterator that returns file tables in the order they were added.
+--- Iterator that returns file_class objects in the order they were added.
 function licence.licence:file_iter()
     local i = 0
 
@@ -179,6 +158,7 @@ function licence.load_licence_config(info)
     end
 
     for name,l in pairs(ltable) do
+        local lerr = err.new("error in licence %q", name)
         e2lib.logf(4, "in licence.load_licence_config, add %s, %s", tostring(name), tostring(l))
 
         rc, re = e2lib.vrfy_dict_exp_keys(l, "licence",
@@ -199,51 +179,47 @@ function licence.load_licence_config(info)
             return false, e:append("files attribute in %s not a table", name)
         end
 
-        for _,f in ipairs(l.files) do
-            rc, re = e2lib.vrfy_dict_exp_keys(f, "file",
-                { "server", "location", "sha1" })
-            if not rc then
-                return false, e:cat(re)
-            end
-
-            local inherit = {
-                server = l.server,
-            }
-
-            local keys = {
-                server = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = true,
-                },
-                location = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = false,
-                },
-                sha1 = {
-                    mandatory = false,
-                    type = "string",
-                    inherit = false,
-                },
-            }
-
-
-            rc, re = e2lib.vrfy_table_attributes(f, keys, inherit)
-            if not rc then
-                return false, e:cat(re)
-            end
-            if f.server ~= cache.server_names().dot and not f.sha1 then
-                return false, e:append(
-                    "file entry for remote file without sha1 attribute")
-            end
-        end
-
-
         licence.licences[name] = licence.licence:new(name)
 
         for _,f in ipairs(l.files) do
-            licence.licences[name]:add_file(f.location, f.server, f.sha1)
+            local file
+
+            rc, re = e2lib.vrfy_dict_exp_keys(f, "file",
+                {
+                    "server",
+                    "location",
+                    "sha1",
+                    "sha256",
+                })
+            if not rc then
+                e:cat(lerr)
+                return false, e:cat(re)
+            end
+
+            if f.server == nil then
+                f.server = l.server
+            end
+
+            file = e2tool.file_class:new()
+
+            rc, re = file:validate_set_servloc(f.server, f.location)
+            if not rc then
+                e:cat(lerr)
+                return false, e:cat(re)
+            end
+
+            rc, re = file:validate_set_checksums(f.sha1, f.sha256)
+            if not rc then
+                e:cat(lerr)
+                return false, e:cat(re)
+            end
+
+            licence.licences[name]:add_file(file)
+        end
+
+
+
+        for _,f in ipairs(l.files) do
         end
     end
 
