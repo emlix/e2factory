@@ -1,4 +1,5 @@
 NEXT:
+ * Add sha256 support to e2source file config
  * Add sha256 support to e2licence config
  * Add sha256 support to e2chroot config
  * Add selection of checksum algorithms to proj/config

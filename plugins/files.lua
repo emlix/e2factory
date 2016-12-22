@@ -61,7 +61,7 @@ function files.files_source:initialize(rawsrc)
     assert(type(rawsrc.name) == "string" and #rawsrc.name > 0)
     assert(type(rawsrc.type) == "string" and rawsrc.type == "files")
 
-    local rc, re, e, info
+    local rc, re, e
 
     source.basic_source.initialize(self, rawsrc)
 
@@ -101,6 +101,8 @@ function files.files_source:initialize(rawsrc)
 
     e = err.new("error in file list of source")
     for _,f in ipairs(rawsrc.file) do
+        local file
+
         if type(f) ~= "table" then
             error(e:append("`file' attribute must be a table"))
         end
@@ -113,6 +115,7 @@ function files.files_source:initialize(rawsrc)
             "patch",
             "server",
             "sha1",
+            "sha256",
             "unpack",
         })
         if not rc then
@@ -124,20 +127,16 @@ function files.files_source:initialize(rawsrc)
             f.server = rawsrc.server
         end
 
-        info = e2tool.info()
+        file = e2tool.file_class:new()
 
-        if not f.server then
-            error(e:append("file entry without `server' attribute"))
+        rc, re = file:validate_set_servloc(f.server, f.location)
+        if not rc then
+            error(e:cat(re))
         end
-        if f.server and (not cache.valid_server(info.cache, f.server)) then
-            error(e:append("invalid server: %s", f.server))
-        end
-        if not f.location then
-            error(e:append("file entry without `location' attribute"))
-        end
-        if f.server ~= cache.server_names().dot and not f.sha1 then
-            error(e:append("file entry for remote file without "..
-            "`sha1` attribute"))
+
+        rc, re = file:validate_set_checksums(f.sha1, f.sha256)
+        if not rc then
+            error(e:cat(re))
         end
 
         local attrcnt = 0
@@ -161,9 +160,9 @@ function files.files_source:initialize(rawsrc)
                 "unpack, copy or patch attributes"))
         end
 
-        assert(type(f.location) == "string" and f.location ~= "")
-        assert(type(f.server) == "string" and f.server ~= "")
-        assert(f.sha1 == nil or (type(f.sha1) == "string" and #f.sha1 == 40))
+        file:unpack(f.unpack)
+        file:copy(f.copy)
+        file:patch(f.patch)
 
         -- per file licences --
         local laerr = string.format("%s:%s licences attribute",
@@ -199,26 +198,9 @@ function files.files_source:initialize(rawsrc)
             error(e:append("%s must be a table", laerr))
         end
 
-        local file
-        file = e2tool.file_class:new(f.server, f.location)
-        file:sha1(f.sha1)
         file:licences(f.licences)
 
-        if f.unpack then
-            assert(type(f.unpack) == "string")
-            file:unpack(f.unpack)
-            table.insert(self._files, file)
-        elseif f.copy then
-            assert(type(f.copy) == "string")
-            file:copy(f.copy)
-            table.insert(self._files, file)
-        elseif f.patch then
-            assert(type(f.patch) == "string")
-            file:patch(f.patch)
-            table.insert(self._files, file)
-        else
-            assert("internal error" == true)
-        end
+        table.insert(self._files, file)
     end
 end
 
