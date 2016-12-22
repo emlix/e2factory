@@ -1,4 +1,5 @@
 NEXT:
+ * Add sha256 support to e2chroot config
  * Add selection of checksum algorithms to proj/config
  * Fix checksum verification of some file sources used by collect_project
  * Fix SourceID calculation in files plugin under artificial conditions

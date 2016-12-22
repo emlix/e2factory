@@ -42,11 +42,12 @@ local strict = require("strict")
 -- @field files Vector of file tables.
 -- @see file
 
---- On disk file config. Note: This dict is used all over factory.
+--- Raw table for file_class.
 -- @table file
--- @field location File location.
 -- @field server Server name.
--- @field sha1 SHA1 sum. Optional if server:location is local.
+-- @field location File location.
+-- @field sha1 SHA1 sum, optional
+-- @field sha256 SHA256 sum, optional
 
 --- Default chroot group names applied to all results. Locked.
 chroot.groups_default = {}
@@ -81,33 +82,12 @@ function chroot.chroot:get_name()
 end
 
 --- Add a file to a chroot group.
--- @param location Path to chroot archive file.
--- @param server Server name.
--- @param sha1 SHA1 checksum string. If file is local sha1 may be nil
--- @return May throw error(err) on invalid input.
-function chroot.chroot:add_file(location, server, sha1)
-    local t, ok, re, file
-
-    ok, re = e2lib.vrfy_string_len(location, "chroot location")
-    if not ok then
-        error(re)
-    end
-
-    ok, re = e2lib.vrfy_string_len(server, "chroot server")
-    if not ok then
-        error(re)
-    end
-
-    if sha1 then
-        ok, re = e2lib.vrfy_string_len(sha1, "chroot sha1")
-        if not ok then
-            error(re)
-        end
-    end
-
+-- @param file file_class object to add
+-- @see e2tool.file_class
+function chroot.chroot:add_file(file)
+    assertIsTable(file)
+    assert(file:isInstanceOf(e2tool.file_class))
     self._chrootgroupid = false
-    file = e2tool.file_class:new(server, location)
-    file:sha1(sha1)
     table.insert(self._files, file)
 end
 
@@ -253,55 +233,50 @@ function chroot.load_chroot_config(info)
         end
 
         rc, re = e2lib.vrfy_vector(grp.files,
-                string.format("group %s file entry", grp.name))
+                string.format("group: %s", grp.name))
         if not rc then
             return false, e:cat(re)
         end
 
         cgroup = chroot.chroot:new(grp.name)
 
-        for _,f in ipairs(grp.files) do
-            local inherit = {
-                server = grp.server,
-            }
-            local keys = {
-                server = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = true,
-                },
-                location = {
-                    mandatory = true,
-                    type = "string",
-                    inherit = false,
-                },
-                sha1 = {
-                    mandatory = false,
-                    type = "string",
-                    inherit = false,
-                },
-            }
-            rc, re = e2lib.vrfy_table_attributes(f, keys, inherit)
-            if not rc then
-                e:append("in group: %s", grp.name)
-                e:cat(re)
-                return false, e
-            end
+        for n, f in ipairs(grp.files) do
+            local ferr, file
 
-            if f.server ~= cache.server_names().dot and not f.sha1 then
-                e:append("in group: %s", grp.name)
-                e:append("file entry for remote file without `sha1` attribute")
-                return false, e
+            ferr = err.new("error in file entry %d of chroot group '%s'", n,
+                tostring(grp.name))
+
+            file = e2tool.file_class:new()
+
+            if f.server == nil then
+                f.server = grp.server
             end
 
             rc, re = e2lib.vrfy_dict_exp_keys(f,
-                string.format("group %q file entry", grp.name),
-                { "server", "location", "sha1" })
+                string.format("file entry of group: %s", grp.name),
+                {
+                    "server",
+                    "location",
+                    "sha1",
+                    "sha256",
+                })
             if not rc then
                 return false, e:cat(re)
             end
 
-            cgroup:add_file(f.location, f.server, f.sha1)
+            rc, re = file:validate_set_servloc(f.server, f.location)
+            if not rc then
+                e:cat(ferr)
+                return false, e:cat(re)
+            end
+
+            rc, re = file:validate_set_checksums(f.sha1, f.sha256)
+            if not rc then
+                e:cat(ferr)
+                return false, e:cat(re)
+            end
+
+            cgroup:add_file(file)
         end
 
         chroot.groups_byname[cgroup:get_name()] = cgroup
