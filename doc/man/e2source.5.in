@@ -1,17 +1,16 @@
 .\" Man page for e2source
 .\"
-.\" (c)2007, 2012 emlix GmbH
+.\" (c)2007-2016 emlix GmbH
 .\"
-.TH e2source 5 "Oct 29, 2012" "@VERSION@"
+.TH e2source 5 "Dec 22, 2016" "@VERSION@"
 
 .SH NAME
 src/*/config \- source configuration files of an e2factory project
 
 .SH DESCRIPTION
-The mandatory files \fBsrc/<dir>/config\fR configure sources to be used when building results. The name of
-the directory \fB<dir>\fR defines the source-name. 
-In case of sub-directories, all directories below \fBsrc/\fR do form the
-source-name separated by dots.
+The mandatory files \fBsrc/<dir>/config\fR configure sources to be used when building results.
+The name of the directory \fB<dir>\fR defines the source-name.
+In case of sub-directories, all directories below \fBsrc/\fR do form the source-name separated by dots.
 .br
 e.g.:
 \fBsrc/<name1>/<name2>/config\fR leads to source name: \fB<name1>.<name2>\fR.
@@ -34,15 +33,18 @@ e2source {
   type = "file",
   server = "<string>",
   file = {
-        { licences = {"<string>", ...},
-          server = "<string>",
-          location = "<string>",
-          sha1 = "<string>",
-          copy = "<string>",
-          patch = "<string>",
-          unpack = "<string>", },
-        ...
-        },
+    {
+      licences = {"<string>", ...},
+      server = "<string>",
+      location = "<string>",
+      sha1 = "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      copy = "<string>",
+      patch = "<string>",
+      unpack = "<string>",
+    },
+    ...
+  },
 }
 .fi
 
@@ -93,7 +95,7 @@ Name of the licence(s) that apply to this specific file, defaults to
 licences on source level, if omitted.
 
 .TP
-.BR server 
+.BR server
 (on file level)
 .br
 Type: String
@@ -110,7 +112,13 @@ Path of the file on server.
 .BR sha1
 Type: String
 .br
-SHA-1 check-sum of the file.
+SHA-1 checksum of the file.
+
+.TP
+.BR sha256
+Type: String
+.br
+SHA-256 checksum of the file.
 
 .TP
 .BR copy
@@ -136,7 +144,7 @@ argument. Mutual exclusive to \fBcopy\fR and \fBunpack\fR.
 .BR unpack
 Type: String
 .br
-The file is an archive (tarball) it is unpacked and a link pointing to the directory 
+The file is an archive (tarball) it is unpacked and a link pointing to the directory
 defined in string is created. Name of the link equals  source-name. Mutual exclusive
 to \fBcopy\fR and \fBpatch\fR.
 
@@ -298,6 +306,3 @@ Path to the directory to be used in working copy mode.
 
 .SH "SEE ALSO"
 .BR e2factory(1)
-
-.SH COPYRIGHT
-(c)2013 emlix GmbH

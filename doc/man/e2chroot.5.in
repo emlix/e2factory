@@ -1,8 +1,8 @@
 .\" Man page for e2chroot
 .\"
-.\" (c)2007, 2012 emlix GmbH
+.\" (c)2007-2016 emlix GmbH
 .\"
-.TH e2chroot 5 "Oct 26, 2012" "@VERSION@"
+.TH e2chroot 5 "Dec 22, 2016" "@VERSION@"
 
 .SH NAME
 proj/chroot \- chroot configuration file of an e2factory project
@@ -19,20 +19,21 @@ The file has following structure:
 e2chroot {
   default_groups = { "<string>", ... },
   groups = {
-
     {
-    name = "<string>",
-    server = "<string>",
-    files = {
-            { server = "<string>",
-              location = "<string>",
-              sha1 = "<string>", },
-            ...
-            },
+      name = "<string>",
+      server = "<string>",
+      files = {
+        {
+          server = "<string>",
+          location = "<string>",
+          sha1 = "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+          sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        },
+        ...
+      },
     },
     ...
   }
-
 }
 .fi
 
@@ -71,7 +72,7 @@ Type: Table
 List of files belonging to the chroot group.
 
 .TP
-.BR server 
+.BR server
 (on file level)
 .br
 Type: String
@@ -88,7 +89,13 @@ Path to the file on the server.
 .BR sha1
 Type: String
 .br
-sha1 check-sum of the file.
+SHA-1 checksum of the file.
 
-.SH COPYRIGHT
-(c)2013 emlix GmbH
+.TP
+.BR sha256
+Type: String
+.br
+SHA-256 checksum of the file.
+
+.SH "SEE ALSO"
+.BR e2factory(1)
