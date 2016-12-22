@@ -52,22 +52,23 @@ e2tool.file_class = class("file_class")
 
 --- File_class constructor.
 -- A file_class represents a single file entry in various e2 config files.
--- Server name and location are required, everything else is optional and some
--- attributes are not universal. Most error checking is thus left to other
+-- Server name and location are optional and don't get validated.
+-- Attributes are not universal. Most error checking is thus left to other
 -- layers, except for some basic assert statements.
--- @param server Server name (as known to cache)
--- @param location Path to file relative to server
--- @raise Assert on bad input
+-- @param server Server name as known to cache, optional
+-- @param location Path to file relative to server, optional
 function e2tool.file_class:initialize(server, location)
-    assertIsStringN(server)
-    assertIsStringN(location)
-    self._server = server
-    self._location = location
+    self._server = nil
+    self._location = nil
     self._sha1 = nil
+    self._sha256 = nil
     self._licences = nil
     self._unpack = nil
     self._copy = nil
     self._patch = nil
+
+    self:server(server)
+    self:location(location)
 end
 
 --- Create a new instance.
@@ -77,6 +78,7 @@ end
 function e2tool.file_class:instance_copy()
     local c = e2tool.file_class:new(self._server, self._location)
     c:sha1(self._sha1)
+    c:sha256(self._sha256)
     c:licences(self._licences) -- stringlist, doesn't create a copy
     c:unpack(self._unpack)
     c:copy(self._copy)
@@ -95,6 +97,9 @@ function e2tool.file_class:to_config_table()
 
     if self._sha1 then
         t.sha1 = self._sha1
+    end
+    if self._sha256 then
+        t.sha256 = self._sha256
     end
     if self._licences then
         t.licences = self._licences:totable()
@@ -116,12 +121,125 @@ function e2tool.file_class:servloc()
     return self._server .. ":" .. self._location
 end
 
+--- Validate and set server and location attributes.
+-- @param server Valid server name (validated against cache)
+-- @param location Path to file on the server
+-- @return True on success, false on validation failure
+-- @return Error object on failure
+function e2tool.file_class:validate_set_servloc(server, location)
+    local info
+
+    if server == nil then
+        return false, err.new("file entry without 'server' attribute")
+    end
+
+    if type(server) ~= "string" then
+        return false, err.new("invalid 'server' type: %", type(server))
+    end
+
+    if server == "" then
+        return false, err.new("'server' can't be empty")
+    end
+
+    info = e2tool.info()
+
+    if not cache.valid_server(info.cache, server) then
+        return false, err.new("file entry with unknown server: %s", server)
+    end
+
+    if location == nil then
+        return false, err.new("file entry without 'location' attribute")
+    end
+
+    if type(location) ~= "string" then
+        return false, err.new("invalid 'location' type: %", type(server))
+    end
+
+    if location == "" then
+        return false, err.new("'location' can't be empty")
+    end
+
+    self:server(server)
+    self:location(location)
+
+    return true
+end
+
+--- Validate the cs values and set the file checksum if available.
+-- Note this function does <b>not verify</b> any checksum.
+-- It enforces only format and checksum policy.
+-- @param sha1 Optional SHA1 checksum.
+-- @param sha256 Optional SHA256 checksum.
+-- @return True on success, false on error
+-- @return Error object on failure.
+function e2tool.file_class:validate_set_checksums(sha1, sha256)
+    local s
+
+    if sha1 ~= nil then
+        if type(sha1) ~= "string" then
+            return false, err.new("sha1 must be a string")
+        end
+
+        if #sha1 ~= digest.SHA1_LEN then
+            return false, err.new("sha1 should be %d characters long",
+                digest.SHA1_LEN)
+        end
+
+        local s, e = sha1:find("[a-f0-9]*")
+        if s ~= 1 or e ~= digest.SHA1_LEN then
+            return false, err.new("sha1 should be lowercase hexadecimal")
+        end
+    end
+
+    if sha256 ~= nil then
+        if type(sha256) ~= "string" then
+            return false, err.new("sha256 must be a string")
+        end
+
+        if #sha256 ~= digest.SHA256_LEN then
+            return false, err.new("sha256 should be %d characters long",
+                digest.SHA256_LEN)
+        end
+
+        local s, e = sha256:find("[a-f0-9]*")
+        if s ~= 1 or e ~= digest.SHA256_LEN then
+            return false, err.new("sha256 should be in lowercase hexadecimal")
+        end
+    end
+
+    if self._server ~= cache.server_names().dot then
+        if not sha1 and not sha256 then
+            return false,
+                err.new("checksum is required for the %s file entry", self:servloc())
+        end
+
+        if project.checksums_sha1() and not sha1 then
+            return false, err.new("sha1 attribute is missing for %s", self:servloc())
+        end
+
+        if project.checksums_sha256() and not sha256 then
+            return false, err.new("sha256 attribute is missing for %s", self:servloc())
+        end
+    end
+
+    if sha1 then
+        self:sha1(sha1)
+    end
+    if sha256 then
+        self:sha256(sha256)
+    end
+
+    return true
+end
+
 --- Compute checksum of file by retreiving it via the cache transport,
 -- and hashing local.
+-- @param digest_type CS of this digest type
 -- @param flags cache flags
--- @return SHA1 checksum on success, false if an error occured.
+-- @return Requested checksum on success, false if an error occured.
 -- @return error object on failure.
-function e2tool.file_class:_compute_checksum(flags)
+function e2tool.file_class:_compute_checksum(digest_type, flags)
+    assert(digest_type == digest.SHA1 or digest_type == digest.SHA256)
     local rc, re, info, path, dt
 
     info = e2tool.info()
@@ -133,19 +251,27 @@ function e2tool.file_class:_compute_checksum(flags)
     end
 
     dt = digest.new()
-    digest.new_entry(dt, digest.SHA1, nil--[[checksum]], nil--[[name]], path)
+    digest.new_entry(dt, digest_type, nil--[[checksum]], nil--[[name]], path)
     rc, re = digest.checksum(dt, false)
     if not rc then
         return false, re
+    end
+
+    if digest_type == digest.SHA1 then
+        digest.assertSha1(dt[1].checksum)
+    else
+        digest.assertSha256(dt[1].checksum)
     end
 
     return dt[1].checksum
 end
 
 --- Compute checksum of file on the remote server, if transport supports it.
--- @return SHA1 checksum on success - false if not possible or on failure
+-- @param digest_type Digest type
+-- @return  Checksum on success - false if not possible or on failure
 -- @return error object on failure.
-function e2tool.file_class:_compute_remote_checksum()
+function e2tool.file_class:_compute_remote_checksum(digest_type)
+    assert(digest_type == digest.SHA1 or digest_type == digest.SHA256)
     local rc, re, info, surl, u, checksum
 
     info = e2tool.info()
@@ -162,10 +288,14 @@ function e2tool.file_class:_compute_remote_checksum()
 
     if u.transport == "ssh" or u.transport == "scp" or
         u.transport == "rsync+ssh" then
-        local argv, stdout, dt, sha1sum_remote
+        local argv, stdout, dt, cmd, s, e
 
-        sha1sum_remote =  { "sha1sum", e2lib.join("/", u.path) }
-        rc, re, stdout = e2lib.ssh_remote_cmd(u, sha1sum_remote)
+        if digest_type == digest.SHA1 then
+            cmd =  { "sha1sum", e2lib.join("/", u.path) }
+        else
+            cmd =  { "sha256sum", e2lib.join("/", u.path) }
+        end
+        rc, re, stdout = e2lib.ssh_remote_cmd(u, cmd)
         if not rc then
             return false, re
         end
@@ -175,16 +305,30 @@ function e2tool.file_class:_compute_remote_checksum()
             return false, re
         end
 
-        for k,dt_entry in ipairs(dt) do
+        for _,dt_entry in ipairs(dt) do
             if dt_entry.name == e2lib.join("/", u.path) then
                 checksum = dt_entry.checksum
                 break;
             end
         end
 
-        if not checksum or #checksum ~= digest.SHA1_LEN then
+        if not checksum then
             return false,
-                err.new("could not extract checksum from remote output")
+                err.new("could not extract %s checksum from remote output",
+                    digest.type_to_string(digest_type))
+        end
+
+        s, e = checksum:find("[a-f0-9]*")
+        if digest_type == digest.SHA1 then
+            if not (s == 1 and e == digest.SHA1_LEN) then
+                return false,
+                    err.new("don't recognize SHA1 checksum from remote output")
+            end
+        else
+            if not (s == 1 and e == digest.SHA256_LEN) then
+                return false,
+                    err.new("don't recognize SHA256 checksum from remote output")
+            end
         end
 
         return checksum
@@ -198,18 +342,42 @@ end
 -- @return FileID string: hash value, or false on error.
 -- @return an error object on failure
 function e2tool.file_class:fileid()
-    local rc, re, e, fileid
+    local rc, re, e, hc, cs
+    local cs_done = false
 
     e = err.new("error calculating file id for file: %s", self:servloc())
 
-    if self:sha1() then
-        fileid = self:sha1()
-    else
-        fileid, re = self:_compute_checksum()
-        if not fileid then
-            return false, e:cat(re)
+    hc = hash.hash_start()
+    hash.hash_append(hc, self._server)
+    hash.hash_append(hc, self._location)
+
+    if self:sha1() or project.checksums_sha1() then
+        if self:sha1() then
+            hash.hash_append(hc, self:sha1())
+        else
+            cs, re = self:_compute_checksum(digest.SHA1)
+            if not cs then
+                return false, e:cat(re)
+            end
+            hash.hash_append(hc, cs)
         end
+        cs_done = true
     end
+
+    if self:sha256() or project.checksums_sha256() then
+        if self:sha256() then
+            hash.hash_append(hc, self:sha256())
+        else
+            cs, re = self:_compute_checksum(digest.SHA256)
+            if not cs then
+                return false, e:cat(re)
+            end
+            hash.hash_append(hc, cs)
+        end
+        cs_done = true
+    end
+
+    assert(cs_done, "no checksum algorithm enabled for fileid()")
 
     if e2option.opts["check-remote"] then
         rc, re = self:checksum_verify()
@@ -217,13 +385,6 @@ function e2tool.file_class:fileid()
             return false, e:cat(re)
         end
     end
-
-    local hc
-    hc = hash.hash_start()
-    hash.hash_append(hc, self._server)
-    hash.hash_append(hc, self._location)
-
-    hash.hash_append(hc, fileid)
 
     if self._licences then
         local lid
@@ -253,68 +414,94 @@ end
 -- @return True if verify succeeds, False otherwise
 -- @return Error object on failure.
 function e2tool.file_class:checksum_verify()
-    local rc, re, e, cs_cache, cs_remote, cs_fetch, checksum, info
+    local rc, re, e, digest_types, cs_cache, cs_remote, cs_fetch, checksum, info
+    local checksum_conf
 
     e = err.new("error verifying checksum of %s", self:servloc())
 
     info = e2tool.info()
 
-    if cache.cache_enabled(info.cache, self._server) then
-        cs_cache, re = self:_compute_checksum()
-        if not cs_cache then
-            return false, e:cat(re)
+    digest_types = {}
+    if self:sha1() or project.checksums_sha1() then
+        table.insert(digest_types, digest.SHA1)
+    end
+    if self:sha256() or project.checksums_sha256() then
+        table.insert(digest_types, digest.SHA256)
+    end
+    assert(#digest_types > 0)
+
+    for _,digest_type in ipairs(digest_types) do
+
+        if cache.cache_enabled(info.cache, self._server) then
+            cs_cache, re = self:_compute_checksum(digest_type)
+            if not cs_cache then
+                return false, e:cat(re)
+            end
+        end
+
+        -- Server-side checksum computation for ssh-like transports
+        if e2option.opts["check-remote"] then
+            cs_remote, re = self:_compute_remote_checksum(digest_type)
+            if re then
+                return false, e:cat(re)
+            end
+        end
+
+        if not cs_cache or (e2option.opts["check-remote"] and not cs_remote) then
+            cs_fetch, re = self:_compute_checksum(digest_type, { cache = false })
+            if not cs_fetch then
+                return false, e:cat(re)
+            end
+        end
+
+        assert(cs_cache or cs_fetch, "checksum_verify() failed to report error")
+
+        rc = true
+        if (cs_cache and cs_fetch) and cs_cache ~= cs_fetch then
+            e:append("checksum verification failed: cached file checksum differs from fetched file checksum")
+            e:append("type: %s cache: %s fetched: %s",
+                digest.type_to_string(digest_type), cs_cache, cs_fetch)
+            rc = false
+        end
+
+        if (cs_cache and cs_remote) and cs_cache ~= cs_remote then
+            e:append("checksum verification failed: cached file checksum differs from remote file checksum")
+            e:append("type: %s cache: %s remote: %s",
+                digest.type_to_string(digest_type), cs_cache, cs_remote)
+            rc = false
+        end
+
+        if (cs_fetch and cs_remote) and cs_fetch ~= cs_remote then
+            e:append("checksum verification failed: refetched file checksum differs from remote file checksum")
+            e:append("type: %s refetched: %s remote: %s",
+                digest.type_to_string(digest_type), cs_fetch, cs_remote)
+            rc = false
+        end
+
+        checksum = cs_cache or cs_fetch
+
+        if digest_type == digest.SHA1 then
+            checksum_conf = self._sha1
+        elseif digest_type == digest.SHA256 then
+            checksum_conf = self._sha256
+        else
+            assert(false, "invalid digest_type")
+        end
+
+        if checksum_conf and checksum_conf ~= checksum then
+            e:append("checksum verification failed: configured file checksum "..
+                "differs from computed file checksum")
+            e:append("type: %s configured: %s computed: %s",
+                digest.type_to_string(digest_type), checksum_conf, checksum)
+            rc = false
+        end
+
+        if not rc then
+            return false, e
         end
     end
 
-    -- Server-side checksum computation for ssh-like transports
-    if e2option.opts["check-remote"] then
-        cs_remote, re = self:_compute_remote_checksum()
-        if re then
-            return false, e:cat(re)
-        end
-    end
-
-    if not cs_cache or (e2option.opts["check-remote"] and not cs_remote) then
-        cs_fetch, re = self:_compute_checksum({ cache = false })
-        if not cs_fetch then
-            return false, e:cat(re)
-        end
-    end
-
-    assert(cs_cache or cs_fetch, "verify_hash() failed to report error")
-
-    rc = true
-    if (cs_cache and cs_fetch) and cs_cache ~= cs_fetch then
-        e:append("checksum verification failed: cached file checksum differs from fetched file checksum")
-        e:append("cache: %s fetched: %s", cs_cache, cs_fetch)
-        rc = false
-    end
-
-    if (cs_cache and cs_remote) and cs_cache ~= cs_remote then
-        e:append("checksum verification failed: cached file checksum differs from remote file checksum")
-        e:append("cache: %s remote: %s", cs_cache, cs_remote)
-        rc = false
-    end
-
-    if (cs_fetch and cs_remote) and cs_fetch ~= cs_remote then
-        e:append("checksum verification failed: refetched file checksum differs from remote file checksum")
-        e:append("refetched: %s remote: %s", cs_fetch, cs_remote)
-        rc = false
-    end
-
-    checksum = cs_cache or cs_fetch
-
-    if self._sha1 and self._sha1 ~= checksum then
-        e:append("checksum verification failed: configured file checksum differs from computed file checksum")
-        e:append("configured: %s computed: %s", self._sha1, checksum)
-        rc = false
-    end
-
-    if rc then
-        return true
-    end
-
-    return false, e
+    return true
 end
 
 --- Set or return the server attribute.
@@ -357,6 +544,20 @@ function e2tool.file_class:sha1(sha1)
     end
 
     return self._sha1 or false
+end
+
+--- Get or set the <b>configured</b> SHA256 sum.
+-- @param sha256 Optional SHA256 sum to set
+-- @return SHA256 sum or false (unset)
+-- @raise Assert on bad input
+function e2tool.file_class:sha256(sha256)
+    if sha256 then
+        assertIsString(sha256)
+        assert(#sha256 == digest.SHA256_LEN)
+        self._sha256 = sha256
+    end
+
+    return self._sha256 or false
 end
 
 --- Get or set per-file licence list.
