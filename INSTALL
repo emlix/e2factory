@@ -47,9 +47,9 @@ To build and install the documentation use the doc and install-doc targets:
   make install-doc
 
 In case you have any problems with the installation, please
-contact the e2factory team via the mailinglist:
+contact the emlix e2factory team at
 
-  e2factory-users@lists.e2factory.org
+  solutions [at] emlix.com
 
 with a description of your problem and the version of e2factory
 that you are using.
