@@ -1110,7 +1110,7 @@ end
 -- "readfo", the following field are expected in addition to ones in fdct.
 -- The file object is used as an input to the child.
 -- @table fdct_readfo
--- @field file Readable file object.
+-- @field file Readable file object or file descriptor (number).
 -- @see fdct
 
 --- File descriptor configuration table - writefunc. This is an extension to
@@ -1200,7 +1200,13 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
                     end
                 end
             elseif fdct.istype == "readfo" then
-                rc, re = eio.dup2(eio.fileno(fdct.file), fdct.dup)
+                local fd
+                if type(fdct.file) == "number" then
+                    fd = fdct.file
+                else
+                    fd = eio.fileno(fdct.file)
+                end
+                rc, re = eio.dup2(fd, fdct.dup)
                 if not rc then
                     e2lib.abort(re)
                 end
