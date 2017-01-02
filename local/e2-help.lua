@@ -163,21 +163,11 @@ end
 -- @return Error object on failure.
 local function display_man_page(doc)
     local rc, re, e
-    local cmd = {}
+    local cmd
 
-    local viewer, re = tools.get_tool("man")
-    if not viewer then
+    cmd, re = tools.get_tool_flags_argv("man")
+    if not cmd then
         return false, err.new("no man page viewer is available")
-    end
-    table.insert(cmd, viewer)
-
-    local viewerflags, re = tools.get_tool_flags("man")
-    if not viewerflags then
-        return false, re
-    end
-
-    for _,flag in ipairs(viewerflags) do
-        table.insert(cmd, flag)
     end
 
     table.insert(cmd, e2lib.join(doc.path, doc.filename))

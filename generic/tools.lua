@@ -146,6 +146,33 @@ function tools.get_tool_flags(name)
     return flags
 end
 
+--- Get tool and flags in one vector
+-- @param name Tool name (string).
+-- @return Vector containing path to tool binary and its flags if any.
+--         False on error.
+-- @return Error object on failure.
+function tools.get_tool_flags_argv(name)
+    local rc, re, new
+
+    rc, re = tools.get_tool(name)
+    if not rc then
+        return false, re
+    end
+
+    new = { rc }
+
+    rc, re = tools.get_tool_flags(name)
+    if not rc then
+        return false, re
+    end
+
+    for _,flag in ipairs(rc) do
+        table.insert(new, flag)
+    end
+
+    return new
+end
+
 --- Get tool name.
 -- @param name Tool name (string).
 -- @return Tool name field (string) used to find tool in PATH or false on error.

@@ -95,26 +95,14 @@ local function svn_tool(argv, workdir)
     assert(workdir == nil or type(workdir) == "string")
 
     local rc, re
-    local svn, flags, svncmd, out, fifo
+    local svncmd, out, fifo
 
-    svncmd = {}
     out = {}
     fifo = {}
 
-    svn, re = tools.get_tool("svn")
-    if not svn then
+    svncmd, re = tools.get_tool_flags_argv("svn")
+    if not svncmd then
         return false, re
-    end
-
-    table.insert(svncmd, svn)
-
-    flags, re = tools.get_tool_flags("svn")
-    if not flags then
-        return false, re
-    end
-
-    for _,flag in ipairs(flags) do
-        table.insert(svncmd, flag)
     end
 
     for _,arg in ipairs(argv) do

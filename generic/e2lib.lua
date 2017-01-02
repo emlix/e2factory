@@ -2048,20 +2048,9 @@ end
 function e2lib.call_tool_argv(tool, argv, workdir, envdict)
     local rc, re, cmd, flags, call
 
-    cmd, re = tools.get_tool(tool)
+    cmd, re = tools.get_tool_flags_argv(tool)
     if not cmd then
         return false, re
-    end
-
-    cmd = { cmd }
-
-    flags, re = tools.get_tool_flags(tool)
-    if not flags then
-        return false, re
-    end
-
-    for _,flag in ipairs(flags) do
-        table.insert(cmd, flag)
     end
 
     for _,arg in ipairs(argv) do
@@ -2163,20 +2152,9 @@ end
 function e2lib.ssh_remote_cmd(u, argv)
     local command, rc, re, e, flags, args, stdout, stderr, devnull, fdctv
 
-    command, re = tools.get_tool("ssh")
+    command, re = tools.get_tool_flags_argv("ssh")
     if not command then
         return false, re
-    end
-
-    command = { command }
-
-    flags, re = tools.get_tool_flags("ssh")
-    if not flags then
-        return false, re
-    end
-
-    for _,flag in ipairs(flags) do
-        table.insert(command, flag)
     end
 
     if u.pass then

@@ -219,7 +219,7 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function e2build.build_process_class:_enter_playground(res, return_flags)
-    local rc, re, e, e2_su, cmd, bc
+    local rc, re, e, cmd, bc
 
     bc = res:build_config()
     e = err.new("entering playground")
@@ -230,16 +230,13 @@ function e2build.build_process_class:_enter_playground(res, return_flags)
         error(e:cat(re))
     end
 
-    e2_su = tools.get_tool("e2-su-2.2")
-    if not e2_su then
+    cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
+    if not cmd then
         return false, e:cat(re)
     end
 
-    cmd = {
-        e2_su,
-        "chroot_2_3",
-        bc.base,
-    }
+    table.insert(cmd, "chroot_2_3")
+    table.insert(cmd, bc.base)
 
     if #bc.chroot_call_prefix > 0 then
         table.insert(cmd, 1, bc.chroot_call_prefix)
@@ -762,14 +759,12 @@ end
 
 ---
 function e2build.build_process_class:_runbuild(res, return_flags)
-    local rc, re, out, bc
+    local rc, re, out, bc, cmd
     local e = err.new("build failed")
     local info = e2tool.info()
+
     e2lib.logf(3, "building %s ...", res:get_name())
-    local e2_su, re = tools.get_tool("e2-su-2.2")
-    if not e2_su then
-        return false, e:cat(re)
-    end
+
     bc = res:build_config()
     -- the build log is written to an external logfile
     rc, re = e2lib.rotate_log(bc.buildlog)
@@ -793,14 +788,17 @@ function e2build.build_process_class:_runbuild(res, return_flags)
 
     e2tool.set_umask(info)
 
-    local cmd = {
-        e2_su,
-        "chroot_2_3",
-        bc.base,
-        "/bin/bash",
-        "-e", "-x",
-        e2lib.join(bc.Tc, bc.scriptdir, bc.build_driver_file)
-    }
+    cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
+    if not cmd then
+        return false, e:cat(re)
+    end
+
+    table.insert(cmd, "chroot_2_3")
+    table.insert(cmd, bc.base)
+    table.insert(cmd, "/bin/bash")
+    table.insert(cmd, "-e")
+    table.insert(cmd, "-x")
+    table.insert(cmd, e2lib.join(bc.Tc, bc.scriptdir, bc.build_driver_file))
 
     if #bc.chroot_call_prefix > 0 then
         table.insert(cmd, 1, bc.chroot_call_prefix)

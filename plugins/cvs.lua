@@ -58,20 +58,9 @@ cvs.cvs_source = class("cvs_source", source.basic_source)
 local function cvs_tool(argv, workdir)
     local rc, re, cvscmd, cvsflags, rsh
 
-    cvscmd, re = tools.get_tool("cvs")
+    cvscmd, re = tools.get_tool_flags_argv("cvs")
     if not cvscmd then
         return false, re
-    end
-
-    cvscmd = { cvscmd }
-
-    cvsflags, re = tools.get_tool_flags("cvs")
-    if not cvsflags then
-        return false, re
-    end
-
-    for _,flag in ipairs(cvsflags) do
-        table.insert(cvscmd, flag)
     end
 
     for _,arg in ipairs(argv) do

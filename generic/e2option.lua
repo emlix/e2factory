@@ -474,22 +474,8 @@ function e2option.showtoolmanpage()
         end
     end
 
-    local cmd = {}
-    local viewer, viewerflags
-
-    viewer = tools.get_tool("man")
-    if viewer then
-        table.insert(cmd, viewer)
-
-        viewerflags = tools.get_tool_flags("man")
-        if viewerflags then
-            for _,flag in ipairs(viewerflags) do
-                table.insert(cmd, flag)
-            end
-        end
-    end
-
-    if #cmd == 0 then
+    local cmd = tools.get_tool_flags_argv("man")
+    if not cmd then
         return false, err.new("Could not find manual viewer to display help")
     end
 
