@@ -1135,13 +1135,15 @@ end
 -- @param envdict Dictionary of (name, value) pairs to be added to the
 --                environment of the new process. Existing variables are
 --                overwritten.
+-- @param nowait Optional - if true, return the PID instead of calling wait() to
+--               get the return code.
 -- @return Return code of the child is returned. It's the callers responsibility
 --         to make sense of the value. If the return code is false, an error
 --         within the function occurred and an error object is returned
 -- @return Error object on failure.
 -- @see fdctv
 -- @see fdct
-function e2lib.callcmd(argv, fdctv, workdir, envdict)
+function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
 
     -- To keep this large mess somewhat grokable, split into multiple functions.
 
@@ -1467,6 +1469,10 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict)
     rc, re = fd_parent_cleanup(fdctv)
     if not rc then
         return false, re
+    end
+
+    if nowait == true then
+        return pid
     end
 
     e2lib.logf(3, "waiting for %q", table.concat(argv, " "))
