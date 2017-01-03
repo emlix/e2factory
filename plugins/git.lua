@@ -447,73 +447,32 @@ end
 -- @return bool
 -- @return nil on success, an error string on error
 function git.prepare_source(info, sourcename, sourceset, buildpath)
-    local src = source.sources[sourcename]
     local rc, re, e
-    local e = err.new("preparing git sources failed")
+    local src, srcdir, destdir
+
+    e = err.new("preparing git source %s failed", sourcename)
+    src = source.sources[sourcename]
+
     rc, re = scm.generic_source_check(info, sourcename, true)
     if not rc then
         return false, e:cat(re)
     end
-    local gitdir = e2lib.join(info.root, src:get_working(), ".git")
-    if sourceset == "branch" or
-        (sourceset == "lazytag" and src:get_tag() == "^") then
-        local argv, work_tree
 
-        rc, re = git.git_commit_id(info, sourcename, sourceset)
-        if not rc then
-            return false, e:cat(re)
-        end
+    srcdir = e2lib.join(info.root, src:get_working())
+    destdir = e2lib.join(buildpath, sourcename)
 
-        work_tree = e2lib.join(buildpath, sourcename)
-        rc, re = e2lib.mkdir_recursive(work_tree)
-        if not rc then
-            return e:cat(re)
-        end
+    rc, re = e2lib.mkdir_recursive(destdir)
+    if not rc then
+        return false, e:cat(re)
+    end
 
-        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout", "-f")
-        table.insert(argv, "refs/heads/" .. src:get_branch())
-        table.insert(argv, "--")
+    if sourceset == "working-copy" then
+        local empty
 
-        rc, re = generic_git.git(argv)
-        if not rc then
-            return false, e:cat(re)
-        end
-    elseif sourceset == "tag" or
-        (sourceset == "lazytag" and src:get_tag() ~= "^") then
-        local argv, work_tree
-
-        rc, re = git.git_commit_id(info, sourcename, sourceset)
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        work_tree = e2lib.join(buildpath, sourcename)
-        rc, re = e2lib.mkdir_recursive(work_tree)
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        argv = generic_git.git_new_argv(gitdir, work_tree, "checkout", "-f")
-        table.insert(argv, "refs/tags/" .. src:get_tag())
-        table.insert(argv, "--")
-
-        rc, re = generic_git.git(argv)
-        if not rc then
-            return false, e:cat(re)
-        end
-    elseif sourceset == "working-copy" then
-        local working, destdir, empty
-
-        working = e2lib.join(info.root, src:get_working())
-        destdir = e2lib.join(buildpath, sourcename)
-
-        rc, re = e2lib.mkdir_recursive(destdir)
-        if not rc then
-            return false, e:cat(re)
-        end
+        srcdir = e2lib.join(info.root, src:get_working())
 
         empty = true
-        for f, re in e2lib.directory(working, true) do
+        for f, re in e2lib.directory(srcdir, true) do
             if not f then
                 return false, e:cat(re)
             end
@@ -523,7 +482,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
             end
 
             if f ~= ".git" then
-                rc, re = e2lib.cp(e2lib.join(working, f), destdir, true)
+                rc, re = e2lib.cp(e2lib.join(srcdir, f), destdir, true)
                 if not rc then
                     return false, e:cat(re)
                 end
@@ -534,8 +493,111 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
             e2lib.warnf("WOTHER", "in result: %s", sourcename)
             e2lib.warnf("WOTHER", "working copy seems empty")
         end
+
+        return true -- Early exit
+    end
+
+    local gitdir, git_argv, git_tool, tar_argv
+    local git_pid, tar_pid, fdctv
+    local writeend, readend, devnull
+
+    gitdir = e2lib.join(srcdir, ".git")
+
+    rc, re = git.git_commit_id(info, sourcename, sourceset)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    git_argv = generic_git.git_new_argv(gitdir, srcdir, "archive")
+    table.insert(git_argv, "--format=tar")
+
+    if sourceset == "branch" or
+        (sourceset == "lazytag" and src:get_tag() == "^") then
+        table.insert(git_argv, "refs/heads/" .. src:get_branch())
+    elseif sourceset == "tag" or
+        (sourceset == "lazytag" and src:get_tag() ~= "^") then
+        table.insert(git_argv, "refs/tags/" .. src:get_tag())
     else
-        return false, err.new("invalid sourceset: %s", sourceset)
+        error(err.new("invalid sourceset: %s", sourceset))
+    end
+
+    table.insert(git_argv, "--")
+
+    git_tool, re = tools.get_tool("git")
+    if not git_tool then
+        return false, re
+    end
+
+    table.insert(git_argv, 1, git_tool)
+
+    tar_argv, re = tools.get_tool_flags_argv("tar")
+    if not tar_argv then
+        return false, e:cat(re)
+    end
+
+    table.insert(tar_argv, "-x")
+    table.insert(tar_argv, "-f")
+    table.insert(tar_argv, "-")
+    table.insert(tar_argv, "-C")
+    table.insert(tar_argv, destdir)
+
+    readend, writeend = eio.pipe()
+    if not readend then
+        return false, e:cat(writeend)
+    end
+
+    devnull, re = eio.fopen("/dev/null", "rw")
+    if not devnull then
+        return false, re
+    end
+
+    fdctv = {
+        { istype = "readfo", dup = eio.STDIN, file = devnull },
+        { istype = "readfo", dup = eio.STDOUT, file = writeend }
+    }
+
+    git_pid, re = e2lib.callcmd(git_argv, fdctv, nil, nil, true)
+    if not git_pid then
+        return false, e:cat(re)
+    end
+
+    fdctv = {
+        { istype = "readfo", dup = eio.STDIN, file = readend },
+        { istype = "readfo", dup = eio.STDOUT, file = devnull }
+    }
+
+    tar_pid, re = e2lib.callcmd(tar_argv, fdctv, nil, nil, true)
+    if not tar_pid then
+        return false, e:cat(re)
+    end
+
+    rc, re = e2lib.wait(git_pid)
+    if not rc then
+        return false, e:cat(re)
+    elseif rc ~= 0 then
+        return false, e:cat("git archive failed with return code %d", rc)
+    end
+
+    rc, re = eio.close(writeend)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = e2lib.wait(tar_pid)
+    if not rc then
+        return false, e:cat(re)
+    elseif rc ~= 0 then
+        return false, e:cat("git archive - tar failed with return code %d", rc)
+    end
+
+    rc, re = eio.close(readend)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = eio.fclose(devnull)
+    if not rc then
+        return false, e:cat(re)
     end
 
     return true
