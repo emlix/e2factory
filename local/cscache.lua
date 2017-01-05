@@ -249,7 +249,9 @@ function cs_cache_class:store_cache()
 
     hcachevec = {}
     for path,hce in pairs(self._csdict) do
-        table.insert(hcachevec, {path=path, hce=hce})
+        if not path:find("/e2tmp.", 1, true) then -- weed out temp files
+            table.insert(hcachevec, {path=path, hce=hce})
+        end
     end
 
     local function comp(t1, t2)
@@ -271,7 +273,7 @@ function cs_cache_class:store_cache()
             v.hce.mtime_nsec, v.hce.ctime, v.hce.ctime_nsec, v.hce.size,
             v.hce.dev, v.hce.ino, v.hce.use))
 
-            if i > 10000 then
+            if i > 1000 then
                 break
             end
     end
