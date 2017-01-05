@@ -159,7 +159,6 @@ function licence.load_licence_config(info)
 
     for name,l in pairs(ltable) do
         local lerr = err.new("error in licence %q", name)
-        e2lib.logf(4, "in licence.load_licence_config, add %s, %s", tostring(name), tostring(l))
 
         rc, re = e2lib.vrfy_dict_exp_keys(l, "licence",
             { "server", "files" })
