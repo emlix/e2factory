@@ -362,6 +362,7 @@ end
 --
 -- le2lib sets up a SIGINT handler that calls back into this function.
 function e2lib.interrupt_hook()
+    trace.install() -- reinstall the trace hook.
     e2lib.abort("*interrupted by user*")
 end
 
@@ -374,7 +375,7 @@ function e2lib.init()
     e2lib.log(4, "e2lib.init()")
     console.open()
 
-    trace.enable()
+    trace.install()
     trace.default_filter()
 
     local rc, re = e2lib.signal_reset()
@@ -569,7 +570,7 @@ end
 -- @param msg string: log message
 -- @param nonewline Defaults to false. Do not append newline if set to true.
 function e2lib.log(level, msg, nonewline)
-    trace.disable()
+    trace.off()
     if level < 1 or level > 4 then
         e2lib.log(1, "Internal error: invalid log level")
     end
@@ -603,7 +604,7 @@ function e2lib.log(level, msg, nonewline)
             console.eout(msg)
         end
     end
-    trace.enable()
+    trace.on()
 end
 
 --- Rotate log file.
@@ -2033,17 +2034,17 @@ function e2lib.mkdir_recursive(path, mode)
 
     eexist = errno.def2errnum("EEXIST")
 
-    trace.disable()
+    trace.filter_function("e2lib", "mkdir")
     for _,dir in ipairs(dirs) do
         rc, re, errnum = e2lib.mkdir(dir, mode)
         if not rc then
             if errnum ~= eexist then
-                trace.enable()
+                trace.filter_function_remove("e2lib", "mkdir")
                 return false, re
             end
         end
     end
-    trace.enable()
+    trace.filter_function_remove("e2lib", "mkdir")
 
     return true
 end

@@ -277,23 +277,23 @@ end
 function eio.readline(file)
     local rc, re, line, char
 
-    trace.disable() -- don't spam the logs with fgetc calls.
+    trace.off() -- don't spam the logs with fgetc calls.
 
     line = ""
     while true do
         char, re = eio.fgetc(file)
         if not char then
-            trace.enable()
+            trace.on()
             return false, re
         elseif char == "\0" then
             -- fgets cannot handle embedded zeros, causing mayhem in C.
             -- We could do this in Lua, but lets signal an error till
             -- we have a use case.
-            trace.enable()
+            trace.on()
             return false, err.new("got NUL character while reading line")
         elseif char == "\n" or char == "" then
             line = line..char -- retain newline just like fgets does.
-            trace.enable()
+            trace.on()
             return line
         end
 

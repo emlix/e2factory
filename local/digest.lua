@@ -304,9 +304,9 @@ local function compute_sha1_checksum(filename)
 
     ctx = lsha.sha1_init()
 
-    trace.disable()
+    trace.off()
     ok, rc, re = e2lib.trycall(compute_checksum, ctx, f)
-    trace.enable()
+    trace.on()
     eio.fclose(f)
 
     if not ok then
@@ -373,9 +373,9 @@ local function compute_sha256_checksum(filename)
 
     ctx = lsha.sha256_init()
 
-    trace.disable()
+    trace.off()
     ok, rc, re = e2lib.trycall(compute_checksum, ctx, f)
-    trace.enable()
+    trace.on()
     eio.fclose(f)
 
     if not ok then
