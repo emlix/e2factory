@@ -482,6 +482,19 @@ do_getpid(lua_State *lua) {
 }
 
 static int
+do_setpgid(lua_State *L)
+{
+	int rc, pid, pgid;
+
+	pid = luaL_checkint(L, 1);
+	pgid = luaL_checkint(L, 2);
+	if (setpgid(pid, pgid) != 0)
+		return luaL_error(L, "setpgid: %s", strerror(errno));
+
+	return 0;
+}
+
+static int
 do_unlink(lua_State *lua)
 {
 	const char *pathname = luaL_checkstring(lua, 1);
@@ -940,6 +953,7 @@ static luaL_Reg lib[] = {
 	{ "poll", poll_fd },
 	{ "rmdir", do_rmdir },
 	{ "setenv", do_setenv },
+	{ "setpgid", do_setpgid },
 	{ "signal_reset", signal_reset },
 	{ "stat", get_file_statistics },
 	{ "symlink", create_symlink },
