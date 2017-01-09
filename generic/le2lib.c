@@ -786,6 +786,16 @@ do_mkdir(lua_State *lua)
 }
 
 static int
+ignore_sigint(lua_State *L)
+{
+	if (signal(SIGINT, SIG_IGN) == SIG_ERR) {
+		return luaL_error(L, "signal: %s", strerror(errno));
+	}
+
+	return 0;
+}
+
+static int
 do_kill(lua_State *lua)
 {
 	pid_t pid = luaL_checkinteger(lua, 1);
@@ -945,6 +955,7 @@ static luaL_Reg lib[] = {
 	{ "fork", lua_fork },
 	{ "getpid", do_getpid },
 	{ "hardlink", do_hardlink },
+	{ "ignore_sigint", ignore_sigint },
 	{ "kill", do_kill },
 	{ "mkdir", do_mkdir },
 	{ "mkdtemp", do_mkdtemp },

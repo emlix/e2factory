@@ -335,6 +335,12 @@ function e2lib.setpgid(pid, pgid)
     return le2lib.setpgid(pid, pgid)
 end
 
+--- Ignore SIGINT
+-- @raise error on failure
+function e2lib.ignore_sigint()
+    le2lib.ignore_sigint()
+end
+
 --- Send signal to process.
 -- @param pid Process ID to signal (number).
 -- @param sig Signal number.

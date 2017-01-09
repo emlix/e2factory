@@ -1,4 +1,5 @@
 NEXT:
+ * Fix doubled up error message on Control-C
  * Fix e2factory sometimes ignoring Control-C
  * Fix unintended modification of the git index in working source directory.
  * Add sha256 support to e2source file config

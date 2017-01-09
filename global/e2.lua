@@ -94,11 +94,19 @@ local function e2(arg)
     end
 
     e2lib.log(3, "calling " .. e2call.tool)
-
-    rc, re = e2lib.callcmd(cmd, {}, nil, env)
+    e2lib.ignore_sigint()
+    rc, re = e2lib.callcmd(cmd, {}, nil, env, true)
     if not rc then
         error(re)
     end
+    local sig
+    rc, re, sig = e2lib.wait(rc)
+    if not rc then
+        error(re)
+    end
+
+    e2lib.logf(4, "%s returned: exit status: %d pid: %d signal: %d",
+        e2call.tool, rc, re, sig or 0)
 
     return nil, rc
 end
