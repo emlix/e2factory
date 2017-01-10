@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.16rc1
  * Fix doubled up error message on Control-C
  * Fix e2factory sometimes ignoring Control-C
