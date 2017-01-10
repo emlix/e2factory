@@ -350,12 +350,6 @@ function git.update(info, sourcename)
         return false, e:cat(re)
     end
 
-    argv = generic_git.git_new_argv(gitdir, gitwc, "fetch", "--tags")
-    rc, re = generic_git.git(argv)
-    if not rc then
-        return false, e:cat(re)
-    end
-
     -- Use HEAD commit ID to find the branch we're on
     rc, re, id = generic_git.lookup_id(gitdir, false, "HEAD")
     if not rc then
