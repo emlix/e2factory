@@ -1,7 +1,7 @@
 --- Git Plugin
 -- @module plugins.git
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -221,7 +221,7 @@ end
 function git.git_source:display()
     local rev_tag, rev_branch, licences
 
-    -- try to calculte the sourceid, but do not care if it fails.
+    -- try to calculate the sourceid, but do not care if it fails.
     -- working copy might be unavailable
     self:sourceid("tag")
     self:sourceid("branch")
@@ -641,52 +641,6 @@ local function git_url(c, server, location)
         return nil, e:cat(re)
     end
     return g, nil
-end
-
---- create a table of lines for display
--- @param info the info structure
--- @param sourcename string
--- @return a table, nil on error
--- @return an error string on failure
-function git.display(info, sourcename)
-    error("called git.display")
-    local src = source.sources[sourcename]
-    local rc, re
-    local e = err.new("display source information failed")
-    -- try to calculte the sourceid, but do not care if it fails.
-    -- working copy might be unavailable
-    src:sourceid("tag")
-    src:sourceid("branch")
-    local rev_tag = ""
-    local rev_branch = ""
-    if src.commitid["tag"] then
-        rev_tag = string.format("[%s...]", src.commitid["tag"]:sub(1,8))
-    end
-    if src.commitid["branch"] then
-        rev_branch = string.format("[%s...]", src.commitid["branch"]:sub(1,8))
-    end
-    local display = {}
-    display[1] = string.format("type       = %s", src:get_type())
-    display[2] = string.format("branch     = %-15s %s", src:get_branch(), rev_branch)
-    display[3] = string.format("tag        = %-15s %s", src:get_tag(), rev_tag)
-    display[4] = string.format("server     = %s", src:get_server())
-    display[5] = string.format("location   = %s", src:get_location())
-    display[6] = string.format("working    = %s", src:get_working())
-    local i = 8
-    for _,l in ipairs(src.licences) do
-        display[i] = string.format("licence    = %s", l)
-        i = i + 1
-    end
-    for _,sourceset in pairs({"tag", "branch"}) do
-        if src.sourceid and src.sourceid[sourceset] then
-            local id = src.sourceid[sourceset]
-            local s = string.format("sourceid[%s]", sourceset)
-            display[i] = string.format("%-11s= %s", s, id)
-            i = i + 1
-        end
-    end
-    i = i + 1
-    return display
 end
 
 function git.toresult(info, sourcename, sourceset, directory)
