@@ -3,7 +3,7 @@
 -- take url strings as parameter. The others take server / location.
 -- @module generic.generic_git
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -568,15 +568,15 @@ function generic_git.git_push(c, gitdir, server, location, refspec)
     return generic_git.git_push1(gitdir, rurl, refspec)
 end
 
---- Git config query.
+--- Git config get/set.
 -- @param gitdir string: gitdir
--- @param query string: query to pass to git config
+-- @param ... arguments to pass to git config
 -- @return Value printed to stdout by git config, or false on error.
 -- @return Error object on failure.
-function generic_git.git_config(gitdir, query)
+function generic_git.git_config(gitdir, ...)
     local e, rc, re, argv, out
 
-    argv = generic_git.git_new_argv(gitdir, false, "config", query)
+    argv = generic_git.git_new_argv(gitdir, false, "config", ...)
     rc, re, out = generic_git.git(argv)
     if not rc then
         e = err.new("git config failed")
