@@ -37,7 +37,7 @@ local source = require("source")
 
 --- Initialize git plugin.
 -- @param ctx Plugin context. See plugin module.
--- @return True on succes, false on error.
+-- @return True on success, false on error.
 -- @return Error object on failure.
 local function git_plugin_init(ctx)
     local rc, re
@@ -273,7 +273,7 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
 
     rc, re = scm.working_copy_available(info, sourcename)
     if not rc then
-        return false, e:append("working copy is not available")
+        return false, e:cat(re)
     end
 
     rc, re = scm.check_workingcopy(info, sourcename)
@@ -607,13 +607,16 @@ end
 -- @param info the info structure
 -- @param sourcename string
 -- @return True if available, false otherwise.
+-- @return Error object if no directory.
 function git.working_copy_available(info, sourcename)
     local rc
     local src = source.sources[sourcename]
     local gitwc = e2lib.join(info.root, src:get_working())
 
-    rc = e2lib.isdir(gitwc)
-    return rc
+    if not e2lib.isdir(gitwc) then
+        return false, err.new("working copy for %s is not available", sourcename)
+    end
+    return true
 end
 
 function git.has_working_copy(info, sname)
@@ -744,7 +747,7 @@ function git.check_workingcopy(info, sourcename)
     local rc, re
     local e = err.new("checking working copy of source %s failed", sourcename)
 
-    rc, re = scm.working_copy_available(info, sourcename)
+    rc = scm.working_copy_available(info, sourcename)
     if not rc then
         e2lib.warnf("WOTHER", "in source %s: ", sourcename)
         e2lib.warnf("WOTHER", " working copy is not available")
