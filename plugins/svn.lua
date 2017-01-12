@@ -421,7 +421,10 @@ function svn.working_copy_available(info, sourcename)
     local src = source.sources[sourcename]
 
     local dir = e2lib.join(info.root, src:get_working())
-    return e2lib.isdir(dir)
+    if not e2lib.isdir(dir) then
+        return false, err.new("working copy for %s is not available", sourcename)
+    end
+    return true
 end
 
 function svn.check_workingcopy(info, sourcename)

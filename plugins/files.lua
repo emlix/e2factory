@@ -313,7 +313,7 @@ function files.fetch_source(info, sourcename)
 end
 
 function files.working_copy_available(info, sourcename)
-    return false
+    return false, err.new("source %s doesn't require a working copy", sourcename)
 end
 
 function files.has_working_copy(info, sourcename)
