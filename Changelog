@@ -1,4 +1,5 @@
 NEXT:
+ * Add experimental gitrepo source type
 
 e2factory-2.3.16rc1
  * Fix doubled up error message on Control-C

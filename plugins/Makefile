@@ -21,7 +21,7 @@ include $(TOPLEVEL)/make.vars
 
 SUBDIRS =
 CLEAN_FILES =
-LOCALPLUGINS = cvs.lua files.lua git.lua svn.lua collect_project.lua
+LOCALPLUGINS = cvs.lua files.lua git.lua gitrepo.lua svn.lua collect_project.lua
 
 .PHONY: all local install uninstall install install-local doc install-doc
 
