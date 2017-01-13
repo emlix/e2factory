@@ -408,9 +408,9 @@ function gitrepo.update(info, sourcename)
         return true
     end
 
-    rc, re, remote = generic_git.git_config(
-        gitdir, "branch."..src:get_branch().."remote")
-    if not rc or string.len(remote) == 0  then
+    remote, re = generic_git.git_config(
+        gitdir, "branch."..src:get_branch()..".remote")
+    if not remote or string.len(remote) == 0  then
         e2lib.warnf("WOTHER", "no remote configured for branch %q. Skipping.",
             src:get_branch())
         return true
