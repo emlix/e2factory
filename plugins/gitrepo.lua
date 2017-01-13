@@ -205,6 +205,10 @@ function gitrepo_source:display()
     return d
 end
 
+function gitrepo_source:has_working_copy()
+    return true
+end
+
 --------------------------------------------------------------------------------
 
 --- Check if a working copy for a git repository is available
@@ -229,7 +233,7 @@ end
 function gitrepo.has_working_copy(info, sourcename)
     assertIsTable(info)
     assertIsStringN(sourcename)
-    return true
+    return source.sources[sourcename]:has_working_copy()
 end
 
 --- Fetch a gitrepo source. Adapted from git plugin.

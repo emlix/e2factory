@@ -278,6 +278,10 @@ function files.files_source:display()
     return d
 end
 
+function files.files_source:has_working_copy()
+    return false
+end
+
 --- cache files for a source
 -- @param info the info structure
 -- @param sourcename name of the source
@@ -317,7 +321,7 @@ function files.working_copy_available(info, sourcename)
 end
 
 function files.has_working_copy(info, sourcename)
-    return false
+    return source.sources[sourcename]:has_working_copy()
 end
 
 --- Handle file:copy() in a way that appears intuitive to the user. Returns

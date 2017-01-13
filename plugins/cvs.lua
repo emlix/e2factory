@@ -264,6 +264,10 @@ function cvs.cvs_source:display()
     return d
 end
 
+function cvs.cvs_source:has_working_copy()
+    return true
+end
+
 --- Build the cvsroot string.
 -- @param info Info table.
 -- @param sourcename Source name.
@@ -410,7 +414,7 @@ function cvs.working_copy_available(info, sourcename)
 end
 
 function cvs.has_working_copy(info, sourcename)
-    return true
+    return source.sources[sourcename]:has_working_copy()
 end
 
 function cvs.toresult(info, sourcename, sourceset, directory)

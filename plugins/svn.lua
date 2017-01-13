@@ -350,6 +350,10 @@ function svn.svn_source:display()
     return d
 end
 
+function svn.svn_source:has_working_copy()
+    return true
+end
+
 function svn.fetch_source(info, sourcename)
     local rc, re
     local e = err.new("fetching source failed: %s", sourcename)
@@ -452,8 +456,8 @@ function svn.check_workingcopy(info, sourcename)
     return true
 end
 
-function svn.has_working_copy(info, sname)
-    return true
+function svn.has_working_copy(info, sourcename)
+    return source.sources[sourcename]:has_working_copy()
 end
 
 function svn.toresult(info, sourcename, sourceset, directory)
