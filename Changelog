@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.16
  * Fix e2 fetch-sources --update for git repos
  * Add experimental gitrepo source type
