@@ -623,7 +623,6 @@ end
 
 --- Info table contains servers, caches and more...
 -- @table info
--- @field current_tool Name of the current local tool (string).
 -- @field startup_cwd Current working dir at startup (string).
 -- @field chroot_umask Umask setting for chroot (decimal number).
 -- @field host_umask Default umask of the process (decimal number).
@@ -701,6 +700,22 @@ function e2tool.info()
     return _info
 end
 
+local _current_tool
+
+--- Get current local tool name.
+-- @param tool Optional new tool name.
+-- @return Tool name
+-- @raise Assert if tool not set/invalid.
+function e2tool.current_tool(tool)
+    if tool then
+        assertIsStringN(tool)
+        _current_tool = tool
+    end
+
+    assertIsStringN(_current_tool)
+    return _current_tool
+end
+
 --- initialize the local library, load and initialize local plugins
 -- @param path string: path to project tree (optional)
 -- @param tool string: tool name (without the 'e2-' prefix)
@@ -713,7 +728,7 @@ function e2tool.local_init(path, tool)
 
     info = set_info({})
 
-    info.current_tool = tool
+    e2tool.current_tool(tool)
 
     rc, re = e2lib.cwd()
     if not rc then
