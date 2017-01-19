@@ -1,7 +1,7 @@
 --- e2-fetch-source command
 -- @module local.e2-fetch-source
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -43,11 +43,7 @@ local function e2_fetch_source(arg)
 
     e2option.flag("all", "select all sources, even files sources")
     e2option.flag("chroot", "select chroot files")
-    e2option.flag("files", "select files sources")
     e2option.flag("scm", "select all scm sources")
-    e2option.flag("git", "select scm sources")
-    e2option.flag("cvs", "select cvs sources")
-    e2option.flag("svn", "select svn sources")
     e2option.flag("fetch", "fetch selected sources (default)")
     e2option.flag("update", "update selected source")
     e2option.flag("source", "select sources by source names (default)")
@@ -66,31 +62,27 @@ local function e2_fetch_source(arg)
     if not (opts.fetch or opts.update) then
         opts.fetch = true
     end
-    if #arguments > 0 then
-        opts.selection = true
+
+    local select_type = {}
+
+    for typ, theclass in source.iterate_source_classes() do
+        if theclass:is_selected_source_class(opts) then
+            select_type[typ] = true
+        end
     end
-    if not (opts.all or opts.scm or opts.files or opts.chroot or opts.selection
-        or opts.git or opts.cvs or opts.svn) then
-        e2lib.warn("WOTHER", "Selecting scm sources by default")
+
+    if not (opts.all or opts.scm or opts.files or opts.chroot or #arguments > 0
+        or next(select_type) ~= nil) then
+        e2lib.warn("WDEFAULT", "Selecting scm sources by default")
         opts.scm = true
     end
+
     if opts.scm then
-        opts.git = true
-        opts.cvs = true
-        opts.svn = true
-    end
-    local select_type = {}
-    if opts["git"] then
-        select_type["git"] = true
-    end
-    if opts["svn"] then
-        select_type["svn"] = true
-    end
-    if opts["cvs"] then
-        select_type["cvs"] = true
-    end
-    if opts["files"] then
-        select_type["files"] = true
+        for typ, theclass in source.iterate_source_classes() do
+            if theclass:is_scm_source_class() then
+                select_type[typ] = true
+            end
+        end
     end
 
     --- cache chroot files
@@ -222,8 +214,7 @@ local function e2_fetch_source(arg)
         end
     end
 
-    if opts.all or opts.scm or opts.files or opts.git or opts.cvs or opts.svn or
-        opts.selection then
+    if next(sel) ~= nil then
         e2lib.log(2, "fetching sources...")
         local rc, re = fetch_sources(info, opts, sel)
         if not rc then
