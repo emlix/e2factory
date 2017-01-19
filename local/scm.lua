@@ -159,7 +159,6 @@ scm.register_interface("fetch_source")
 scm.register_interface("update")
 scm.register_interface("check_workingcopy")
 scm.register_interface("working_copy_available")
-scm.register_interface("has_working_copy")
 
 return strict.lock(scm)
 

@@ -274,10 +274,6 @@ function git.git_source:display()
     return d
 end
 
-function git.git_source:has_working_copy()
-    return true
-end
-
 --- Return the git commit ID of the specified source configuration. Specific to
 -- sources of type git, useful for writing plugins.
 -- @param info Info table.
@@ -633,10 +629,6 @@ function git.working_copy_available(info, sourcename)
         return false, err.new("working copy for %s is not available", sourcename)
     end
     return true
-end
-
-function git.has_working_copy(info, sourcename)
-    return source.sources[sourcename]:has_working_copy()
 end
 
 --- turn server:location into a git-style url
