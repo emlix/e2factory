@@ -65,10 +65,6 @@ local function e2_fetch_source(arg)
 
     if not (opts.fetch or opts.update) then
         opts.fetch = true
-        e2lib.warn("WOTHER", "Selecting fetch by default")
-    end
-    if opts.all then
-        e2lib.warn("WOTHER", "--all selects all sources, even files sources")
     end
     if #arguments > 0 then
         opts.selection = true
