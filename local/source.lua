@@ -1,7 +1,7 @@
 --- Source base class. Implements the base source class and config loader.
 -- @module local.source
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -277,6 +277,30 @@ function source.register_source_class(typ, source_class)
     source_types[typ] = source_class
 
     return true
+end
+
+--- Iterate over registered source classes.
+-- @return Iterator function that returns a sorted typ, source class pair.
+function source.iterate_source_classes()
+    local i, t
+
+    t = {}
+    for typ,_ in pairs(source_types) do
+        table.insert(t, typ)
+    end
+    table.sort(t)
+
+    i = 0
+
+    return function ()
+        i = i + 1
+
+        if t[i] then
+            return t[i], source_types[t[i]]
+        end
+
+        return nil
+    end
 end
 
 --- Validate licences attribute in rawsrc and set licences in src if successful.
