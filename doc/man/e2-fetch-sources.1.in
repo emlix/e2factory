@@ -1,8 +1,8 @@
 .\" Man page for e2-fetch-sources
 .\"
-.\" (c)2007, 2012 emlix GmbH
+.\" (c)2007-2017 emlix GmbH
 .\"
-.TH e2-fetch-sources 1 "Oct 16, 2012" "@VERSION@"
+.TH e2-fetch-sources 1 "Jan 19, 2017" "@VERSION@"
 
 .SH NAME
 e2-fetch-sources \- retrieve sources of an e2factory project
@@ -47,13 +47,13 @@ This is the default.
 Select file sources.
 .TP
 .BR \-\-git
-Select sources of type svn.
+Select sources of type git.
 .TP
 .BR \-\-svn
 Select sources of type svn.
 .TP
 .BR \-\-cvs
-Select git type sources.
+Select cvs type sources.
 .TP
 .BR \-\-source
 Select sources by source name.
@@ -79,9 +79,5 @@ Update all SCM sources.
 e2-fetch-sources --update
 .fi
 
-
 .SH SEE ALSO
 .BR e2factory (1)
-
-.SH COPYRIGHT
-(c)2007-2014 emlix GmbH
