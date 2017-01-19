@@ -1,7 +1,7 @@
 --- Files Plugin
 -- @module plugins.files
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -22,6 +22,7 @@ local files = {}
 local cache = require("cache")
 local class = require("class")
 local e2lib = require("e2lib")
+local e2option = require("e2option")
 local e2tool = require("e2tool")
 local eio = require("eio")
 local err = require("err")
@@ -49,12 +50,26 @@ plugin_descriptor = {
             return false, re
         end
 
+        if e2tool.current_tool() == "fetch-sources" then
+            e2option.flag("files", "select files sources")
+        end
+
         return true
     end,
     exit = function (ctx) return true end,
 }
 
 files.files_source = class("files_source", source.basic_source)
+
+function files.files_source.static:is_selected_source_class(opts)
+    assertIsTable(self)
+    assertIsTable(opts)
+
+    if e2tool.current_tool() == "fetch-sources" and opts["files"] then
+        return true
+    end
+    return false
+end
 
 function files.files_source:initialize(rawsrc)
     assert(type(rawsrc) == "table")
