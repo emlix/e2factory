@@ -63,6 +63,10 @@ local function git_plugin_init(ctx)
         return false, re
     end
 
+    if e2tool.current_tool() == "fetch-sources" then
+        e2option.flag("git", "select git sources")
+    end
+
     return true
 end
 
@@ -73,6 +77,20 @@ plugin_descriptor = {
 }
 
 git.git_source = class("git_source", source.basic_source)
+
+function git.git_source.static:is_scm_source_class()
+    return true
+end
+
+function git.git_source.static:is_selected_source_class(opts)
+    assertIsTable(self)
+    assertIsTable(opts)
+
+    if e2tool.current_tool() == "fetch-sources" and opts["git"] then
+        return true
+    end
+    return false
+end
 
 function git.git_source:initialize(rawsrc)
     assert(type(rawsrc) == "table")
