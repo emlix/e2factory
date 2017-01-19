@@ -1,7 +1,7 @@
 --- CVS Plugin
 -- @module plugins.cvs
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -22,16 +22,17 @@ local cvs = {}
 local cache = require("cache")
 local class = require("class")
 local e2lib = require("e2lib")
+local e2option = require("e2option")
 local e2tool = require("e2tool")
 local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
 local licence = require("licence")
 local scm = require("scm")
+local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
-local source = require("source")
 
 plugin_descriptor = {
     description = "CVS SCM Plugin",
@@ -46,6 +47,10 @@ plugin_descriptor = {
         rc, re = scm.register("cvs", cvs)
         if not rc then
             return false, re
+        end
+
+        if e2tool.current_tool() == "fetch-sources" then
+            e2option.flag("cvs", "select cvs sources")
         end
 
         return true
@@ -75,6 +80,19 @@ local function cvs_tool(argv, workdir)
     return e2lib.callcmd_log(cvscmd, workdir, { CVS_RSH=rsh })
 end
 
+function cvs.cvs_source.static:is_scm_source_class()
+    return true
+end
+
+function cvs.cvs_source.static:is_selected_source_class(opts)
+    assertIsTable(self)
+    assertIsTable(opts)
+
+    if e2tool.current_tool() == "fetch-sources" and opts["cvs"] then
+        return true
+    end
+    return false
+end
 
 function cvs.cvs_source:initialize(rawsrc)
     assert(type(rawsrc) == "table")
