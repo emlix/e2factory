@@ -113,50 +113,38 @@ local function e2_fetch_source(arg)
     -- @return bool
     -- @return nil, an error string on error
     local function fetch_sources(info, opts, sel)
-        local rc1 = true    -- global return code
-        local nfail = 0     -- failure counter
+        local rc, re
+        local nfail
         local e = err.new()  -- no message yet, append the summary later on
 
         -- fetch
         for sourcename, _ in pairs(source.sources) do
-            local has_wc = scm.has_working_copy(info, sourcename)
-            local wc_avail = scm.working_copy_available(info, sourcename)
             if opts.fetch and sel[sourcename] then
-                if wc_avail then
-                    e2lib.logf(1,
-                    "working copy for %s is already available", sourcename)
-                else
-                    e2lib.logf(1, "fetching working copy for source %s", sourcename)
-                    local rc, re = scm.fetch_source(info, sourcename)
-                    if not rc then
-                        e:cat(re)
-                    end
+                e2lib.logf(1, "fetching working copy for source %s", sourcename)
+                rc, re = scm.fetch_source(info, sourcename)
+                if not rc then
+                    e:cat(re)
                 end
             end
         end
 
         -- update
         for sourcename, _ in pairs(source.sources) do
-            local has_wc = scm.has_working_copy(info, sourcename)
-            local wc_avail = scm.working_copy_available(info, sourcename)
-            if opts.update and has_wc and sel[sourcename] then
-                if not wc_avail then
-                    e2lib.logf(1, "working copy for %s is not available", sourcename)
-                else
-                    e2lib.logf(1, "updating working copy for %s", sourcename)
-                    local rc, re = scm.update(info, sourcename)
-                    if not rc then
-                        e:cat(re)
-                    end
+            if opts.update and sel[sourcename] then
+                e2lib.logf(1, "updating working copy for %s", sourcename)
+                rc, re = scm.update(info, sourcename)
+                if not rc then
+                    e:cat(re)
                 end
             end
         end
-        local nfail = e:getcount()
+
+        nfail = e:getcount()
         if nfail > 0 then
             e:append("There were errors fetching %d sources", nfail)
             return false, e
         end
-        return true, nil
+        return true
     end
 
     local sel = {} -- selected sources
