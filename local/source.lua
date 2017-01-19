@@ -37,6 +37,22 @@ local source_types = {}
 -- @type basic_source
 source.basic_source = class("basic_source")
 
+--- Whether the class is of a Source Code Management type.
+-- @return True or false
+function source.basic_source.static:is_scm_source_class()
+    assertIsTable(self)
+    return false
+end
+
+--- Whether this class of sources was selected on the command line.
+-- @param opts e2option table.
+-- @return True or false
+function source.basic_source.static:is_selected_source_class(opts)
+    assertIsTable(self)
+    assertIsTable(opts)
+    return false
+end
+
 --- Source base constructor. Assert error on invalid input.
 -- @param rawsrc Source config dict containing at least "name" and "type"
 -- attributes.
