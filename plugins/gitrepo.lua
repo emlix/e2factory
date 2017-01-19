@@ -22,6 +22,7 @@ local gitrepo = {}
 local cache = require("cache")
 local class = require("class")
 local e2lib = require("e2lib")
+local e2option = require("e2option")
 local e2tool = require("e2tool")
 local eio = require("eio")
 local err = require("err")
@@ -33,6 +34,20 @@ local source = require("source")
 local url = require("url")
 
 local gitrepo_source = class("gitrepo_source", source.basic_source)
+
+function gitrepo_source.static:is_scm_source_class()
+    return true
+end
+
+function gitrepo_source.static:is_selected_source_class(opts)
+    assertIsTable(self)
+    assertIsTable(opts)
+
+    if e2tool.current_tool() == "fetch-sources" and opts["gitrepo"] then
+        return true
+    end
+    return false
+end
 
 function gitrepo_source:initialize(rawsrc)
     assertIsTable(rawsrc)
@@ -655,6 +670,10 @@ local function gitrepo_plugin_init()
     rc, re = scm.register("gitrepo", gitrepo)
     if not rc then
         return false, re
+    end
+
+    if e2tool.current_tool() == "fetch-sources" then
+        e2option.flag("gitrepo", "select gitrepo sources")
     end
 
     return true
