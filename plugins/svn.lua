@@ -384,6 +384,10 @@ function svn.fetch_source(info, sourcename)
         return false, e:cat(re)
     end
 
+    if scm.working_copy_available(info, sourcename) then
+        return true
+    end
+
     local argv = { "checkout", svnurl, info.root .. "/" .. src:get_working() }
 
     rc, re = svn_tool(argv)

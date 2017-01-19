@@ -415,6 +415,10 @@ end
 function git.fetch_source(info, sourcename)
     local e, rc, re, src, git_dir, work_tree, id
 
+    if scm.working_copy_available(info, sourcename) then
+        return true
+    end
+
     src = source.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
 

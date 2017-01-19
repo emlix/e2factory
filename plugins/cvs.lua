@@ -319,6 +319,10 @@ end
 function cvs.fetch_source(info, sourcename)
     local rc, re, e, src, cvsroot, workdir, argv
 
+    if scm.working_copy_available(info, sourcename) then
+        return true
+    end
+
     e = err.new("fetching source failed: %s", sourcename)
     src = source.sources[sourcename]
 
@@ -406,6 +410,11 @@ function cvs.update(info, sourcename)
 
     e = err.new("updating source '%s' failed", sourcename)
     src = source.sources[sourcename]
+
+    rc, re = scm.working_copy_available(info, sourcename)
+    if not rc then
+        return false, e:cat(re)
+    end
 
     workdir = e2lib.join(info.root, src:get_working())
 
