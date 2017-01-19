@@ -69,7 +69,7 @@ local function e2_fetch_source(arg)
     if #arguments > 0 then
         opts.selection = true
     end
-    if not (opts.scm or opts.files or opts.chroot or opts.selection
+    if not (opts.all or opts.scm or opts.files or opts.chroot or opts.selection
         or opts.git or opts.cvs or opts.svn) then
         e2lib.warn("WOTHER", "Selecting scm sources by default")
         opts.scm = true
@@ -222,7 +222,7 @@ local function e2_fetch_source(arg)
         end
     end
 
-    if opts.scm or opts.files or opts.git or opts.cvs or opts.svn or
+    if opts.all or opts.scm or opts.files or opts.git or opts.cvs or opts.svn or
         opts.selection then
         e2lib.log(2, "fetching sources...")
         local rc, re = fetch_sources(info, opts, sel)
