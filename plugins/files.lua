@@ -297,38 +297,24 @@ function files.files_source:has_working_copy()
     return false
 end
 
---- cache files for a source
--- @param info the info structure
--- @param sourcename name of the source
--- @return bool
--- @return nil, an error string on error
-function files.cache_source(info, sourcename)
+function files.fetch_source(info, sourcename)
     local rc, re
     local src = source.sources[sourcename]
+    local e = err.new("fetching source failed: %s", sourcename)
 
-    -- cache all files for this source
     for file in src:file_iter() do
         if cache.cache_enabled(info.cache, file:server()) then
-            e2lib.logf(3, "files.cache_source: caching file %s", file:servloc())
+            e2lib.logf(3, "files.fetch_source: caching file %s", file:servloc())
             rc, re = cache.fetch_file_path(info.cache, file:server(), file:location())
             if not rc then
-                return false, re
+                return false, e:cat(re)
             end
         else
             e2lib.logf(3, "not caching %s (stored locally)", file:servloc())
         end
     end
-    return true
-end
 
-function files.fetch_source(info, sourcename)
-    local rc, re
-    local e = err.new("fetching source failed: %s", sourcename)
-    local rc, re = files.cache_source(info, sourcename)
-    if not rc then
-        return false, e:cat(re)
-    end
-    return true, nil
+    return true
 end
 
 function files.working_copy_available(info, sourcename)
