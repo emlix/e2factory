@@ -149,7 +149,7 @@ function chroot.load_chroot_config(info)
     local rc, re, e
     local t, path, cgroup
 
-    path = e2lib.join(info.root, "proj/chroot")
+    path = e2lib.join(e2tool.root(), "proj/chroot")
     e = err.new("loading chroot config %q failed", path)
 
     t = nil

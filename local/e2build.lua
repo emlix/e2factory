@@ -223,7 +223,7 @@ function e2build.build_process_class:_enter_playground(res, return_flags)
 
     bc = res:build_config()
     e = err.new("entering playground")
-   
+
     rc, re = eio.file_write(e2lib.join(bc.c, bc.profile),
         res:build_settings():profile())
     if not rc then
@@ -373,7 +373,7 @@ function e2build.build_process_class:helper_chroot_remove(res)
     if not rc then
         return false, e:cat(re)
     end
-    local f = e2lib.join(info.root, "playground")
+    local f = e2lib.join(e2tool.root(), "playground")
     local s = e2lib.lstat(f)
     if s and s.type == "symbolic-link" then
         rc, re = e2lib.unlink(f)
@@ -519,14 +519,14 @@ function e2build.build_process_class:_install_init_files(res, return_flags)
 
     info = e2tool.info()
 
-    for x, re in e2lib.directory(info.root .. "/proj/init") do
+    for x, re in e2lib.directory(e2tool.root() .. "/proj/init") do
         if not x then
             return false, e:cat(re)
         end
 
         if not e2lib.is_backup_file(x) then
             local location = e2lib.join("proj/init", x)
-            local abslocation = e2lib.join(info.root, location)
+            local abslocation = e2lib.join(e2tool.root(), location)
             local destdir = e2lib.join(bc.T, "init")
 
             if not e2lib.isfile(abslocation) then
@@ -570,7 +570,7 @@ function e2build.build_process_class:_install_build_driver(res, return_flags)
 
     -- init files
     info = e2tool.info()
-    for fn, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
+    for fn, re in e2lib.directory(e2lib.join(e2tool.root(), "proj/init")) do
         if not fn then
             return false, e:cat(re)
         end
@@ -1063,7 +1063,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
     if not buildid then
         return false, e:cat(re)
     end
-    lnk = e2lib.join(info.root,  "out", res:get_name(), "last")
+    lnk = e2lib.join(e2tool.root(),  "out", res:get_name(), "last")
     location = e2lib.join(location, res:get_name(), buildid, "result.tar")
 
     -- if we don't have cache or server on local fs, fetch a copy into "out"

@@ -154,7 +154,7 @@ local function gather_source_paths(info, basedir, sources)
     local currdir, sdir, sconfig, s
     sources = sources or {}
 
-    currdir = e2tool.sourcedir(basedir, info.root)
+    currdir = e2tool.sourcedir(basedir, e2tool.root())
     for entry, re in e2lib.directory(currdir) do
         if not entry then
             return false, re
@@ -164,8 +164,8 @@ local function gather_source_paths(info, basedir, sources)
             entry = e2lib.join(basedir, entry)
         end
 
-        sdir = e2tool.sourcedir(entry, info.root)
-        sconfig = e2tool.sourceconfig(entry, info.root)
+        sdir = e2tool.sourcedir(entry, e2tool.root())
+        sconfig = e2tool.sourceconfig(entry, e2tool.root())
         s = e2lib.stat(sdir)
         if s.type == "directory" then
             if e2lib.exists(sconfig) then
@@ -215,7 +215,7 @@ function source.load_source_configs(info)
             string = e2lib.safe_string_table(),
         }
 
-        path = e2tool.sourceconfig(cfg, info.root)
+        path = e2tool.sourceconfig(cfg, e2tool.root())
         rc, re = e2lib.dofile2(path, g)
         if not rc then
             return false, e:cat(re)

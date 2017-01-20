@@ -333,7 +333,7 @@ function cvs.fetch_source(info, sourcename)
 
     -- split the working directory into dirname and basename as some cvs clients
     -- don't like slashes (e.g. in/foo) in their checkout -d<path> argument
-    workdir = e2lib.dirname(e2lib.join(info.root, src:get_working()))
+    workdir = e2lib.dirname(e2lib.join(e2tool.root(), src:get_working()))
 
     argv = {
         "-d", cvsroot,
@@ -394,7 +394,7 @@ function cvs.prepare_source(info, sourcename, sourceset, buildpath)
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
-        rc, re = e2lib.cp(e2lib.join(info.root, src:get_working()),
+        rc, re = e2lib.cp(e2lib.join(e2tool.root(), src:get_working()),
             e2lib.join(buildpath, src:get_name()), true)
         if not rc then
             return false, e:cat(re)
@@ -416,7 +416,7 @@ function cvs.update(info, sourcename)
         return false, e:cat(re)
     end
 
-    workdir = e2lib.join(info.root, src:get_working())
+    workdir = e2lib.join(e2tool.root(), src:get_working())
 
     argv = { "update", "-R" }
     rc, re = cvs_tool(argv, workdir)
@@ -429,7 +429,7 @@ end
 
 function cvs.working_copy_available(info, sourcename)
     local src = source.sources[sourcename]
-    local dir = e2lib.join(info.root, src:get_working())
+    local dir = e2lib.join(e2tool.root(), src:get_working())
     if not e2lib.isdir(dir) then
         return false, err.new("working copy for %s is not available", sourcename)
     end

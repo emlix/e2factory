@@ -45,11 +45,11 @@ end
 local function shadow_config_up(info, src_res, pathname)
     local cf, cfdir
     if src_res == "src" then
-        cf = e2tool.sourceconfig(pathname, info.root)
-        cfdir = e2tool.sourcedir(pathname, info.root)
+        cf = e2tool.sourceconfig(pathname, e2tool.root())
+        cfdir = e2tool.sourcedir(pathname, e2tool.root())
     elseif src_res == "res" then
-        cf = e2tool.resultconfig(pathname, info.root)
-        cfdir = e2tool.resultdir(pathname, info.root)
+        cf = e2tool.resultconfig(pathname, e2tool.root())
+        cfdir = e2tool.resultdir(pathname, e2tool.root())
     else
         return false, err.new("unexpected value in src_res")
     end
@@ -76,11 +76,11 @@ end
 local function shadow_config_down(info, src_res, pathname)
     local cf, cfdir
     if src_res == "src" then
-        cf = e2tool.sourceconfig(pathname, info.root)
-        cfdir = e2tool.sourcedir(pathname, info.root)
+        cf = e2tool.sourceconfig(pathname, e2tool.root())
+        cfdir = e2tool.sourcedir(pathname, e2tool.root())
     elseif src_res == "res" then
-        cf = e2tool.resultconfig(pathname, info.root)
-        cfdir = e2tool.resultdir(pathname, info.root)
+        cf = e2tool.resultconfig(pathname, e2tool.root())
+        cfdir = e2tool.resultdir(pathname, e2tool.root())
     else
         return false, err.new("unexpected value in src_res")
     end
@@ -133,8 +133,8 @@ local function newsource(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.sourceconfig(pathname, info.root)
-    local cfdir = e2tool.sourcedir(pathname, info.root)
+    local cf = e2tool.sourceconfig(pathname, e2tool.root())
+    local cfdir = e2tool.sourcedir(pathname, e2tool.root())
 
     if e2lib.isfile(cf) then
         return false, e:append("refusing to overwrite config in %s", cfdir)
@@ -184,7 +184,7 @@ local function editsource(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.sourceconfig(pathname, info.root)
+    local cf = e2tool.sourceconfig(pathname, e2tool.root())
     return editor(cf)
 end
 
@@ -204,9 +204,9 @@ local function newresult(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cfdir = e2tool.resultdir(pathname, info.root)
-    local cf = e2tool.resultconfig(pathname, info.root)
-    local bs = e2tool.resultbuildscript(pathname, info.root)
+    local cfdir = e2tool.resultdir(pathname, e2tool.root())
+    local cf = e2tool.resultconfig(pathname, e2tool.root())
+    local bs = e2tool.resultbuildscript(pathname, e2tool.root())
 
     local cftemplate = e2lib.join(info.local_template_path, "result")
     local bstemplate = e2lib.join(info.local_template_path, "build-script")
@@ -282,7 +282,7 @@ local function editresult(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.resultconfig(pathname, info.root)
+    local cf = e2tool.resultconfig(pathname, e2tool.root())
     return editor(cf)
 end
 
@@ -302,7 +302,7 @@ local function editbuildscript(info, ...)
     end
 
     local pathname = e2tool.src_res_name_to_path(name)
-    local cf = e2tool.resultbuildscript(pathname, info.root)
+    local cf = e2tool.resultbuildscript(pathname, e2tool.root())
     return editor(cf)
 end
 
@@ -329,7 +329,7 @@ local function e2_cf(arg)
         error(re)
     end
 
-    local rc, re = e2lib.chdir(info.root)
+    local rc, re = e2lib.chdir(e2tool.root())
     if not rc then
         error(re)
     end

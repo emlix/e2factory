@@ -233,7 +233,7 @@ function gitrepo.working_copy_available(info, sourcename)
 
     local src = source.sources[sourcename]
 
-    if not e2lib.isdir(e2lib.join(info.root, src:get_working())) then
+    if not e2lib.isdir(e2lib.join(e2tool.root(), src:get_working())) then
         return false, err.new("working copy for %s is not available", sourcename)
     end
     return true
@@ -257,7 +257,7 @@ function gitrepo.fetch_source(info, sourcename)
     src = source.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
 
-    work_tree = e2lib.join(info.root, src:get_working())
+    work_tree = e2lib.join(e2tool.root(), src:get_working())
     git_dir = e2lib.join(work_tree, ".git")
 
     e2lib.logf(2, "cloning %s:%s [%s]", src:get_server(), src:get_location(),
@@ -324,7 +324,7 @@ function gitrepo.prepare_source(info, sourcename, sourceset, buildpath)
             return false, e:cat(re)
         end
 
-        worktree = e2lib.join(info.root, src:get_working())
+        worktree = e2lib.join(e2tool.root(), src:get_working())
         argv = generic_git.git_new_argv(false, false, "clone",
             "--mirror", worktree, destdir)
         rc, re = generic_git.git(argv)
@@ -350,7 +350,7 @@ function gitrepo.prepare_source(info, sourcename, sourceset, buildpath)
     elseif sourceset == "working-copy" then
         local argv = {
             "-a",
-            e2lib.join(info.root, src:get_working(), ""),
+            e2lib.join(e2tool.root(), src:get_working(), ""),
             e2lib.join(buildpath, sourcename),
         }
         rc, re = e2lib.rsync(argv)
@@ -383,7 +383,7 @@ function gitrepo.update(info, sourcename)
 
     e2lib.logf(2, "updating %s [%s]", src:get_working(), src:get_branch())
 
-    gitwc  = e2lib.join(info.root, src:get_working())
+    gitwc  = e2lib.join(e2tool.root(), src:get_working())
     gitdir = e2lib.join(gitwc, ".git")
 
     argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
@@ -473,7 +473,7 @@ function gitrepo.check_workingcopy(info, sourcename)
 
     -- check if branch exists
     local src = source.sources[sourcename]
-    local gitdir = e2lib.join(info.root, src:get_working(), ".git")
+    local gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
     local ref = string.format("refs/heads/%s", src:get_branch())
     local id
 
@@ -562,7 +562,7 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
 
     if sourceset == "tag" or sourceset == "branch" then
         local tmpdir = e2lib.mktempdir()
-        local worktree = e2lib.join(info.root, src:get_working())
+        local worktree = e2lib.join(e2tool.root(), src:get_working())
         local destdir = e2lib.join(tmpdir, sourcename, ".git")
 
         rc, re = e2lib.mkdir_recursive(destdir)
@@ -584,7 +584,7 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
         end
     elseif sourceset == "working-copy" then
         rc, rc = e2lib.tar({"-czf", e2lib.join(sourcedir, archive),
-            "-C", e2lib.join(info.root, src:get_working(), ".."), sourcename})
+            "-C", e2lib.join(e2tool.root(), src:get_working(), ".."), sourcename})
         if not rc then
             return false, e:cat(re)
         end

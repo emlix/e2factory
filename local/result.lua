@@ -319,7 +319,7 @@ function result.result_class:initialize(rawres)
     end
 
     local build_script =
-        e2tool.resultbuildscript(self:get_name_as_path(), info.root)
+        e2tool.resultbuildscript(self:get_name_as_path(), e2tool.root())
     if not e2lib.isfile(build_script) then
         e:append("build-script does not exist: %s", build_script)
     end
@@ -390,7 +390,7 @@ function result.result_class:build_config()
     bc.Tc = e2lib.join("/", builddir)
     bc.r = self:get_name()
     bc.chroot_call_prefix = project.chroot_call_prefix()
-    bc.buildlog = string.format("%s/log/build.%s.log", info.root, self:get_name())
+    bc.buildlog = string.format("%s/log/build.%s.log", e2tool.root(), self:get_name())
     bc.scriptdir = "script"
     bc.build_driver_file = "build-driver"
     bc.buildrc_file = "buildrc"
@@ -583,7 +583,7 @@ local function gather_result_paths(info, basedir, results)
     local currdir, resdir, resconfig, s
 
     results = results or {}
-    currdir = e2tool.resultdir(basedir, info.root)
+    currdir = e2tool.resultdir(basedir, e2tool.root())
     for entry, re in e2lib.directory(currdir) do
         if not entry then
             return false, re
@@ -593,8 +593,8 @@ local function gather_result_paths(info, basedir, results)
             entry = e2lib.join(basedir, entry)
         end
 
-        resdir = e2tool.resultdir(entry, info.root)
-        resconfig = e2tool.resultconfig(entry, info.root)
+        resdir = e2tool.resultdir(entry, e2tool.root())
+        resconfig = e2tool.resultconfig(entry, e2tool.root())
         s = e2lib.stat(resdir)
         if s.type == "directory" then
             if e2lib.exists(resconfig) then
@@ -635,7 +635,7 @@ local function load_rawres(cfg)
         string = e2lib.safe_string_table(),
     }
 
-    path = e2tool.resultconfig(cfg, info.root)
+    path = e2tool.resultconfig(cfg, e2tool.root())
     rc, re = e2lib.dofile2(path, g)
     if not rc then
         return false, e:cat(re)

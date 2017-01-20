@@ -299,7 +299,7 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
         return false, e:cat(re)
     end
 
-    gitdir = e2lib.join(info.root, src:get_working(), ".git")
+    gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
 
     if sourceset == "branch" or (sourceset == "lazytag" and src:get_tag() == "^") then
         ref = string.format("refs/heads/%s", src:get_branch())
@@ -353,7 +353,7 @@ function git.update(info, sourcename)
 
     e2lib.logf(2, "updating %s [%s]", src:get_working(), src:get_branch())
 
-    gitwc  = e2lib.join(info.root, src:get_working())
+    gitwc  = e2lib.join(e2tool.root(), src:get_working())
     gitdir = e2lib.join(gitwc, ".git")
 
     argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
@@ -422,7 +422,7 @@ function git.fetch_source(info, sourcename)
     src = source.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
 
-    work_tree = e2lib.join(info.root, src:get_working())
+    work_tree = e2lib.join(e2tool.root(), src:get_working())
     git_dir = e2lib.join(work_tree, ".git")
 
     e2lib.logf(2, "cloning %s:%s [%s]", src:get_server(), src:get_location(),
@@ -474,7 +474,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
         return false, e:cat(re)
     end
 
-    srcdir = e2lib.join(info.root, src:get_working())
+    srcdir = e2lib.join(e2tool.root(), src:get_working())
     destdir = e2lib.join(buildpath, sourcename)
 
     rc, re = e2lib.mkdir_recursive(destdir)
@@ -485,7 +485,7 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     if sourceset == "working-copy" then
         local empty
 
-        srcdir = e2lib.join(info.root, src:get_working())
+        srcdir = e2lib.join(e2tool.root(), src:get_working())
 
         empty = true
         for f, re in e2lib.directory(srcdir, true) do
@@ -627,7 +627,7 @@ end
 function git.working_copy_available(info, sourcename)
     local rc
     local src = source.sources[sourcename]
-    local gitwc = e2lib.join(info.root, src:get_working())
+    local gitwc = e2lib.join(e2tool.root(), src:get_working())
 
     if not e2lib.isdir(gitwc) then
         return false, err.new("working copy for %s is not available", sourcename)
@@ -690,7 +690,7 @@ function git.toresult(info, sourcename, sourceset, directory)
             return false, e:cat(re)
         end
 
-        argv = generic_git.git_new_argv(nil, e2lib.join(info.root, src:get_working()))
+        argv = generic_git.git_new_argv(nil, e2lib.join(e2tool.root(), src:get_working()))
         table.insert(argv, "archive")
         table.insert(argv, "--format=tar") -- older versions don't have "tar.gz"
         table.insert(argv, string.format("--prefix=%s/", sourcename))
@@ -714,7 +714,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         end
     elseif sourceset == "working-copy" then
         argv = {
-            "-C", e2lib.join(info.root, src:get_working()),
+            "-C", e2lib.join(e2tool.root(), src:get_working()),
             string.format("--transform=s,^./,./%s/,", sourcename),
             "--exclude=.git",
             "-czf",
@@ -768,7 +768,7 @@ function git.check_workingcopy(info, sourcename)
 
     -- check if branch exists
     local src = source.sources[sourcename]
-    local gitdir = e2lib.join(info.root, src:get_working(), ".git")
+    local gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
     local ref = string.format("refs/heads/%s", src:get_branch())
     local id
 

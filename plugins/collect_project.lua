@@ -73,7 +73,7 @@ local function _build_collect_project(self, res, return_flags)
             return false, e:cat(re)
         end
 
-        for fn, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
+        for fn, re in e2lib.directory(e2lib.join(e2tool.root(), "proj/init")) do
             if not fn then
                 return false, e:cat(re)
             end
@@ -149,7 +149,7 @@ local function _build_collect_project(self, res, return_flags)
         return false, e:cat(re)
     end
 
-    for f, re in e2lib.directory(e2lib.join(info.root, "proj/init"), false) do
+    for f, re in e2lib.directory(e2lib.join(e2tool.root(), "proj/init"), false) do
         if not f then
             return false, e:cat(re)
         end

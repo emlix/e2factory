@@ -639,12 +639,12 @@ local _info = false
 local function opendebuglogfile(info)
     local rc, re, e, logfile, debuglogfile
 
-    rc, re = e2lib.mkdir_recursive(e2lib.join(info.root, "log"))
+    rc, re = e2lib.mkdir_recursive(e2lib.join(e2tool.root(), "log"))
     if not rc then
         e = err.new("error making log directory")
         return false, e:cat(re)
     end
-    logfile = e2lib.join(info.root, "log/debug.log")
+    logfile = e2lib.join(e2tool.root(), "log/debug.log")
     rc, re = e2lib.rotate_log(logfile)
     if not rc then
         return false, re
@@ -755,12 +755,13 @@ function e2tool.local_init(path, tool)
     if not info.root then
         return false, e:append("not located in a project directory")
     end
+    e2tool.root(info.root)
 
     -- load local plugins
     local ctx = {  -- plugin context
         info = info,
     }
-    local plugindir = e2lib.join(info.root, ".e2/plugins")
+    local plugindir = e2lib.join(e2tool.root(), ".e2/plugins")
     rc, re = plugin.load_plugins(plugindir, ctx)
     if not rc then
         return false, e:cat(re)
@@ -783,7 +784,7 @@ local function check_config_syntax_compat(info)
     local re, e, sf, l
 
     e = err.new("checking configuration syntax compatibilitly failed")
-    sf = e2lib.join(info.root, e2lib.globals.syntax_file)
+    sf = e2lib.join(e2tool.root(), e2lib.globals.syntax_file)
 
     l, re = eio.file_read_line(sf)
     if not l then
@@ -940,7 +941,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         e2lib.finish(1)
     end
 
-    info.local_template_path = e2lib.join(info.root, ".e2/lib/e2/templates")
+    info.local_template_path = e2lib.join(e2tool.root(), ".e2/lib/e2/templates")
 
     rc, re = e2lib.init2() -- configuration must be available
     if not rc then
@@ -960,7 +961,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
 
     -- read .e2/proj-location
-    local plf = e2lib.join(info.root, e2lib.globals.project_location_file)
+    local plf = e2lib.join(e2tool.root(), e2lib.globals.project_location_file)
     local line, re = eio.file_read_line(plf)
     if not line then
         return false, e:cat(re)
@@ -983,7 +984,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    rc, re = cache.setup_cache_local(info.cache, info.root, info.project_location)
+    rc, re = cache.setup_cache_local(info.cache, e2tool.root(), info.project_location)
     if not rc then
         return false, e:cat(re)
     end
@@ -993,7 +994,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    local f = e2lib.join(info.root, e2lib.globals.e2version_file)
+    local f = e2lib.join(e2tool.root(), e2lib.globals.e2version_file)
     local v, re = e2lib.parse_e2versionfile(f)
     if not v then
         return false, re
@@ -1059,7 +1060,7 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     -- read global interface version and check if this version of the local
     -- tools supports the version used for the project
-    local givf = e2lib.join(info.root, e2lib.globals.global_interface_version_file)
+    local givf = e2lib.join(e2tool.root(), e2lib.globals.global_interface_version_file)
     local line, re = eio.file_read_line(givf)
     if not line then
         return false, e:cat(re)
@@ -1089,7 +1090,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         ".e2/version",
     }
     for _,f in ipairs(deprecated_files) do
-        local path = e2lib.join(info.root, f)
+        local path = e2lib.join(e2tool.root(), f)
         if e2lib.exists(path) then
             e2lib.warnf("WDEPRECATED", "File exists but is no longer used: `%s'", f)
         end
@@ -1103,7 +1104,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     if e2option.opts["check"] then
         local dirty, mismatch
 
-        rc, re, mismatch = generic_git.verify_head_match_tag(info.root,
+        rc, re, mismatch = generic_git.verify_head_match_tag(e2tool.root(),
             project.release_id())
         if not rc then
             if mismatch then
@@ -1114,7 +1115,7 @@ function e2tool.collect_project_info(info, skip_load_config)
             end
         end
 
-        rc, re, dirty = generic_git.verify_clean_repository(info.root)
+        rc, re, dirty = generic_git.verify_clean_repository(e2tool.root())
         if not rc then
             if dirty then
                 e = err.new("project repository is not clean")
@@ -1127,7 +1128,7 @@ function e2tool.collect_project_info(info, skip_load_config)
 
     if e2option.opts["check-remote"] then
         rc, re = generic_git.verify_remote_tag(
-            e2lib.join(info.root, ".git"), project.release_id())
+            e2lib.join(e2tool.root(), ".git"), project.release_id())
         if not rc then
             e:append("verifying remote tag failed")
             return false, e:cat(re)

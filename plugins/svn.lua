@@ -388,7 +388,7 @@ function svn.fetch_source(info, sourcename)
         return true
     end
 
-    local argv = { "checkout", svnurl, info.root .. "/" .. src:get_working() }
+    local argv = { "checkout", svnurl, e2tool.root() .. "/" .. src:get_working() }
 
     rc, re = svn_tool(argv)
     if not rc then
@@ -425,8 +425,8 @@ function svn.prepare_source(info, sourcename, sourceset, build_path)
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
-        -- cp -R info.root/src.working/src.workingcopy_subdir build_path
-        local s = e2lib.join(info.root, src:get_working(),
+        -- cp -R e2tool.root()/src.working/src.workingcopy_subdir build_path
+        local s = e2lib.join(e2tool.root(), src:get_working(),
             src:get_workingcopy_subdir())
         local d = e2lib.join(build_path, src:get_name())
         rc, re = e2lib.cp(s, d, true)
@@ -443,7 +443,7 @@ function svn.working_copy_available(info, sourcename)
     local rc, re
     local src = source.sources[sourcename]
 
-    local dir = e2lib.join(info.root, src:get_working())
+    local dir = e2lib.join(e2tool.root(), src:get_working())
     if not e2lib.isdir(dir) then
         return false, err.new("working copy for %s is not available", sourcename)
     end
@@ -461,11 +461,11 @@ function svn.check_workingcopy(info, sourcename)
     end
     -- check if the configured branch and tag exist
     local d
-    d = e2lib.join(info.root, src:get_working(), src:get_branch())
+    d = e2lib.join(e2tool.root(), src:get_working(), src:get_branch())
     if not e2lib.isdir(d) then
         e:append("branch does not exist: %s", src:get_branch())
     end
-    d = e2lib.join(info.root, src:get_working(), src:get_tag())
+    d = e2lib.join(e2tool.root(), src:get_working(), src:get_tag())
     if not e2lib.isdir(d) then
         e:append("tag does not exist: %s", src:get_tag())
     end
@@ -539,7 +539,7 @@ function svn.update(info, sourcename)
     local rc, re
     local e = err.new("updating source '%s' failed", sourcename)
     local src = source.sources[sourcename]
-    local workdir = e2lib.join(info.root, src:get_working())
+    local workdir = e2lib.join(e2tool.root(), src:get_working())
     rc, re = svn_tool({ "update" }, workdir)
     if not rc then
         return false, e:cat(re)

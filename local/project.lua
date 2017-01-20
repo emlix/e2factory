@@ -167,7 +167,7 @@ function project.load_project_config(info)
         return false, re
     end
 
-    path = e2lib.join(info.root, "proj/config")
+    path = e2lib.join(e2tool.root(), "proj/config")
 
     prj = nil
     local g = {
@@ -252,7 +252,7 @@ function project.chroot_call_prefix()
     assert(info)
 
     if project.chroot_arch() == "x86_32" then
-	return e2lib.join(info.root, ".e2/bin/e2-linux32")
+	return e2lib.join(e2tool.root(), ".e2/bin/e2-linux32")
     end
 
     return ""
@@ -322,7 +322,7 @@ function project.projid(info)
     -- catch proj/init/*
     hc = hash.hash_start()
 
-    for f, re in e2lib.directory(e2lib.join(info.root, "proj/init")) do
+    for f, re in e2lib.directory(e2lib.join(e2tool.root(), "proj/init")) do
         if not f then
             return false, re
         end
@@ -349,7 +349,7 @@ function project.projid(info)
 
     -- .e2/extensions
     local extensions
-    extensions, re = e2lib.read_extension_config(info.root)
+    extensions, re = e2lib.read_extension_config(e2tool.root())
     if not extensions then
         return false, re
     end
