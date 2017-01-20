@@ -701,7 +701,6 @@ function e2tool.info()
 end
 
 local _current_tool
-
 --- Get current local tool name.
 -- @param tool Optional new tool name.
 -- @return Tool name
@@ -714,6 +713,20 @@ function e2tool.current_tool(tool)
 
     assertIsStringN(_current_tool)
     return _current_tool
+end
+
+local _project_root
+--- Get (set) project root.
+-- @param project_root Optional. Set to specify project root.
+-- @return Project root directory.
+function e2tool.root(project_root)
+    if project_root then
+        assertIsStringN(project_root)
+        _project_root = project_root
+    end
+
+    assertIsStringN(_project_root)
+    return _project_root
 end
 
 --- initialize the local library, load and initialize local plugins
