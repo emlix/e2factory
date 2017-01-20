@@ -626,7 +626,6 @@ end
 -- @field startup_cwd Current working dir at startup (string).
 -- @field chroot_umask Umask setting for chroot (decimal number).
 -- @field host_umask Default umask of the process (decimal number).
--- @field root Project root directory (string).
 -- @field project_location string: project location relative to the servers
 -- @field local_template_path Path to the local templates (string).
 -- @field cache The cache object.
@@ -751,11 +750,11 @@ function e2tool.local_init(path, tool)
 
     init_umask(info)
 
-    info.root, re = e2lib.locate_project_root(path)
-    if not info.root then
+    rc, re = e2lib.locate_project_root(path)
+    if not rc then
         return false, e:append("not located in a project directory")
     end
-    e2tool.root(info.root)
+    e2tool.root(rc)
 
     -- load local plugins
     local ctx = {  -- plugin context
