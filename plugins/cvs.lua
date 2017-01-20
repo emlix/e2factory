@@ -282,6 +282,13 @@ function cvs.cvs_source:display()
     return d
 end
 
+function cvs.cvs_source:working_copy_available()
+    if not e2lib.isdir(e2lib.join(e2tool.root(), self._working)) then
+        return false, err.new("working copy for %s is not available", self._name)
+    end
+    return true
+end
+
 --- Build the cvsroot string.
 -- @param info Info table.
 -- @param sourcename Source name.
@@ -319,12 +326,12 @@ end
 function cvs.fetch_source(info, sourcename)
     local rc, re, e, src, cvsroot, workdir, argv
 
-    if scm.working_copy_available(info, sourcename) then
-        return true
-    end
-
     e = err.new("fetching source failed: %s", sourcename)
     src = source.sources[sourcename]
+
+    if src:working_copy_available() then
+        return true
+    end
 
     cvsroot, re = mkcvsroot(info, sourcename)
     if not cvsroot then
@@ -411,7 +418,7 @@ function cvs.update(info, sourcename)
     e = err.new("updating source '%s' failed", sourcename)
     src = source.sources[sourcename]
 
-    rc, re = scm.working_copy_available(info, sourcename)
+    rc, re = src:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
@@ -424,15 +431,6 @@ function cvs.update(info, sourcename)
         return false, e:cat(re)
     end
 
-    return true
-end
-
-function cvs.working_copy_available(info, sourcename)
-    local src = source.sources[sourcename]
-    local dir = e2lib.join(e2tool.root(), src:get_working())
-    if not e2lib.isdir(dir) then
-        return false, err.new("working copy for %s is not available", sourcename)
-    end
     return true
 end
 

@@ -274,6 +274,18 @@ function git.git_source:display()
     return d
 end
 
+--- Check if a working copy for a git repository is available
+-- @return True if available, false otherwise.
+-- @return Error object if no directory.
+function git.git_source:working_copy_available()
+    if not e2lib.isdir(e2lib.join(e2tool.root(), self._working)) then
+        return false, err.new("working copy for %s is not available", self._name)
+    end
+    return true
+end
+
+--------------------------------------------------------------------------------
+
 --- Return the git commit ID of the specified source configuration. Specific to
 -- sources of type git, useful for writing plugins.
 -- @param info Info table.
@@ -289,7 +301,7 @@ function git.git_commit_id(info, sourcename, sourceset, check_remote)
     e = err.new("getting commit ID failed for source: %s", sourcename)
     src = source.sources[sourcename]
 
-    rc, re = scm.working_copy_available(info, sourcename)
+    rc, re = src:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
@@ -346,7 +358,7 @@ function git.update(info, sourcename)
     src = source.sources[sourcename]
     e = err.new("updating source '%s' failed", sourcename)
 
-    rc, re = scm.working_copy_available(info, sourcename)
+    rc, re = src:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
@@ -415,12 +427,12 @@ end
 function git.fetch_source(info, sourcename)
     local e, rc, re, src, git_dir, work_tree, id
 
-    if scm.working_copy_available(info, sourcename) then
-        return true
-    end
-
     src = source.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
+
+    if src:working_copy_available() then
+        return true
+    end
 
     work_tree = e2lib.join(e2tool.root(), src:get_working())
     git_dir = e2lib.join(work_tree, ".git")
@@ -619,22 +631,6 @@ function git.prepare_source(info, sourcename, sourceset, buildpath)
     return true
 end
 
---- Check if a working copy for a git repository is available
--- @param info the info structure
--- @param sourcename string
--- @return True if available, false otherwise.
--- @return Error object if no directory.
-function git.working_copy_available(info, sourcename)
-    local rc
-    local src = source.sources[sourcename]
-    local gitwc = e2lib.join(e2tool.root(), src:get_working())
-
-    if not e2lib.isdir(gitwc) then
-        return false, err.new("working copy for %s is not available", sourcename)
-    end
-    return true
-end
-
 --- turn server:location into a git-style url
 -- @param c table: a cache
 -- @param server string: server name
@@ -759,18 +755,19 @@ function git.check_workingcopy(info, sourcename)
     local rc, re
     local e = err.new("checking working copy of source %s failed", sourcename)
 
-    rc = scm.working_copy_available(info, sourcename)
+    -- check if branch exists
+    local src = source.sources[sourcename]
+    local gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
+    local ref = string.format("refs/heads/%s", src:get_branch())
+    local id
+
+    rc = src:working_copy_available()
     if not rc then
         e2lib.warnf("WOTHER", "in source %s: ", sourcename)
         e2lib.warnf("WOTHER", " working copy is not available")
         return true, nil
     end
 
-    -- check if branch exists
-    local src = source.sources[sourcename]
-    local gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
-    local ref = string.format("refs/heads/%s", src:get_branch())
-    local id
 
     rc, re, id = generic_git.lookup_id(gitdir, false, ref)
     if not rc then

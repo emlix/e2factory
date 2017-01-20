@@ -137,6 +137,15 @@ function source.basic_source:display()
         self._type, self._name))
 end
 
+--- Check whether the working copy is available. Sources that don't have a
+-- working copy should return false and an error object. Abstract method.
+-- @return True or false.
+-- @return Error object on false
+function source.basic_source:working_copy_available()
+    error(err.new("called working_copy_availabley() of source base class, type %s name %s",
+        self._type, self._name))
+end
+
 --- @section end
 
 --- Dictionary holding all source objects indexed by their name.

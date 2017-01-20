@@ -1,7 +1,7 @@
 --- SCM Interface
 -- @module local.scm
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -140,9 +140,10 @@ end
 -- @return bool
 -- @return an error object on failure
 function scm.generic_source_check(info, sourcename, require_workingcopy)
-    local rc, re
+    local rc, re, src
+    src = source.sources[sourcename]
 
-    rc, re = scm.working_copy_available(info, sourcename)
+    rc, re = src:working_copy_available()
     if (not rc) and require_workingcopy then
         return false, err.new("working copy is not available")
     end
@@ -150,7 +151,7 @@ function scm.generic_source_check(info, sourcename, require_workingcopy)
     if not rc then
         return false, re
     end
-    return true, nil
+    return true
 end
 
 scm.register_interface("toresult")
@@ -158,7 +159,6 @@ scm.register_interface("prepare_source")
 scm.register_interface("fetch_source")
 scm.register_interface("update")
 scm.register_interface("check_workingcopy")
-scm.register_interface("working_copy_available")
 
 return strict.lock(scm)
 

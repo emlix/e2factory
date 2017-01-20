@@ -293,6 +293,10 @@ function files.files_source:display()
     return d
 end
 
+function files.files_source:working_copy_available()
+    return false, err.new("source %s doesn't require a working copy", self._name)
+end
+
 function files.fetch_source(info, sourcename)
     local rc, re
     local src = source.sources[sourcename]
@@ -311,10 +315,6 @@ function files.fetch_source(info, sourcename)
     end
 
     return true
-end
-
-function files.working_copy_available(info, sourcename)
-    return false, err.new("source %s doesn't require a working copy", sourcename)
 end
 
 --- Handle file:copy() in a way that appears intuitive to the user. Returns

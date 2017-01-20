@@ -220,24 +220,17 @@ function gitrepo_source:display()
     return d
 end
 
---------------------------------------------------------------------------------
-
 --- Check if a working copy for a git repository is available
--- @param info the info structure
--- @param sourcename string
--- @return True if working copy is available, false otherwise.
--- @return Informative error object if directory does not exist
-function gitrepo.working_copy_available(info, sourcename)
-    assertIsTable(info)
-    assertIsStringN(sourcename)
-
-    local src = source.sources[sourcename]
-
-    if not e2lib.isdir(e2lib.join(e2tool.root(), src:get_working())) then
-        return false, err.new("working copy for %s is not available", sourcename)
+-- @return True if available, false otherwise.
+-- @return Error object if no directory.
+function gitrepo_source:working_copy_available()
+    if not e2lib.isdir(e2lib.join(e2tool.root(), self._working)) then
+        return false, err.new("working copy for %s is not available", self._name)
     end
     return true
 end
+
+--------------------------------------------------------------------------------
 
 --- Fetch a gitrepo source. Adapted from git plugin.
 -- @param info the info structure
@@ -250,12 +243,12 @@ function gitrepo.fetch_source(info, sourcename)
 
     local e, rc, re, src, git_dir, work_tree, id
 
-    if scm.working_copy_available(info, sourcename) then
-        return true
-    end
-
     src = source.sources[sourcename]
     e = err.new("fetching source failed: %s", sourcename)
+
+    if src:working_copy_available() then
+        return true
+    end
 
     work_tree = e2lib.join(e2tool.root(), src:get_working())
     git_dir = e2lib.join(work_tree, ".git")
@@ -464,18 +457,18 @@ function gitrepo.check_workingcopy(info, sourcename)
     local rc, re
     local e = err.new("checking working copy of source %s failed", sourcename)
 
-    rc = scm.working_copy_available(info, sourcename)
-    if not rc then
-        e2lib.warnf("WOTHER", "in source %s: ", sourcename)
-        e2lib.warnf("WOTHER", " working copy is not available")
-        return true, nil
-    end
-
     -- check if branch exists
     local src = source.sources[sourcename]
     local gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
     local ref = string.format("refs/heads/%s", src:get_branch())
     local id
+
+    rc = src:working_copy_available()
+    if not rc then
+        e2lib.warnf("WOTHER", "in source %s: ", sourcename)
+        e2lib.warnf("WOTHER", " working copy is not available")
+        return true, nil
+    end
 
     rc, re, id = generic_git.lookup_id(gitdir, false, ref)
     if not rc then

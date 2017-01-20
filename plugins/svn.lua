@@ -369,6 +369,15 @@ function svn.svn_source:display()
     return d
 end
 
+function svn.svn_source:working_copy_available()
+    if not e2lib.isdir(e2lib.join(e2tool.root(), self._working)) then
+        return false, err.new("working copy for %s is not available", self._name)
+    end
+    return true
+end
+
+--------------------------------------------------------------------------------
+
 function svn.fetch_source(info, sourcename)
     local rc, re
     local e = err.new("fetching source failed: %s", sourcename)
@@ -384,7 +393,7 @@ function svn.fetch_source(info, sourcename)
         return false, e:cat(re)
     end
 
-    if scm.working_copy_available(info, sourcename) then
+    if src:working_copy_available() then
         return true
     end
 
@@ -437,17 +446,6 @@ function svn.prepare_source(info, sourcename, sourceset, build_path)
         return false, e:cat("invalid source set")
     end
     return true, nil
-end
-
-function svn.working_copy_available(info, sourcename)
-    local rc, re
-    local src = source.sources[sourcename]
-
-    local dir = e2lib.join(e2tool.root(), src:get_working())
-    if not e2lib.isdir(dir) then
-        return false, err.new("working copy for %s is not available", sourcename)
-    end
-    return true
 end
 
 function svn.check_workingcopy(info, sourcename)
