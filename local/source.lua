@@ -142,11 +142,22 @@ end
 -- @return True or false.
 -- @return Error object on false
 function source.basic_source:working_copy_available()
-    error(err.new("called working_copy_availabley() of source base class, type %s name %s",
+    error(err.new("called working_copy_available() of source base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Verify the consistency of the working copy, for example when building
+-- a release.
+-- @return True on success, false on error.
+-- Error object on failure.
+function source.basic_source:check_workingcopy()
+    error(err.new("called check_workingcopy() of source base class, type %s name %s",
         self._type, self._name))
 end
 
 --- @section end
+
+--------------------------------------------------------------------------------
 
 --- Dictionary holding all source objects indexed by their name.
 source.sources = {}

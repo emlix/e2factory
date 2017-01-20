@@ -147,7 +147,7 @@ function scm.generic_source_check(info, sourcename, require_workingcopy)
     if (not rc) and require_workingcopy then
         return false, err.new("working copy is not available")
     end
-    rc, re = scm.check_workingcopy(info, sourcename)
+    rc, re = src:check_workingcopy()
     if not rc then
         return false, re
     end
@@ -158,7 +158,6 @@ scm.register_interface("toresult")
 scm.register_interface("prepare_source")
 scm.register_interface("fetch_source")
 scm.register_interface("update")
-scm.register_interface("check_workingcopy")
 
 return strict.lock(scm)
 

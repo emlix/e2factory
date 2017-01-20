@@ -376,6 +376,30 @@ function svn.svn_source:working_copy_available()
     return true
 end
 
+function svn.svn_source:check_workingcopy()
+    local rc, re
+    local e = err.new("checking working copy failed")
+    e:append("in source %s (svn configuration):", self._name)
+    e:setcount(0)
+    if e:getcount() > 0 then
+        return false, e
+    end
+    -- check if the configured branch and tag exist
+    local d
+    d = e2lib.join(e2tool.root(), self:get_working(), self._branch)
+    if not e2lib.isdir(d) then
+        e:append("branch does not exist: %s", self._branch)
+    end
+    d = e2lib.join(e2tool.root(), self:get_working(), self._tag)
+    if not e2lib.isdir(d) then
+        e:append("tag does not exist: %s", self._tag)
+    end
+    if e:getcount() > 0 then
+        return false, e
+    end
+    return true
+end
+
 --------------------------------------------------------------------------------
 
 function svn.fetch_source(info, sourcename)
@@ -446,31 +470,6 @@ function svn.prepare_source(info, sourcename, sourceset, build_path)
         return false, e:cat("invalid source set")
     end
     return true, nil
-end
-
-function svn.check_workingcopy(info, sourcename)
-    local rc, re
-    local e = err.new("checking working copy failed")
-    e:append("in source %s (svn configuration):", sourcename)
-    e:setcount(0)
-    local src = source.sources[sourcename]
-    if e:getcount() > 0 then
-        return false, e
-    end
-    -- check if the configured branch and tag exist
-    local d
-    d = e2lib.join(e2tool.root(), src:get_working(), src:get_branch())
-    if not e2lib.isdir(d) then
-        e:append("branch does not exist: %s", src:get_branch())
-    end
-    d = e2lib.join(e2tool.root(), src:get_working(), src:get_tag())
-    if not e2lib.isdir(d) then
-        e:append("tag does not exist: %s", src:get_tag())
-    end
-    if e:getcount() > 0 then
-        return false, e
-    end
-    return true
 end
 
 function svn.toresult(info, sourcename, sourceset, directory)

@@ -230,6 +230,95 @@ function gitrepo_source:working_copy_available()
     return true
 end
 
+function gitrepo_source:check_workingcopy()
+
+    --- turn server:location into a git-style url
+    -- @param c table: a cache
+    -- @param server string: server name
+    -- @param location string: location
+    -- @return string: the git url, or nil
+    -- @return an error object on failure
+    local function git_url(c, server, location)
+        local e = err.new("translating server:location to git url")
+        local rurl, re = cache.remote_url(c, server, location)
+        if not rurl then
+            return nil, e:cat(re)
+        end
+        local u, re = url.parse(rurl)
+        if not u then
+            return nil, e:cat(re)
+        end
+        local g, re = generic_git.git_url1(u)
+        if not g then
+            return nil, e:cat(re)
+        end
+        return g, nil
+    end
+
+    local rc, re
+    local e = err.new("checking working copy of source %s failed", self._name)
+
+    -- check if branch exists
+    local gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
+    local ref = string.format("refs/heads/%s", self._branch)
+    local id
+
+    rc = self:working_copy_available()
+    if not rc then
+        e2lib.warnf("WOTHER", "in source %s: ", self._name)
+        e2lib.warnf("WOTHER", " working copy is not available")
+        return true, nil
+    end
+
+    rc, re, id = generic_git.lookup_id(gitdir, false, ref)
+    if not rc then
+        return false, e:cat(re)
+    elseif not id then
+        return false, e:cat(err.new("branch %q does not exist", self._branch))
+    end
+
+    -- git config branch.<branch>.remote == "origin"
+    local query, expect, res
+    query = string.format("branch.%s.remote", self._branch)
+    res, re = generic_git.git_config(gitdir, query)
+    if not res then
+        e:append("remote is not configured for branch \"%s\"", self._branch)
+        return false, e
+    elseif res ~= "origin" then
+        e:append("%s is not \"origin\"", query)
+        return false, e
+    end
+
+    -- git config remote.origin.url == server:location
+    query = string.format("remote.origin.url")
+    expect, re = git_url(e2tool.info().cache, self._server, self._location)
+    if not expect then
+        return false, e:cat(re)
+    end
+    res, re = generic_git.git_config(gitdir, query)
+    if not res then
+        return false, e:cat(re)
+    end
+
+    local function remove_trailing_slashes(s)
+        while s:sub(#s) == "/" do
+            s = s:sub(1, #s-1)
+        end
+        return s
+    end
+
+    res = remove_trailing_slashes(res)
+    expect = remove_trailing_slashes(expect)
+    if res ~= expect then
+        e:append('git variable "%s" does not match e2 source configuration.',
+            query)
+        e:append('expected "%s" but got "%s" instead.', expect, res)
+        return false, e
+    end
+
+    return true
+end
+
 --------------------------------------------------------------------------------
 
 --- Fetch a gitrepo source. Adapted from git plugin.
@@ -425,95 +514,6 @@ function gitrepo.update(info, sourcename)
     rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
-    end
-
-    return true
-end
-
---- turn server:location into a git-style url
--- @param c table: a cache
--- @param server string: server name
--- @param location string: location
--- @return string: the git url, or nil
--- @return an error object on failure
-local function git_url(c, server, location)
-    local e = err.new("translating server:location to git url")
-    local rurl, re = cache.remote_url(c, server, location)
-    if not rurl then
-        return nil, e:cat(re)
-    end
-    local u, re = url.parse(rurl)
-    if not u then
-        return nil, e:cat(re)
-    end
-    local g, re = generic_git.git_url1(u)
-    if not g then
-        return nil, e:cat(re)
-    end
-    return g, nil
-end
-
-function gitrepo.check_workingcopy(info, sourcename)
-    local rc, re
-    local e = err.new("checking working copy of source %s failed", sourcename)
-
-    -- check if branch exists
-    local src = source.sources[sourcename]
-    local gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
-    local ref = string.format("refs/heads/%s", src:get_branch())
-    local id
-
-    rc = src:working_copy_available()
-    if not rc then
-        e2lib.warnf("WOTHER", "in source %s: ", sourcename)
-        e2lib.warnf("WOTHER", " working copy is not available")
-        return true, nil
-    end
-
-    rc, re, id = generic_git.lookup_id(gitdir, false, ref)
-    if not rc then
-        return false, e:cat(re)
-    elseif not id then
-        return false, e:cat(err.new("branch %q does not exist", src:get_branch()))
-    end
-
-    -- git config branch.<branch>.remote == "origin"
-    local query, expect, res
-    query = string.format("branch.%s.remote", src:get_branch())
-    res, re = generic_git.git_config(gitdir, query)
-    if not res then
-        e:append("remote is not configured for branch \"%s\"", src:get_branch())
-        return false, e
-    elseif res ~= "origin" then
-        e:append("%s is not \"origin\"", query)
-        return false, e
-    end
-
-    -- git config remote.origin.url == server:location
-    query = string.format("remote.origin.url")
-    expect, re = git_url(info.cache, src:get_server(), src:get_location())
-    if not expect then
-        return false, e:cat(re)
-    end
-    res, re = generic_git.git_config(gitdir, query)
-    if not res then
-        return false, e:cat(re)
-    end
-
-    local function remove_trailing_slashes(s)
-        while s:sub(#s) == "/" do
-            s = s:sub(1, #s-1)
-        end
-        return s
-    end
-
-    res = remove_trailing_slashes(res)
-    expect = remove_trailing_slashes(expect)
-    if res ~= expect then
-        e:append('git variable "%s" does not match e2 source configuration.',
-            query)
-        e:append('expected "%s" but got "%s" instead.', expect, res)
-        return false, e
     end
 
     return true

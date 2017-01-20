@@ -289,6 +289,12 @@ function cvs.cvs_source:working_copy_available()
     return true
 end
 
+function cvs.cvs_source:check_workingcopy()
+    return true
+end
+
+--------------------------------------------------------------------------------
+
 --- Build the cvsroot string.
 -- @param info Info table.
 -- @param sourcename Source name.
@@ -498,10 +504,6 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     end
     e2lib.rmtempdir(tmpdir)
     return true, nil
-end
-
-function cvs.check_workingcopy(info, sourcename)
-    return true
 end
 
 strict.lock(cvs)

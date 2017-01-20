@@ -297,6 +297,12 @@ function files.files_source:working_copy_available()
     return false, err.new("source %s doesn't require a working copy", self._name)
 end
 
+function files.files_source:check_workingcopy()
+    return true
+end
+
+--------------------------------------------------------------------------------
+
 function files.fetch_source(info, sourcename)
     local rc, re
     local src = source.sources[sourcename]
@@ -700,15 +706,6 @@ function files.toresult(info, sourcename, sourceset, directory)
     end
 
     return true
-end
-
---- Check for working copy availability.
--- @param info The info table.
--- @param sourcename The name of the source (string).
--- @return Boolean, true on success.
--- @return An error object on failure.
-function files.check_workingcopy(info, sourcename)
-    return true, nil
 end
 
 --- Update the source.
