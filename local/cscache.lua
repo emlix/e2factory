@@ -34,7 +34,6 @@ local cs_cache_class = class("cs_cache_class")
 
 function cs_cache_class:initialize()
     self._csdict = nil
-    self._projectroot = nil
     self._csfile = ".e2/hashcache"
 end
 
@@ -57,7 +56,6 @@ function cs_cache_class:lookup(filename, digest_type)
     if not self._csdict[filename] then
         return false
     end
-
 
     hce = self._csdict[filename]
     assert(hce)
@@ -171,21 +169,10 @@ function cs_cache_class:load_cache()
         return
     end
 
-    if not self._projectroot then
-        local info
-
-        info = e2tool.info()
-        if not info then
-            return
-        else
-            self._projectroot = info.root
-        end
-    end
-
     e2lib.register_cleanup("cs_cache_class:store_cache",
         cs_cache_class.store_cache, self)
 
-    chunk, msg = loadfile(e2lib.join(self._projectroot, self._csfile))
+    chunk, msg = loadfile(e2lib.join(e2tool.root(), self._csfile))
     if not chunk then
         e2lib.logf(3, "could not load cs_cache: %s", msg)
         return
@@ -241,9 +228,11 @@ end
 --- Store the checksum cache to disk.
 -- Called by cleanup handler.
 function cs_cache_class:store_cache()
-    local hcachevec, out
+    local hcachevec, out, root
 
-    if not self._csdict or not self._projectroot then
+    root = e2lib.locate_project_root()
+
+    if not self._csdict or not root then
         return
     end
 
@@ -279,7 +268,7 @@ function cs_cache_class:store_cache()
     end
     table.insert(out, "}\n")
 
-    eio.file_write(e2lib.join(self._projectroot, self._csfile), table.concat(out))
+    eio.file_write(e2lib.join(root, self._csfile), table.concat(out))
 end
 
 if not cscache then
