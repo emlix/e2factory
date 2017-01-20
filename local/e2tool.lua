@@ -776,10 +776,9 @@ end
 --- check for configuration syntax compatibility and log informational
 -- message including list of supported syntaxes if incompatibility is
 -- detected.
--- @param info
 -- @return bool
 -- @return an error object on failure
-local function check_config_syntax_compat(info)
+local function check_config_syntax_compat()
     local re, e, sf, l
 
     e = err.new("checking configuration syntax compatibilitly failed")
@@ -790,7 +789,7 @@ local function check_config_syntax_compat(info)
         return false, e:cat(re)
     end
 
-    for _,m in ipairs(info.config_syntax_compat) do
+    for _,m in ipairs(buildconfig.SYNTAX) do
         m = string.format("^%s$", m)
         if l:match(m) then
             return true
@@ -804,7 +803,7 @@ and finally insert the new configuration syntax version into %s
 
 Configuration syntax versions supported by this version of the tools are:]]
     e2lib.logf(2, s, sf)
-    for _,m in ipairs(info.config_syntax_compat) do
+    for _,m in ipairs(buildconfig.SYNTAX) do
         e2lib.logf(2, "%s", m)
     end
     e2lib.logf(2, "Currently configured configuration syntax is: %q", l)
@@ -934,8 +933,7 @@ function e2tool.collect_project_info(info, skip_load_config)
     local e = err.new("reading project configuration")
 
     -- check for configuration compatibility
-    info.config_syntax_compat = buildconfig.SYNTAX
-    rc, re = check_config_syntax_compat(info)
+    rc, re = check_config_syntax_compat()
     if not rc then
         e2lib.finish(1)
     end
