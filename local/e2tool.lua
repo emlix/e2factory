@@ -796,18 +796,54 @@ local function check_config_syntax_compat()
         end
     end
 
-    local s = [[
+    e:cat([[
 Your configuration syntax is incompatible with this tool version.
 Please read the configuration Changelog, update your project configuration
 and finally insert the new configuration syntax version into %s
 
-Configuration syntax versions supported by this version of the tools are:]]
-    e2lib.logf(2, s, sf)
+Configuration syntax versions supported by this version of the tools are:]])
+
     for _,m in ipairs(buildconfig.SYNTAX) do
-        e2lib.logf(2, "%s", m)
+        e:append("%s", m)
     end
-    e2lib.logf(2, "Currently configured configuration syntax is: %q", l)
-    return false, e:append("configuration syntax mismatch")
+    e:append("Currently configured configuration syntax is: %q", l)
+    return false, e
+end
+
+--- Compare global interface version and complain if we're not compatible.
+-- @return True on success, false on error.
+-- @Error object on failure.
+local function check_global_interface_version()
+    local rc, re, e
+    local givf, line, supported
+
+    -- read global interface version and check if this version of the local
+    -- tools supports the version used for the project
+
+    e = err.new("global interface version check failed")
+
+    givf = e2lib.join(e2tool.root(), e2lib.globals.global_interface_version_file)
+    line, re = eio.file_read_line(givf)
+    if not line then
+        return false, e:cat(re)
+    end
+
+    line = line:match("^%s*(%d+)%s*$")
+    supported = false
+    for _,v in ipairs(buildconfig.GLOBAL_INTERFACE_VERSION) do
+        if v == line then
+            supported = true
+        end
+    end
+    if not supported then
+        e:cat("%s: Invalid global interface version",
+            e2lib.globals.global_interface_version_file)
+        e:append("supported global interface versions are: %s",
+            table.concat(buildconfig.GLOBAL_INTERFACE_VERSION), " ")
+        return false, e
+    end
+
+    return true
 end
 
 --- Verify that a result or source file pathname in the form
@@ -935,7 +971,12 @@ function e2tool.collect_project_info(info, skip_load_config)
     -- check for configuration compatibility
     rc, re = check_config_syntax_compat()
     if not rc then
-        e2lib.finish(1)
+        e2lib.abort(re)
+    end
+
+    rc, re = check_global_interface_version()
+    if not rc then
+        e2lib.abort(re)
     end
 
     info.local_template_path = e2lib.join(e2tool.root(), ".e2/lib/e2/templates")
@@ -1052,28 +1093,6 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     if e:getcount() > 1 then
-        return false, e
-    end
-
-    -- read global interface version and check if this version of the local
-    -- tools supports the version used for the project
-    local givf = e2lib.join(e2tool.root(), e2lib.globals.global_interface_version_file)
-    local line, re = eio.file_read_line(givf)
-    if not line then
-        return false, e:cat(re)
-    end
-    info.global_interface_version = line:match("^%s*(%d+)%s*$")
-    local supported = false
-    for _,v in ipairs(buildconfig.GLOBAL_INTERFACE_VERSION) do
-        if v == info.global_interface_version then
-            supported = true
-        end
-    end
-    if not supported then
-        e:append("%s: Invalid global interface version",
-        e2lib.globals.global_interface_version_file)
-        e:append("supported global interface versions are: %s",
-        table.concat(buildconfig.GLOBAL_INTERFACE_VERSION), " ")
         return false, e
     end
 
