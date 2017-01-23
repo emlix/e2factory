@@ -1,4 +1,5 @@
 NEXT:
+ * Fix error in cvs source if cvsroot unset
 
 e2factory-2.3.16p0
  * Fix collect_project, include default result and its deps into the BuildID

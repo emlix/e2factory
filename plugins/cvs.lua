@@ -152,7 +152,7 @@ function cvs.cvs_source:initialize(rawsrc)
     self._working = rawsrc.working
 
     if rawsrc.cvsroot == nil then
-        e2lib.warnf("WDEFAULT", "in source %s:", sourcename)
+        e2lib.warnf("WDEFAULT", "in source %s:", self._name)
         e2lib.warnf("WDEFAULT",
         " source has no `cvsroot' attribute, defaulting to the server path")
         self._cvsroot = "."
