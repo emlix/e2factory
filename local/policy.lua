@@ -167,16 +167,16 @@ function policy.init(info)
         local release_id = "release-id"
         local server, location = s(location, release_id)
         local se = err.new("checking server configuration for '%s'", server)
-        local ce, re = cache.ce_by_server(info.cache, server)
+        local ce, re = cache.ce_by_server(cache.cache(), server)
         if not ce then
             se:cat(re)
-        elseif not cache.writeback_enabled(info.cache, server) then
+        elseif not cache.writeback_enabled(cache.cache(), server) then
             e2lib.warnf("WPOLICY",
             "Results will not be pushed to server: '%s'"..
             " (Writeback disabled)", server)
         end
-        if ce and not (cache.writeback_enabled(info.cache, server)
-            or cache.cache_enabled(info.cache, server)) then
+        if ce and not (cache.writeback_enabled(cache.cache(), server)
+            or cache.cache_enabled(cache.cache(), server)) then
             se:append(
             "Cannot store results. "..
             "Enable cache or writeback.")

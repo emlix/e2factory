@@ -216,9 +216,9 @@ local function e2_ls_project(arg)
     local s1 = "|"
     local s2 = "|"
     p1(s1, s2, "servers")
-    local servers_sorted = cache.servers(info.cache)
+    local servers_sorted = cache.servers(cache.cache())
     for i = 1, #servers_sorted, 1 do
-        local ce = cache.ce_by_server(info.cache, servers_sorted[i])
+        local ce = cache.ce_by_server(cache.cache(), servers_sorted[i])
         if i < #servers_sorted then
             s2 = "|"
         else

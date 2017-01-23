@@ -30,10 +30,10 @@ local generic_git = require("generic_git")
 local hash = require("hash")
 local licence = require("licence")
 local scm = require("scm")
+local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
-local source = require("source")
 
 --- Initialize git plugin.
 -- @param ctx Plugin context. See plugin module.
@@ -348,7 +348,7 @@ function git.git_source:check_workingcopy()
 
     -- git config remote.origin.url == server:location
     query = string.format("remote.origin.url")
-    expect, re = git_url(e2tool.info().cache, self._server, self._location)
+    expect, re = git_url(cache.cache(), self._server, self._location)
     if not expect then
         return false, e:cat(re)
     end
@@ -532,7 +532,7 @@ function git.fetch_source(info, sourcename)
     e2lib.logf(2, "cloning %s:%s [%s]", src:get_server(), src:get_location(),
         src:get_branch())
 
-    rc, re = generic_git.git_clone_from_server(info.cache, src:get_server(),
+    rc, re = generic_git.git_clone_from_server(cache.cache(), src:get_server(),
         src:get_location(), work_tree, false --[[always checkout]])
     if not rc then
         return false, e:cat(re)

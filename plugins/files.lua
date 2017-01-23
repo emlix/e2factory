@@ -309,9 +309,9 @@ function files.fetch_source(info, sourcename)
     local e = err.new("fetching source failed: %s", sourcename)
 
     for file in src:file_iter() do
-        if cache.cache_enabled(info.cache, file:server()) then
+        if cache.cache_enabled(cache.cache(), file:server()) then
             e2lib.logf(3, "files.fetch_source: caching file %s", file:servloc())
-            rc, re = cache.fetch_file_path(info.cache, file:server(), file:location())
+            rc, re = cache.fetch_file_path(cache.cache(), file:server(), file:location())
             if not rc then
                 return false, e:cat(re)
             end
@@ -487,7 +487,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             return false, e:cat(re)
         end
         if file:unpack() then
-            local path, re = cache.fetch_file_path(info.cache,
+            local path, re = cache.fetch_file_path(cache.cache(),
                 file:server(), file:location())
             if not path then
                 return false, e:cat(re)
@@ -531,7 +531,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                 end
             end
             if file:patch() then
-                local path, re = cache.fetch_file_path(info.cache,
+                local path, re = cache.fetch_file_path(cache.cache(),
                     file:server(), file:location())
                 if not path then
                     return false, e:append(re)
@@ -553,7 +553,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:cat(re)
                 end
 
-                local rc, re = cache.fetch_file(info.cache, file:server(),
+                local rc, re = cache.fetch_file(cache.cache(), file:server(),
                     file:location(), destdir, destname, {})
                 if not rc then
                     return false, e:cat(re)
@@ -605,7 +605,7 @@ function files.toresult(info, sourcename, sourceset, directory)
                 sourcename, destname)
         end
 
-        rc, re = cache.fetch_file(info.cache, file:server(), file:location(),
+        rc, re = cache.fetch_file(cache.cache(), file:server(), file:location(),
             destdir, destname, {})
         if not rc then
             return false, e:cat(re)

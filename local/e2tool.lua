@@ -143,7 +143,7 @@ function e2tool.file_class:validate_set_servloc(server, location)
 
     info = e2tool.info()
 
-    if not cache.valid_server(info.cache, server) then
+    if not cache.valid_server(cache.cache(), server) then
         return false, err.new("file entry with unknown server: %s", server)
     end
 
@@ -244,7 +244,7 @@ function e2tool.file_class:_compute_checksum(digest_type, flags)
 
     info = e2tool.info()
 
-    path, re = cache.fetch_file_path(info.cache, self._server, self._location,
+    path, re = cache.fetch_file_path(cache.cache(), self._server, self._location,
         flags)
     if not path then
         return false, re
@@ -276,7 +276,7 @@ function e2tool.file_class:_compute_remote_checksum(digest_type)
 
     info = e2tool.info()
 
-    surl, re = cache.remote_url(info.cache, self._server, self._location)
+    surl, re = cache.remote_url(cache.cache(), self._server, self._location)
     if not surl then
         return false, re
     end
@@ -432,7 +432,7 @@ function e2tool.file_class:checksum_verify()
 
     for _,digest_type in ipairs(digest_types) do
 
-        if cache.cache_enabled(info.cache, self._server) then
+        if cache.cache_enabled(cache.cache(), self._server) then
             cs_cache, re = self:_compute_checksum(digest_type)
             if not cs_cache then
                 return false, e:cat(re)
@@ -1017,17 +1017,19 @@ function e2tool.collect_project_info(info, skip_load_config)
         return false, e:cat(re)
     end
 
-    info.cache, re = cache.setup_cache(config)
-    if not info.cache then
-        return false, e:cat(re)
-    end
-
-    rc, re = cache.setup_cache_local(info.cache, e2tool.root(), info.project_location)
+    rc, re = cache.setup_cache(config)
     if not rc then
         return false, e:cat(re)
     end
 
-    rc, re = cache.setup_cache_apply_opts(info.cache)
+    cache.cache(rc)
+
+    rc, re = cache.setup_cache_local(cache.cache(), e2tool.root(), info.project_location)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = cache.setup_cache_apply_opts(cache.cache())
     if not rc then
         return false, e:cat(re)
     end

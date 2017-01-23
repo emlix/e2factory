@@ -302,7 +302,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
     local result_location = e2lib.join(location, res:get_name(),
         buildid, "result.tar")
 
-    rc, re = cache.file_exists(info.cache, server, result_location)
+    rc, re = cache.file_exists(cache.cache(), server, result_location)
     if re then
         return false, e:cat(re)
     end
@@ -437,7 +437,7 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
                 return false, e:cat(re)
             end
 
-            path, re = cache.fetch_file_path(info.cache, file:server(), file:location())
+            path, re = cache.fetch_file_path(cache.cache(), file:server(), file:location())
             if not path then
                 return false, e:cat(re)
             end
@@ -483,7 +483,7 @@ function e2build.build_process_class:_install_build_script(res, return_flags)
     destdir = e2lib.join(bc.T, "script")
     info = e2tool.info()
 
-    rc, re = cache.fetch_file(info.cache, cache.server_names().dot,
+    rc, re = cache.fetch_file(cache.cache(), cache.server_names().dot,
         location, destdir)
     if not rc then
         e = err.new("installing build script")
@@ -534,7 +534,7 @@ function e2build.build_process_class:_install_init_files(res, return_flags)
                 abslocation)
             end
 
-            rc, re = cache.fetch_file(info.cache,
+            rc, re = cache.fetch_file(cache.cache(),
                 cache.server_names().dot, location, destdir)
             if not rc then
                 return false, e:cat(re)
@@ -624,7 +624,7 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
         dep:get_name(), server, location)
 
     resulttarpath = e2lib.join(location, dep:get_name(), buildid, "result.tar")
-    path, re = cache.fetch_file_path(info.cache, server, resulttarpath)
+    path, re = cache.fetch_file_path(cache.cache(), server, resulttarpath)
     if not path then
         return false, e:cat(re)
     end
@@ -876,7 +876,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
     local cache_flags = {
         cache = false,
     }
-    local rc, re = cache.fetch_file(info.cache, server, location1, tmpdir,
+    local rc, re = cache.fetch_file(cache.cache(), server, location1, tmpdir,
         nil, cache_flags)
     if rc then
         e2lib.warnf("WOTHER",
@@ -893,13 +893,13 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
 
         sourcefile = e2lib.join(resdir, f)
         location1 = e2lib.join(location, res:get_name(), f)
-        rc, re = cache.push_file(info.cache, sourcefile, server, location1,
+        rc, re = cache.push_file(cache.cache(), sourcefile, server, location1,
             cache_flags)
         if not rc then
             return false, re
         end
     end
-    if cache.writeback_enabled(info.cache, server, cache_flags) == false then
+    if cache.writeback_enabled(cache.cache(), server, cache_flags) == false then
         e2lib.warnf("WOTHER",
             "Writeback is disabled for server %q. Release not deployed!", server)
     end
@@ -1034,7 +1034,7 @@ function e2build.build_process_class:_store_result(res, return_flags)
     local cache_flags = {
         try_hardlink = true,
     }
-    rc, re = cache.push_file(info.cache, sourcefile, server,
+    rc, re = cache.push_file(cache.cache(), sourcefile, server,
         location1, cache_flags)
     if not rc then
         return false, e:cat(re)
@@ -1067,8 +1067,8 @@ function e2build.build_process_class:_linklast(res, return_flags)
     location = e2lib.join(location, res:get_name(), buildid, "result.tar")
 
     -- if we don't have cache or server on local fs, fetch a copy into "out"
-    if not cache.cache_enabled(info.cache, server) and not
-        cache.islocal_enabled(info.cache, server) then
+    if not cache.cache_enabled(cache.cache(), server) and not
+        cache.islocal_enabled(cache.cache(), server) then
         e2lib.logf(3, "%s: copy to out/%s/last, server %q has no cache/not local",
             res:get_name(), res:get_name(), server)
 
@@ -1081,14 +1081,14 @@ function e2build.build_process_class:_linklast(res, return_flags)
             return e:cat(re)
         end
 
-        rc, re = cache.fetch_file(info.cache, server, location, lnk, nil)
+        rc, re = cache.fetch_file(cache.cache(), server, location, lnk, nil)
         if not rc then
             return false, e:cat(re)
         end
 
         return true
     else -- otherwise create a symlink
-        dst, re = cache.fetch_file_path(info.cache, server, location)
+        dst, re = cache.fetch_file_path(cache.cache(), server, location)
         if not dst then
             return false, e:cat(re)
         end

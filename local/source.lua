@@ -448,7 +448,7 @@ function source.generic_source_validate_server(rawsrc, ismandatory)
         return false, err.new("'server' attribute must be a string")
     end
 
-    if rawsrc.server and (not cache.valid_server(info.cache, rawsrc.server)) then
+    if rawsrc.server and (not cache.valid_server(cache.cache(), rawsrc.server)) then
         return false, err.new("invalid server: %s", rawsrc.server)
     end
 

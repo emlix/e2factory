@@ -59,12 +59,14 @@ local function e2_install_e2(arg)
         error(re)
     end
 
-    local scache, re = cache.setup_cache(config)
-    if not scache then
+    rc, re = cache.setup_cache(config)
+    if not rc then
         error(e:cat(re))
     end
 
-    rc, re = cache.setup_cache_apply_opts(scache)
+    cache.cache(rc)
+
+    rc, re = cache.setup_cache_apply_opts(cache.cache())
     if not rc then
         error(e:cat(re))
     end
@@ -130,7 +132,7 @@ local function e2_install_e2(arg)
     local location = config.site.e2_location
     local destdir = e2lib.join(root, ".e2/e2")
     e2lib.logf(2, "fetching e2factory (ref %s)", ref)
-    rc, re = generic_git.git_clone_from_server(scache, server, location,
+    rc, re = generic_git.git_clone_from_server(cache.cache(), server, location,
         destdir, false)
     if not rc then
         error(e:cat(re))
@@ -158,7 +160,7 @@ local function e2_install_e2(arg)
             end
         end
 
-        rc, re = generic_git.git_clone_from_server(scache, server, location,
+        rc, re = generic_git.git_clone_from_server(cache.cache(), server, location,
             destdir, false)
         if not rc then
             error(e:cat(re))

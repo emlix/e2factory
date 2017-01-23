@@ -220,7 +220,7 @@ function chroot.load_chroot_config(info)
             e:append(" `server' attribute missing")
             return false, e
         end
-        if not cache.valid_server(info.cache, grp.server) then
+        if not cache.valid_server(cache.cache(), grp.server) then
             e:append("in group: %s", grp.name)
             e:append(" no such server: %s", grp.server)
             return false, e

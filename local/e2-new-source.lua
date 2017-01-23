@@ -260,7 +260,7 @@ local function e2_new_source(arg)
         -- local
         local lserver = cache.server_names().dot
         local llocation = string.format("in/%s/.git", name)
-        local rc, re = generic_git.new_repository(info.cache, lserver, llocation,
+        local rc, re = generic_git.new_repository(cache.cache(), lserver, llocation,
             rserver, rlocation)
         if not rc then
             error(re)
@@ -286,7 +286,7 @@ local function e2_new_source(arg)
             error(err.new("checksum file argument missing"))
         end
 
-        local rc, re = new_files_source(info.cache, server, location, source_file,
+        local rc, re = new_files_source(cache.cache(), server, location, source_file,
         checksum_file, verify)
         if not rc then
             error(re)

@@ -158,7 +158,7 @@ local function _build_collect_project(self, res, return_flags)
         local server = cache.server_names().dot
         local location = e2lib.join("proj/init", f)
         local cache_flags = {}
-        rc, re = cache.fetch_file(info.cache, server, location,
+        rc, re = cache.fetch_file(cache.cache(), server, location,
             destdir, nil, cache_flags)
         if not rc then
             return false, e:cat(re)
@@ -196,7 +196,7 @@ local function _build_collect_project(self, res, return_flags)
 
         for file in grp:file_iter() do
             local cache_flags = {}
-            rc, re = cache.fetch_file(info.cache, file:server(),
+            rc, re = cache.fetch_file(cache.cache(), file:server(),
                 file:location(), destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
@@ -247,7 +247,7 @@ local function _build_collect_project(self, res, return_flags)
             if not rc then
                 return false, e:cat(re)
             end
-            rc, re = cache.fetch_file(info.cache, file:server(), file:location(),
+            rc, re = cache.fetch_file(cache.cache(), file:server(), file:location(),
                 destdir, nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
@@ -275,7 +275,7 @@ local function _build_collect_project(self, res, return_flags)
         for _,file in pairs(files) do
             local server = cache.server_names().dot
             local cache_flags = {}
-            rc, re = cache.fetch_file(info.cache, server, file, destdir,
+            rc, re = cache.fetch_file(cache.cache(), server, file, destdir,
                 nil, cache_flags)
             if not rc then
                 return false, e:cat(re)
@@ -356,7 +356,7 @@ local function _build_collect_project(self, res, return_flags)
         ".e2/lib/make/detect_tool",
     }
     for _,location in ipairs(locations) do
-        rc, re = cache.fetch_file(info.cache, server, location,
+        rc, re = cache.fetch_file(cache.cache(), server, location,
             destdir, nil, cache_flags)
         if not rc then
             return false, e:cat(re)

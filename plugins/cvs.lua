@@ -305,7 +305,7 @@ local function mkcvsroot(info, sourcename)
 
     src = source.sources[sourcename]
 
-    surl, re = cache.remote_url(info.cache, src:get_server(), src:get_cvsroot())
+    surl, re = cache.remote_url(cache.cache(), src:get_server(), src:get_cvsroot())
     if not surl then
         return false, e:cat(re)
     end

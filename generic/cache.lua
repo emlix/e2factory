@@ -114,6 +114,20 @@ function cache.setup_cache(config)
     return c
 end
 
+local _cache
+--- Set or return the current cache object.
+-- @param the_cache New cache object. Optional.
+-- @return Current cache object.
+-- @raise Assertion if unset/invalid
+function cache.cache(the_cache)
+    if the_cache then
+        _cache = the_cache
+    end
+    assertIsTable(_cache)
+    assert(_cache._name == "local cache")
+    return _cache
+end
+
 --- Add local servers to the cache configuration. As the name implies,
 -- this function should not be called from a global context.
 -- @param c cache object

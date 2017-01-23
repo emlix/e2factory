@@ -296,7 +296,7 @@ function svn.svn_source:sourceid(sourceset)
     info = e2tool.info()
     assert(type(info) == "table")
 
-    surl, re = cache.remote_url(info.cache, self._server, self._location)
+    surl, re = cache.remote_url(cache.cache(), self._server, self._location)
     if not surl then
         return false, re
     end
@@ -408,7 +408,7 @@ function svn.fetch_source(info, sourcename)
     local src = source.sources[sourcename]
     local location = src:get_location()
     local server = src:get_server()
-    local surl, re = cache.remote_url(info.cache, server, location)
+    local surl, re = cache.remote_url(cache.cache(), server, location)
     if not surl then
         return false, e:cat(re)
     end
@@ -436,7 +436,7 @@ function svn.prepare_source(info, sourcename, sourceset, build_path)
     local src = source.sources[sourcename]
     local location = src:get_location()
     local server = src:get_server()
-    local surl, re = cache.remote_url(info.cache, server, location)
+    local surl, re = cache.remote_url(cache.cache(), server, location)
     if not surl then
         return false, e:cat(re)
     end

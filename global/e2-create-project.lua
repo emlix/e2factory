@@ -116,12 +116,14 @@ local function e2_create_project(arg)
         error(e:cat(re))
     end
 
-    local scache, re = cache.setup_cache(config)
-    if not scache then
+    rc, re = cache.setup_cache(config)
+    if not rc then
         error(e:cat(re))
     end
 
-    rc, re = cache.setup_cache_apply_opts(scache)
+    cache.cache(rc)
+
+    rc, re = cache.setup_cache_apply_opts(cache.cache())
     if not rc then
         error(e:cat(re))
     end
@@ -136,10 +138,10 @@ local function e2_create_project(arg)
         error(e:cat(re))
     end
 
-    if not cache.writeback_enabled(scache, sl.server) then
+    if not cache.writeback_enabled(cache.cache(), sl.server) then
         e2lib.warnf("WOTHER", "enabling writeback for server: %s",
             sl.server)
-        rc, re = cache.set_writeback(scache, sl.server, true)
+        rc, re = cache.set_writeback(cache.cache(), sl.server, true)
         if not rc then
             error(e:cat(re))
         end
@@ -185,7 +187,7 @@ local function e2_create_project(arg)
         end
 
         flocation = e2lib.join(p.location, f.filename)
-        rc, re = cache.push_file(scache, sourcefile, p.server, flocation)
+        rc, re = cache.push_file(cache.cache(), sourcefile, p.server, flocation)
         if not rc then
             error(e:cat(re))
         end
@@ -200,7 +202,7 @@ local function e2_create_project(arg)
     -- create the initial repository on server side
 
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
-    rc, re = generic_git.git_init_db(scache, p.server, rlocation)
+    rc, re = generic_git.git_init_db(cache.cache(), p.server, rlocation)
     if not rc then
         error(e:cat(re))
     end
@@ -301,7 +303,7 @@ local function e2_create_project(arg)
 
     local refspec = "master:refs/heads/master"
     local rlocation = string.format("%s/proj/%s.git", p.location, p.name)
-    rc, re = generic_git.git_push(scache, tmp_repo_path, p.server,
+    rc, re = generic_git.git_push(cache.cache(), tmp_repo_path, p.server,
         rlocation, refspec)
     if not rc then
         error(e:cat(re))

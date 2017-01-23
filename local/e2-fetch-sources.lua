@@ -94,8 +94,8 @@ local function e2_fetch_source(arg)
         for _,g in ipairs(chroot.groups_sorted) do
             grp = chroot.groups_byname[g]
             for file in grp:file_iter() do
-                if cache.cache_enabled(info.cache, file:server()) then
-                    rc, re = cache.fetch_file_path(info.cache, file:server(),
+                if cache.cache_enabled(cache.cache(), file:server()) then
+                    rc, re = cache.fetch_file_path(cache.cache(), file:server(),
                         file:location())
                     if not rc then
                         return false, re

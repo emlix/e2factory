@@ -55,12 +55,14 @@ local function e2_fetch_project(arg)
     end
 
     -- setup cache
-    local scache, re = cache.setup_cache(config)
-    if not scache then
+    rc, re = cache.setup_cache(config)
+    if not rc then
         error(e:cat(re))
     end
 
-    rc, re = cache.setup_cache_apply_opts(scache)
+    cache.cache(rc)
+
+    rc, re = cache.setup_cache_apply_opts(cache.cache())
     if not rc then
         error(e:cat(re))
     end
@@ -118,7 +120,7 @@ local function e2_fetch_project(arg)
     end
 
     local location = string.format("%s/version", p.location)
-    local rc, re = cache.fetch_file(scache, p.server, location, tmpdir, nil,
+    local rc, re = cache.fetch_file(cache.cache(), p.server, location, tmpdir, nil,
         { cache = false })
     if not rc then
         error(e:cat(re))
@@ -142,7 +144,7 @@ local function e2_fetch_project(arg)
     -- clone the git repository
     local location = string.format("%s/proj/%s.git", p.location, p.name)
     local skip_checkout = false
-    local rc, re = generic_git.git_clone_from_server(scache, p.server, location,
+    local rc, re = generic_git.git_clone_from_server(cache.cache(), p.server, location,
         p.destdir, skip_checkout)
     if not rc then
         error(e:cat(re))
