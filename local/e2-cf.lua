@@ -42,7 +42,7 @@ local function editor(file)
 end
 
 --- Find whether upstream config files hide this source/result.
-local function shadow_config_up(info, src_res, pathname)
+local function shadow_config_up(src_res, pathname)
     local cf, cfdir
     if src_res == "src" then
         cf = e2tool.sourceconfig(pathname, e2tool.root())
@@ -68,12 +68,12 @@ local function shadow_config_up(info, src_res, pathname)
             err.new("config in %s would shadow the new %s", cfdir, thing)
     end
 
-    return shadow_config_up(info, src_res, e2lib.dirname(pathname))
+    return shadow_config_up(src_res, e2lib.dirname(pathname))
 end
 
 --- Find whether downstream sources/results would be hidden by creating
 -- config here.
-local function shadow_config_down(info, src_res, pathname)
+local function shadow_config_down(src_res, pathname)
     local cf, cfdir
     if src_res == "src" then
         cf = e2tool.sourceconfig(pathname, e2tool.root())
@@ -96,7 +96,7 @@ local function shadow_config_down(info, src_res, pathname)
         end
 
         if e2lib.isdir(e2lib.join(cfdir, f)) then
-            return shadow_config_down(info, src_res, e2lib.join(pathname, f))
+            return shadow_config_down(src_res, e2lib.join(pathname, f))
         end
     end
 
@@ -140,12 +140,12 @@ local function newsource(info, ...)
         return false, e:append("refusing to overwrite config in %s", cfdir)
     end
 
-    rc, re = shadow_config_up(info, "src", pathname)
+    rc, re = shadow_config_up("src", pathname)
     if not rc then
         return false, e:cat(re)
     end
 
-    rc, re = shadow_config_down(info, "src", pathname)
+    rc, re = shadow_config_down("src", pathname)
     if not rc then
         return false, e:cat(re)
     end
@@ -228,12 +228,12 @@ local function newresult(info, ...)
             e:append("refusing to overwrite build-script in %s", cfdir)
     end
 
-    rc, re = shadow_config_up(info, "res", pathname)
+    rc, re = shadow_config_up("res", pathname)
     if not rc then
         return false, e:cat(re)
     end
 
-    rc, re = shadow_config_down(info, "res", pathname)
+    rc, re = shadow_config_down("res", pathname)
     if not rc then
         return false, e:cat(re)
     end

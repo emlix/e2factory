@@ -273,7 +273,7 @@ function svn.svn_source:sourceid(sourceset)
     assert(type(sourceset) == "string" and #sourceset > 0)
 
     local rc, re
-    local hc, surl, svnurl, argv, out, svnrev, lid, svnrev, info, licences
+    local hc, surl, svnurl, argv, out, svnrev, lid, svnrev, licences
 
     if self._sourceids[sourceset] then
         return self._sourceids[sourceset]
@@ -292,9 +292,6 @@ function svn.svn_source:sourceid(sourceset)
         end
         hash.hash_append(hc, lid)
     end
-
-    info = e2tool.info()
-    assert(type(info) == "table")
 
     surl, re = cache.remote_url(cache.cache(), self._server, self._location)
     if not surl then

@@ -29,8 +29,8 @@ local function e2_build_numbers(arg)
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "build-numbers")
-    if not info then
+    rc, re = e2tool.local_init(nil, "build-numbers")
+    if not rc then
         error(re)
     end
 

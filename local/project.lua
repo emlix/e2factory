@@ -154,10 +154,9 @@ end
 
 --- Initialise the project module, load and check proj/config. Needs to be
 -- called before using name() etc.
--- @param info Info table.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function project.load_project_config(info)
+function project.load_project_config()
     local rc, re, e
     local path, prj
 
@@ -247,10 +246,6 @@ function project.chroot_arch()
 end
 
 function project.chroot_call_prefix()
-    local info
-    info = e2tool.info()
-    assert(info)
-
     if project.chroot_arch() == "x86_32" then
 	return e2lib.join(e2tool.root(), ".e2/bin/e2-linux32")
     end
@@ -312,7 +307,7 @@ end
 -- value after the first call.
 -- @return Project ID or false on error.
 -- @return Error object on failure
-function project.projid(info)
+function project.projid()
     local re, hc, cs
 
     if _projid_cache then

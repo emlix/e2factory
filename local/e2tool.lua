@@ -127,8 +127,6 @@ end
 -- @return True on success, false on validation failure
 -- @return Error object on failure
 function e2tool.file_class:validate_set_servloc(server, location)
-    local info
-
     if server == nil then
         return false, err.new("file entry without 'server' attribute")
     end
@@ -140,8 +138,6 @@ function e2tool.file_class:validate_set_servloc(server, location)
     if server == "" then
         return false, err.new("'server' can't be empty")
     end
-
-    info = e2tool.info()
 
     if not cache.valid_server(cache.cache(), server) then
         return false, err.new("file entry with unknown server: %s", server)
@@ -240,9 +236,7 @@ end
 -- @return error object on failure.
 function e2tool.file_class:_compute_checksum(digest_type, flags)
     assert(digest_type == digest.SHA1 or digest_type == digest.SHA256)
-    local rc, re, info, path, dt
-
-    info = e2tool.info()
+    local rc, re, path, dt
 
     path, re = cache.fetch_file_path(cache.cache(), self._server, self._location,
         flags)
@@ -272,9 +266,7 @@ end
 -- @return error object on failure.
 function e2tool.file_class:_compute_remote_checksum(digest_type)
     assert(digest_type == digest.SHA1 or digest_type == digest.SHA256)
-    local rc, re, info, surl, u, checksum
-
-    info = e2tool.info()
+    local rc, re, surl, u, checksum
 
     surl, re = cache.remote_url(cache.cache(), self._server, self._location)
     if not surl then
@@ -414,12 +406,10 @@ end
 -- @return True if verify succeeds, False otherwise
 -- @return Error object on failure.
 function e2tool.file_class:checksum_verify()
-    local rc, re, e, digest_types, cs_cache, cs_remote, cs_fetch, checksum, info
+    local rc, re, e, digest_types, cs_cache, cs_remote, cs_fetch, checksum
     local checksum_conf
 
     e = err.new("error verifying checksum of %s", self:servloc())
-
-    info = e2tool.info()
 
     digest_types = {}
     if self:sha1() or project.checksums_sha1() then
@@ -628,14 +618,12 @@ end
 -- @field host_umask Default umask of the process (decimal number).
 -- @field project_location string: project location relative to the servers
 -- @field local_template_path Path to the local templates (string).
--- @field cache The cache object.
 local _info = false
 
 --- Open debug logfile.
--- @param info Info table.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-local function opendebuglogfile(info)
+local function opendebuglogfile()
     local rc, re, e, logfile, debuglogfile
 
     rc, re = e2lib.mkdir_recursive(e2lib.join(e2tool.root(), "log"))
@@ -990,7 +978,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         return info
     end
 
-    rc, re = opendebuglogfile(info)
+    rc, re = opendebuglogfile()
     if not rc then
         return false, e:cat(re)
     end
@@ -1053,31 +1041,31 @@ function e2tool.collect_project_info(info, skip_load_config)
     end
 
     -- read project configuration
-    rc, re = project.load_project_config(info)
+    rc, re = project.load_project_config()
     if not rc then
         return false, e:cat(re)
     end
 
     -- chroot config
-    rc, re = chroot.load_chroot_config(info)
+    rc, re = chroot.load_chroot_config()
     if not rc then
         return false, e:cat(re)
     end
 
     -- licences
-    rc, re = licence.load_licence_config(info)
+    rc, re = licence.load_licence_config()
     if not rc then
         return false, e:cat(re)
     end
 
     -- sources
-    rc, re = source.load_source_configs(info)
+    rc, re = source.load_source_configs()
     if not rc then
         return false, e:cat(re)
     end
 
     -- results
-    rc, re = result.load_result_configs(info)
+    rc, re = result.load_result_configs()
     if not rc then
         return false, e:cat(re)
     end
@@ -1114,7 +1102,7 @@ function e2tool.collect_project_info(info, skip_load_config)
         end
     end
 
-    rc, re = policy.init(info)
+    rc, re = policy.init()
     if not rc then
         return false, e:cat(re)
     end
@@ -1244,7 +1232,6 @@ end
 
 --- select (mark) results based upon a list of results usually given on the
 -- command line. Parameters are assigned to all selected results.
--- @param info the info structure
 -- @param results table: list of result names
 -- @param force_rebuild bool
 -- @param keep_chroot bool
@@ -1252,7 +1239,7 @@ end
 -- @param playground bool
 -- @return bool
 -- @return an error object on failure
-function e2tool.select_results(info, results, force_rebuild, keep_chroot, build_mode, playground)
+function e2tool.select_results(results, force_rebuild, keep_chroot, build_mode, playground)
     local rc, re, res, settings
 
     for _,resultname in ipairs(results) do
@@ -1320,11 +1307,10 @@ function e2tool.build_results(resultv)
 end
 
 --- Print selection status for a list of results
--- @param info
 -- @param resultvec table: list of result names
 -- @return bool
 -- @return an error object on failure
-function e2tool.print_selection(info, resultvec)
+function e2tool.print_selection(resultvec)
     for _,resultname in ipairs(resultvec) do
         local e = err.new("error printing selected results")
         local res = result.results[resultname]

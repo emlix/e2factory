@@ -246,16 +246,15 @@ function e2build.build_process_class:_enter_playground(res, return_flags)
     table.insert(cmd, "-c")
     table.insert(cmd, res:build_settings():command())
 
-    local info = e2tool.info()
-    e2tool.set_umask(info)
+    e2tool.set_umask()
     rc, re = e2lib.callcmd(cmd, {})
     if not rc then
-        e2tool.reset_umask(info)
+        e2tool.reset_umask()
         return false, e:cat(re)
     end
     -- return code depends on user commands. Ignore.
 
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
 
     return true
 end
@@ -361,11 +360,10 @@ end
 function e2build.build_process_class:helper_chroot_remove(res)
     local e = err.new("removing chroot failed")
     local rc, re, bc
-    local info = e2tool.info()
     bc = res:build_config()
-    e2tool.set_umask(info)
+    e2tool.set_umask()
     rc, re = e2lib.e2_su_2_2({"remove_chroot_2_3", bc.base})
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
     if not rc then
         return e:cat(re)
     end
@@ -397,7 +395,7 @@ end
 
 ---
 function e2build.build_process_class:_setup_chroot(res, return_flags)
-    local rc, re, bc, info
+    local rc, re, bc
     local e = err.new("error setting up chroot")
     -- create the chroot path and create the chroot marker file without root
     -- permissions. That makes sure we have write permissions here.
@@ -419,10 +417,9 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
         return false, e:cat(re)
     end
 
-    info = e2tool.info()
-    e2tool.set_umask(info)
+    e2tool.set_umask()
     rc, re = e2lib.e2_su_2_2({"set_permissions_2_3", bc.base})
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
     if not rc then
         return false, e:cat(re)
     end
@@ -448,10 +445,10 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
                 return false, e:cat(re)
             end
 
-            e2tool.set_umask(info)
+            e2tool.set_umask()
             local argv = { "extract_tar_2_3", bc.base, tartype, path }
             rc, re = e2lib.e2_su_2_2(argv)
-            e2tool.reset_umask(info)
+            e2tool.reset_umask()
             if not rc then
                 return false, e:cat(re)
             end
@@ -477,11 +474,10 @@ end
 
 ---
 function e2build.build_process_class:_install_build_script(res, return_flags)
-    local rc, re, e, bc, location, destdir, info
+    local rc, re, e, bc, location, destdir
     bc = res:build_config()
     location = e2tool.resultbuildscript(res:get_name_as_path())
     destdir = e2lib.join(bc.T, "script")
-    info = e2tool.info()
 
     rc, re = cache.fetch_file(cache.cache(), cache.server_names().dot,
         location, destdir)
@@ -513,11 +509,9 @@ end
 
 ---
 function e2build.build_process_class:_install_init_files(res, return_flags)
-    local rc, re, info
+    local rc, re
     local bc = res:build_config()
     local e = err.new("installing init files")
-
-    info = e2tool.info()
 
     for x, re in e2lib.directory(e2tool.root() .. "/proj/init") do
         if not x then
@@ -547,7 +541,7 @@ end
 ---
 function e2build.build_process_class:_install_build_driver(res, return_flags)
     local e, rc, re
-    local bc, bd, destdir, buildrc_noinit_file, info, buildrc_file
+    local bc, bd, destdir, buildrc_noinit_file, buildrc_file
     local build_driver_file
     e = err.new("generating build driver script failed")
 
@@ -569,7 +563,6 @@ function e2build.build_process_class:_install_build_driver(res, return_flags)
     end
 
     -- init files
-    info = e2tool.info()
     for fn, re in e2lib.directory(e2lib.join(e2tool.root(), "proj/init")) do
         if not fn then
             return false, e:cat(re)
@@ -682,11 +675,9 @@ end
 ---
 function e2build.build_process_class:_install_build_time_dependencies(res, return_flags)
     local e, rc, re
-    local dependslist, info, dep, destdir
+    local dependslist, dep, destdir
 
     dependslist = res:depends_list()
-
-    info = e2tool.info()
 
     for dependsname in dependslist:iter() do
         dep = result.results[dependsname]
@@ -725,21 +716,20 @@ end
 function e2build.build_process_class:_fix_permissions(res, return_flags)
     local rc, re, bc
     local e = err.new("fixing permissions failed")
-    local info = e2tool.info()
     e2lib.log(3, "fix permissions")
 
-    e2tool.set_umask(info)
+    e2tool.set_umask()
     bc = res:build_config()
     local argv = { "chroot_2_3", bc.base, "chown", "-R", "root:root", bc.Tc }
     rc, re = e2lib.e2_su_2_2(argv)
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
     if not rc then
         return false, e:cat(re)
     end
-    e2tool.set_umask(info)
+    e2tool.set_umask()
     argv = { "chroot_2_3", bc.base, "chmod", "-R", "u=rwX,go=rX", bc.Tc }
     rc, re = e2lib.e2_su_2_2(argv)
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
     if not rc then
         return false, e:cat(re)
     end
@@ -761,7 +751,6 @@ end
 function e2build.build_process_class:_runbuild(res, return_flags)
     local rc, re, out, bc, cmd
     local e = err.new("build failed")
-    local info = e2tool.info()
 
     e2lib.logf(3, "building %s ...", res:get_name())
 
@@ -786,7 +775,7 @@ function e2build.build_process_class:_runbuild(res, return_flags)
         eio.fwrite(out, output)
     end
 
-    e2tool.set_umask(info)
+    e2tool.set_umask()
 
     cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
     if not cmd then
@@ -809,7 +798,7 @@ function e2build.build_process_class:_runbuild(res, return_flags)
         eio.fclose(out)
         return false, e:cat(re)
     end
-    e2tool.reset_umask(info)
+    e2tool.reset_umask()
     if rc ~= 0 then
         eio.fclose(out)
         e = err.new("build script for %s failed with exit status %d", res:get_name(), rc)

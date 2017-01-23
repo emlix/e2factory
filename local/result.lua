@@ -206,7 +206,7 @@ function result.result_class:initialize(rawres)
     self._build_settings = false
 
     local e = err.new("in result %s:", self._name)
-    local rc, re, info
+    local rc, re
 
     rc, re = e2lib.vrfy_dict_exp_keys(rawres, "e2result config", {
         "chroot",
@@ -295,9 +295,6 @@ function result.result_class:initialize(rawres)
         end
     end
 
-
-    info = e2tool.info()
-
     if rawres.env and type(rawres.env) ~= "table" then
         e:append("result has invalid `env' attribute")
     else
@@ -365,10 +362,8 @@ end
 
 ---
 function result.result_class:build_config()
-    local rc, re, e, buildid, bc, tmpdir, builddir, info
+    local rc, re, e, buildid, bc, tmpdir, builddir
 
-    info = e2tool.info()
-    assertIsTable(info)
     e = err.new("preparing build config for %s failed", self:get_name())
 
     buildid, re = self:buildid()
@@ -460,7 +455,7 @@ end
 -- @return BuildID or false on error.
 -- @return Error object on failure.
 function result.result_class:buildid()
-    local e, rc, re, info, hc, id, build_mode
+    local e, rc, re, hc, id, build_mode
     build_mode = self:build_mode()
 
     if self._buildid then
@@ -468,7 +463,6 @@ function result.result_class:buildid()
     end
 
     e = err.new("error calculating BuildID for result: %s", self:get_name())
-    info = e2tool.info()
     hc = hash.hash_start()
 
     -- basic_result
@@ -492,7 +486,7 @@ function result.result_class:buildid()
 
     -- chroot
     for groupname in self:chroot_list():iter() do
-        id, re = chroot.groups_byname[groupname]:chrootgroupid(info)
+        id, re = chroot.groups_byname[groupname]:chrootgroupid()
         if not id then
             return false, e:cat(re)
         end
@@ -525,7 +519,7 @@ function result.result_class:buildid()
     end
 
     -- project
-    id, re = project.projid(info)
+    id, re = project.projid()
     if not id then
         return false, e:cat(re)
     end
@@ -572,13 +566,12 @@ end
 -- @section end
 
 --- Gather result paths.
--- @param info Info table.
 -- @param basedir Nil or directory from where to start scanning for more
 --                results. Only for recursion.
 -- @param results Nil or table of result paths. Only for recursion.
 -- @return Table with result paths, or false on error.
 -- @return Error object on failure.
-local function gather_result_paths(info, basedir, results)
+local function gather_result_paths(basedir, results)
     local rc, re
     local currdir, resdir, resconfig, s
 
@@ -601,7 +594,7 @@ local function gather_result_paths(info, basedir, results)
                 table.insert(results, entry)
             else
                 -- try subfolder
-                rc, re = gather_result_paths(info, entry, results)
+                rc, re = gather_result_paths(entry, results)
                 if not rc then
                     return false, re
                 end
@@ -615,7 +608,7 @@ end
 ---
 local function load_rawres(cfg)
     local e, rc, re
-    local rawres, loadcnt, g, path, res, info
+    local rawres, loadcnt, g, path, res
 
     e = err.new("error loading result configuration")
 
@@ -626,7 +619,6 @@ local function load_rawres(cfg)
         return false, e
     end
 
-    info = e2tool.info()
     rawres = nil
     loadcnt = 0
     g = {
@@ -706,13 +698,12 @@ end
 
 --- Search, load and verify all result configs. On success, all results are
 --available as objects in result.results[].
--- @param info Info table
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function result.load_result_configs(info)
+function result.load_result_configs()
     local rc, re, e, configs, res
 
-    configs, re = gather_result_paths(info)
+    configs, re = gather_result_paths()
     if not configs then
         return false, re
     end

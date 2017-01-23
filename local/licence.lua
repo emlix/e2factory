@@ -119,10 +119,9 @@ end
 
 --- Load project licence config, validate, and populate the licences,
 -- licences_sorted tables with licence objects.
--- @param info Info table.
 -- @return True on success, false on error
 -- @return Error object on failure.
-function licence.load_licence_config(info)
+function licence.load_licence_config()
     local rc, re, e
     local path, ltable
 

@@ -163,13 +163,12 @@ end
 source.sources = {}
 
 --- Gather source paths.
--- @param info Info table.
 -- @param basedir Nil or directory from where to start scanning for more
 --                sources. Only for recursion.
 -- @param sources Nil or table of source paths. Only for recursion.
 -- @return Table with source paths, or false on error.
 -- @return Error object on failure.
-local function gather_source_paths(info, basedir, sources)
+local function gather_source_paths(basedir, sources)
     local rc, re
     local currdir, sdir, sconfig, s
     sources = sources or {}
@@ -192,7 +191,7 @@ local function gather_source_paths(info, basedir, sources)
                 table.insert(sources, entry)
             else
                 -- try sub directory
-                rc, re = gather_source_paths(info, entry, sources)
+                rc, re = gather_source_paths(entry, sources)
                 if not rc then
                     return false, re
                 end
@@ -205,16 +204,15 @@ end
 
 --- Search, load and verify all source configs. On success, all sources
 --available as objects in source.sources[] etc.
--- @param info Info table
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function source.load_source_configs(info)
+function source.load_source_configs()
     local rc, re, e
     local g, rawsrc, loadcnt, configs, path, src
 
     e = err.new("error loading source configuration")
 
-    configs, re = gather_source_paths(info)
+    configs, re = gather_source_paths()
     if not configs then
         return false, e:cat(re)
     end
@@ -437,8 +435,6 @@ end
 function source.generic_source_validate_server(rawsrc, ismandatory)
     assert(type(rawsrc) == "table" and rawsrc.name and rawsrc.type)
     assert(type(ismandatory) == "boolean")
-
-    local info = e2tool.info()
 
     if ismandatory and rawsrc.server == nil then
         return false, err.new("source has no `server' attribute")

@@ -86,10 +86,9 @@ local function e2_fetch_source(arg)
     end
 
     --- cache chroot files
-    -- @param info the info table
     -- @return bool
     -- @return nil, an error string on error
-    local function cache_chroot(info)
+    local function cache_chroot()
         local grp, rc, re
         for _,g in ipairs(chroot.groups_sorted) do
             grp = chroot.groups_byname[g]
@@ -195,7 +194,7 @@ local function e2_fetch_source(arg)
 
     if opts.chroot then
         e2lib.log(2, "caching chroot files")
-        local rc, re = cache_chroot(info)
+        local rc, re = cache_chroot()
         if not rc then
             e:append("Error: Caching chroot files failed")
             e:cat(re)

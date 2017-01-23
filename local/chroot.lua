@@ -110,10 +110,9 @@ function chroot.chroot:file_iter()
 end
 
 --- Calculate chroot group id.
--- @param info Info table.
 -- @return Chroot group ID or false on error.
 -- @return Error object on failure.
-function chroot.chroot:chrootgroupid(info)
+function chroot.chroot:chrootgroupid()
     local rc, re, e, hc
 
     if self._chrootgroupid then
@@ -142,10 +141,9 @@ end
 
 --- Load and validate chroot configuration. Populates chroot.groups_byname,
 -- chroot.groups_sorted and chroot.groups_default.
--- @param info Info table.
 -- @return True on success, false on error.
 -- @return Error object on failure
-function chroot.load_chroot_config(info)
+function chroot.load_chroot_config()
     local rc, re, e
     local t, path, cgroup
 

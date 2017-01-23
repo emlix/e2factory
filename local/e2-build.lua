@@ -118,8 +118,8 @@ local function e2_build(arg)
     local keep_chroot = opts["keep"]
 
     -- apply flags to the selected results
-    rc, re = e2tool.select_results(info, resultvec, force_rebuild,
-        keep_chroot, build_mode, playground)
+    rc, re = e2tool.select_results(resultvec, force_rebuild, keep_chroot,
+        build_mode, playground)
     if not rc then
         error(re)
     end
@@ -161,7 +161,7 @@ local function e2_build(arg)
         end
     end
 
-    rc, re = e2tool.print_selection(info, sel_res)
+    rc, re = e2tool.print_selection(sel_res)
     if not rc then
         error(re)
     end

@@ -296,11 +296,10 @@ end
 --------------------------------------------------------------------------------
 
 --- Build the cvsroot string.
--- @param info Info table.
 -- @param sourcename Source name.
 -- @return CVSROOT string or false on error.
 -- @return Error object on failure.
-local function mkcvsroot(info, sourcename)
+local function mkcvsroot(sourcename)
     local cvsroot, src, surl, u, re
 
     src = source.sources[sourcename]
@@ -339,7 +338,7 @@ function cvs.fetch_source(info, sourcename)
         return true
     end
 
-    cvsroot, re = mkcvsroot(info, sourcename)
+    cvsroot, re = mkcvsroot(sourcename)
     if not cvsroot then
         return false, e:cat(re)
     end
@@ -377,7 +376,7 @@ function cvs.prepare_source(info, sourcename, sourceset, buildpath)
     e = err.new("cvs.prepare_source failed")
     src = source.sources[sourcename]
 
-    cvsroot, re = mkcvsroot(info, sourcename)
+    cvsroot, re = mkcvsroot(sourcename)
     if not cvsroot then
         return false, re
     end

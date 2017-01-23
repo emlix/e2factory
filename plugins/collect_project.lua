@@ -51,7 +51,7 @@ local strict = require("strict")
 -- @return an error object on failure
 local function _build_collect_project(self, res, return_flags)
 
-    local function write_build_driver(info, resultname, destdir)
+    local function write_build_driver(resultname, destdir)
         local rc, re, e, res, bd, buildrc_noinit_file, buildrc_file, bc
         local build_driver_file
 
@@ -295,7 +295,7 @@ local function _build_collect_project(self, res, return_flags)
             return false, e:cat(re)
         end
         -- generate build driver
-        rc, re = write_build_driver(info, depname, destdir)
+        rc, re = write_build_driver(depname, destdir)
         if not rc then
             return false, e:cat(re)
         end

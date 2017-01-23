@@ -126,7 +126,6 @@ local function _load_env_config(file)
         end
     end
 
-    local info = e2tool.info()
     local path = e2lib.join(e2tool.root(), file)
 
     local mt = {

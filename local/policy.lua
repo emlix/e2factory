@@ -148,10 +148,9 @@ local function buildid_scratch(buildid)
 end
 
 --- Initialize policy module.
--- @param info Info table.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function policy.init(info)
+function policy.init()
     local e = err.new("checking policy")
 
     -- check if all required servers exist
