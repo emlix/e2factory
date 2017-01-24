@@ -180,7 +180,8 @@ function gitrepo_source:sourceid(sourceset)
         return false, e:cat(re)
     end
 
-    argv = generic_git.git_new_argv(nil, self:get_working(), "show-ref")
+    argv = generic_git.git_new_argv(nil,
+        e2lib.join(e2tool.root(), self:get_working()), "show-ref")
     rc, re, out = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
