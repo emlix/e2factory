@@ -133,27 +133,6 @@ function scm.register_function(scmtype, name, func)
     return true
 end
 
---- do some consistency checks required before using sources
--- @param info
--- @param sourcename string: source name
--- @param require_workingcopy bool: return error if the workingcopy is missing
--- @return bool
--- @return an error object on failure
-function scm.generic_source_check(info, sourcename, require_workingcopy)
-    local rc, re, src
-    src = source.sources[sourcename]
-
-    rc, re = src:working_copy_available()
-    if (not rc) and require_workingcopy then
-        return false, err.new("working copy is not available")
-    end
-    rc, re = src:check_workingcopy()
-    if not rc then
-        return false, re
-    end
-    return true
-end
-
 scm.register_interface("toresult")
 
 return strict.lock(scm)
