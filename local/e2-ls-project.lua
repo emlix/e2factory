@@ -29,7 +29,6 @@ local licence = require("licence")
 local policy = require("policy")
 local project = require("project")
 local result = require("result")
-local scm = require("scm")
 local source = require("source")
 
 local function e2_ls_project(arg)

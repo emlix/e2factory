@@ -28,7 +28,6 @@ local err = require("err")
 local policy = require("policy")
 local project = require("project")
 local result = require("result")
-local scm = require("scm")
 
 local function e2_build(arg)
     local rc, re = e2lib.init()
