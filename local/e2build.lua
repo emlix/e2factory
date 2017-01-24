@@ -32,7 +32,7 @@ local environment = require("environment")
 local err = require("err")
 local project = require("project")
 local result = require("result")
-local scm = require("scm")
+local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 
@@ -694,17 +694,17 @@ end
 
 ---
 function e2build.build_process_class:_install_sources(res, return_flags)
-    local rc, re, e, bc, destdir, source_set, info
+    local rc, re, e, bc, destdir, source_set, src
 
     bc = res:build_config()
-    info = e2tool.info()
+    destdir = e2lib.join(bc.T, "build")
+    source_set = res:build_mode().source_set()
 
     for sourcename in res:sources_list():iter() do
         e = err.new("installing source failed: %s", sourcename)
+        src = source.sources[sourcename]
 
-        destdir = e2lib.join(bc.T, "build")
-        source_set = res:build_mode().source_set()
-        rc, re = scm.prepare_source(info, sourcename, source_set, destdir)
+        rc, re = src:prepare_source(source_set, destdir)
         if not rc then
             return false, e:cat(re)
         end

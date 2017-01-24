@@ -25,7 +25,6 @@ local e2option = require("e2option")
 local e2tool = require("e2tool")
 local err = require("err")
 local result = require("result")
-local scm = require("scm")
 local source = require("source")
 
 local function e2_fetch_source(arg)
@@ -117,10 +116,10 @@ local function e2_fetch_source(arg)
         local e = err.new()  -- no message yet, append the summary later on
 
         -- fetch
-        for sourcename, _ in pairs(source.sources) do
+        for sourcename, src in pairs(source.sources) do
             if opts.fetch and sel[sourcename] then
                 e2lib.logf(1, "fetching working copy for source %s", sourcename)
-                rc, re = scm.fetch_source(info, sourcename)
+                rc, re = src:fetch_source()
                 if not rc then
                     e:cat(re)
                 end
@@ -128,10 +127,10 @@ local function e2_fetch_source(arg)
         end
 
         -- update
-        for sourcename, _ in pairs(source.sources) do
+        for sourcename, src in pairs(source.sources) do
             if opts.update and sel[sourcename] then
                 e2lib.logf(1, "updating working copy for %s", sourcename)
-                rc, re = scm.update(info, sourcename)
+                rc, re = src:update_source()
                 if not rc then
                     e:cat(re)
                 end
