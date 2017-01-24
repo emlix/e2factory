@@ -397,15 +397,10 @@ function svn.svn_source:check_workingcopy()
     return true
 end
 
---------------------------------------------------------------------------------
-
-function svn.fetch_source(info, sourcename)
+function svn.svn_source:fetch_source()
     local rc, re
-    local e = err.new("fetching source failed: %s", sourcename)
-    local src = source.sources[sourcename]
-    local location = src:get_location()
-    local server = src:get_server()
-    local surl, re = cache.remote_url(cache.cache(), server, location)
+    local e = err.new("fetching source failed: %s", self._name)
+    local surl, re = cache.remote_url(cache.cache(), self._server, self._location)
     if not surl then
         return false, e:cat(re)
     end
@@ -414,11 +409,11 @@ function svn.fetch_source(info, sourcename)
         return false, e:cat(re)
     end
 
-    if src:working_copy_available() then
+    if self:working_copy_available() then
         return true
     end
 
-    local argv = { "checkout", svnurl, e2tool.root() .. "/" .. src:get_working() }
+    local argv = { "checkout", svnurl, e2tool.root() .. "/" .. self:get_working() }
 
     rc, re = svn_tool(argv)
     if not rc then
@@ -427,13 +422,21 @@ function svn.fetch_source(info, sourcename)
     return true
 end
 
-function svn.prepare_source(info, sourcename, sourceset, build_path)
+function svn.svn_source:update_source()
     local rc, re
-    local e = err.new("svn.prepare_source failed")
-    local src = source.sources[sourcename]
-    local location = src:get_location()
-    local server = src:get_server()
-    local surl, re = cache.remote_url(cache.cache(), server, location)
+    local e = err.new("updating source '%s' failed", self._name)
+    local workdir = e2lib.join(e2tool.root(), self:get_working())
+    rc, re = svn_tool({ "update" }, workdir)
+    if not rc then
+        return false, e:cat(re)
+    end
+    return true
+end
+
+function svn.svn_source:prepare_source(sourceset, buildpath)
+    local rc, re
+    local e = err.new("preparing source for build failed: %s", self._name)
+    local surl, re = cache.remote_url(cache.cache(), self._server, self._location)
     if not surl then
         return false, e:cat(re)
     end
@@ -444,21 +447,20 @@ function svn.prepare_source(info, sourcename, sourceset, build_path)
     if sourceset == "tag" or sourceset == "branch" then
         local rev
         if sourceset == "tag" then
-            rev = src:get_tag()
+            rev = self._tag
         else -- sourceset == "branch"
-            rev = src:get_branch()
+            rev = self._branch
         end
         local argv = { "export", svnurl .. "/" .. rev,
-        build_path .. "/" .. sourcename }
+            buildpath .. "/" .. self._name }
         rc, re = svn_tool(argv)
         if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
-        -- cp -R e2tool.root()/src.working/src.workingcopy_subdir build_path
-        local s = e2lib.join(e2tool.root(), src:get_working(),
-            src:get_workingcopy_subdir())
-        local d = e2lib.join(build_path, src:get_name())
+        local s = e2lib.join(e2tool.root(), self:get_working(),
+            self:get_workingcopy_subdir())
+        local d = e2lib.join(buildpath, self._name)
         rc, re = e2lib.cp(s, d, true)
         if not rc then
             return false, e:cat(re)
@@ -466,8 +468,10 @@ function svn.prepare_source(info, sourcename, sourceset, build_path)
     else
         return false, e:cat("invalid source set")
     end
-    return true, nil
+    return true
 end
+
+--------------------------------------------------------------------------------
 
 function svn.toresult(info, sourcename, sourceset, directory)
     -- <directory>/source/<sourcename>.tar.gz
@@ -501,7 +505,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
         return false, e:cat(re)
     end
 
-    rc, re = svn.prepare_source(info, sourcename, sourceset, tmpdir)
+    rc, re = src:prepare_source(sourceset, tmpdir)
     if not rc then
         return false, e:cat(re)
     end
@@ -527,18 +531,6 @@ function svn.toresult(info, sourcename, sourceset, directory)
     end
     e2lib.rmtempdir(tmpdir)
     return true, nil
-end
-
-function svn.update(info, sourcename)
-    local rc, re
-    local e = err.new("updating source '%s' failed", sourcename)
-    local src = source.sources[sourcename]
-    local workdir = e2lib.join(e2tool.root(), src:get_working())
-    rc, re = svn_tool({ "update" }, workdir)
-    if not rc then
-        return false, e:cat(re)
-    end
-    return true
 end
 
 strict.lock(svn)

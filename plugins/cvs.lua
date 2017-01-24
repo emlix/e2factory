@@ -58,7 +58,38 @@ plugin_descriptor = {
     exit = function (ctx) return true end,
 }
 
-cvs.cvs_source = class("cvs_source", source.basic_source)
+--------------------------------------------------------------------------------
+
+--- Build the cvsroot string.
+-- @param src Source object.
+-- @return CVSROOT string or false on error.
+-- @return Error object on failure.
+local function mkcvsroot(src)
+    local cvsroot, surl, u, re
+
+    surl, re = cache.remote_url(cache.cache(), src:get_server(), src:get_cvsroot())
+    if not surl then
+        return false, e:cat(re)
+    end
+
+    u, re = url.parse(surl)
+    if not u then
+        return false, e:cat(re)
+    end
+
+    if u.transport == "file" then
+        cvsroot = string.format("/%s", u.path)
+    elseif (u.transport == "ssh") or (u.transport == "rsync+ssh") or
+        u.transport == "scp" then
+        cvsroot = string.format("%s:/%s", u.server, u.path)
+    elseif u.transport == "cvspserver" then
+        cvsroot = string.format(":pserver:%s:/%s", u.server, u.path)
+    else
+        return false, err.new("cvs: unhandled transport: %s", u.transport)
+    end
+
+    return cvsroot
+end
 
 local function cvs_tool(argv, workdir)
     local rc, re, cvscmd, cvsflags, rsh
@@ -79,6 +110,10 @@ local function cvs_tool(argv, workdir)
 
     return e2lib.callcmd_log(cvscmd, workdir, { CVS_RSH=rsh })
 end
+
+--------------------------------------------------------------------------------
+
+cvs.cvs_source = class("cvs_source", source.basic_source)
 
 function cvs.cvs_source.static:is_scm_source_class()
     return true
@@ -293,75 +328,39 @@ function cvs.cvs_source:check_workingcopy()
     return true
 end
 
---------------------------------------------------------------------------------
+function cvs.cvs_source:fetch_source()
+    local rc, re, e, cvsroot, workdir, argv
 
---- Build the cvsroot string.
--- @param sourcename Source name.
--- @return CVSROOT string or false on error.
--- @return Error object on failure.
-local function mkcvsroot(sourcename)
-    local cvsroot, src, surl, u, re
+    e = err.new("fetching source failed: %s", self._name)
 
-    src = source.sources[sourcename]
-
-    surl, re = cache.remote_url(cache.cache(), src:get_server(), src:get_cvsroot())
-    if not surl then
-        return false, e:cat(re)
-    end
-
-    u, re = url.parse(surl)
-    if not u then
-        return false, e:cat(re)
-    end
-
-    if u.transport == "file" then
-        cvsroot = string.format("/%s", u.path)
-    elseif (u.transport == "ssh") or (u.transport == "rsync+ssh") or
-        u.transport == "scp" then
-        cvsroot = string.format("%s:/%s", u.server, u.path)
-    elseif u.transport == "cvspserver" then
-        cvsroot = string.format(":pserver:%s:/%s", u.server, u.path)
-    else
-        return false, err.new("cvs: unhandled transport: %s", u.transport)
-    end
-
-    return cvsroot
-end
-
-function cvs.fetch_source(info, sourcename)
-    local rc, re, e, src, cvsroot, workdir, argv
-
-    e = err.new("fetching source failed: %s", sourcename)
-    src = source.sources[sourcename]
-
-    if src:working_copy_available() then
+    if self:working_copy_available() then
         return true
     end
 
-    cvsroot, re = mkcvsroot(sourcename)
+    cvsroot, re = mkcvsroot(self)
     if not cvsroot then
         return false, e:cat(re)
     end
 
     -- split the working directory into dirname and basename as some cvs clients
     -- don't like slashes (e.g. in/foo) in their checkout -d<path> argument
-    workdir = e2lib.dirname(e2lib.join(e2tool.root(), src:get_working()))
+    workdir = e2lib.dirname(e2lib.join(e2tool.root(), self:get_working()))
 
     argv = {
         "-d", cvsroot,
         "checkout",
         "-R",
-        "-d", e2lib.basename(src:get_working()),
+        "-d", e2lib.basename(self:get_working()),
     }
 
     -- always fetch the configured branch, as we don't know the build mode here.
     -- HEAD has special meaning to cvs
-    if src:get_branch() ~= "HEAD" then
+    if self:get_branch() ~= "HEAD" then
         table.insert(argv, "-r")
-        table.insert(argv, src:get_branch())
+        table.insert(argv, self:get_branch())
     end
 
-    table.insert(argv, src:get_module())
+    table.insert(argv, self:get_module())
 
     rc, re = cvs_tool(argv, workdir)
     if not rc or rc ~= 0 then
@@ -370,13 +369,12 @@ function cvs.fetch_source(info, sourcename)
     return true
 end
 
-function cvs.prepare_source(info, sourcename, sourceset, buildpath)
-    local rc, re, e, src, cvsroot, argv
+function cvs.cvs_source:prepare_source(sourceset, buildpath)
+    local rc, re, e, cvsroot, argv
 
     e = err.new("cvs.prepare_source failed")
-    src = source.sources[sourcename]
 
-    cvsroot, re = mkcvsroot(sourcename)
+    cvsroot, re = mkcvsroot(self)
     if not cvsroot then
         return false, re
     end
@@ -385,29 +383,29 @@ function cvs.prepare_source(info, sourcename, sourceset, buildpath)
         argv = {
             "-d", cvsroot,
             "export", "-R",
-            "-d", src:get_name(),
+            "-d", self:get_name(),
             "-r",
         }
 
         if sourceset == "branch" or
-            (sourceset == "lazytag" and src:get_tag() == "^") then
-            table.insert(argv, src:get_branch())
+            (sourceset == "lazytag" and self:get_tag() == "^") then
+            table.insert(argv, self:get_branch())
         elseif (sourceset == "tag" or sourceset == "lazytag") and
-            src:get_tag() ~= "^" then
-            table.insert(argv, src:get_tag())
+            self:get_tag() ~= "^" then
+            table.insert(argv, self:get_tag())
         else
             return false, e:cat(err.new("source set not allowed"))
         end
 
-        table.insert(argv, src:get_module())
+        table.insert(argv, self:get_module())
 
         rc, re = cvs_tool(argv, buildpath)
         if not rc or rc ~= 0 then
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
-        rc, re = e2lib.cp(e2lib.join(e2tool.root(), src:get_working()),
-            e2lib.join(buildpath, src:get_name()), true)
+        rc, re = e2lib.cp(e2lib.join(e2tool.root(), self:get_working()),
+            e2lib.join(buildpath, self:get_name()), true)
         if not rc then
             return false, e:cat(re)
         end
@@ -417,18 +415,17 @@ function cvs.prepare_source(info, sourcename, sourceset, buildpath)
     return true, nil
 end
 
-function cvs.update(info, sourcename)
-    local rc, re, e, src, workdir, argv
+function cvs.cvs_source:update_source()
+    local rc, re, e, workdir, argv
 
-    e = err.new("updating source '%s' failed", sourcename)
-    src = source.sources[sourcename]
+    e = err.new("updating source '%s' failed", self._name)
 
-    rc, re = src:working_copy_available()
+    rc, re = self:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
 
-    workdir = e2lib.join(e2tool.root(), src:get_working())
+    workdir = e2lib.join(e2tool.root(), self:get_working())
 
     argv = { "update", "-R" }
     rc, re = cvs_tool(argv, workdir)
@@ -438,6 +435,8 @@ function cvs.update(info, sourcename)
 
     return true
 end
+
+--------------------------------------------------------------------------------
 
 function cvs.toresult(info, sourcename, sourceset, directory)
     -- <directory>/source/<sourcename>.tar.gz
@@ -476,7 +475,7 @@ function cvs.toresult(info, sourcename, sourceset, directory)
         return false, re
     end
 
-    rc, re = cvs.prepare_source(info, sourcename, sourceset, tmpdir)
+    rc, re = src:prepare_source(sourceset, tmpdir)
     if not rc then
         return false, e:cat(re)
     end

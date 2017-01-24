@@ -31,6 +31,7 @@ local hash = require("hash")
 local licence = require("licence")
 local scm = require("scm")
 local source = require("source")
+local strict = require("strict")
 local url = require("url")
 
 local gitrepo_source = class("gitrepo_source", source.basic_source)
@@ -319,51 +320,40 @@ function gitrepo_source:check_workingcopy()
     return true
 end
 
---------------------------------------------------------------------------------
+function gitrepo_source:fetch_source()
+    local e, rc, re, git_dir, work_tree, id
 
---- Fetch a gitrepo source. Adapted from git plugin.
--- @param info the info structure
--- @param sourcename string
--- @return bool
--- @return true on success, an error string on error
-function gitrepo.fetch_source(info, sourcename)
-    assertIsTable(info)
-    assertIsStringN(sourcename)
+    e = err.new("fetching source failed: %s", self._name)
 
-    local e, rc, re, src, git_dir, work_tree, id
-
-    src = source.sources[sourcename]
-    e = err.new("fetching source failed: %s", sourcename)
-
-    if src:working_copy_available() then
+    if self:working_copy_available() then
         return true
     end
 
-    work_tree = e2lib.join(e2tool.root(), src:get_working())
+    work_tree = e2lib.join(e2tool.root(), self:get_working())
     git_dir = e2lib.join(work_tree, ".git")
 
-    e2lib.logf(2, "cloning %s:%s [%s]", src:get_server(), src:get_location(),
-        src:get_branch())
+    e2lib.logf(2, "cloning %s:%s [%s]", self:get_server(), self:get_location(),
+        self:get_branch())
 
-    rc, re = generic_git.git_clone_from_server(cache.cache(), src:get_server(),
-        src:get_location(), work_tree, false --[[always checkout]])
+    rc, re = generic_git.git_clone_from_server(cache.cache(), self:get_server(),
+        self:get_location(), work_tree, false --[[always checkout]])
     if not rc then
         return false, e:cat(re)
     end
 
     rc, re, id = generic_git.lookup_id(git_dir, false,
-        "refs/heads/" .. src:get_branch())
+        "refs/heads/" .. self:get_branch())
     if not rc then
         return false, e:cat(re)
     elseif not id then
-        rc, re = generic_git.git_branch_new1(work_tree, true, src:get_branch(),
-            "origin/" .. src:get_branch())
+        rc, re = generic_git.git_branch_new1(work_tree, true, self:get_branch(),
+            "origin/" .. self:get_branch())
         if not rc then
             return false, e:cat(re)
         end
 
         rc, re = generic_git.git_checkout1(work_tree,
-            "refs/heads/" .. src:get_branch())
+            "refs/heads/" .. self:get_branch())
         if not rc then
             return false, e:cat(re)
         end
@@ -372,100 +362,22 @@ function gitrepo.fetch_source(info, sourcename)
     return true
 end
 
---- prepare a git source
--- @param info the info structure
--- @param sourcename string
--- @param sourceset can be either:
--- "tag": the git repository will be checked out to the tag
--- "branch": the git repository will be checked out to the branch
--- "working-copy": a exact working copy of the repository will be created
--- @param buildpath the path where the source will be created
--- @return True on success, false on failure.
--- @return Error object on failure.
-function gitrepo.prepare_source(info, sourcename, sourceset, buildpath)
-    assertIsTable(info)
-    assertIsStringN(sourcename)
-    assertIsStringN(sourceset)
-    assertIsStringN(buildpath)
-
-    local rc, re, e
-    local src, argv, destdir, worktree, ref
-
-    e = err.new("preparing source failed: %s", sourcename)
-    src = source.sources[sourcename]
-
-    rc, re = scm.generic_source_check(info, sourcename, true)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    if sourceset == "tag" or sourceset == "branch" then
-        destdir = e2lib.join(buildpath, sourcename, ".git")
-        rc, re = e2lib.mkdir_recursive(destdir)
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        worktree = e2lib.join(e2tool.root(), src:get_working())
-        argv = generic_git.git_new_argv(false, false, "clone",
-            "--mirror", worktree, destdir)
-        rc, re = generic_git.git(argv)
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        rc, re = generic_git.git_config(destdir, "core.bare", "false")
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        if sourceset == "tag" then
-            ref = string.format("refs/tags/%s", src:get_tag())
-        else
-            ref = string.format("refs/heads/%s", src:get_branch())
-        end
-
-        rc, re = generic_git.git_checkout1(e2lib.join(destdir, ".."), ref)
-	if not rc then
-    	    return false, e:cat(re)
-	end
-    elseif sourceset == "working-copy" then
-        local argv = {
-            "-a",
-            e2lib.join(e2tool.root(), src:get_working(), ""),
-            e2lib.join(buildpath, sourcename),
-        }
-        rc, re = e2lib.rsync(argv)
-	if not rc then
-	    return false, e:cat(re)
-	end
-    else
-        return false, err.new("preparing source failed, not a valid type: %s, %s",
-            sourcename, sourceset)
-    end
-
-    return true
-end
-
---- update a working copy. from git plugin
--- @param info the info structure
--- @param sourcename string
+--- update a working copy
 -- @return bool
 -- @return an error object
-function gitrepo.update(info, sourcename)
-    local e, rc, re, src, gitwc, gitdir, argv, id, branch, remote
+function gitrepo_source:update_source()
+    local e, rc, re, gitwc, gitdir, argv, id, branch, remote
 
-    src = source.sources[sourcename]
-    e = err.new("updating source '%s' failed", sourcename)
+    e = err.new("updating source '%s' failed", self._name)
 
-    rc, re = scm.generic_source_check(info, sourcename, true)
+    rc, re = scm.generic_source_check(e2tool.info(), self._name, true)
     if not rc then
         return false, e:cat(re)
     end
 
-    e2lib.logf(2, "updating %s [%s]", src:get_working(), src:get_branch())
+    e2lib.logf(2, "updating %s [%s]", self:get_working(), self:get_branch())
 
-    gitwc  = e2lib.join(e2tool.root(), src:get_working())
+    gitwc  = e2lib.join(e2tool.root(), self:get_working())
     gitdir = e2lib.join(gitwc, ".git")
 
     argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
@@ -496,20 +408,20 @@ function gitrepo.update(info, sourcename)
         return true
     end
 
-    if branch ~= "refs/heads/" .. src:get_branch() then
+    if branch ~= "refs/heads/" .. self:get_branch() then
         e2lib.warnf("WOTHER", "not on configured branch. Skipping.")
         return true
     end
 
     remote, re = generic_git.git_config(
-        gitdir, "branch."..src:get_branch()..".remote")
+        gitdir, "branch."..self:get_branch()..".remote")
     if not remote or string.len(remote) == 0  then
         e2lib.warnf("WOTHER", "no remote configured for branch %q. Skipping.",
-            src:get_branch())
+            self:get_branch())
         return true
     end
 
-    branch = remote .. "/" .. src:get_branch()
+    branch = remote .. "/" .. self:get_branch()
     argv = generic_git.git_new_argv(gitdir, gitwc, "merge", "--ff-only", branch)
     rc, re = generic_git.git(argv)
     if not rc then
@@ -518,6 +430,78 @@ function gitrepo.update(info, sourcename)
 
     return true
 end
+
+--- prepare source for building.
+-- @param sourceset can be either:
+-- "tag": the git repository will be checked out to the tag
+-- "branch": the git repository will be checked out to the branch
+-- "working-copy": a exact working copy of the repository will be created
+-- @param buildpath the path where the source will be created
+-- @return True on success, false on failure.
+-- @return Error object on failure.
+function gitrepo_source:prepare_source(sourceset, buildpath)
+    assertIsStringN(sourceset)
+    assertIsStringN(buildpath)
+
+    local rc, re, e
+    local argv, destdir, worktree, ref
+
+    e = err.new("preparing source failed: %s", self._name)
+
+    rc, re = scm.generic_source_check(e2tool.info(), self._name, true)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    if sourceset == "tag" or sourceset == "branch" then
+        destdir = e2lib.join(buildpath, self._name, ".git")
+        rc, re = e2lib.mkdir_recursive(destdir)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        worktree = e2lib.join(e2tool.root(), self:get_working())
+        argv = generic_git.git_new_argv(false, false, "clone",
+            "--mirror", worktree, destdir)
+        rc, re = generic_git.git(argv)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        rc, re = generic_git.git_config(destdir, "core.bare", "false")
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        if sourceset == "tag" then
+            ref = string.format("refs/tags/%s", self:get_tag())
+        else
+            ref = string.format("refs/heads/%s", self:get_branch())
+        end
+
+        rc, re = generic_git.git_checkout1(e2lib.join(destdir, ".."), ref)
+	if not rc then
+    	    return false, e:cat(re)
+	end
+    elseif sourceset == "working-copy" then
+        local argv = {
+            "-a",
+            e2lib.join(e2tool.root(), self:get_working(), ""),
+            e2lib.join(buildpath, self._name),
+        }
+        rc, re = e2lib.rsync(argv)
+	if not rc then
+	    return false, e:cat(re)
+	end
+    else
+        return false, err.new("preparing source failed, not a valid type: %s, %s",
+            self._name, sourceset)
+    end
+
+    return true
+end
+
+--------------------------------------------------------------------------------
 
 --- Archives the source and prepares the necessary files outside the archive
 -- @param info the info structure
@@ -672,6 +656,6 @@ plugin_descriptor = {
 
 --------------------------------------------------------------------------------
 
-return gitrepo
+return strict.lock(gitrepo)
 
 -- vim:sw=4:sts=4:et:

@@ -59,6 +59,147 @@ plugin_descriptor = {
     exit = function (ctx) return true end,
 }
 
+--------------------------------------------------------------------------------
+
+--- Generates the command to unpack an archive file.
+-- @param physpath Current location and filename to be unpacked later.
+-- @param virtpath Location and name of the file at the time of unpacking.
+-- @param destdir Path where the unpacked files shall be put.
+-- @return Tool name (string), or false on error.
+-- @return Argument vector table for the tool, or an error object on failure.
+local function gen_unpack_command(physpath, virtpath, destdir)
+
+    --- Determine archive type by looking at the file extension.
+    -- @param filename File name (string).
+    -- @return String constant describing archive,
+    -- or false if archive suffix is unknown.
+    -- @return Error object on failure.
+    local function archive_by_suffix(filename)
+        local name = filename:lower() -- case insensitive matching
+        local atype
+
+        if name:match("%.tar$") then
+            atype = "TAR"
+        elseif name:match("%.tgz") or name:match("%.tar%.gz$") then
+            atype = "TAR_GZ"
+        elseif name:match("%.tar%.bz2$") then
+            atype = "TAR_BZIP2"
+        elseif name:match("%.tar%.xz$") then
+            atype = "TAR_XZ"
+        elseif name:match("%.zip$") then
+            atype = "ZIP"
+        else
+            return false, err.new("can not determine archive type of '%s'",
+                filename)
+        end
+
+        return atype
+    end
+
+    local tool
+    local toolargv = {}
+
+    local atype, re = archive_by_suffix(physpath)
+    if not atype then
+        return false, re
+    end
+
+    if atype == "ZIP" then
+        tool = "unzip"
+        table.insert(toolargv, virtpath)
+        table.insert(toolargv, "-d")
+        table.insert(toolargv, destdir)
+    elseif atype == "TAR" then
+        tool = "tar"
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    elseif atype == "TAR_GZ" then
+        tool = "tar"
+        table.insert(toolargv, "-z")
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    elseif atype == "TAR_BZIP2" then
+        tool = "tar"
+        table.insert(toolargv, "-j")
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    elseif atype == "TAR_XZ" then
+        tool = "tar"
+        table.insert(toolargv, "--xz")
+        table.insert(toolargv, "-C")
+        table.insert(toolargv, destdir)
+        table.insert(toolargv, "-xf")
+        table.insert(toolargv, virtpath)
+    else
+        return false, err.new("unhandled archive type")
+    end
+
+    return tool, toolargv
+end
+
+--- Handle file:copy() in a way that appears intuitive to the user. Returns
+-- a directory and filename that can be passed to eg. mkdir -p and cp.
+-- @param buildpath Base build path (string).
+-- @param sourcename Name of the source (string).
+-- @param copypath Directory or file name where the source file should be
+-- copied to (string).
+-- @param location Soure file location (string).
+-- @param dircheck Check for destination (copypath) being an existing directory.
+-- "yes" enables checking (default), "no" disables the check, and "isdir"
+-- pretends destination is a directory. This flag is useful for collect_project,
+-- where we don't build the source, but just look at its config.
+-- @return Destination directory (string).
+-- @return Destination file name (string).
+local function gen_dest_dir_name(buildpath, sourcename, copypath, location,
+    dircheck)
+
+    dircheck = dircheck or "yes"
+    local destdir, destname
+    local destination = e2lib.join(buildpath, sourcename, copypath)
+
+    -- It may look like ending in a file name ("/foo/bar") - but if
+    -- bar is a directory, we have to copy the file into the
+    -- directory. It's not always possible to check for the destination
+    -- directory. dircheck therefore allows to skip the isdir check, so the
+    -- reults can still be used for code generation.
+
+    if dircheck == "isdir" or
+        (dircheck == "yes" and e2lib.isdir(destination)) then
+        destdir = destination
+        destname = e2lib.basename(location)
+    else
+        -- '.' and '..' are not path components as such, but refer
+        -- to the current and previous directory instead.
+        -- Fixup path by appending a harmless slash, to simplify
+        -- the logic below.
+        local last = e2lib.basename(destination)
+        if last == "." or last == ".." then
+            destination = e2lib.join(destination, "")
+        end
+
+        if string.sub(destination, -1) == "/" then
+            -- destination refers to a directory, indicated by the / at the end
+            -- use destname from location.
+            destdir = destination
+            destname = e2lib.basename(location)
+        else
+            -- destination (potentially) ends with a file name
+            destdir = e2lib.dirname(destination)
+            destname = e2lib.basename(destination)
+        end
+    end
+
+    return destdir, destname
+end
+
+--------------------------------------------------------------------------------
+
 files.files_source = class("files_source", source.basic_source)
 
 function files.files_source.static:is_selected_source_class(opts)
@@ -301,14 +442,11 @@ function files.files_source:check_workingcopy()
     return true
 end
 
---------------------------------------------------------------------------------
-
-function files.fetch_source(info, sourcename)
+function files.files_source:fetch_source()
     local rc, re
-    local src = source.sources[sourcename]
-    local e = err.new("fetching source failed: %s", sourcename)
+    local e = err.new("fetching source failed: %s", self._name)
 
-    for file in src:file_iter() do
+    for file in self:file_iter() do
         if cache.cache_enabled(cache.cache(), file:server()) then
             e2lib.logf(3, "files.fetch_source: caching file %s", file:servloc())
             rc, re = cache.fetch_file_path(cache.cache(), file:server(), file:location())
@@ -323,165 +461,16 @@ function files.fetch_source(info, sourcename)
     return true
 end
 
---- Handle file:copy() in a way that appears intuitive to the user. Returns
--- a directory and filename that can be passed to eg. mkdir -p and cp.
--- @param buildpath Base build path (string).
--- @param sourcename Name of the source (string).
--- @param copypath Directory or file name where the source file should be
--- copied to (string).
--- @param location Soure file location (string).
--- @param dircheck Check for destination (copypath) being an existing directory.
--- "yes" enables checking (default), "no" disables the check, and "isdir"
--- pretends destination is a directory. This flag is useful for collect_project,
--- where we don't build the source, but just look at its config.
--- @return Destination directory (string).
--- @return Destination file name (string).
-local function gen_dest_dir_name(buildpath, sourcename, copypath, location,
-    dircheck)
-
-    dircheck = dircheck or "yes"
-    local destdir, destname
-    local destination = e2lib.join(buildpath, sourcename, copypath)
-
-    -- It may look like ending in a file name ("/foo/bar") - but if
-    -- bar is a directory, we have to copy the file into the
-    -- directory. It's not always possible to check for the destination
-    -- directory. dircheck therefore allows to skip the isdir check, so the
-    -- reults can still be used for code generation.
-
-    if dircheck == "isdir" or
-        (dircheck == "yes" and e2lib.isdir(destination)) then
-        destdir = destination
-        destname = e2lib.basename(location)
-    else
-        -- '.' and '..' are not path components as such, but refer
-        -- to the current and previous directory instead.
-        -- Fixup path by appending a harmless slash, to simplify
-        -- the logic below.
-        local last = e2lib.basename(destination)
-        if last == "." or last == ".." then
-            destination = e2lib.join(destination, "")
-        end
-
-        if string.sub(destination, -1) == "/" then
-            -- destination refers to a directory, indicated by the / at the end
-            -- use destname from location.
-            destdir = destination
-            destname = e2lib.basename(location)
-        else
-            -- destination (potentially) ends with a file name
-            destdir = e2lib.dirname(destination)
-            destname = e2lib.basename(destination)
-        end
-    end
-
-    return destdir, destname
+function files.files_source:update_source()
+    return true, nil
 end
 
---- Determine archive type by looking at the file extension.
--- @param filename File name (string).
--- @return String constant describing archive,
--- or false if archive suffix is unknown.
--- @return Error object on failure.
-local function archive_by_suffix(filename)
-    local name = filename:lower() -- case insensitive matching
-    local atype
-
-    if name:match("%.tar$") then
-        atype = "TAR"
-    elseif name:match("%.tgz") or name:match("%.tar%.gz$") then
-        atype = "TAR_GZ"
-    elseif name:match("%.tar%.bz2$") then
-        atype = "TAR_BZIP2"
-    elseif name:match("%.tar%.xz$") then
-        atype = "TAR_XZ"
-    elseif name:match("%.zip$") then
-        atype = "ZIP"
-    else
-        return false, err.new("can not determine archive type of '%s'",
-            filename)
-    end
-
-    return atype
-end
-
---- Generates the command to unpack an archive file.
--- @param physpath Current location and filename to be unpacked later.
--- @param virtpath Location and name of the file at the time of unpacking.
--- @param destdir Path where the unpacked files shall be put.
--- @return Tool name (string), or false on error.
--- @return Argument vector table for the tool, or an error object on failure.
-local function gen_unpack_command(physpath, virtpath, destdir)
-    local tool
-    local toolargv = {}
-
-    local atype, re = archive_by_suffix(physpath)
-    if not atype then
-        return false, re
-    end
-
-    if atype == "ZIP" then
-        tool = "unzip"
-        table.insert(toolargv, virtpath)
-        table.insert(toolargv, "-d")
-        table.insert(toolargv, destdir)
-    elseif atype == "TAR" then
-        tool = "tar"
-        table.insert(toolargv, "-C")
-        table.insert(toolargv, destdir)
-        table.insert(toolargv, "-xf")
-        table.insert(toolargv, virtpath)
-    elseif atype == "TAR_GZ" then
-        tool = "tar"
-        table.insert(toolargv, "-z")
-        table.insert(toolargv, "-C")
-        table.insert(toolargv, destdir)
-        table.insert(toolargv, "-xf")
-        table.insert(toolargv, virtpath)
-    elseif atype == "TAR_BZIP2" then
-        tool = "tar"
-        table.insert(toolargv, "-j")
-        table.insert(toolargv, "-C")
-        table.insert(toolargv, destdir)
-        table.insert(toolargv, "-xf")
-        table.insert(toolargv, virtpath)
-    elseif atype == "TAR_XZ" then
-        tool = "tar"
-        table.insert(toolargv, "--xz")
-        table.insert(toolargv, "-C")
-        table.insert(toolargv, destdir)
-        table.insert(toolargv, "-xf")
-        table.insert(toolargv, virtpath)
-    else
-        return false, err.new("unhandled archive type")
-    end
-
-    return tool, toolargv
-end
-
---- Call the patch command
--- @param argv Vector of arguments supplied to patch tool.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function patch_tool(argv)
-    return e2lib.call_tool_argv("patch", argv)
-end
-
---- Prepare a files source.
--- @param info The info table.
--- @param sourcename The source name (string)
--- @param sourceset Unused.
--- @param buildpath Base path of the build directory ($T/build) (string).
--- @see toresult
--- @return bool
--- @return nil, maybe an error string on error
-function files.prepare_source(info, sourcename, sourceset, buildpath)
+function files.files_source:prepare_source(sourceset, buildpath)
     local rc, re
-    local e = err.new("error preparing source: %s", sourcename)
+    local e = err.new("error preparing source: %s", self._name)
     local symlink = nil
-    local src = source.sources[sourcename]
 
-    for file in src:file_iter() do
+    for file in self:file_iter() do
         rc, re = file:checksum_verify()
         if not rc then
             return false, e:cat(re)
@@ -512,8 +501,8 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             end
 
             if not symlink then
-                symlink = buildpath .. "/" .. sourcename
-                if file:unpack() ~= sourcename then
+                symlink = buildpath .. "/" .. self._name
+                if file:unpack() ~= self._name then
                     rc, re = e2lib.symlink(file:unpack(), symlink)
                     if not rc then
                         return false, e:cat(re)
@@ -524,7 +513,7 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
             end
         else
             if not symlink then
-                symlink = buildpath .. "/" .. sourcename
+                symlink = buildpath .. "/" .. self._name
                 rc, re = e2lib.mkdir_recursive(symlink)
                 if not rc then
                     return false, e:cat(re)
@@ -537,14 +526,14 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
                     return false, e:append(re)
                 end
                 local argv = { "-p", file:patch(), "-d", symlink, "-i", path }
-                rc, re = patch_tool(argv)
+                rc, re = e2lib.call_tool_argv("patch", argv)
                 if not rc then
                     e:append("applying patch: \"%s\"", file:servloc())
                     return false, e:cat(re)
                 end
             elseif file:copy() then
                 local destdir, destname
-                destdir, destname = gen_dest_dir_name(buildpath, sourcename,
+                destdir, destname = gen_dest_dir_name(buildpath, self._name,
                     file:copy(), file:location())
 
                 rc, re = e2lib.mkdir_recursive(destdir)
@@ -566,6 +555,9 @@ function files.prepare_source(info, sourcename, sourceset, buildpath)
     end
     return true, nil
 end
+
+
+--------------------------------------------------------------------------------
 
 --- Create a source result containing the generated Makefile and files
 -- belonging to the source, for use with collect_project.
@@ -706,15 +698,6 @@ function files.toresult(info, sourcename, sourceset, directory)
     end
 
     return true
-end
-
---- Update the source.
--- @param info The info table.
--- @param sourcename The name of the source (string).
--- @return Boolean, true on success.
--- @return An error object on failure.
-function files.update(info, sourcename)
-    return true, nil
 end
 
 strict.lock(files)
