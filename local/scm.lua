@@ -155,9 +155,6 @@ function scm.generic_source_check(info, sourcename, require_workingcopy)
 end
 
 scm.register_interface("toresult")
-scm.register_interface("prepare_source")
-scm.register_interface("fetch_source")
-scm.register_interface("update")
 
 return strict.lock(scm)
 
