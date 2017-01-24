@@ -196,21 +196,75 @@ function git.git_source:get_tag()
     return self._tag
 end
 
+--- Return the git commit ID of the specified source configuration. Specific to
+-- sources of type git, useful for writing plugins.
+-- @param sourceset string: the sourceset
+-- @param check_remote bool: in tag mode: make sure the tag is available remote
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Commit ID (string) on success.
+function git.git_source:git_commit_id(sourceset, check_remote)
+    local rc, re, e, id, fr, gitdir, ref
+
+    e = err.new("getting commit ID failed for source: %s", self._name)
+
+    rc, re = self:working_copy_available()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = self:check_workingcopy()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
+
+    if sourceset == "branch" or (sourceset == "lazytag" and self:get_tag() == "^") then
+        ref = string.format("refs/heads/%s", self:get_branch())
+
+        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
+        if not rc then
+            return false, e:cat(re)
+        end
+    elseif sourceset == "tag" or (sourceset == "lazytag" and self:get_tag() ~= "^") then
+        ref = string.format("refs/tags/%s", self:get_tag())
+
+        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
+        if not rc then
+            return false, e:cat(re)
+        end
+
+        if id and check_remote then
+            rc, re = generic_git.verify_remote_tag(gitdir, self:get_tag())
+            if not rc then
+                return false, e:cat(re)
+            end
+        end
+    else
+        return false, err.new("not an scm sourceset: %s", sourceset)
+    end
+
+    if not id then
+        re = err.new("can't get git commit ID for ref %q from repository %q",
+            ref, self:get_working())
+        return false, e:cat(re)
+    end
+
+    return true, nil, id
+end
+
 function git.git_source:sourceid(sourceset)
     assert(type(sourceset) == "string" and #sourceset > 0,
         "sourceset arg invalid")
 
-    local rc, re, info, id, hc, licences
+    local rc, re, id, hc, licences
 
     if self._sourceids[sourceset] then
         return self._sourceids[sourceset]
     end
 
-    info = e2tool.info()
-    assert(info)
-
-    rc, re, id = git.git_commit_id(info, self._name, sourceset,
-        e2option.opts["check-remote"])
+    rc, re, id = self:git_commit_id(sourceset, e2option.opts["check-remote"])
     if not rc then
         return false, re
     end
@@ -489,7 +543,7 @@ end
 
 function git.git_source:prepare_source(sourceset, buildpath)
     local rc, re, e
-    local srcdir, destdir, info
+    local srcdir, destdir
 
     e = err.new("preparing git source %s failed", self._name)
 
@@ -548,8 +602,7 @@ function git.git_source:prepare_source(sourceset, buildpath)
 
     gitdir = e2lib.join(srcdir, ".git")
 
-    info = e2tool.info()
-    rc, re = git.git_commit_id(info, self._name, sourceset)
+    rc, re = self:git_commit_id(sourceset)
     if not rc then
         return false, e:cat(re)
     end
@@ -652,65 +705,8 @@ end
 
 --------------------------------------------------------------------------------
 
---- Return the git commit ID of the specified source configuration. Specific to
--- sources of type git, useful for writing plugins.
--- @param info Info table.
--- @param sourcename Source name.
--- @param sourceset string: the sourceset
--- @param check_remote bool: in tag mode: make sure the tag is available remote
--- @return True on success, false on error.
--- @return Error object on failure.
--- @return Commit ID (string) on success.
 function git.git_commit_id(info, sourcename, sourceset, check_remote)
-    local rc, re, e, src, id, fr, gitdir, ref
-
-    e = err.new("getting commit ID failed for source: %s", sourcename)
-    src = source.sources[sourcename]
-
-    rc, re = src:working_copy_available()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    rc, re = src:check_workingcopy()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    gitdir = e2lib.join(e2tool.root(), src:get_working(), ".git")
-
-    if sourceset == "branch" or (sourceset == "lazytag" and src:get_tag() == "^") then
-        ref = string.format("refs/heads/%s", src:get_branch())
-
-        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
-        if not rc then
-            return false, e:cat(re)
-        end
-    elseif sourceset == "tag" or (sourceset == "lazytag" and src:get_tag() ~= "^") then
-        ref = string.format("refs/tags/%s", src:get_tag())
-
-        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        if id and check_remote then
-            rc, re = generic_git.verify_remote_tag(gitdir, src:get_tag())
-            if not rc then
-                return false, e:cat(re)
-            end
-        end
-    else
-        return false, err.new("not an scm sourceset: %s", sourceset)
-    end
-
-    if not id then
-        re = err.new("can't get git commit ID for ref %q from repository %q",
-            ref, src:get_working())
-        return false, e:cat(re)
-    end
-
-    return true, nil, id
+    return source.sources[sourcename]:git_commit_id(info, sourcename, sourceset, check_remote)
 end
 
 function git.toresult(info, sourcename, sourceset, directory)
