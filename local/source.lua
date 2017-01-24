@@ -365,6 +365,8 @@ function source.iterate_source_classes()
     end
 end
 
+--------------------------------------------------------------------------------
+
 --- Validate licences attribute in rawsrc and set licences in src if successful.
 -- @param rawsrc e2source config table
 -- @param src Object of class basic_source.
