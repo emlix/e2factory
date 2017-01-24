@@ -155,6 +155,34 @@ function source.basic_source:check_workingcopy()
         self._type, self._name))
 end
 
+--- Fetch working copy (or equivalent) from server, if required.
+-- @return True on success, false on error.
+-- Error object on failure.
+function source.basic_source:fetch_source()
+    error(err.new("called fetch_source() of source base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Update the existing working copy (or equiv) from server, if required.
+-- @return True on success, false on error.
+-- Error object on failure.
+function source.basic_source:update_source()
+    error(err.new("called update_source() of source base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Place source into buildpath/sourcename according to sourceset.
+-- @param sourceset source setting string.
+-- @param buildpath target location.
+-- @return True on success, false on error.
+-- Error object on failure.
+function source.basic_source:prepare_source(sourceset, buildpath)
+    assertIsStringN(sourceset)
+    assertIsStringN(buildpath)
+    error(err.new("called prepare_source() of source base class, type %s name %s",
+        self._type, self._name))
+end
+
 --- @section end
 
 --------------------------------------------------------------------------------
