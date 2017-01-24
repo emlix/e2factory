@@ -52,17 +52,6 @@ local function git_plugin_init(ctx)
         return false, re
     end
 
-    -- Additional interfaces only available with git sources.
-    rc, re = scm.register_interface("git_commit_id")
-    if not rc then
-        return false, re
-    end
-
-    rc, re = scm.register_function("git", "git_commit_id", git.git_commit_id)
-    if not rc then
-        return false, re
-    end
-
     if e2tool.current_tool() == "fetch-sources" then
         e2option.flag("git", "select git sources")
     end
@@ -702,12 +691,7 @@ function git.git_source:prepare_source(sourceset, buildpath)
     return true
 end
 
-
 --------------------------------------------------------------------------------
-
-function git.git_commit_id(info, sourcename, sourceset, check_remote)
-    return source.sources[sourcename]:git_commit_id(info, sourcename, sourceset, check_remote)
-end
 
 function git.toresult(info, sourcename, sourceset, directory)
     local rc, re, argv
