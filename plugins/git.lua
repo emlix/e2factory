@@ -493,8 +493,12 @@ function git.git_source:prepare_source(sourceset, buildpath)
 
     e = err.new("preparing git source %s failed", self._name)
 
-    info = e2tool.info()
-    rc, re = scm.generic_source_check(info, self._name, true)
+    rc, re = self:working_copy_available()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = self:check_workingcopy()
     if not rc then
         return false, e:cat(re)
     end
@@ -544,6 +548,7 @@ function git.git_source:prepare_source(sourceset, buildpath)
 
     gitdir = e2lib.join(srcdir, ".git")
 
+    info = e2tool.info()
     rc, re = git.git_commit_id(info, self._name, sourceset)
     if not rc then
         return false, e:cat(re)
@@ -711,11 +716,18 @@ end
 function git.toresult(info, sourcename, sourceset, directory)
     local rc, re, argv
     local e = err.new("converting result")
-    rc, re = scm.generic_source_check(info, sourcename, true)
+    local src = source.sources[sourcename]
+
+    rc, re = src:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
-    local src = source.sources[sourcename]
+
+    rc, re = src:check_workingcopy()
+    if not rc then
+        return false, e:cat(re)
+    end
+
     local makefile = "Makefile"
     local source = "source"
     local sourcedir = e2lib.join(directory, source)

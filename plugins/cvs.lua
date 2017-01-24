@@ -444,11 +444,18 @@ function cvs.toresult(info, sourcename, sourceset, directory)
     -- <directory>/licences
     local rc, re, out
     local e = err.new("converting result")
-    rc, re = scm.generic_source_check(info, sourcename, true)
+    local src = source.sources[sourcename]
+
+    rc, re = src:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
-    local src = source.sources[sourcename]
+
+    rc, re = src:check_workingcopy()
+    if not rc then
+        return false, e:cat(re)
+    end
+
     -- write makefile
     local makefile = "Makefile"
     local source = "source"

@@ -175,7 +175,12 @@ function gitrepo_source:sourceid(sourceset)
         hash.hash_append(hc, lid)
     end
 
-    rc, re = scm.generic_source_check(e2tool.info(), self._name, true)
+    rc, re = self:working_copy_available()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = self:check_workingcopy()
     if not rc then
         return false, e:cat(re)
     end
@@ -371,7 +376,12 @@ function gitrepo_source:update_source()
 
     e = err.new("updating source '%s' failed", self._name)
 
-    rc, re = scm.generic_source_check(e2tool.info(), self._name, true)
+    rc, re = self:working_copy_available()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = self:check_workingcopy()
     if not rc then
         return false, e:cat(re)
     end
@@ -449,7 +459,12 @@ function gitrepo_source:prepare_source(sourceset, buildpath)
 
     e = err.new("preparing source failed: %s", self._name)
 
-    rc, re = scm.generic_source_check(e2tool.info(), self._name, true)
+    rc, re = self:working_copy_available()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = self:check_workingcopy()
     if not rc then
         return false, e:cat(re)
     end
@@ -522,13 +537,18 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
     local argv
 
     e = err.new("converting source %q failed", sourcename)
+    src = source.sources[sourcename]
 
-    rc, re = scm.generic_source_check(info, sourcename, true)
+    rc, re = src:working_copy_available()
     if not rc then
         return false, e:cat(re)
     end
 
-    src = source.sources[sourcename]
+    rc, re = src:check_workingcopy()
+    if not rc then
+        return false, e:cat(re)
+    end
+
     srcdir = "source"
     sourcedir = e2lib.join(directory, srcdir)
     archive = string.format("%s.tar.gz", sourcename)
