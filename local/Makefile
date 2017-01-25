@@ -28,7 +28,7 @@ LOCALLUATOOLS = e2-build e2-dlist e2-dsort e2-fetch-sources \
 		e2-build-numbers e2-cf e2-help
 
 LOCALLUALIBS= digest.lua e2build.lua e2tool.lua environment.lua \
-	      policy.lua scm.lua licence.lua chroot.lua project.lua \
+	      policy.lua licence.lua chroot.lua project.lua \
 	      source.lua sl.lua result.lua projenv.lua hash.lua cscache.lua
 LOCALTOOLS = $(LOCALLUATOOLS)
 
