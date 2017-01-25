@@ -33,7 +33,6 @@ local licence = require("licence")
 local project = require("project")
 local projenv = require("projenv")
 local result = require("result")
-local scm = require("scm")
 local sl = require("sl")
 local source = require("source")
 local strict = require("strict")
@@ -318,16 +317,24 @@ local function _build_collect_project(self, res, return_flags)
 
     for sourcename in cp_sources:iter() do
         e2lib.logf(3, "source: %s", sourcename)
-        local destdir = e2lib.join(bc.T, "project",
-            e2tool.sourcedir(sourcename))
+        local destdir = e2lib.join(bc.T, "project", e2tool.sourcedir(sourcename))
+        local source_set = res:build_mode().source_set()
+        local src = source.sources[sourcename]
+        local source_to_result_fn = _source_to_result_functions[src:get_type()]
+
+        if not source_to_result_fn then
+            return false,
+                e:cat("result conversion for sources of type %s not implemented: %s",
+                src:get_type(), sourcename)
+        end
+
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
             return false, e:cat(re)
         end
 
-        local source_set = res:build_mode().source_set()
-        local files, re = scm.toresult(info, sourcename, source_set, destdir)
-        if not files then
+        rc, re = source_to_result_fn(src, source_set, destdir)
+        if not rc then
             return false, e:cat(re)
         end
     end
