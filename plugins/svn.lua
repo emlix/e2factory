@@ -28,35 +28,11 @@ local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
 local licence = require("licence")
-local scm = require("scm")
+local result = require("result")
 local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
-
-plugin_descriptor = {
-    description = "SVN SCM Plugin",
-    init = function (ctx)
-        local rc, re
-
-        rc, re = source.register_source_class("svn", svn.svn_source)
-        if not rc then
-            return false, re
-        end
-
-        rc, re = scm.register("svn", svn)
-        if not rc then
-            return false, re
-        end
-
-        if e2tool.current_tool() == "fetch-sources" then
-            e2option.flag("svn", "select svn sources")
-        end
-
-        return true
-    end,
-    exit = function (ctx) return true end,
-}
 
 svn.svn_source = class("svn_source", source.basic_source)
 
@@ -473,13 +449,13 @@ end
 
 --------------------------------------------------------------------------------
 
-function svn.toresult(info, sourcename, sourceset, directory)
+local function svn_to_result(src, sourceset, directory)
     -- <directory>/source/<sourcename>.tar.gz
     -- <directory>/makefile
     -- <directory>/licences
     local rc, re
-    local e = err.new("converting result")
-    local src = source.sources[sourcename]
+    local e = err.new("converting %s to result", src:get_name())
+    local src = source.sources[src:get_name()]
 
     rc, re = src:working_copy_available()
     if not rc then
@@ -495,7 +471,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     local makefile = "Makefile"
     local source = "source"
     local sourcedir = e2lib.join(directory, source)
-    local archive = string.format("%s.tar.gz", sourcename)
+    local archive = string.format("%s.tar.gz", src:get_name())
     local fname  = e2lib.join(directory, makefile)
     rc, re = e2lib.mkdir_recursive(sourcedir)
     if not rc then
@@ -519,7 +495,7 @@ function svn.toresult(info, sourcename, sourceset, directory)
     -- create a tarball in the final location
     local archive = string.format("%s.tar.gz", src:get_name())
     rc, re = e2lib.tar({ "-C", tmpdir ,"-czf", sourcedir .. "/" .. archive,
-    sourcename })
+        src:get_name() })
     if not rc then
         return false, e:cat(re)
     end
@@ -539,6 +515,38 @@ function svn.toresult(info, sourcename, sourceset, directory)
     e2lib.rmtempdir(tmpdir)
     return true, nil
 end
+
+--------------------------------------------------------------------------------
+
+plugin_descriptor = {
+    description = "SVN SCM Plugin",
+    init = function (ctx)
+        local rc, re
+
+        rc, re = source.register_source_class("svn", svn.svn_source)
+        if not rc then
+            return false, re
+        end
+
+        for typ, theclass in result.iterate_result_classes() do
+            if typ == "collect_project" then
+                theclass:add_source_to_result_fn("svn", svn_to_result)
+                break
+            end
+        end
+
+        if e2tool.current_tool() == "fetch-sources" then
+            e2option.flag("svn", "select svn sources")
+        end
+
+        return true
+    end,
+    exit = function (ctx) return true end,
+    depends = {
+        "collect_project.lua"
+    }
+}
+
 
 strict.lock(svn)
 

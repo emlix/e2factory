@@ -29,43 +29,11 @@ local err = require("err")
 local generic_git = require("generic_git")
 local hash = require("hash")
 local licence = require("licence")
-local scm = require("scm")
+local result = require("result")
 local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
-
---- Initialize git plugin.
--- @param ctx Plugin context. See plugin module.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function git_plugin_init(ctx)
-    local rc, re
-
-    rc, re = source.register_source_class("git", git.git_source)
-    if not rc then
-        return false, re
-    end
-
-    rc, re = scm.register("git", git)
-    if not rc then
-        return false, re
-    end
-
-    if e2tool.current_tool() == "fetch-sources" then
-        e2option.flag("git", "select git sources")
-    end
-
-    return true
-end
-
-plugin_descriptor = {
-    description = "Git SCM Plugin",
-    init = git_plugin_init,
-    exit = function (ctx) return true end,
-}
-
---------------------------------------------------------------------------------
 
 git.git_source = class("git_source", source.basic_source)
 
@@ -693,10 +661,9 @@ end
 
 --------------------------------------------------------------------------------
 
-function git.toresult(info, sourcename, sourceset, directory)
+local function git_to_result(src, sourceset, directory)
     local rc, re, argv
-    local e = err.new("converting result")
-    local src = source.sources[sourcename]
+    local e = err.new("converting %s to result", src:get_name())
 
     rc, re = src:working_copy_available()
     if not rc then
@@ -735,7 +702,7 @@ function git.toresult(info, sourcename, sourceset, directory)
         argv = generic_git.git_new_argv(nil, e2lib.join(e2tool.root(), src:get_working()))
         table.insert(argv, "archive")
         table.insert(argv, "--format=tar") -- older versions don't have "tar.gz"
-        table.insert(argv, string.format("--prefix=%s/", sourcename))
+        table.insert(argv, string.format("--prefix=%s/", src:get_name()))
         table.insert(argv, "-o")
         table.insert(argv, tmpfn)
         table.insert(argv, ref)
@@ -757,7 +724,7 @@ function git.toresult(info, sourcename, sourceset, directory)
     elseif sourceset == "working-copy" then
         argv = {
             "-C", e2lib.join(e2tool.root(), src:get_working()),
-            string.format("--transform=s,^./,./%s/,", sourcename),
+            string.format("--transform=s,^./,./%s/,", src:get_name()),
             "--exclude=.git",
             "-czf",
             e2lib.join(sourcedir, archive),
@@ -796,6 +763,44 @@ function git.toresult(info, sourcename, sourceset, directory)
     end
     return true, nil
 end
+
+--------------------------------------------------------------------------------
+
+--- Initialize git plugin.
+-- @param ctx Plugin context. See plugin module.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function git_plugin_init(ctx)
+    local rc, re
+
+    rc, re = source.register_source_class("git", git.git_source)
+    if not rc then
+        return false, re
+    end
+
+    for typ, theclass in result.iterate_result_classes() do
+        if typ == "collect_project" then
+            theclass:add_source_to_result_fn("git", git_to_result)
+            break
+        end
+    end
+
+    if e2tool.current_tool() == "fetch-sources" then
+        e2option.flag("git", "select git sources")
+    end
+
+    return true
+end
+
+plugin_descriptor = {
+    description = "Git SCM Plugin",
+    init = git_plugin_init,
+    exit = function (ctx) return true end,
+    depends = {
+        "collect_project.lua"
+    }
+}
+
 
 strict.lock(git)
 

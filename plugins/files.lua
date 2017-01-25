@@ -28,36 +28,12 @@ local eio = require("eio")
 local err = require("err")
 local hash = require("hash")
 local licence = require("licence")
-local scm = require("scm")
+local result = require("result")
 local sl = require("sl")
 local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 
-
-plugin_descriptor = {
-    description = "Files SCM Plugin",
-    init = function (ctx)
-        local rc, re
-
-        rc, re = source.register_source_class("files", files.files_source)
-        if not rc then
-            return false, re
-        end
-
-        rc, re = scm.register("files", files)
-        if not rc then
-            return false, re
-        end
-
-        if e2tool.current_tool() == "fetch-sources" then
-            e2option.flag("files", "select files sources")
-        end
-
-        return true
-    end,
-    exit = function (ctx) return true end,
-}
 
 --------------------------------------------------------------------------------
 
@@ -556,23 +532,20 @@ function files.files_source:prepare_source(sourceset, buildpath)
     return true, nil
 end
 
-
 --------------------------------------------------------------------------------
 
 --- Create a source result containing the generated Makefile and files
 -- belonging to the source, for use with collect_project.
 -- Result refers to a collection of files to recreate an e2source for
 -- collect_project in this context.
--- @param info The info table.
--- @param sourcename Source name (string).
+-- @param src Source object.
 -- @param sourceset Unused.
 -- @param directory Name of the source directory (string).
 -- @return Boolean, true on success.
 -- @return An error object on failure.
-function files.toresult(info, sourcename, sourceset, directory)
+local function files_to_result(src, sourceset, directory)
     local rc, re, out
     local e = err.new("converting result failed")
-    local src = source.sources[sourcename]
     local source = "source"     -- directory to store source files in
     local makefile = e2lib.join(directory, "Makefile")
 
@@ -594,7 +567,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         if e2lib.stat(e2lib.join(destdir, destname)) then
             return false,
                 e:cat("can not convert source %q due to multiple files named %q",
-                sourcename, destname)
+                src:get_name(), destname)
         end
 
         rc, re = cache.fetch_file(cache.cache(), file:server(), file:location(),
@@ -635,9 +608,9 @@ function files.toresult(info, sourcename, sourceset, directory)
             end
             table.insert(out, "\n")
 
-            if file:unpack() ~= sourcename then
+            if file:unpack() ~= src:get_name() then
                 table.insert(out, string.format("\tln -s %s $(BUILD)/%s\n",
-                    file:unpack(), sourcename))
+                    file:unpack(), src:get_name()))
             end
         end
         if file:copy() then
@@ -645,7 +618,7 @@ function files.toresult(info, sourcename, sourceset, directory)
             from = e2lib.shquote(
                 e2lib.join(source, e2lib.basename(file:location())))
 
-            local destdir, destname = gen_dest_dir_name("/", sourcename,
+            local destdir, destname = gen_dest_dir_name("/", src:get_name(),
                 file:copy(), file:location(), "isdir")
             --
             -- is a directory?
@@ -660,7 +633,7 @@ function files.toresult(info, sourcename, sourceset, directory)
             --
             -- not a directory
             --
-            destdir, destname = gen_dest_dir_name("/", sourcename, file:copy(),
+            destdir, destname = gen_dest_dir_name("/", src:get_name(), file:copy(),
                 file:location(), "no")
 
             to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
@@ -674,7 +647,7 @@ function files.toresult(info, sourcename, sourceset, directory)
         if file:patch() then
             table.insert(out, string.format(
                 "\tpatch -p%s -d \"$(BUILD)/%s\" -i \"$(shell pwd)/%s/%s\"\n",
-                file:patch(), sourcename, source, e2lib.basename(file:location())))
+                file:patch(), src:get_name(), source, e2lib.basename(file:location())))
         end
         -- write licences
         local destdir = string.format("%s/licences", directory)
@@ -699,6 +672,38 @@ function files.toresult(info, sourcename, sourceset, directory)
 
     return true
 end
+
+--------------------------------------------------------------------------------
+
+plugin_descriptor = {
+    description = "Files SCM Plugin",
+    init = function (ctx)
+        local rc, re
+
+        rc, re = source.register_source_class("files", files.files_source)
+        if not rc then
+            return false, re
+        end
+
+        if e2tool.current_tool() == "fetch-sources" then
+            e2option.flag("files", "select files sources")
+        end
+
+        for typ, theclass in result.iterate_result_classes() do
+            if typ == "collect_project" then
+                theclass:add_source_to_result_fn("files", files_to_result)
+                break
+            end
+        end
+
+        return true
+    end,
+    exit = function (ctx) return true end,
+    depends = {
+        "collect_project.lua",
+    }
+}
+
 
 strict.lock(files)
 

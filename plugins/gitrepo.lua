@@ -29,7 +29,7 @@ local err = require("err")
 local generic_git = require("generic_git")
 local hash = require("hash")
 local licence = require("licence")
-local scm = require("scm")
+local result = require("result")
 local source = require("source")
 local strict = require("strict")
 local url = require("url")
@@ -520,24 +520,21 @@ end
 --------------------------------------------------------------------------------
 
 --- Archives the source and prepares the necessary files outside the archive
--- @param info the info structure
--- @param sourcename string
+-- @param src source object
 -- @param sourceset string, should be "tag" "branch" or "working copy", in order for it to work
 -- @param the directory where the sources are and where the archive is to be created
 -- @return True on success, false on error.
 -- @return Error object on failure
-function gitrepo.toresult(info, sourcename, sourceset, directory)
-    assertIsTable(info)
-    assertIsStringN(sourcename)
+local function gitrepo_to_result(src, sourceset, directory)
+    assertIsTable(src)
     assertIsStringN(sourceset)
     assertIsStringN(directory)
 
     local rc, re, e
-    local src, srcdir, sourcedir, archive
+    local srcdir, sourcedir, archive
     local argv
 
-    e = err.new("converting source %q failed", sourcename)
-    src = source.sources[sourcename]
+    e = err.new("converting source %q failed", src:get_name())
 
     rc, re = src:working_copy_available()
     if not rc then
@@ -551,7 +548,7 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
 
     srcdir = "source"
     sourcedir = e2lib.join(directory, srcdir)
-    archive = string.format("%s.tar.gz", sourcename)
+    archive = string.format("%s.tar.gz", src:get_name())
 
     rc, re = e2lib.mkdir(sourcedir)
     if not rc then
@@ -561,7 +558,7 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
     if sourceset == "tag" or sourceset == "branch" then
         local tmpdir = e2lib.mktempdir()
         local worktree = e2lib.join(e2tool.root(), src:get_working())
-        local destdir = e2lib.join(tmpdir, sourcename, ".git")
+        local destdir = e2lib.join(tmpdir, src:get_name(), ".git")
 
         rc, re = e2lib.mkdir_recursive(destdir)
         if not rc then
@@ -576,13 +573,14 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
         end
 
         rc, rc = e2lib.tar({"-czf", e2lib.join(sourcedir, archive),
-            "-C", tmpdir, sourcename})
+            "-C", tmpdir, src:get_name()})
         if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "working-copy" then
         rc, rc = e2lib.tar({"-czf", e2lib.join(sourcedir, archive),
-            "-C", e2lib.join(e2tool.root(), src:get_working(), ".."), sourcename})
+            "-C", e2lib.join(e2tool.root(), src:get_working(), ".."),
+            src:get_name()})
         if not rc then
             return false, e:cat(re)
         end
@@ -590,7 +588,7 @@ function gitrepo.toresult(info, sourcename, sourceset, directory)
         return false, e:cat("build mode %s not supported", source_set)
     end
 
-    local builddir = e2lib.join("$(BUILD)", sourcename)
+    local builddir = e2lib.join("$(BUILD)", src:get_name())
     local makefile = e2lib.join(directory, "Makefile")
     if sourceset == "tag" then
         rc, re = eio.file_write(makefile, string.format(
@@ -657,9 +655,11 @@ local function gitrepo_plugin_init()
         return false, re
     end
 
-    rc, re = scm.register("gitrepo", gitrepo)
-    if not rc then
-        return false, re
+    for typ, theclass in result.iterate_result_classes() do
+        if typ == "collect_project" then
+            theclass:add_source_to_result_fn("gitrepo", gitrepo_to_result)
+            break
+        end
     end
 
     if e2tool.current_tool() == "fetch-sources" then
@@ -673,6 +673,9 @@ plugin_descriptor = {
     description = "Provides Git repository as source",
     init = gitrepo_plugin_init,
     exit = function(ctx) return true end,
+    depends = {
+        "collect_project.lua"
+    }
 }
 
 --------------------------------------------------------------------------------
