@@ -222,6 +222,7 @@ function plugin.init_plugins()
 
     plugins, re = plugin_tsort(plugins)
     if not plugins then
+        plugins = {}
         return false, e:cat(re)
     end
 
