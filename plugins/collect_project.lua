@@ -39,8 +39,10 @@ local source = require("source")
 local strict = require("strict")
 
 --------------------------------------------------------------------------------
--- collect project build process step first because real forward declarations
--- aren't a thing in Lua.
+
+local _source_to_result_functions = {
+    -- type = function()
+}
 
 --- Create Makefile based structure required to build the project
 -- without e2factory
@@ -379,6 +381,12 @@ end
 
 local collect_project_class = class("collect_project_class",
     result.basic_result)
+
+function collect_project_class.static:add_source_to_result_fn(typ, func)
+    assertIsStringN(typ)
+    assertIsFunction(func)
+    _source_to_result_functions[typ] = func
+end
 
 function collect_project_class:initialize(rawres)
     assertIsTable(rawres)
