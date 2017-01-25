@@ -816,6 +816,30 @@ function result.register_result_class(typ, result_class)
     return true
 end
 
+--- Iterate over registered result classes.
+-- @return Iterator function that returns a sorted type, result class pair.
+function result.iterate_result_classes()
+    local i, t
+
+    t = {}
+    for typ,_ in pairs(result_types) do
+        table.insert(t, typ)
+    end
+    table.sort(t)
+
+    i = 0
+
+    return function ()
+        i = i + 1
+
+        if t[i] then
+            return t[i], result_types[t[i]]
+        end
+
+        return nil
+    end
+end
+
 ---
 local function detect_result(rawres)
     if not rawres.type then
