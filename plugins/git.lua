@@ -177,14 +177,14 @@ function git.git_source:git_commit_id(sourceset, check_remote)
 
     gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
 
-    if sourceset == "branch" or (sourceset == "lazytag" and self:get_tag() == "^") then
+    if sourceset == "branch" then
         ref = string.format("refs/heads/%s", self:get_branch())
 
         rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
             return false, e:cat(re)
         end
-    elseif sourceset == "tag" or (sourceset == "lazytag" and self:get_tag() ~= "^") then
+    elseif sourceset == "tag" then
         ref = string.format("refs/tags/%s", self:get_tag())
 
         rc, re, id = generic_git.lookup_id(gitdir, false, ref)
@@ -567,11 +567,9 @@ function git.git_source:prepare_source(sourceset, buildpath)
     git_argv = generic_git.git_new_argv(gitdir, srcdir, "archive")
     table.insert(git_argv, "--format=tar")
 
-    if sourceset == "branch" or
-        (sourceset == "lazytag" and self:get_tag() == "^") then
+    if sourceset == "branch" then
         table.insert(git_argv, "refs/heads/" .. self:get_branch())
-    elseif sourceset == "tag" or
-        (sourceset == "lazytag" and self:get_tag() ~= "^") then
+    elseif sourceset == "tag" then
         table.insert(git_argv, "refs/tags/" .. self:get_tag())
     else
         error(err.new("invalid sourceset: %s", sourceset))

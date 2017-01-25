@@ -756,9 +756,9 @@ end
 -- @return git refs string, or false on error.
 -- @return Error object on failure.
 function generic_git.sourceset2ref(sourceset, branch, tag)
-    if sourceset == "branch" or (sourceset == "lazytag" and tag == "^") then
+    if sourceset == "branch" then
         return string.format("refs/heads/%s", branch)
-    elseif sourceset == "tag" or (sourceset == "lazytag" and tag ~= "^") then
+    elseif sourceset == "tag" then
         return string.format("refs/tags/%s", tag)
     end
 

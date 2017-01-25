@@ -29,12 +29,6 @@ local strict = require("strict")
 
 --- Get the source set identifier.
 -- @return string: the source set identifier
-local function source_set_lazytag()
-    return "lazytag"
-end
-
---- Get the source set identifier.
--- @return string: the source set identifier
 local function source_set_tag()
     return "tag"
 end
@@ -271,12 +265,7 @@ end
 function policy.default_build_mode(mode)
     local build_mode = {}
 
-    if mode == "lazytag" then
-        build_mode.source_set = source_set_lazytag
-        build_mode.buildid = buildid_buildid
-        build_mode.storage = storage_default
-        build_mode.deploy = false
-    elseif mode == "tag" then
+    if mode == "tag" then
         build_mode.source_set = source_set_tag
         build_mode.buildid = buildid_buildid
         build_mode.storage = storage_default

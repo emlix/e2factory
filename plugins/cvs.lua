@@ -245,7 +245,7 @@ function cvs.cvs_source:sourceid(sourceset)
         hash.hash_append(hc, lid)
     end
     -- cvs specific
-    if sourceset == "tag" and self._tag ~= "^" then
+    if sourceset == "tag" then
         -- we rely on tags being unique with cvs
         hash.hash_append(hc, self._tag)
     else
@@ -363,11 +363,9 @@ function cvs.cvs_source:prepare_source(sourceset, buildpath)
             "-r",
         }
 
-        if sourceset == "branch" or
-            (sourceset == "lazytag" and self:get_tag() == "^") then
+        if sourceset == "branch" then
             table.insert(argv, self:get_branch())
-        elseif (sourceset == "tag" or sourceset == "lazytag") and
-            self:get_tag() ~= "^" then
+        elseif sourceset == "tag" then
             table.insert(argv, self:get_tag())
         else
             return false, e:cat(err.new("source set not allowed"))

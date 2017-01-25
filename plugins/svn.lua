@@ -288,8 +288,6 @@ function svn.svn_source:sourceid(sourceset)
     elseif sourceset == "branch" then
         hash.hash_append(hc, self._branch)
         argv = { "info", svnurl.."/"..self._branch }
-    elseif sourceset == "lazytag" then
-        return false, err.new("svn source does not support lazytag mode")
     else
         return false,
             err.new("svn sourceid can't handle sourceset %q", sourceset)
