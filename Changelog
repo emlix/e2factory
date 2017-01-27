@@ -1,4 +1,5 @@
 NEXT:
+ * Fix collect_project, include default result and its deps into the BuildID
 
 e2factory-2.3.16
  * Fix e2 fetch-sources --update for git repos

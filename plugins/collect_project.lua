@@ -452,7 +452,7 @@ function collect_project_class:depends_list()
 end
 
 function collect_project_class:buildid()
-    local rc, re, bid, hc
+    local rc, re, bid, hc, res
 
     bid, re = self._stdresult:buildid()
     if not bid then
@@ -461,7 +461,14 @@ function collect_project_class:buildid()
 
     hc = hash.hash_start()
     hash.hash_append(hc, bid)
-    hash.hash_append(hc, self:cp_default_result())
+
+    res = result.results[self:cp_default_result()]
+    bid, re = res:buildid()
+    if not bid then
+        return false, re
+    end
+    hash.hash_append(hc, bid)
+
     bid = hash.hash_finish(hc)
 
     assertIsStringN(bid)
