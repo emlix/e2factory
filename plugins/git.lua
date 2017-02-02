@@ -687,9 +687,10 @@ local function git_to_result(src, sourceset, directory)
     if sourceset == "tag" or sourceset == "branch" then
         local ref, tmpfn
 
-        ref, re = generic_git.sourceset2ref(sourceset, src:get_branch(), src:get_tag())
-        if not ref then
-            return false, e:cat(re)
+        if sourceset == "tag" then
+            ref = string.format("refs/tags/%s", src:get_tag())
+        else
+            ref = string.format("refs/heads/%s", src:get_branch())
         end
 
         tmpfn, re = e2lib.mktempfile()
