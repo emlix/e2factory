@@ -235,6 +235,8 @@ function policy.handle_commandline_options(opts, use_default)
     if opts["build-mode"] then
         if policy.default_build_mode(opts["build-mode"]) then
             mode = policy.default_build_mode(opts["build-mode"])
+            -- make sure --build-mode and shortcut are set
+            opts[mode] = true
         else
             return false, err.new("invalid build mode")
         end
