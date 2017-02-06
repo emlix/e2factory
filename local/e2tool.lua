@@ -1208,6 +1208,15 @@ function e2tool.dlist_recursive(resultv)
     end
 
     for resultname in depends:iter() do
+        rc, re = e2tool.verify_src_res_name_valid_chars(resultname)
+        if not rc then
+            return false, err.new("'%s' is not a valid result name", resultname)
+        end
+
+        if not result.results[resultname] then
+            return false, err.new("selecting invalid result: %s", resultname)
+        end
+
         rc, re = visit(resultname)
         if not rc then
             return false, re
