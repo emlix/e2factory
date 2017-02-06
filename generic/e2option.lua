@@ -71,8 +71,8 @@ function e2option.option(name, doc, default, func, argname)
     options[name] = {
         type = "option",
         documentation = doc or "", name = name,
-        proc=func,
-        default=default or true,
+        proc = func,
+        default = default,
         argumentname=argname or "ARGUMENT"
     }
 end
@@ -340,14 +340,24 @@ function e2option.parse(args)
                 if options[opt] then
                     local proc = options[opt].proc
                     if options[opt].type == "option" then
+                        local optarg
+
                         if i == #args then
-                            return false,
-                                err.new("argument missing for option: %s", opt)
-                        end
-                        if proc then
-                            opts[opt] = proc(args[i + 1])
+                            if options[opt].default == nil then
+                                return false,
+                                    err.new("argument missing for option: %s",
+                                        opt)
+                            else
+                                optarg = options[opt].default
+                            end
                         else
-                            opts[opt] = args[i + 1]
+                            optarg =  args[i + 1]
+                        end
+
+                        if proc then
+                            opts[opt] = proc(optarg)
+                        else
+                            opts[opt] = optarg
                         end
                         i = i + 1
                     else
