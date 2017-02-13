@@ -82,9 +82,7 @@ function url.parse(url)
 
     if u.server:match(":(%d+)$") then
         u.port = u.server:match(":(%d+)$")
-        -- Remove port from server string.
-        u.server = string.gsub(u.server, ":%d+$","")
-        -- Remove port from server string.
+        -- Remove port from servername string.
         u.servername = string.gsub(u.servername, ":%d+$","")
     end
 
