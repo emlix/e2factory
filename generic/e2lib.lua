@@ -1,7 +1,7 @@
 --- Utility and Helper Library
 -- @module generic.e2lib
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -2261,21 +2261,8 @@ function e2lib.ssh_remote_cmd(u, argv)
         table.insert(stderr, data)
     end
 
-    devnull, re = eio.fopen("/dev/null", "r")
-    if not devnull then
-        return false, re
-    end
-
-    fdctv = {
-        { dup = eio.STDIN, istype = "readfo", file = devnull },
-        { dup = eio.STDOUT, istype = "writefunc",
-            linebuffer = true, callfn = capture_stdout },
-        { dup = eio.STDERR, istype = "writefunc",
-            linebuffer = true, callfn = capture_stderr },
-    }
-
-    rc, re = e2lib.callcmd(command, fdctv)
-    eio.fclose(devnull)
+    rc, re = e2lib.callcmd_stdout_stderr(command, capture_stdout,
+        capture_stderr)
     if not rc then
         return false, re
     end
