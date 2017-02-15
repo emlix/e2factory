@@ -1548,6 +1548,47 @@ function e2lib.callcmd_capture(cmd, capture, workdir, envdict)
     return rc
 end
 
+--- Call command with stdin redirected to /dev/null and stderr/stdout
+-- independently redirected to callback functions. Note that unlike
+-- callcmd_capture(), the output will not necessarily appear in order at the
+-- callbacks.
+-- @param cmd Argument vector holding command and args.
+-- @param outfn Callback for stdout.
+-- @param errfn Callback for stderr.
+-- @param workdir Optional working directory
+-- @param envdict Optional environment dictionary.
+-- @return Numeric return code of program or false on some errors.
+-- @return Error object on failure.
+function e2lib.callcmd_stdout_stderr(cmd, outfn, errfn, workdir, envdict)
+    assertIsTable(cmd)
+    assertIsFunction(outfn)
+    assertIsFunction(errfn)
+    assert(workdir == nil or type(workdir) == "string")
+    assert(envdict == nil or type(workdir) == "table")
+
+    local rc, re, devnull
+
+    devnull, re = eio.fopen("/dev/null", "r")
+    if not devnull then
+        return false, re
+    end
+
+    local fdctv = {
+        { dup = eio.STDIN, istype = "readfo", file = devnull },
+        { dup = eio.STDOUT, istype = "writefunc", callfn = outfn },
+        { dup = eio.STDERR, istype = "writefunc", callfn = errfn },
+    }
+
+    rc, re = e2lib.callcmd(cmd, fdctv, workdir, envdict)
+    if not rc then
+        eio.fclose(devnull)
+        return false, re
+    end
+
+    eio.fclose(devnull)
+    return rc
+end
+
 --- Call a command, log its output and catch the last lines for error reporting.
 -- See callcmd() for details.
 -- @param cmd Argument vector holding the command.
