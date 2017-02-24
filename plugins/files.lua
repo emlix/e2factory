@@ -350,7 +350,9 @@ function files.files_source:file_iter()
     end
 end
 
-function files.files_source:sourceid(sourceset --[[always ignored for files]])
+function files.files_source:sourceid(sourceset)
+    assertIsStringN(sourceset)
+
     local hc, licences
 
     if self._sourceid then
