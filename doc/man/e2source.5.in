@@ -1,8 +1,8 @@
 .\" Man page for e2source
 .\"
-.\" (c)2007-2016 emlix GmbH
+.\" (c)2007-2017 emlix GmbH
 .\"
-.TH e2source 5 "Dec 22, 2016" "@VERSION@"
+.TH e2source 5 "Feb 27, 2017" "@VERSION@"
 
 .SH NAME
 src/*/config \- source configuration files of an e2factory project
@@ -15,7 +15,8 @@ In case of sub-directories, all directories below \fBsrc/\fR do form the source-
 e.g.:
 \fBsrc/<name1>/<name2>/config\fR leads to source name: \fB<name1>.<name2>\fR.
 .br
-Sources could either refer to files (including archives), git repositories or subversion repositories.
+Sources could either refer to files (including archives), git repositories,
+subversion repositories, or special sources.
 
 .SH STRUCTURE (file)
 The files have following structure, if referring to files:
@@ -303,6 +304,54 @@ Path to the working directory.
 Type: String
 .br
 Path to the directory to be used in working copy mode.
+
+.SH STRUCTURE (licence)
+
+The special source of type "licence" provides licence files for selected sources
+and results. In the build environment, the source creates a number of directories
+and text files containing new-line separated entries. All requested licence texts
+are copied into the build environment. The text files can be used to find
+structure between results, sources, and licences.
+
+
+.nf
+e2source {
+  type = "licence",
+  results = { "res1", ... }
+  sources = { "src1", ... }
+}
+.fi
+
+Schematic example of a file tree produced by the above configuration:
+
+.nf
+<dir>/res/
+<dir>/res/res1/sources
+<dir>/src/
+<dir>/src/src1/licences
+<dir>/licences/
+<dir>/licences/lic1/licence.txt
+...
+.fi
+
+.SH KEYS (licence)
+
+.TP
+.BR results
+.br
+Type: table of strings
+.br
+Optional table filled with one or more result names. The results and
+dependencies will be scanned for sources. Licences for all found sources are
+provided to the build environment.
+
+.TP
+.BR sources
+.br
+Type: table of strings
+.br
+Optional table filled with one or more source names. The source names and their
+licences will be provided to the build environment.
 
 .SH "SEE ALSO"
 .BR e2factory(1)
