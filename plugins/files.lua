@@ -388,10 +388,12 @@ end
 
 --- create a table of lines for display
 -- @return a table
-function files.files_source:display()
+function files.files_source:display(sourceset)
+    assertIsStringN(sourceset)
+
     local s, sid, d, licences
 
-    self:sourceid()
+    self:sourceid(sourceset)
 
     d = {}
     table.insert(d, string.format("type       = %s", self:get_type()))

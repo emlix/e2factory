@@ -249,7 +249,7 @@ local function e2_ls_project(arg)
             s2 = "|"
         end
         p2(s1, s2, sourcename)
-        local t, re = source.sources[sourcename]:display()
+        local t, re = source.sources[sourcename]:display(build_mode.source_set())
         if not t then
             error(re)
         end

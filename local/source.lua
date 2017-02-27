@@ -131,10 +131,11 @@ end
 
 --- Abstract display method. Every child class must overwrite this
 -- method with an implementation. Calling this method throws an error.
+-- @param sourceset Source set (ex: "tag", "branch", ...)
 -- @return Array of strings containing free form information about source.
-function source.basic_source:display()
-    error(err.new("called display() of source base class, type %s name %s",
-        self._type, self._name))
+function source.basic_source:display(sourceset)
+    error(err.new("called display(%s) of source base class, type %s name %s",
+        tostring(sourceset), self._type, self._name))
 end
 
 --- Check whether the working copy is available. Sources that don't have a
