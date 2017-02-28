@@ -290,15 +290,9 @@ function chroot.load_chroot_config()
         end
         table.insert(chroot.groups_default, g)
     end
+
     table.sort(chroot.groups_default)
     strict.lock(chroot.groups_default)
-
-    --- XXX: remove, there is no reason to enforce a default group
-    if #chroot.groups_default == 0 then
-        return false,
-            e:append("`default_groups' attribute is missing or empty list")
-    end
-
     return true
 end
 
