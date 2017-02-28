@@ -211,11 +211,6 @@ function licence.load_licence_config()
 
             licence.licences[name]:add_file(file)
         end
-
-
-
-        for _,f in ipairs(l.files) do
-        end
     end
 
     return true
