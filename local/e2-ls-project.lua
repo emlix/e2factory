@@ -93,6 +93,26 @@ local function e2_ls_project(arg)
     end
     table.sort(results)
 
+    local chrootgroups = {}
+    if opts.all then
+        for chrootgroup,_ in pairs(chroot.groups_byname) do
+            table.insert(chrootgroups, chrootgroup)
+        end
+    else
+        local seen = {}
+        for _,resultname in ipairs(results) do
+            local res = result.results[resultname]
+
+            for chrootgroup in res:chroot_list():iter() do
+                if not seen[chrootgroup] then
+                    table.insert(chrootgroups, chrootgroup)
+                    seen[chrootgroup] = true
+                end
+            end
+        end
+    end
+    table.sort(chrootgroups)
+
     local sources = {}
     if opts.all then
         for sourcename, _ in pairs(source.sources) do
@@ -333,9 +353,9 @@ local function e2_ls_project(arg)
     p1(s1, s2, "chroot groups")
     local s1 = " "
     local s2 = "|"
-    local len = #chroot.groups_sorted
-    for _,g in ipairs(chroot.groups_sorted) do
-        local grp = chroot.groups_byname[g]
+    local len = #chrootgroups
+    for _,chrootgroup in ipairs(chrootgroups) do
+        local grp = chroot.groups_byname[chrootgroup]
         len = len - 1
         if len == 0 then
             s2 = " "
@@ -344,9 +364,6 @@ local function e2_ls_project(arg)
         for file in grp:file_iter() do
             p3(s1, s2, "file", file:servloc())
         end
-        --[[if grp.groupid then
-            p3(s1, s2, "groupid", grp.groupid)
-        end]]
     end
 
     return true

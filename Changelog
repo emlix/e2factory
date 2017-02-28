@@ -1,4 +1,5 @@
 NEXT:
+ * ls-project <result> only shows chroot groups used by listed results
  * ls-project <result> only shows licences used by the listed sources
  * Add new source type "licence", providing licence info to build environment
  * Removed lazytag build mode, it was deprecated for a long time
