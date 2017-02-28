@@ -2,7 +2,7 @@
 .\"
 .\" (c)2007-2017 emlix GmbH
 .\"
-.TH e2source 5 "Feb 27, 2017" "@VERSION@"
+.TH e2source 5 "Feb 28, 2017" "@VERSION@"
 
 .SH NAME
 src/*/config \- source configuration files of an e2factory project
@@ -15,8 +15,8 @@ In case of sub-directories, all directories below \fBsrc/\fR do form the source-
 e.g.:
 \fBsrc/<name1>/<name2>/config\fR leads to source name: \fB<name1>.<name2>\fR.
 .br
-Sources could either refer to files (including archives), git repositories,
-subversion repositories, or special sources.
+Sources could either refer to files (including archives), Git, Subversion, and
+CVS repositories, or other special sources.
 
 .SH STRUCTURE (file)
 The files have following structure, if referring to files:
@@ -304,6 +304,81 @@ Path to the working directory.
 Type: String
 .br
 Path to the directory to be used in working copy mode.
+
+.SH STRUCTURE (CVS)
+The configuration for CVS repositories looks like this:
+
+.nf
+e2source {
+  type = "cvs",
+  licences = { "<string>", ...  },
+  env = { ["<variable name>"] = "<variable value>", ...  },
+  server = "<string>",
+  cvsroot = "<string>",
+  module = "<string>",
+  tag = "<string>",
+  branch = "<string>",
+  working = "<string>",
+}
+.fi
+
+.SH KEYS (CVS)
+
+.TP
+.BR licences
+Type: Table of strings
+.br
+Name of the licence(s) that apply to the source.
+
+.TP
+.BR env
+Type: Table
+.br
+List of environment variables and values separated by \fB=\fR.
+The variables are available during the build process.
+
+.TP
+.BR type
+Type: String
+.br
+Defines the type of the source. Always "cvs" for CVS sources.
+
+.TP
+.BR server
+.br
+Type: String
+.br
+Name of the server the CVS repository is stored on.
+
+.TP
+.BR cvsroot
+Type: String
+.br
+Path to the CVS repository on the server.
+
+.TP
+.BR module
+Type: String
+.br
+Name of the sub-directory in the CVS repository.
+
+.TP
+.BR tag
+Type: String
+.br
+CVS revision or tag.
+
+.TP
+.BR branch
+Type: String
+.br
+CVS branch.
+
+.TP
+.BR working
+Type: String
+.br
+Path to the working directory.
 
 .SH STRUCTURE (licence)
 
