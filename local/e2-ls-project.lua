@@ -113,6 +113,26 @@ local function e2_ls_project(arg)
     end
     table.sort(sources)
 
+    local licences = {}
+    if opts.all then
+        for licencename,_ in pairs(licence.licences) do
+            table.insert(licences, licencename)
+        end
+    else
+        local seen = {}
+        for _,sourcename in ipairs(sources) do
+            local src = source.sources[sourcename]
+
+            for licencename in src:get_licences():iter() do
+                if not seen[licencename] then
+                    table.insert(licences, licencename)
+                    seen[licencename] = true
+                end
+            end
+        end
+    end
+    table.sort(licences)
+
     local function pempty(s1, s2, s3)
         console.infof("   %s  %s  %s\n", s1, s2, s3)
     end
@@ -291,10 +311,12 @@ local function e2_ls_project(arg)
     pempty(s1, s2, s3)
     s2 = "|"
     p1(s1, s2, "licences")
-    local llen = #licence.licences_sorted
-    for _,lic in ipairs(licence.licences_sorted) do
-        llen = llen - 1
-        if llen == 0 then
+
+    local len = #licences
+    for _,licencename in ipairs(licences) do
+        local lic = licence.licences[licencename]
+        len = len - 1
+        if len == 0 then
             s2 = " "
         end
         p2(s1, s2, lic:get_name())
