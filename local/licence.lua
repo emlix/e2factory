@@ -33,9 +33,6 @@ local strict = require("strict")
 --- Dictionary of loaded licence objects, indexed by name.
 licence.licences = {}
 
---- Vector of loaded licence objects, sorted by name.
-licence.licences_sorted = {}
-
 --- Licence base class.
 -- @type licence
 licence.licence = class("licence")
@@ -117,8 +114,8 @@ function licence.licence:licenceid()
 end
 --- @section end
 
---- Load project licence config, validate, and populate the licences,
--- licences_sorted tables with licence objects.
+--- Load project licence config, validate, and populate the licences table with
+-- licence objects.
 -- @return True on success, false on error
 -- @return Error object on failure.
 function licence.load_licence_config()
@@ -220,15 +217,6 @@ function licence.load_licence_config()
         for _,f in ipairs(l.files) do
         end
     end
-
-    for _,l in pairs(licence.licences) do
-        table.insert(licence.licences_sorted, l)
-    end
-
-    local function s(a, b)
-        return a:get_name() < b:get_name()
-    end
-    table.sort(licence.licences_sorted, s)
 
     return true
 end
