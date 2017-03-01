@@ -338,6 +338,10 @@ function result.result_class:post_initialize()
         end
     end
 
+    if self:chroot_list():size() == 0 then
+        e2lib.logf(4, "no chroot group configured for result: %s", self._name)
+    end
+
     if e then
         return false, e
     end
