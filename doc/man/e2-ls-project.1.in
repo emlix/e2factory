@@ -1,6 +1,6 @@
 .\" Man page for e2-ls-project
 .\"
-.\" (c)2007-2016 emlix GmbH
+.\" (c)2007-2017 emlix GmbH
 .\"
 .TH e2-ls-project 1 "@VERSION@"
 
@@ -8,23 +8,23 @@
 e2-ls-project \- show project information of an e2factory project
 
 .SH SYNOPSIS
-e2-ls-project [<option>]...  [<result> ]
+e2-ls-project [<option> ...]  [<result> ...]
 
 .SH DESCRIPTION
 \fBe2-ls-project\fR is part of the e2factory commandline tools.
-.br
 \fBe2-ls-project\fR displays the configuration and components of the
 current e2factory project.
 
-If <result> is given, reduce output to that result and all results it depends on.
+With no argument, the default results and dependencies are selected.
+If <result> is given, <result> and dependencies are selected instead.
 
 .SH RETURN VALUE
-Normally, exit status is 0. On error, it is non-zero.
+Normal exit status is 0. On error, it is non-zero.
 
 .SH OPTIONS
 .TP
 .BR \-\-all
-Show all sources and results, even if not currently used by the project.
+Select all results, sources, licences and chroot groups of the project.
 .TP
 .BR \-\-dot
 Generate graph for processing with graphviz, see dot(1).
@@ -41,6 +41,10 @@ Also show chroot groups.
 .BR \-\-env
 Also show env variables.
 .TP
+.BR \-\-unused
+Show unused results, sources, licences and chroot groups with respect to default
+results and arguments.
+.TP
 For further global options, see \fBe2factory\fR(1).
 .SH EXAMPLES
 Generate a graph and convert it to pdf.
@@ -51,6 +55,3 @@ e2-ls-project --dot | dot -Tpdf > project.pdf
 
 .SH SEE ALSO
 .BR e2factory (1)
-
-.SH COPYRIGHT
-(c)2007-2016 emlix GmbH

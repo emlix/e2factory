@@ -1,7 +1,7 @@
 --- e2-ls-project command
 -- @module local.e2-ls-project
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -31,6 +31,59 @@ local project = require("project")
 local result = require("result")
 local source = require("source")
 
+--- Shows unused results, sources, licences, and chroot groups.
+-- @param results Vector of used result names.
+-- @param chrootgroups Vector of used chroot group names.
+-- @param sources Vector of used source names.
+-- @param licences Vector of used licence names.
+-- @return Always returns true.
+-- @raise Assert
+local function show_unused(results, chrootgroups, sources, licences)
+    assertIsTable(results)
+    assertIsTable(chrootgroups)
+    assertIsTable(sources)
+    assertIsTable(licences)
+
+    --- Returns all names from all_dict that are not found in seen_vec. Name
+    -- must be a string.
+    -- @param all_dict Dictionary filled with (name, ignored type) pairs
+    -- @param seen_vec Vector filled with (ignored number, name) pairs
+    -- @return Sorted vector with names.
+    local function subtract(all_dict, seen_vec)
+        local seen = {}
+        local ret = {}
+
+        for _,name in ipairs(seen_vec) do
+            assertIsString(name)
+            seen[name] = true
+        end
+
+        for name,_ in pairs(all_dict) do
+            assertIsString(name)
+            if not seen[name] then
+                table.insert(ret, name)
+            end
+        end
+
+        table.sort(ret)
+        return ret
+    end
+
+    console.infof("unused results: %s\n",
+        table.concat(subtract(result.results, results), " "))
+
+    console.infof("unused sources: %s\n",
+        table.concat(subtract(source.sources, sources), " "))
+
+    console.infof("unused licences: %s\n",
+        table.concat(subtract(licence.licences, licences), " "))
+
+    console.infof("unused chroot groups: %s\n",
+        table.concat(subtract(chroot.groups_byname, chrootgroups), " "))
+
+    return true
+end
+
 --- e2 ls-project entry point.
 -- @param arg Arguments.
 -- @return Always true.
@@ -53,6 +106,7 @@ local function e2_ls_project(arg)
     e2option.flag("all", "show unused results and sources, too")
     e2option.flag("chroot", "show chroot groups as well")
     e2option.flag("env", "show environment vars as well")
+    e2option.flag("unused", "show unused results, sources, licences and chroot groups")
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
@@ -156,6 +210,10 @@ local function e2_ls_project(arg)
         end
     end
     table.sort(licences)
+
+    if opts.unused then
+        return show_unused(results, chrootgroups, sources, licences)
+    end
 
     local function pempty(s1, s2, s3)
         console.infof("   %s  %s  %s\n", s1, s2, s3)
