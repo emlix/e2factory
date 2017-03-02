@@ -31,6 +31,10 @@ local project = require("project")
 local result = require("result")
 local source = require("source")
 
+--- e2 ls-project entry point.
+-- @param arg Arguments.
+-- @return Always true.
+-- @raise error, assert
 local function e2_ls_project(arg)
     local rc, re = e2lib.init()
     if not rc then
