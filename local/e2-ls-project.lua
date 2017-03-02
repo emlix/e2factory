@@ -246,12 +246,12 @@ local function e2_ls_project(arg)
         e2lib.finish(0)
     end
 
-    --------------- project name
+    -- project name
     local s1 = "|"
     local s2 = "|"
     p0(s1, s2, project.name())
 
-    --------------- servers
+    -- servers
     local s1 = "|"
     local s2 = "|"
     p1(s1, s2, "servers")
@@ -276,7 +276,7 @@ local function e2_ls_project(arg)
     end
     console.infonl("   |")
 
-    --------------------- sources
+    -- sources
     local s1 = "|"
     local s2 = " "
     p1(s1, s2, "src")
@@ -298,7 +298,7 @@ local function e2_ls_project(arg)
         end
     end
 
-    --------------------- results
+    -- results
     local s1 = "|"
     local s2 = " "
     local s3 = " "
@@ -324,7 +324,7 @@ local function e2_ls_project(arg)
         end
     end
 
-    --------------------- licences
+    -- licences
     local s1 = "|"
     local s2 = " "
     local s3 = " "
@@ -345,7 +345,7 @@ local function e2_ls_project(arg)
         end
     end
 
-    --------------------- chroot
+    -- chroot
     local s1 = "|"
     local s2 = " "
     local s3 = " "
