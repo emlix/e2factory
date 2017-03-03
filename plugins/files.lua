@@ -199,6 +199,7 @@ function files.files_source:initialize(rawsrc)
 
     self._files = {}
     self._sourceid = false
+    self._orig_licences = false
 
     rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source config", {
         "env",
@@ -230,6 +231,10 @@ function files.files_source:initialize(rawsrc)
     if type(rawsrc.file) ~= "table" then
         error(err.new("`file' attribute must be a table"))
     end
+
+    -- We extend licences() later as more sub-licences are discovered.
+    -- Keep a copy of the original "outer" licences
+    self._orig_licences = self:licences():copy()
 
     e = err.new("error in file list of source")
     for _,f in ipairs(rawsrc.file) do
@@ -297,20 +302,18 @@ function files.files_source:initialize(rawsrc)
         file:patch(f.patch)
 
         -- per file licences --
+        file:licences(sl.sl:new())
+
         local laerr = string.format("%s:%s licences attribute",
             f.server, f.location)
-        local llist, licences
 
         if f.licences == nil then
-            f.licences = self:get_licences()
+            file:licences():insert_sl(self._orig_licences)
         elseif type(f.licences == "table") then
             rc, re = e2lib.vrfy_listofstrings(f.licences, laerr, true, false)
             if not rc then
                 error(e:cat(re))
             end
-
-            licences = self:get_licences()
-            llist = sl.sl:new()
 
             for _,licencename in ipairs(f.licences) do
                 if not licence.licences[licencename] then
@@ -320,17 +323,12 @@ function files.files_source:initialize(rawsrc)
 
                 -- Make sure the main licences list contains every licence in
                 -- the entire source.
-                licences:insert(licencename)
-                llist:insert(licencename)
+                self:licences():insert(licencename)
+                file:licences():insert(licencename)
             end
-
-            self:set_licences(licences)
-            f.licences = llist
         else
             error(e:append("%s must be a table", laerr))
         end
-
-        file:licences(f.licences)
 
         table.insert(self._files, file)
     end
@@ -365,7 +363,7 @@ function files.files_source:sourceid(sourceset)
     hash.hash_append(hc, self._env:envid())
 
     -- all licences
-    for licencename in self:get_licences():iter() do
+    for licencename in self:licences():iter() do
         local lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
@@ -398,7 +396,7 @@ function files.files_source:display(sourceset)
     d = {}
     table.insert(d, string.format("type       = %s", self:get_type()))
     table.insert(d, string.format("licences   = %s",
-        self:get_licences():concat(" ")))
+        self:licences():concat(" ")))
 
     for file in self:file_iter() do
         s = string.format("file       = %s", file:servloc())
