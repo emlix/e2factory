@@ -89,16 +89,34 @@ function source.basic_source:get_type()
     return self._type
 end
 
+--- Get/set licence string list.
+-- Note this returns all licences used in a source. Some sources may have more
+-- detailed licensing information which can be accessed by other means.
+-- @param lic_sl Optional string list of licence names (sl).
+-- @return String list of licence names.
+function source.basic_source:licences(lic_sl)
+    if lic_sl then
+        assertIsTable(lic_sl)
+        assert(lic_sl:isInstanceOf(sl.sl))
+        self._licences = lic_sl
+    end
+
+    return self._licences or false
+end
+
 --- Set licence array.
+-- Obsolete interface.
 -- @param licences String list of licence names (sl).
 function source.basic_source:set_licences(licences)
     assert(type(licences) == "table" and licences.class.name == "sl")
     self._licences = licences:copy()
 end
 
---- Get licence array. Must be set before calling get_licences(). Note that
--- this returns all licences used in a source. Some sources may have more
--- detailed licensing information which can be accessed by other means.
+--- Get licence array.
+-- Obsolete interface.
+-- Must be set before calling get_licences(). Note that this returns all
+-- licences used in a source. Some sources may have more detailed licensing
+-- information which can be accessed by other means.
 -- @return String list of licence names (sl).
 function source.basic_source:get_licences()
     assert(type(self._licences) == "table")
@@ -417,7 +435,7 @@ function source.generic_source_validate_licences(rawsrc, src)
         licences:insert(licencename)
     end
 
-    src:set_licences(licences)
+    src:licences(licences)
 
     return true
 end
