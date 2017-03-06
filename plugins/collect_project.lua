@@ -139,7 +139,7 @@ local function _build_collect_project(self, res, return_flags)
 
     for sourcename in cp_sources:iter() do
         local src = source.sources[sourcename]
-        cp_licences:insert_sl(src:get_licences())
+        cp_licences:insert_sl(src:licences())
     end
 
     -- project/proj/init/<files>

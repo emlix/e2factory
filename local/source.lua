@@ -104,25 +104,6 @@ function source.basic_source:licences(lic_sl)
     return self._licences or false
 end
 
---- Set licence array.
--- Obsolete interface.
--- @param licences String list of licence names (sl).
-function source.basic_source:set_licences(licences)
-    assert(type(licences) == "table" and licences.class.name == "sl")
-    self._licences = licences:copy()
-end
-
---- Get licence array.
--- Obsolete interface.
--- Must be set before calling get_licences(). Note that this returns all
--- licences used in a source. Some sources may have more detailed licensing
--- information which can be accessed by other means.
--- @return String list of licence names (sl).
-function source.basic_source:get_licences()
-    assert(type(self._licences) == "table")
-    return self._licences:copy()
-end
-
 --- Set env object.
 -- @param env Env object.
 function source.basic_source:set_env(env)

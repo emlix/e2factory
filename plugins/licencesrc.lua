@@ -54,7 +54,7 @@ function licence_source:initialize(rawsrc)
 
     -- required but unused.
     self:set_env(environment.new())
-    self:set_licences(sl.sl:new())
+    self:licences(sl.sl:new())
 
     rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source config", {
         "name",
@@ -257,10 +257,10 @@ function licence_source:prepare_source(sourceset, buildpath)
         end
 
         -- collect all licences for later processing
-        licence_list:insert_sl(src:get_licences())
+        licence_list:insert_sl(src:licences())
 
         -- write licences
-        local l = src:get_licences():concat("\n").."\n"
+        local l = src:licences():concat("\n").."\n"
 
         rc, re = eio.file_write(e2lib.join(srcdir, "licences"), l)
         if not rc then

@@ -226,7 +226,7 @@ end
 function cvs.cvs_source:sourceid(sourceset)
     assert(type(sourceset) == "string" and #sourceset > 0)
 
-    local rc, re, hc, lid, licences
+    local rc, re, hc, lid
 
     if self._sourceids[sourceset] then
         return self._sourceids[sourceset]
@@ -236,8 +236,7 @@ function cvs.cvs_source:sourceid(sourceset)
     hash.hash_append(hc, self._name)
     hash.hash_append(hc, self._type)
     hash.hash_append(hc, self._env:envid())
-    licences = self:get_licences()
-    for licencename in licences:iter() do
+    for licencename in self:licences():iter() do
         lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
@@ -265,7 +264,6 @@ function cvs.cvs_source:sourceid(sourceset)
 end
 
 function cvs.cvs_source:display()
-    local licences
     local d = {}
 
     self:sourceid("tag")
@@ -279,8 +277,7 @@ function cvs.cvs_source:display()
     table.insert(d, string.format("module     = %s", self._module))
     table.insert(d, string.format("working    = %s", self:get_working()))
 
-    licences = self:get_licences()
-    for licencename in licences:iter() do
+    for licencename in self:licences():iter() do
         table.insert(d, string.format("licence    = %s", licencename))
     end
 
@@ -467,8 +464,7 @@ local function cvs_to_result(src, sourceset, directory)
     -- write licences
     local destdir = string.format("%s/licences", directory)
     local fname = string.format("%s/%s.licences", destdir, archive)
-    local licenses = src:get_licences()
-    local licence_list = licenses:concat("\n").."\n"
+    local licence_list = src:licences():concat("\n").."\n"
 
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then

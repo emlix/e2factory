@@ -201,7 +201,7 @@ local function e2_ls_project(arg)
         for _,sourcename in ipairs(sources) do
             local src = source.sources[sourcename]
 
-            for licencename in src:get_licences():iter() do
+            for licencename in src:licences():iter() do
                 if not seen[licencename] then
                     table.insert(licences, licencename)
                     seen[licencename] = true

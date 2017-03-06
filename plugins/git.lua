@@ -215,7 +215,7 @@ function git.git_source:sourceid(sourceset)
     assert(type(sourceset) == "string" and #sourceset > 0,
         "sourceset arg invalid")
 
-    local rc, re, id, hc, licences
+    local rc, re, id, hc
 
     if self._sourceids[sourceset] then
         return self._sourceids[sourceset]
@@ -231,8 +231,7 @@ function git.git_source:sourceid(sourceset)
     hash.hash_append(hc, self._type)
     hash.hash_append(hc, self._env:envid())
 
-    licences = self:get_licences()
-    for licencename in licences:iter() do
+    for licencename in self:licences():iter() do
         local lid, re = licence.licences[licencename]:licenceid()
         if not lid then
             return false, re
@@ -250,7 +249,7 @@ function git.git_source:sourceid(sourceset)
 end
 
 function git.git_source:display()
-    local rev_tag, rev_branch, licences
+    local rev_tag, rev_branch
 
     -- try to calculate the sourceid, but do not care if it fails.
     -- working copy might be unavailable
@@ -273,8 +272,7 @@ function git.git_source:display()
     table.insert(d, string.format("location   = %s", self._location))
     table.insert(d, string.format("working    = %s", self:get_working()))
 
-    licences = self:get_licences()
-    for licencename in licences:iter() do
+    for licencename in self:licences():iter() do
         table.insert(d, string.format("licence    = %s", licencename))
     end
 
@@ -750,8 +748,7 @@ local function git_to_result(src, sourceset, directory)
     -- write licences
     local destdir = e2lib.join(directory, "licences")
     local fname = string.format("%s/%s.licences", destdir, archive)
-    local licences = src:get_licences()
-    local licence_list = licences:concat("\n") .. "\n"
+    local licence_list = src:licences():concat("\n") .. "\n"
     rc, re = e2lib.mkdir_recursive(destdir)
     if not rc then
         return false, e:cat(re)
