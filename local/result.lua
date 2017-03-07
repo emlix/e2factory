@@ -775,7 +775,7 @@ function result.instantiate_object(rawres)
             rawres.type, rawres.name)
     end
 
-    e2lib.logf(3, "instantiating %s of type %s", rawres.name, rawres.type)
+    e2lib.logf(4, "instantiating %s of type %s", rawres.name, rawres.type)
 
     theclass = result_types[rawres.type]
     assertIsTable(theclass)

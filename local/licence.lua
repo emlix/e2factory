@@ -124,7 +124,7 @@ function licence.load_licence_config()
 
     path = e2lib.join(e2tool.root(), "proj/licences")
 
-    e2lib.logf(3, "loading licence config %q", path)
+    e2lib.logf(4, "loading licence config %q", path)
     e = err.new("loading licence config %q failed", path)
 
     ltable = nil

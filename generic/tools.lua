@@ -200,7 +200,7 @@ function tools.set_tool(name, value, flags)
     if type(flags) == "string" then
         toollist[name].flags = flags
     end
-    e2lib.logf(3, "setting tool: %s=%s flags=%s", name, toollist[name].name,
+    e2lib.logf(4, "setting tool: %s=%s flags=%s", name, toollist[name].name,
         toollist[name].flags)
     return true
 end
@@ -231,7 +231,7 @@ function tools.add_tool(name, value, flags, optional)
     }
 
     local t = toollist[name]
-    e2lib.logf(3, "adding tool: %s=%s flags=%s optional=%s", name, t.name,
+    e2lib.logf(4, "adding tool: %s=%s flags=%s optional=%s", name, t.name,
         t.flags, tostring(t.optional))
 
     return true

@@ -399,7 +399,7 @@ function e2option.parse(args)
     for k,v in ipairs(vals) do
         table.insert(t, string.format("[%d]=%q", k, v))
     end
-    e2lib.logf(3, "e2option.parse(): %s", table.concat(t, ", "))
+    e2lib.logf(4, "e2option.parse(): %s", table.concat(t, ", "))
 
     if opts["Wdefault"] or opts["Wall"] then
         e2lib.globals.warn_category.WDEFAULT = true

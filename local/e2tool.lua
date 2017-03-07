@@ -1332,7 +1332,7 @@ function e2tool.print_selection(resultvec)
         local f = settings:force_rebuild() and "[force rebuild]" or ""
         local p = settings:prep_playground() and "[playground]" or ""
 
-        e2lib.logf(3, "Selected result: %-20s %s %s %s", resultname, s, f, p)
+        e2lib.logf(4, "Selected result: %-20s %s %s %s", resultname, s, f, p)
     end
     return true
 end

@@ -471,7 +471,7 @@ function e2lib.init2()
     -- handle E2_SSH environment setting
     ssh = e2lib.globals.osenv["E2_SSH"]
     if ssh then
-        e2lib.logf(3, "using E2_SSH environment variable: %s", ssh)
+        e2lib.logf(4, "using E2_SSH environment variable: %s", ssh)
         rc, re = tools.set_tool("ssh", ssh)
         if not rc then
             return false, e:cat(re)
@@ -982,7 +982,7 @@ function e2lib.get_global_config()
         e2lib.logf(4, "reading global config file: %s", path)
         local rc = e2lib.exists(path)
         if rc then
-            e2lib.logf(3, "using global config file: %s", path)
+            e2lib.logf(4, "using global config file: %s", path)
             rc, re = e2lib.dofile2(path,
                 { config = function(x) data = x end })
             if not rc then
@@ -1024,7 +1024,7 @@ function e2lib.read_extension_config(root)
         return {}
     end
 
-    e2lib.logf(3, "reading extension file: %s", extension_config)
+    e2lib.logf(4, "reading extension file: %s", extension_config)
 
     local data = nil
     rc, re = e2lib.dofile2(extension_config,
@@ -1424,7 +1424,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
     local rc, re, pid
     local sync_pipes = {}
 
-    e2lib.logf(3, "calling %q in %q", table.concat(argv, " "),
+    e2lib.logf(4, "calling %q in %q", table.concat(argv, " "),
         workdir or "$PWD")
 
     rc, re = fd_parent_setup(fdctv)
@@ -1496,13 +1496,13 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
         return pid
     end
 
-    e2lib.logf(3, "waiting for %q", table.concat(argv, " "))
+    e2lib.logf(4, "waiting for %q", table.concat(argv, " "))
     rc, re = e2lib.wait(pid)
     if not rc then
         return false, re
     end
 
-    e2lib.logf(3, "command %q exit with return code %d",
+    e2lib.logf(4, "command %q exit with return code %d",
         table.concat(argv, " "), rc)
 
     return rc
@@ -1818,7 +1818,7 @@ function e2lib.parse_e2versionfile(filename)
             l, filename)
     end
 
-    e2lib.logf(3, "using e2 branch %s tag %s",
+    e2lib.logf(4, "using e2 branch %s tag %s",
         version_table.branch, version_table.tag)
 
     return strict.lock(version_table)

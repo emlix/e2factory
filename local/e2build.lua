@@ -716,7 +716,6 @@ end
 function e2build.build_process_class:_fix_permissions(res, return_flags)
     local rc, re, bc
     local e = err.new("fixing permissions failed")
-    e2lib.log(3, "fix permissions")
 
     e2tool.set_umask()
     bc = res:build_config()

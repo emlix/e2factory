@@ -70,7 +70,7 @@ function projenv.safe_global_res_env_table()
 end
 
 local function _load_env_config(file)
-    e2lib.logf(3, "loading environment: %s", file)
+    e2lib.logf(4, "loading environment: %s", file)
     local e = err.new("loading environment: %s", file)
     local rc, re
     local merge_error = false
@@ -101,7 +101,7 @@ local function _load_env_config(file)
 
                 if type(value) == "string" then
 
-                    e2lib.logf(3, "global env: %-15s = %-15s", key, value)
+                    e2lib.logf(4, "global env: %-15s = %-15s", key, value)
                     projenv.get_global_env():set(key, value)
 
                 else
@@ -115,7 +115,7 @@ local function _load_env_config(file)
                             return
                         end
 
-                        e2lib.logf(3, "result env: %-15s = %-15s [%s]", key1, value1, key)
+                        e2lib.logf(4, "result env: %-15s = %-15s [%s]", key1, value1, key)
 
                         projenv.get_result_env(key):set(key1, value1)
                     end
