@@ -518,7 +518,7 @@ end
 --- Archives the source and prepares the necessary files outside the archive
 -- @param src source object
 -- @param sourceset string, should be "tag" "branch" or "working copy", in order for it to work
--- @param the directory where the sources are and where the archive is to be created
+-- @param directory the directory where the sources are and where the archive is to be created
 -- @return True on success, false on error.
 -- @return Error object on failure
 local function gitrepo_to_result(src, sourceset, directory)

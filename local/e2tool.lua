@@ -799,7 +799,7 @@ end
 
 --- Compare global interface version and complain if we're not compatible.
 -- @return True on success, false on error.
--- @Error object on failure.
+-- @return Error object on failure.
 local function check_global_interface_version()
     local rc, re, e
     local givf, line, supported

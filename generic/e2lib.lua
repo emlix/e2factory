@@ -328,8 +328,8 @@ function e2lib.getpid()
 end
 
 --- Set process group ID.
--- @pid process id
--- @pgid process group id
+-- @param pid process id
+-- @param pgid process group id
 -- @raise error on failure.
 function e2lib.setpgid(pid, pgid)
     return le2lib.setpgid(pid, pgid)
