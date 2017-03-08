@@ -40,10 +40,42 @@ local function e2_build(arg)
         error(re)
     end
 
+    -- list of results with a specific build mode
+    local wc_mode_results = {}
+    local branch_mode_results =  {}
+    local tag_mode_results = {}
+    local specific_result_count = 0
+
+    -- insert results into their respective tables above.
+    local function option_insert_results(the_result_table)
+
+        return function(resultname)
+            if type(resultname) == "string" then
+                table.insert(the_result_table --[[closure]], resultname)
+                specific_result_count = specific_result_count + 1
+            end
+            return true
+        end
+    end
+
+    -- list of results specified on the command line or with --all
+    local selected_results = {}
+
+    -- list of unsorted results we want to build, no matter the build mode.
+    local build_results = {}
+
+    -- list of results and their depends in build order
+    local ordered_results
+
+
     e2option.flag("all", "build all results (default unless for working copy)")
     policy.register_commandline_options()
-    e2option.flag("branch-mode", "build selected results in branch mode")
-    e2option.flag("wc-mode", "build selected results in working-copy mode")
+    e2option.option("tag-mode", "build selected results in tag mode",
+        true, option_insert_results(tag_mode_results))
+    e2option.option("branch-mode", "build selected results in branch mode",
+        true, option_insert_results(branch_mode_results))
+    e2option.option("wc-mode", "build selected results in working-copy mode",
+        true, option_insert_results(wc_mode_results))
     e2option.flag("force-rebuild", "force rebuilding even if a result exists")
     e2option.flag("playground", "prepare environment but do not build")
     e2option.flag("keep", "do not remove chroot environment after build")
@@ -52,6 +84,10 @@ local function e2_build(arg)
     local opts, arguments = e2option.parse(arg)
     if not opts then
         error(arguments)
+    end
+
+    for _,resultname in ipairs(arguments) do
+        table.insert(selected_results, resultname)
     end
 
     -- get build mode from the command line
@@ -65,87 +101,91 @@ local function e2_build(arg)
         error(re)
     end
 
-    -- apply the standard build mode and settings to all results
-    for _,res in pairs(result.results) do
-        res:build_mode(build_mode)
-        res:build_settings(e2build.build_settings_class:new())
-    end
-
-    -- handle result selection
-    local resultvec = {}
-
-    if opts["all"] and #arguments ~= 0 then
-        e2lib.abort("--all with additional results does not make sense")
+    if opts["all"] and (#selected_results > 0 or specific_result_count > 0) then
+        error(err.new("--all with additional results does not make sense"))
     elseif opts["all"] then
-        for r,_ in pairs(result.results) do
-            table.insert(resultvec, r)
-        end
-    elseif #arguments > 0 then
-        for i,r in ipairs(arguments) do
-            table.insert(resultvec, r)
+        for resultname,_ in pairs(result.results) do
+            table.insert(selected_results, resultname)
         end
     end
 
-    -- handle command line flags
-    build_mode = nil
-    if opts["branch-mode"] and opts["wc-mode"] then
-        error(err.new("--branch-mode and --wc-mode are mutually exclusive"))
-    end
-    if opts["branch-mode"] then
-        -- selected results get a special build mode
-        build_mode = policy.default_build_mode("branch")
-    end
-    if opts["wc-mode"] then
-        if #resultvec == 0 then
-            e2lib.abort("--wc-mode requires one or more results")
+    --
+    local build_mode_count = 0
+    for _,option_name in ipairs({"tag-mode", "branch-mode", "wc-mode"}) do
+        if opts[option_name] then
+            build_mode_count = build_mode_count + 1
         end
-        build_mode = policy.default_build_mode("working-copy")
     end
+
+    local function check_mode(option_name, cnt, opts, results, selected_results)
+        if opts[option_name] then
+
+            -- consume all selected results if only one build mode
+            if cnt == 1 then
+                for k,resultname in ipairs(selected_results) do
+                    table.insert(results, resultname)
+                    selected_results[k] = nil
+                end
+            end
+
+            if #results == 0 then
+                local e
+                e = err.new("--%s requires one or more results", option_name)
+                error(e)
+            end
+        end
+    end
+
+    check_mode("tag-mode", build_mode_count, opts, tag_mode_results, selected_results)
+    check_mode("branch-mode", build_mode_count, opts, branch_mode_results, selected_results)
+    check_mode("wc-mode", build_mode_count, opts, wc_mode_results, selected_results)
+
+    if opts["release"] and build_mode_count > 0 then
+        error(err.new("--release mode and other build modes can't be mixed"))
+    end
+
     local playground = opts["playground"]
     if playground then
-        if opts.release then
+        if opts["release"] then
             error(err.new("--release and --playground are mutually exclusive"))
         end
-        if opts.all then
+        if opts["all"] then
             error(err.new("--all and --playground are mutually exclusive"))
         end
-        if #arguments ~= 1 then
-            error(err.new("please select one single result for the playground"))
+        if #selected_results ~= 1 then
+            error(err.new("please specify a single result for the playground"))
         end
     end
     local force_rebuild = opts["force-rebuild"]
     local keep_chroot = opts["keep"]
 
-    -- apply flags to the selected results
-    rc, re = e2tool.select_results(resultvec, force_rebuild, keep_chroot,
-        build_mode, playground)
-    if not rc then
-        error(re)
+    -- processing options is over, lets sort this out
+
+    for _,t in ipairs({selected_results, tag_mode_results, branch_mode_results, wc_mode_results}) do
+        for _,resultname in ipairs(t) do
+            table.insert(build_results, resultname)
+        end
+    end
+
+    if #build_results == 0 then
+        for resultname in project.default_results_iter() do
+            table.insert(build_results, resultname)
+        end
     end
 
     -- a list of results to build, topologically sorted
-    local sel_res = {}
-    if #resultvec > 0 then
-        local re
-        sel_res, re = e2tool.dlist_recursive(resultvec)
-        if not sel_res then
-            error(re)
-        end
-    else
-        local re
-        sel_res, re = e2tool.dsort()
-        if not sel_res then
-            error(re)
-        end
+    ordered_results, re = e2tool.dlist_recursive(build_results)
+    if not ordered_results then
+        error(re)
     end
 
     -- in --release mode, warn about builds not including the
     -- configured deploy results
-    if opts.release then
+    if opts["release"] then
         for deployresname in project.deploy_results_iter() do
             local included = false
 
-            for _, resultname in ipairs(sel_res) do
+            for _, resultname in ipairs(ordered_results) do
                 if deployresname == resultname then
                     included = true
                     break
@@ -160,13 +200,47 @@ local function e2_build(arg)
         end
     end
 
-    rc, re = e2tool.print_selection(sel_res)
+    -- apply build modes and settings
+    -- first, standard build mode and settings for all
+    for _,resultname in ipairs(ordered_results) do
+        local res = result.results[resultname]
+        res:build_mode(build_mode)
+        res:build_settings(e2build.build_settings_class:new())
+    end
+
+    -- selected results
+    rc, re = e2tool.select_results(selected_results, force_rebuild,
+        keep_chroot, nil, playground)
+    if not rc then
+        error(re)
+    end
+
+    -- specific build modi
+    rc, re = e2tool.select_results(tag_mode_results, force_rebuild, keep_chroot,
+        policy.default_build_mode("tag"), playground)
+    if not rc then
+        error(re)
+    end
+
+    rc, re = e2tool.select_results(branch_mode_results, force_rebuild,
+        keep_chroot, policy.default_build_mode("branch"), playground)
+    if not rc then
+        error(re)
+    end
+
+    rc, re = e2tool.select_results(wc_mode_results, force_rebuild, keep_chroot,
+        policy.default_build_mode("working-copy"), playground)
+    if not rc then
+        error(re)
+    end
+
+    rc, re = e2tool.print_selection(ordered_results)
     if not rc then
         error(re)
     end
 
     -- calculate buildids for selected results
-    for _,resultname in ipairs(sel_res) do
+    for _,resultname in ipairs(ordered_results) do
         local bid, re = result.results[resultname]:buildid()
         if not bid then
             error(re)
@@ -179,7 +253,7 @@ local function e2_build(arg)
 
     if not opts.buildid then
         -- build
-        local rc, re = e2tool.build_results(sel_res)
+        local rc, re = e2tool.build_results(ordered_results)
         if not rc then
             error(re)
         end
