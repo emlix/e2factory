@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.17
  * fixed sub-licences handling for file sources
  * ls-project add --unused option
