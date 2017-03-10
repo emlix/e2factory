@@ -537,7 +537,8 @@ function digest.sanity_check(dt)
             digest_type = entry.digest
         end
 
-        if entry.digest ~= digest.MD5 and entry.digest ~= digest.SHA1 then
+        if not (entry.digest == digest.MD5 or entry.digest == digest.SHA1
+            or entry.digest == digest.SHA256) then
             return false,
                 err.new("digest entry %d has unknown digest type", pos)
         end
@@ -548,7 +549,10 @@ function digest.sanity_check(dt)
         end
 
         local len = string.len(entry.checksum)
-        if len ~= digest.MD5_LEN and len ~= digest.SHA1_LEN then
+        if not (
+            (entry.digest == digest.MD5 and len == digest.MD5_LEN) or
+            (entry.digest == digest.SHA1 and len == digest.SHA1_LEN) or
+            (entry.digest == digest.SHA256 and len == digest.SHA256_LEN)) then
             return false, err.new("digest entry %d has unknown checksum "..
                 "length (%d)", pos, len)
         end
