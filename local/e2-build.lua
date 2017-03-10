@@ -140,6 +140,19 @@ local function e2_build(arg)
     check_mode("branch-mode", build_mode_count, opts, branch_mode_results, selected_results)
     check_mode("wc-mode", build_mode_count, opts, wc_mode_results, selected_results)
 
+    -- check for duplicate results
+    local duplicates = {}
+    for _,t in ipairs({selected_results, tag_mode_results, branch_mode_results, wc_mode_results}) do
+        for _,resultname in ipairs(t) do
+            if not duplicates[resultname] then
+                duplicates[resultname] = true
+            else
+                error(err.new("result specified more than once: %s", resultname))
+            end
+        end
+    end
+    duplicates = nil
+
     if opts["release"] and build_mode_count > 0 then
         error(err.new("--release mode and other build modes can't be mixed"))
     end
