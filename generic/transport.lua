@@ -189,13 +189,6 @@ function transport.fetch_file(surl, location, destdir, destname)
     -- missing error detection.
     e2lib.rmtempfile(tmpfile_path)
 
-    -- Some tools (rsync) do not return an error code when skipping symlinks,
-    -- device files, etc. Thus we delete the tmp file here, let rsync do its
-    -- job, and detect the silent error condition when moving the file to its
-    -- final destination. Yes there is a race, but we take that chance over
-    -- missing error detection.
-    e2lib.rmtempfile(tmpfile_path)
-
     -- fetch the file to the temporary directory
     if u.transport == "http" or
         u.transport == "https" then
