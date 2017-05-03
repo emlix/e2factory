@@ -380,6 +380,25 @@ poll_fd(lua_State *lua)
 }
 
 static int
+do_rename(lua_State *L)
+{
+	int e;
+	const char *src = luaL_checkstring(L, 1);
+	const char *dst = luaL_checkstring(L, 2);
+
+	if (rename(src, dst) == 0) {
+		lua_pushboolean(L, 1);
+		return 1;
+	}
+
+	e = errno;
+	lua_pushboolean(L, 0);
+	lua_pushstring(L, strerror(e));
+	lua_pushinteger(L, e);
+	return 3;
+}
+
+static int
 unblock_fd(lua_State *lua)
 {
 	int fd = luaL_checkinteger(lua, 1);
@@ -968,6 +987,7 @@ static luaL_Reg lib[] = {
 	{ "mkstemp", do_mkstemp },
 	{ "parse_mode", do_parse_mode },
 	{ "poll", poll_fd },
+	{ "rename", do_rename },
 	{ "rmdir", do_rmdir },
 	{ "setenv", do_setenv },
 	{ "setpgid", do_setpgid },
