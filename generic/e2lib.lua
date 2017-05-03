@@ -260,6 +260,20 @@ function e2lib.poll(timeout, fdvec)
     return pollvec
 end
 
+--- Rename file or directory using the rename syscall.
+-- @param src Source path.
+-- @param dst Destination path.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+-- @return Errno number on failure.
+function e2lib.rename(src, dst)
+    local rc, re, errno = le2lib.rename(src, dst)
+    if rc then
+        return rc
+    end
+    return false, err.new("renaming %q to %q failed: %s", src, dst, re), errno
+end
+
 --- Set file descriptor in non-blocking mode.
 -- @param fd Open file descriptor.
 function e2lib.unblock(fd)
@@ -676,7 +690,7 @@ function e2lib.rotate_log(file)
             end
         else
             dst = string.format("%s/%s.%d", logdir, logfile, n + 1)
-            rc, re = e2lib.mv(src, dst)
+            rc, re = e2lib.rename(src, dst)
             if not rc then
                 return false, e:cat(re)
             end
@@ -684,8 +698,7 @@ function e2lib.rotate_log(file)
     end
 
     dst = string.format("%s/%s.0", logdir, logfile)
-    assert(not e2lib.stat(dst), "did not expect logfile here: "..dst)
-    rc, re = e2lib.mv(file, dst)
+    rc, re = e2lib.rename(file, dst)
     if not rc then
         return false, e:cat(re)
     end
