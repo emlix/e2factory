@@ -2047,14 +2047,125 @@ end
 -- @return Numeric mode or false on error.
 -- @return Error object on failure.
 function e2lib.parse_mode(modestring)
-    local rc, errstring = le2lib.parse_mode(modestring)
-
-    if not rc then
-        return false, err.new("cannot parse mode string '%s': %s", modestring,
-            errstring)
+    --- check for with octal numbers
+    if tonumber(modestring) ~= nil then
+        if string.len(modestring) == 3 then
+            local out = 0
+            local index = 0
+            for mode in string.gmatch(modestring, "%S") do
+                if tonumber(mode) > 7 then
+                    return false, err.new("cannot parse mode string '%s': mode is a number between 0 and 7", tostring(modestring))
+                end
+                out = out + tonumber(mode) * 8^(2 - index)
+                index = index + 1
+            end
+            return out
+        else
+            return false, err.new("cannot parse mode string '%s': octal string is exactly 3 characters long", tostring(modestring))
+        end
     end
 
-    return rc
+    --- VARIABLE SETUP
+    local perm = { -- w      r      x
+            user =   {w = 0, r = 0, x = 0}, -- u
+            group =  {w = 0, r = 0, x = 0}, -- g
+            other =  {w = 0, r = 0, x = 0}, -- o
+    }
+    local class_name = {}
+    local func
+    local operator = ""
+
+    --- state functions
+    -- state function for permissions
+    local function permissions(char)
+        if char == "X" then
+            char = "x" -- cast special Executable to normal executable for calculation reasons
+        end
+        if char == "," then
+            return "reset"
+        elseif char ~= "w" and char ~= "r" and char ~= "x" then
+            return false, err.new("cannot parse mode string '%s': unknown permission mode: %s", modestring, char)
+        end
+
+        for ow in pairs(class_name) do
+            if operator == "+" then
+                perm[ow][char] = 1
+            elseif operator == "-" then
+                perm[ow][char] = 0
+            elseif operator == "=" then
+                perm[ow][char] = 1
+            else
+                return false, err.new("cannot parse mode string '%s': unknown operator in permission evaluation: %s", modestring, char)
+            end
+        end
+    end
+
+    -- state function for operators
+    local function op(char)
+        if char == "=" or char == "-" or char == "+" then
+            func = permissions
+            operator = char
+            if char == "=" then
+                -- nulling the given classs.
+                -- If we do this, we only need to set the given modes to 1 later
+                for ow in pairs(class_name) do
+                    for p in pairs(perm[ow]) do
+                        perm[ow][p] = 0
+                    end
+                end
+            end
+        else
+            return false, err.new("cannot parse mode string '%s': unknown operator: %s", modestring, char)
+        end
+    end
+
+    -- state function for class
+    local function class(char)
+        if char == "u" then
+            class_name["user"] = 1
+        elseif char == "g" then
+            class_name["group"] = 1
+        elseif char == "o" then
+            class_name["other"] = 1
+        elseif char == "a" then
+            class_name["user"] = 1
+            class_name["group"] = 1
+            class_name["other"] = 1
+        else
+            -- calculate size of user_name table
+            local table_size = 0
+            for _ in pairs(class_name) do
+                table_size = table_size + 1
+            end
+            if table_size == 0 then -- if no entry is in user_name, string is invalid
+                return false, err.new("cannot parse mode string '%s': no valid class given", modestring)
+            end
+            return op(char) -- pass char to actual current state, which is 'operator'
+        end
+    end
+    func = class
+
+    --- evaluting the string
+    for c in string.gmatch(modestring, "%S") do
+        local re, re_err
+        re, re_err = func(c) -- the func(c) call does the most magic here
+        if re ~= nil then
+            if re == "reset" then
+                class_name = {}
+                operator = ""
+                func = class
+            end
+            if (not re) and re_err then
+                return false, re_err
+            end
+        end
+    end
+
+    -- calculate classs permissions as decimals
+    local out_other =  perm["other"]["r"] * 4 + perm["other"]["w"] * 2 + perm["other"]["x"]
+    local out_group = (perm["group"]["r"] * 4 + perm["group"]["w"] * 2 + perm["group"]["x"]) * 8
+    local out_user =  (perm["user"]["r"]  * 4 + perm["user"]["w"]  * 2 + perm["user"]["x"]) * 64
+    return out_user + out_group + out_other
 end
 
 --- Create a single directory.
