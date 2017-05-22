@@ -149,7 +149,7 @@ function generic_git.git(argv)
 
     rc, re = e2lib.callcmd_capture(git, capture)
     if not rc then
-        e = new.new("git command %q failed", table.concat(git, " "))
+        e = err.new("git command %q failed", table.concat(git, " "))
         return false, e:cat(re), table.concat(out)
     elseif rc ~= 0 then
         e = err.new("git command %q failed with exit status %d",
