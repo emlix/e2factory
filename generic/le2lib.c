@@ -43,10 +43,16 @@ static int
 lua_fork(lua_State *lua)
 {
 	int rc;
-	fflush(0);
-	rc = fork();
 
-	if(rc < 0) {
+	rc = fflush(NULL);
+	if (rc == EOF) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		return 2;
+	}
+
+	rc = fork();
+	if (rc < 0) {
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(errno));
 		return 2;
