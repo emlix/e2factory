@@ -43,9 +43,10 @@ function err.append(e, format, ...)
     return e
 end
 
---- insert an error object into another one
+--- Insert an error object into another one.
 -- @param e table: the error object
--- @param re table: the error object to insert
+-- @param re The error object to insert OR a format string used to creating a
+-- new error object.
 -- @param ... list of strings required for the format string
 -- @return table: the error object
 function err.cat(e, re, ...)
