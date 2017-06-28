@@ -419,7 +419,7 @@ end
 -- @return True if file is in cache, false otherwise
 -- @return Error object on failure
 -- @return Absolute filepath if it is in cache
-local function file_in_cache(c, server, location, flags)
+function cache.file_in_cache(c, server, location, flags)
     assertIsTable(c)
     assertIsStringN(server)
     assertIsStringN(location)
@@ -536,7 +536,7 @@ local function cache_file(c, server, location, flags)
     if not ceurl then
         return false, e:cat(re)
     end
-    local avail, re = file_in_cache(c, server, location)
+    local avail, re = cache.file_in_cache(c, server, location)
     if re then
         return false, e:cat(re)
     end
@@ -636,7 +636,7 @@ function cache.fetch_file_path(c, server, location, flags)
             return false, e:cat(re)
         end
 
-        rc, re, filepath = file_in_cache(c, server, location, flags)
+        rc, re, filepath = cache.file_in_cache(c, server, location, flags)
         if not rc and re then
             return false, e:cat(re)
         end
@@ -700,7 +700,7 @@ function cache.file_exists(c, server, location, flags)
     end
 
     if cache.cache_enabled(c, server, flags) then
-        rc, re = file_in_cache(c, server, location, flags)
+        rc, re = cache.file_in_cache(c, server, location, flags)
         if re then
             return false, e:cat(re)
         end
