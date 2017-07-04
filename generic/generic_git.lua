@@ -114,10 +114,11 @@ end
 
 --- Call out to git.
 -- @param argv Array of arguments to git.
+-- @param workdir Working directory of tool (optional).
 -- @return True on success, false on error.
 -- @return Error object on failure.
 -- @return Any captured git output or the empty string if nothing was captured.
-function generic_git.git(argv)
+function generic_git.git(argv, workdir)
     local rc, re, e, git, fifo, out
 
     git, re = tools.get_tool_flags_argv("git")
@@ -147,7 +148,7 @@ function generic_git.git(argv)
         table.insert(out, msg)
     end
 
-    rc, re = e2lib.callcmd_capture(git, capture)
+    rc, re = e2lib.callcmd_capture(git, capture, workdir)
     if not rc then
         e = err.new("git command %q failed", table.concat(git, " "))
         return false, e:cat(re), table.concat(out)
