@@ -30,15 +30,14 @@ local project = require("project")
 local result = require("result")
 
 local function e2_build(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "build")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("build")
 
     -- list of results with a specific build mode
     local wc_mode_results = {}
@@ -101,8 +100,8 @@ local function e2_build(arg)
         error(re)
     end
 
-    info, re = e2tool.collect_project_info(info)
-    if not info then
+    rc, re = e2project:load_project()
+    if not rc then
         error(re)
     end
 

@@ -110,6 +110,7 @@ local function newsource(info, ...)
     local t = ...
     local name = t[2]
     local scm = t[3]
+    local e2project = e2tool.e2project()
 
     if not name then
         e:append("missing parameter: name")
@@ -127,7 +128,7 @@ local function newsource(info, ...)
     end
 
     local cftemplate =
-        e2lib.join(info.local_template_path, string.format("source.%s", scm))
+        e2lib.join(e2project:local_template_path(), string.format("source.%s", scm))
     if not e2lib.isfile(cftemplate) then
         return false, e:append("no template for '%s' available", scm)
     end
@@ -194,6 +195,7 @@ local function newresult(info, ...)
     local e = err.new("making new result failed")
     local t = ...
     local name = t[2]
+    local e2project = e2tool.e2project()
     if not name then
         return false, e:append("missing parameter: name")
     end
@@ -208,8 +210,8 @@ local function newresult(info, ...)
     local cf = e2tool.resultconfig(pathname, e2tool.root())
     local bs = e2tool.resultbuildscript(pathname, e2tool.root())
 
-    local cftemplate = e2lib.join(info.local_template_path, "result")
-    local bstemplate = e2lib.join(info.local_template_path, "build-script")
+    local cftemplate = e2lib.join(e2project:local_template_path(), "result")
+    local bstemplate = e2lib.join(e2project:local_template_path(), "build-script")
     if not e2lib.isfile(cftemplate) then
         return false, e:append("config template %s not available", cftemplate)
     end
@@ -307,25 +309,23 @@ local function editbuildscript(info, ...)
 end
 
 local function e2_cf(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "cf")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("cf")
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
         error(arguments)
     end
 
-    -- initialize some basics in the info structure without actually loading
-    -- the project configuration.
-    info, re = e2tool.collect_project_info(info, true)
-    if not info then
+    -- initialize some basics without loading the project configuration.
+    rc, re = e2project:load_project(true)
+    if not rc then
         error(re)
     end
 
@@ -365,7 +365,7 @@ local function e2_cf(arg)
             table.insert(a, o)
         end
         local f = commands[match[1]]
-        rc, re = f(info, a)
+        rc, re = f(e2project:info(), a)
         if not rc then
             error(re)
         end

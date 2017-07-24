@@ -29,10 +29,7 @@ local function e2_build_numbers(arg)
         error(re)
     end
 
-    rc, re = e2tool.local_init(nil, "build-numbers")
-    if not rc then
-        error(re)
-    end
+    e2tool.e2project():init_project("build-numbers")
 
     error(err.new("e2-build-numbers is deprecated and has been removed"))
 end

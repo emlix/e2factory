@@ -89,15 +89,14 @@ end
 -- @return Always true.
 -- @raise error, assert
 local function e2_ls_project(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "ls-project")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("ls-project")
 
     policy.register_commandline_options()
     e2option.flag("dot", "generate dot(1) graph")
@@ -119,8 +118,8 @@ local function e2_ls_project(arg)
         error(re)
     end
 
-    info, re = e2tool.collect_project_info(info)
-    if not info then
+    rc, re = e2project:load_project()
+    if not rc then
         error(re)
     end
 

@@ -28,15 +28,14 @@ local result = require("result")
 local source = require("source")
 
 local function e2_fetch_source(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "fetch-sources")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("fetch-sources")
 
     local e = err.new()
 
@@ -53,8 +52,8 @@ local function e2_fetch_source(arg)
         error(arguments)
     end
 
-    info, re = e2tool.collect_project_info(info)
-    if not info then
+    rc, re = e2project:load_project()
+    if not rc then
         error(re)
     end
 
@@ -202,7 +201,7 @@ local function e2_fetch_source(arg)
 
     if next(sel) ~= nil then
         e2lib.log(2, "fetching sources...")
-        local rc, re = fetch_sources(info, opts, sel)
+        local rc, re = fetch_sources(e2project:info(), opts, sel)
         if not rc then
             e:cat(re)
         end

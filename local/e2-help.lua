@@ -221,23 +221,22 @@ end
 -- @return Error object on failure.
 local function e2_help(arg)
     local rc, re, e
+    local e2project
     rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "help")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("help")
 
     local opts, arguments = e2option.parse(arg)
     if not opts then
         error(arguments)
     end
 
-    info, re = e2tool.collect_project_info(info, true)
-    if not info then
+    rc, re = e2project:load_project(true)
+    if not rc then
         error(re)
     end
 

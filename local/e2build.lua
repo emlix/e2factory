@@ -271,7 +271,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
     local buildid, sbid
     local e = err.new("error while checking if result is available: %s", res:get_name())
     local columns = tonumber(e2lib.globals.osenv["COLUMNS"])
-    local info = e2tool.info()
+    local e2project = e2tool.e2project()
 
     buildid, re = res:buildid()
     if not buildid then
@@ -297,7 +297,8 @@ function e2build.build_process_class:_result_available(res, return_flags)
     end
 
     local server, location =
-        res:build_mode().storage(info.project_location, project.release_id())
+        res:build_mode().storage(
+            e2project:project_location(), project.release_id())
     local result_location = e2lib.join(location, res:get_name(),
         buildid, "result.tar")
 
@@ -598,12 +599,12 @@ end
 ---
 function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
     local rc, re, e
-    local info, buildid, server, location, resulttarpath, tmpdir
-    local path, resdir, dt, filesdir
+    local buildid, server, location, resulttarpath, tmpdir
+    local path, resdir, dt, filesdir, e2project
 
     e = err.new("unpacking result failed: %s", dep:get_name())
 
-    info = e2tool.info()
+    e2project = e2tool.e2project()
 
     buildid, re = dep:buildid()
     if not buildid then
@@ -611,7 +612,7 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
     end
 
     server, location =
-        dep:build_mode().storage(info.project_location, project.release_id())
+        dep:build_mode().storage(e2project:project_location(), project.release_id())
 
     e2lib.logf(3, "searching for dependency %s in %s:%s",
         dep:get_name(), server, location)
@@ -833,7 +834,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
     -- result/files/*
     --   -> releases:<project>/<archive>/<release_id>/<result>/files/*
     --]]
-    local info = e2tool.info()
+    local e2project = e2tool.e2project()
     if not res:build_mode().deploy then
         e2lib.log(4, "deployment disabled for this build mode")
         return true
@@ -857,7 +858,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
     end
     table.insert(files, "checksums")
     local server, location = res:build_mode().deploy_storage(
-        info.project_location, project.release_id())
+        e2project:project_location(), project.release_id())
 
     -- do not re-deploy if this release was already done earlier
     local location1 = e2lib.join(location, res:get_name(), "checksums")
@@ -905,9 +906,9 @@ function e2build.build_process_class:_store_result(res, return_flags)
     local rc, re
     local e = err.new("fetching build results from chroot")
     local dt
-    local info
+    local e2project
 
-    info = e2tool.info()
+    e2project = e2tool.e2project()
 
     -- create a temporary directory to build up the result
     local tmpdir, re = e2lib.mktempdir()
@@ -1009,8 +1010,8 @@ function e2build.build_process_class:_store_result(res, return_flags)
         return false, e:cat(re)
     end
 
-    local server, location = res:build_mode().storage(info.project_location,
-        project.release_id())
+    local server, location = res:build_mode().storage(
+        e2project:project_location(), project.release_id())
 
     local buildid, re = res:buildid()
     if not buildid then
@@ -1039,12 +1040,13 @@ end
 ---
 function e2build.build_process_class:_linklast(res, return_flags)
     local rc, re, e
-    local info, server, location, buildid, dst, lnk
+    local server, location, buildid, dst, lnk, e2project
 
     e = err.new("creating link to last results")
-    info = e2tool.info()
+    e2project = e2tool.e2project()
     -- calculate the path to the result
-    server, location = res:build_mode().storage(info.project_location, project.release_id())
+    server, location = res:build_mode().storage(
+        e2project:project_location(), project.release_id())
 
     -- compute the "last" link/directory
     buildid, re = res:buildid()

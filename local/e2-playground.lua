@@ -29,15 +29,14 @@ local policy = require("policy")
 local result = require("result")
 
 local function e2_playground(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "playground")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("playground")
 
     local e = err.new("entering playground failed")
     local rc, re
@@ -56,8 +55,9 @@ local function e2_playground(arg)
     if not build_mode then
         error(re)
     end
-    info, re = e2tool.collect_project_info(info)
-    if not info then
+
+    rc, re = e2project:load_project()
+    if not rc then
         error(re)
     end
 

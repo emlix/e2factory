@@ -26,15 +26,14 @@ local err = require("err")
 local result = require("result")
 
 local function e2_dlist(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "dlist")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("dlist")
 
     e2option.flag("recursive", "show indirect dependencies, too")
     local opts, arguments = e2option.parse(arg)
@@ -45,11 +44,13 @@ local function e2_dlist(arg)
     if #arguments == 0 then
         error(err.new(
             "no result given - enter `e2-dlist --help' for usage information"))
-    elseif #arguments ~= 1 then e2option.usage(1) end
+    elseif #arguments ~= 1 then
+        e2option.usage(1)
+    end
 
     local resultname = arguments[1]
-    info, re = e2tool.collect_project_info(info)
-    if not info then
+    rc, re = e2project:load_project()
+    if not rc then
         error(re)
     end
 

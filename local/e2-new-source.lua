@@ -222,15 +222,14 @@ local function new_files_source(c, server, location, source_file, checksum_file,
 end
 
 local function e2_new_source(arg)
+    local e2project
     local rc, re = e2lib.init()
     if not rc then
         error(re)
     end
 
-    local info, re = e2tool.local_init(nil, "new-source")
-    if not info then
-        error(re)
-    end
+    e2project = e2tool.e2project()
+    e2project:init_project("new-source")
 
     e2option.flag("git", "create a git repository")
     e2option.flag("files", "create a new file on a files server")
@@ -241,8 +240,8 @@ local function e2_new_source(arg)
         error(arguments)
     end
 
-    info, re = e2tool.collect_project_info(info)
-    if not info then
+    rc, re = e2project:load_project()
+    if not rc then
         error(re)
     end
 
@@ -256,7 +255,8 @@ local function e2_new_source(arg)
             rserver = opts["server"]
         end
         local name = arguments[1]
-        local rlocation = string.format("%s/git/%s.git", info.project_location, name)
+        local rlocation = string.format("%s/git/%s.git",
+            e2project:project_location(), name)
         -- local
         local lserver = cache.server_names().dot
         local llocation = string.format("in/%s/.git", name)

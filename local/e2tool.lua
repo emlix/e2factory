@@ -612,156 +612,6 @@ end
 
 --- @section end
 
---- Info table contains servers, caches and more...
--- @table info
--- @field startup_cwd Current working dir at startup (string).
--- @field chroot_umask Umask setting for chroot (decimal number).
--- @field host_umask Default umask of the process (decimal number).
--- @field project_location string: project location relative to the servers
--- @field local_template_path Path to the local templates (string).
-local _info = false
-
---- Open debug logfile.
--- @return True on success, false on error.
--- @return Error object on failure.
-local function opendebuglogfile()
-    local rc, re, e, logfile, debuglogfile
-
-    rc, re = e2lib.mkdir_recursive(e2lib.join(e2tool.root(), "log"))
-    if not rc then
-        e = err.new("error making log directory")
-        return false, e:cat(re)
-    end
-    logfile = e2lib.join(e2tool.root(), "log/debug.log")
-    rc, re = e2lib.rotate_log(logfile)
-    if not rc then
-        return false, re
-    end
-
-    debuglogfile, re = eio.fopen(logfile, "w")
-    if not debuglogfile then
-        e = err.new("error opening debug logfile")
-        return false, e:cat(re)
-    end
-
-    e2lib.globals.debuglogfile = debuglogfile
-
-    return true
-end
-
--- set the umask value to be used in chroot
-local _chroot_umask = 18 -- 022 octal
-local _host_umask
-
---- set umask to value used for build processes
-function e2tool.set_umask()
-    e2lib.umask(_chroot_umask)
-end
-
---- set umask back to the value used on the host
-function e2tool.reset_umask()
-    e2lib.umask(_host_umask)
-end
-
---- initialize the umask set/reset mechanism (i.e. store the host umask)
-local function init_umask()
-    -- save the umask value we run with
-    _host_umask = e2lib.umask(_chroot_umask)
-
-    -- restore the previous umask value again
-    e2tool.reset_umask()
-end
-
---- Set a new info table.
--- @param t Table to use for info.
--- @return The new info table.
-local function set_info(t)
-    assertIsTable(t)
-    _info = t
-    return _info
-end
-
---- Return the info table.
--- @return Info table on success,
---         false if the info table has not been initialised yet.
-function e2tool.info()
-    return _info
-end
-
-local _current_tool
---- Get current local tool name.
--- @param tool Optional new tool name.
--- @return Tool name
--- @raise Assert if tool not set/invalid.
-function e2tool.current_tool(tool)
-    if tool then
-        assertIsStringN(tool)
-        _current_tool = tool
-    end
-
-    assertIsStringN(_current_tool)
-    return _current_tool
-end
-
-local _project_root
---- Get (set) project root.
--- @param project_root Optional. Set to specify project root.
--- @return Project root directory.
-function e2tool.root(project_root)
-    if project_root then
-        assertIsStringN(project_root)
-        _project_root = project_root
-    end
-
-    assertIsStringN(_project_root)
-    return _project_root
-end
-
---- initialize the local library, load and initialize local plugins
--- @param path string: path to project tree (optional)
--- @param tool string: tool name (without the 'e2-' prefix)
--- @return table: the info table, or false on failure
--- @return an error object on failure
-function e2tool.local_init(path, tool)
-    local rc, re
-    local e = err.new("initializing local tool")
-    local info
-
-    info = set_info({})
-
-    e2tool.current_tool(tool)
-
-    rc, re = e2lib.cwd()
-    if not rc then
-        return false, e:cat(re)
-    end
-    info.startup_cwd = rc
-
-    init_umask(info)
-
-    rc, re = e2lib.locate_project_root(path)
-    if not rc then
-        return false, e:append("not located in a project directory")
-    end
-    e2tool.root(rc)
-
-    -- load local plugins
-    local ctx = {  -- plugin context
-        info = info,
-    }
-    local plugindir = e2lib.join(e2tool.root(), ".e2/plugins")
-    rc, re = plugin.load_plugins(plugindir, ctx)
-    if not rc then
-        return false, e:cat(re)
-    end
-    rc, re = plugin.init_plugins()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    return info
-end
-
 --- check for configuration syntax compatibility and log informational
 -- message including list of supported syntaxes if incompatibility is
 -- detected.
@@ -833,6 +683,433 @@ local function check_global_interface_version()
     end
 
     return true
+end
+
+--- Open debug logfile.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+local function opendebuglogfile()
+    local rc, re, e, logfile, debuglogfile
+
+    rc, re = e2lib.mkdir_recursive(e2lib.join(e2tool.root(), "log"))
+    if not rc then
+        e = err.new("error making log directory")
+        return false, e:cat(re)
+    end
+    logfile = e2lib.join(e2tool.root(), "log/debug.log")
+    rc, re = e2lib.rotate_log(logfile)
+    if not rc then
+        return false, re
+    end
+
+    debuglogfile, re = eio.fopen(logfile, "w")
+    if not debuglogfile then
+        e = err.new("error opening debug logfile")
+        return false, e:cat(re)
+    end
+
+    e2lib.globals.debuglogfile = debuglogfile
+
+    return true
+end
+
+--- @type e2project_class
+e2tool.e2project_class = class("e2project_class")
+
+function e2tool.e2project_class:initialize()
+    self._rootdir = false
+    self._server_project_location = false
+    self._info = false
+
+    -- set the umask value to be used in chroot
+    self._chroot_umask = 18 -- 022
+    self._host_umask = false
+
+    self._results = false
+    self._sources = false
+end
+
+--- Initialize the local project, load and initialize local plugins.
+-- @param tool string: tool name (without the 'e2-' prefix)
+-- @raise Error on failure to initialize the project.
+function e2tool.e2project_class:init_project(tool)
+    assertIsStringN(tool)
+
+    local e = err.new("initializing local project")
+    local rc, re
+    local info
+
+    info = self:info({})
+
+    e2tool.current_tool(tool)
+
+    rc, re = e2lib.cwd()
+    if not rc then
+        error(e:cat(re))
+    end
+    info.startup_cwd = rc
+
+    self:_init_umask()
+
+    rc, re = e2lib.locate_project_root()
+    if not rc then
+        error(e:cat("not located in a project directory"))
+    end
+    e2tool.root(rc)
+    self:rootdir(rc)
+
+    -- load local plugins
+    local ctx = {  -- plugin context
+        info = info,
+    }
+    local plugindir = e2lib.join(self:rootdir(), ".e2/plugins")
+    rc, re = plugin.load_plugins(plugindir, ctx)
+    if not rc then
+        error(e:cat(re))
+    end
+    rc, re = plugin.init_plugins()
+    if not rc then
+        error(e:cat(re))
+    end
+
+    strict.lock(info)
+end
+
+function e2tool.e2project_class:_init_umask()
+    self._host_umask = e2lib.umask(self._chroot_umask)
+    e2tool.reset_umask()
+end
+
+--- Load the project configuration.
+function e2tool.e2project_class:load_project(skip_load_config)
+    local e = err.new("error loading project configuration")
+    local rc, re
+
+    rc, re = check_config_syntax_compat()
+    if not rc then
+        e2lib.abort(re)
+    end
+
+    rc, re = check_global_interface_version()
+    if not rc then
+        e2lib.abort(re)
+    end
+
+    rc, re = opendebuglogfile()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = e2lib.init2() -- configuration must be available
+    if not rc then
+        return false, re
+    end
+
+    if skip_load_config == true then
+        return true
+    end
+
+
+    e2lib.logf(4, "VERSION:       %s", buildconfig.VERSION)
+    e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
+
+    -- read .e2/proj-location
+    local plf = e2lib.join(self:rootdir(), e2lib.globals.project_location_file)
+    local line, re = eio.file_read_line(plf)
+    if not line then
+        return false, e:cat(re)
+    end
+    local _, _, l = string.find(line, "^%s*(%S+)%s*$")
+    if not l then
+        return false, e:cat("%s: can't parse project location", plf)
+    end
+    self:project_location(l)
+    e2lib.logf(4, "project location is %s", self:project_location())
+
+    -- setup cache
+    local config, re = e2lib.get_global_config()
+    if not config then
+        return false, e:cat(re)
+    end
+
+    rc, re = cache.setup_cache(config)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    cache.cache(rc)
+
+    rc, re = cache.setup_cache_local(
+        cache.cache(), self:rootdir(), self:project_location())
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = cache.setup_cache_apply_opts(cache.cache())
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    local f = e2lib.join(self:rootdir(), e2lib.globals.e2version_file)
+    local v, re = e2lib.parse_e2versionfile(f)
+    if not v then
+        return false, e:cat(re)
+    end
+
+    if v.tag ~= buildconfig.VERSIONSTRING then
+        return false, e:cat("local tool version does not match the " ..
+            "version configured\n in `%s`\nlocal tool version is %s\n" ..
+            "required version is %s", f, buildconfig.VERSIONSTRING, v.tag)
+    end
+
+    -- read environment configuration
+    rc, re = projenv.load_env_config("proj/env")
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- read project configuration
+    rc, re = project.load_project_config()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- chroot config
+    rc, re = chroot.load_chroot_config()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- licences
+    rc, re = licence.load_licence_config()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- sources
+    rc, re = source.load_source_configs()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- results
+    rc, re = result.load_result_configs()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- project result envs must be checked after loading results
+    rc, re = projenv.verify_result_envs()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- after results are loaded, verify the project configuration
+    rc, re = project.verify_project_config()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- warn if deprecated config files still exist
+    local deprecated_files = {
+        "proj/servers",
+        "proj/result-storage",
+        "proj/default-results",
+        "proj/name",
+        "proj/release-id",
+        ".e2/version",
+    }
+    for _,f in ipairs(deprecated_files) do
+        local path = e2lib.join(e2tool.root(), f)
+        if e2lib.exists(path) then
+            e2lib.warnf("WDEPRECATED",
+                "File exists but is no longer used: `%s'", f)
+        end
+    end
+
+    rc, re = policy.init()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    if e2option.opts["check"] then
+        rc, re = self:check_local()
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+
+    if e2option.opts["check-remote"] then
+        rc, re = self:check_remote()
+        if not rc then
+            return false, e:cat(re)
+        end
+    end
+
+    return true
+end
+
+--- Get or set the root directory of the e2 project.
+-- @param r rootdir to set, or nil
+-- @return rootdir string.
+-- @raise Assert on bad input
+function e2tool.e2project_class:rootdir(r)
+    if r then
+        assertIsStringN(r)
+        self._rootdir = r
+    else
+        assertIsStringN(self._rootdir)
+    end
+    return self._rootdir
+end
+
+--- Get the local template directory.
+-- @return local template directory.
+function e2tool.e2project_class:local_template_path()
+    return e2lib.join(self:rootdir(), ".e2/lib/e2/templates")
+end
+
+--- Get or set *server* project location
+-- @param l project location to set, or nil.
+-- @return project location.
+-- @raise Assert on bad input or unset project location.
+function e2tool.e2project_class:project_location(l)
+    if l then
+        assertIsStringN(l)
+        self._server_project_location = l
+    else
+        assertIsStringN(self._server_project_location)
+    end
+    return self._server_project_location
+end
+
+function e2tool.e2project_class:info(i)
+    if i then
+        assertIsTable(i)
+        self._info = i
+    else
+        assertIsTable(self._info)
+    end
+    return self._info
+end
+
+function e2tool.e2project_class:check_local()
+    local e, rc, re
+    local dirty, mismatch
+
+    e = err.new("checking project (local)")
+
+    rc, re, mismatch = generic_git.verify_head_match_tag(
+        self:rootdir(), project.release_id())
+    if not rc then
+        if mismatch then
+            e:append("project repository tag does not match " ..
+                "the ReleaseId given in proj/config")
+        else
+            return false, e:cat(re)
+        end
+    end
+
+    rc, re, dirty = generic_git.verify_clean_repository(self:rootdir())
+    if not rc then
+        if dirty then
+            e:append("project repository is not clean")
+        else
+            return false, e:cat(re)
+        end
+    end
+
+    if e:getcount() > 1 then
+        return false, e
+    end
+    return true
+end
+
+function e2tool.e2project_class:check_remote()
+    local e, rc, re
+    e = err.new("checking project (remote)")
+
+    rc, re = generic_git.verify_remote_tag(
+        e2lib.join(self:rootdir(), ".git"), project.release_id())
+    if not rc then
+        e:append("verifying remote tag failed")
+        return false, e:cat(re)
+    end
+
+    return true
+end
+
+--- @section end
+
+--- Info table contains servers, caches and more...
+-- @table info
+-- @field startup_cwd Current working dir at startup (string).
+-- @field chroot_umask Umask setting for chroot (decimal number).
+-- @field host_umask Default umask of the process (decimal number).
+
+
+--- set umask to value used for build processes
+function e2tool.set_umask()
+    e2lib.umask(e2tool.e2project()._chroot_umask) -- XXX: remove hack
+end
+
+--- set umask back to the value used on the host
+function e2tool.reset_umask()
+    e2lib.umask(e2tool.e2project()._host_umask) -- XXX: remove hack
+end
+
+--- Set a new info table.
+-- @param t Table to use for info.
+-- @return The new info table.
+--[[local function set_info(t)
+    assertIsTable(t)
+    _info = t
+    return _info
+end]]
+
+--- Return the info table.
+-- @return Info table on success,
+--         false if the info table has not been initialised yet.
+function e2tool.info()
+    return e2tool.e2project():info()
+end
+
+local _current_tool
+--- Get current local tool name.
+-- @param tool Optional new tool name.
+-- @return Tool name
+-- @raise Assert if tool not set/invalid.
+function e2tool.current_tool(tool)
+    if tool then
+        assertIsStringN(tool)
+        _current_tool = tool
+    end
+
+    assertIsStringN(_current_tool)
+    return _current_tool
+end
+
+local _project_root
+--- Get (set) project root.
+-- @param project_root Optional. Set to specify project root.
+-- @return Project root directory.
+function e2tool.root(project_root)
+    if project_root then
+        assertIsStringN(project_root)
+        _project_root = project_root
+    end
+
+    assertIsStringN(_project_root)
+    return _project_root
+end
+
+local _the_e2project
+--- Get the e2project singleton.
+function e2tool.e2project()
+    if not _the_e2project then
+        _the_e2project = e2tool.e2project_class:new()
+    end
+    return _the_e2project
 end
 
 --- Verify that a result or source file pathname in the form
@@ -946,203 +1223,6 @@ function e2tool.sourceconfig(name, prefix)
     assert(type(name) == "string")
     assert(prefix == nil or type(prefix) == "string")
     return e2lib.join(e2tool.sourcedir(name, prefix), "config")
-end
-
---- collect project info.
--- @param info Info table.
--- @param skip_load_config If true, skip loading config files etc.
--- @return True on success, false on error.
--- @return Error object on failure.
-function e2tool.collect_project_info(info, skip_load_config)
-    local rc, re
-    local e = err.new("reading project configuration")
-
-    -- check for configuration compatibility
-    rc, re = check_config_syntax_compat()
-    if not rc then
-        e2lib.abort(re)
-    end
-
-    rc, re = check_global_interface_version()
-    if not rc then
-        e2lib.abort(re)
-    end
-
-    info.local_template_path = e2lib.join(e2tool.root(), ".e2/lib/e2/templates")
-
-    rc, re = e2lib.init2() -- configuration must be available
-    if not rc then
-        return false, re
-    end
-
-    if skip_load_config == true then
-        return info
-    end
-
-    rc, re = opendebuglogfile()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    e2lib.logf(4, "VERSION:       %s", buildconfig.VERSION)
-    e2lib.logf(4, "VERSIONSTRING: %s", buildconfig.VERSIONSTRING)
-
-    -- read .e2/proj-location
-    local plf = e2lib.join(e2tool.root(), e2lib.globals.project_location_file)
-    local line, re = eio.file_read_line(plf)
-    if not line then
-        return false, e:cat(re)
-    end
-    local _, _, l = string.find(line, "^%s*(%S+)%s*$")
-    if not l then
-        return false, e:append("%s: can't parse project location", plf)
-    end
-    info.project_location = l
-    e2lib.logf(4, "project location is %s", info.project_location)
-
-    -- setup cache
-    local config, re = e2lib.get_global_config()
-    if not config then
-        return false, e:cat(re)
-    end
-
-    rc, re = cache.setup_cache(config)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    cache.cache(rc)
-
-    rc, re = cache.setup_cache_local(cache.cache(), e2tool.root(), info.project_location)
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    rc, re = cache.setup_cache_apply_opts(cache.cache())
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    local f = e2lib.join(e2tool.root(), e2lib.globals.e2version_file)
-    local v, re = e2lib.parse_e2versionfile(f)
-    if not v then
-        return false, re
-    end
-
-    if v.tag ~= buildconfig.VERSIONSTRING then
-        return false, err.new("local tool version does not match the " ..
-            "version configured\n in `%s`\nlocal tool version is %s\n" ..
-            "required version is %s", f, buildconfig.VERSIONSTRING, v.tag)
-    end
-
-    -- read environment configuration
-    rc, re = projenv.load_env_config("proj/env")
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- read project configuration
-    rc, re = project.load_project_config()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- chroot config
-    rc, re = chroot.load_chroot_config()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- licences
-    rc, re = licence.load_licence_config()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- sources
-    rc, re = source.load_source_configs()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- results
-    rc, re = result.load_result_configs()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- project result envs must be checked after loading results
-    rc, re = projenv.verify_result_envs()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    -- after results are loaded, verify the project configuration
-    rc, re = project.verify_project_config()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    if e:getcount() > 1 then
-        return false, e
-    end
-
-    -- warn if deprecated config files still exist
-    local deprecated_files = {
-        "proj/servers",
-        "proj/result-storage",
-        "proj/default-results",
-        "proj/name",
-        "proj/release-id",
-        ".e2/version",
-    }
-    for _,f in ipairs(deprecated_files) do
-        local path = e2lib.join(e2tool.root(), f)
-        if e2lib.exists(path) then
-            e2lib.warnf("WDEPRECATED", "File exists but is no longer used: `%s'", f)
-        end
-    end
-
-    rc, re = policy.init()
-    if not rc then
-        return false, e:cat(re)
-    end
-
-    if e2option.opts["check"] then
-        local dirty, mismatch
-
-        rc, re, mismatch = generic_git.verify_head_match_tag(e2tool.root(),
-            project.release_id())
-        if not rc then
-            if mismatch then
-                e:append("project repository tag does not match " ..
-                    "the ReleaseId given in proj/config")
-            else
-                return false, e:cat(re)
-            end
-        end
-
-        rc, re, dirty = generic_git.verify_clean_repository(e2tool.root())
-        if not rc then
-            if dirty then
-                e = err.new("project repository is not clean")
-                return false, e:cat(re)
-            else
-                return false, e:cat(re)
-            end
-        end
-    end
-
-    if e2option.opts["check-remote"] then
-        rc, re = generic_git.verify_remote_tag(
-            e2lib.join(e2tool.root(), ".git"), project.release_id())
-        if not rc then
-            e:append("verifying remote tag failed")
-            return false, e:cat(re)
-        end
-    end
-
-    return strict.lock(info)
 end
 
 --- Returns a sorted vector with all depdencies of result, and all
