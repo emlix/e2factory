@@ -28,6 +28,9 @@ local function assert_err(e)
     end
     assert(type(e.count) == "number", "Error count is not a number")
     assert(type(e.msg) == "table", "Error message table of wrong type")
+    if e.code ~= false then
+        assertIsStringN(e.code)
+    end
     return true
 end
 
@@ -108,6 +111,87 @@ function err.getcount(e)
     return e.count
 end
 
+--- Private store of error codes
+local _errcodes = {}
+
+--- Register an errcode and optional data associated with it.
+-- @param errcode UPPERCASE string shorthand for the error. Eg. EPERM.
+-- @param data Optional miscellaneous data. Defaults to true. May not be false.
+-- @error May throw assertion on incorrect use.
+function err.ecreg(errcode, data)
+    assertIsStringN(errcode)
+    assert(string.upper(errcode) == errcode)
+    assert(not _errcodes[errcode])
+    assert(data ~= false)
+
+    if data == nil then
+        data = true
+    end
+
+    _errcodes[errcode] = data
+end
+
+--- Set errcode on an err. The errcode must be registered first.
+-- @param e Error object
+-- @param errcode Errorcode string.
+-- @return The err object.
+-- @error May throw assertion on incorrect use.
+-- @see err.ecreg
+function err.ecset(e, errcode)
+    assert_err(e)
+    assertIsStringN(errcode)
+    assert(_errcodes[errcode])
+    e.code = errcode
+    return e
+end
+
+--- Compare errcode of an Error object with another errcode.
+-- @param e Error object
+-- @param errcode Errcode to com
+-- @return Returns true if the errcodes are equal,
+--         false if they differ (or unset).
+-- @error May throw assertion on incorrect use.
+function err.eccmp(e, errcode)
+    assert_err(e)
+    assertIsStringN(errcode)
+    assert(_errcodes[errcode])
+
+    local ec = err.eccode(e)
+
+    if ec and ec == errcode then
+        return true
+    end
+
+    return false
+end
+
+--- Return the errcode, or false when there is none.
+-- @param e Error object
+-- @error May throw assertion on incorrect use.
+function err.eccode(e)
+    assert_err(e)
+
+    if not e.code then
+        return false
+    end
+
+    return e.code
+end
+
+--- Get data associated with the errcode of this error, false otherwise.
+-- @param e Error object.
+-- @return Data associated with errcode. False when there's no errcode.
+-- @error May throw assertion on incorrect use.
+function err.ecdata(e)
+    assert_err(e)
+
+    if not e.code then
+        return false
+    end
+
+    return _errcodes[e.code]
+end
+
 --- create an error object
 -- @param format string: format string
 -- @param ... list of arguments required for the format string
@@ -117,6 +201,7 @@ function err.new(format, ...)
     local e = {}
     e.count = 0
     e.msg = {}
+    e.code = false
     local meta = { __index = err }
     setmetatable(e, meta)
     if format then
