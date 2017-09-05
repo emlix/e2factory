@@ -2180,7 +2180,7 @@ function e2lib.mkdir(dir, mode)
     local re
 
     if mode == nil then
-        mode, re = e2lib.parse_mode("a+rwx")
+        mode, re = e2lib.parse_mode("777")
         if not mode then
             return false, re
         end
@@ -2207,7 +2207,7 @@ function e2lib.mkdir_recursive(path, mode)
     local rc, re, errnum, eexist
 
     if mode == nil then
-        mode, re = e2lib.parse_mode("ugo+rwx")
+        mode, re = e2lib.parse_mode("777")
         if not mode then
             return false, re
         end
