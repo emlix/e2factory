@@ -2189,8 +2189,9 @@ function e2lib.mkdir(dir, mode)
     local rc, errstring, errnum = le2lib.mkdir(dir, mode)
 
     if not rc then
-        return false, err.new("cannot create directory %q: %s", dir,
-            errstring), errnum
+        return false, err.ecset(
+            err.new("cannot create directory %q: %s", dir, errstring),
+            errno.errnum2def(errnum))
     end
 
     return true
@@ -2213,16 +2214,12 @@ function e2lib.mkdir_recursive(path, mode)
         end
     end
 
-    eexist = errno.def2errnum("EEXIST")
-
     trace.filter_function("e2lib", "mkdir")
     for _,dir in ipairs(dirs) do
         rc, re, errnum = e2lib.mkdir(dir, mode)
-        if not rc then
-            if errnum ~= eexist then
-                trace.filter_function_remove("e2lib", "mkdir")
-                return false, re
-            end
+        if not rc and not err.eccmp(re, "EEXIST") then
+            trace.filter_function_remove("e2lib", "mkdir")
+            return false, re
         end
     end
     trace.filter_function_remove("e2lib", "mkdir")
