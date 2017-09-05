@@ -160,6 +160,10 @@ def_to_num["EKEYREJECTED"] = 129
 def_to_num["EOWNERDEAD"] = 130
 def_to_num["ENOTRECOVERABLE"] = 131
 
+for errcode, errnum in pairs(def_to_num) do
+    err.ecreg(errcode, errnum)
+end
+
 --- Given a numeric error code (errno), translate it the corresponding
 -- define string. Example: errno.errnum2def(1) => "EPERM".
 -- @param errnum Error (errno) number;
