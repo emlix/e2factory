@@ -76,15 +76,16 @@ function e2build.build_process_class:initialize()
 end
 
 --- Build one result.
---@param res Result object
---@return True on success, false on error.
---@return Error object on failure.
-function e2build.build_process_class:build(res)
+-- @param res Result object
+-- @param process_mode Build process mode.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function e2build.build_process_class:build(res, process_mode)
     assert(res:isInstanceOf(result.basic_result))
     e2lib.logf(3, "building result: %s", res:get_name())
 
 
-    for step in self:_next_step(res:build_settings():mode()) do
+    for step in self:_next_step(process_mode) do
         local rc, re
         local t1, t2, deltat
         local return_flags = strict.lock({
@@ -116,36 +117,36 @@ function e2build.build_process_class:build(res)
 end
 
 --- Add a build step
--- @param mode Build mode
+-- @param process_mode Build process mode
 -- @param name Name of build step
 -- @param func Method of build_process_class implementing the build step.
-function e2build.build_process_class:add_step(mode, name, func)
-    assertIsStringN(mode)
+function e2build.build_process_class:add_step(process_mode, name, func)
+    assertIsStringN(process_mode)
     assertIsStringN(name)
     assertIsFunction(func)
 
     self._modes = self._modes or {}
-    self._modes[mode] = self._modes[mode] or {}
-    table.insert(self._modes[mode], { name = name, func = func })
+    self._modes[process_mode] = self._modes[process_mode] or {}
+    table.insert(self._modes[process_mode], { name = name, func = func })
 end
 
 --- Add build step before specified.
--- @param mode Build mode
+-- @param process_mode Build process mode
 -- @param before Add build step before this one
 -- @param name Name of build step
 -- @param func Method of build_process_class implementing the build step.
-function e2build.build_process_class:add_step_before(mode, before, name, func)
-    assertIsStringN(mode)
+function e2build.build_process_class:add_step_before(process_mode, before, name, func)
+    assertIsStringN(process_mode)
     assertIsStringN(before)
     assertIsStringN(name)
     assertIsFunction(func)
     assertIsTable(self._modes)
-    assertIsTable(self._modes[mode])
+    assertIsTable(self._modes[process_mode])
 
     local pos = false
 
-    for i = 1, #self._modes[mode] do
-        local step = self._modes[mode][i]
+    for i = 1, #self._modes[process_mode] do
+        local step = self._modes[process_mode][i]
         if step.name == before then
             pos = i
             break
@@ -153,29 +154,29 @@ function e2build.build_process_class:add_step_before(mode, before, name, func)
     end
 
     if not pos then
-        error(err.new("add_step_before: no step called %s in mode %s", after, mode))
+        error(err.new("add_step_before: no step called %s in mode %s", after, process_mode))
     end
 
-    table.insert(self._modes[mode], pos, { name = name, func = func })
+    table.insert(self._modes[process_mode], pos, { name = name, func = func })
 end
 
 --- Add build step after specified.
--- @param mode Build mode
+-- @param process_mode Build process mode
 -- @param after Add build step after this one
 -- @param name Name of build step
 -- @param func Method of build_process_class implementing the build step.
-function e2build.build_process_class:add_step_after(mode, after, name, func)
-    assertIsStringN(mode)
+function e2build.build_process_class:add_step_after(process_mode, after, name, func)
+    assertIsStringN(process_mode)
     assertIsStringN(after)
     assertIsStringN(name)
     assertIsFunction(func)
     assertIsTable(self._modes)
-    assertIsTable(self._modes[mode])
+    assertIsTable(self._modes[process_mode])
 
     local pos = false
 
-    for i = 1, #self._modes[mode] do
-        local step = self._modes[mode][i]
+    for i = 1, #self._modes[process_mode] do
+        local step = self._modes[process_mode][i]
         if step.name == after then
             pos = i
             break
@@ -183,21 +184,23 @@ function e2build.build_process_class:add_step_after(mode, after, name, func)
     end
 
     if not pos then
-        error(err.new("add_step_after: no step called %s in mode %s", after, mode))
+        error(err.new("add_step_after: no step called %s in mode %s", after, process_mode))
     end
 
-    table.insert(self._modes[mode], pos + 1, { name = name, func = func })
+    table.insert(self._modes[process_mode], pos + 1, { name = name, func = func })
 end
 
----
-function e2build.build_process_class:_next_step(mode)
-    assertIsStringN(mode)
-    assertIsTable(self._modes[mode])
+--- Iterator returns the next step in the chosen build process mode
+-- @param process_mode Build process mode
+-- @return Iterator function
+function e2build.build_process_class:_next_step(process_mode)
+    assertIsStringN(process_mode)
+    assertIsTable(self._modes[process_mode])
     local i = 0
 
     return function()
         i = i + 1
-        return self._modes[mode][i]
+        return self._modes[process_mode][i]
     end
 end
 
@@ -1134,11 +1137,6 @@ end
 -- @type settings_class
 e2build.settings_class = class("settings")
 
----
-function e2build.settings_class:mode()
-    error("called settings_class:mode() of base class")
-end
-
 --------------------------------------------------------------------------------
 --- Build Settings class.
 -- @type build_settings_class
@@ -1150,10 +1148,6 @@ function e2build.build_settings_class:initialize()
         self._force_rebuild = false
         self._keep_chroot = false
         self._prep_playground = false
-end
-
-function e2build.build_settings_class:mode()
-    return "build"
 end
 
 ---
@@ -1201,10 +1195,6 @@ e2build.playground_settings_class = class("playground_settings", e2build.setting
 function e2build.playground_settings_class:initialize()
     self._profile = false
     self._command = false
-end
-
-function e2build.playground_settings_class:mode()
-    return "playground"
 end
 
 ---

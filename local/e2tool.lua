@@ -1383,7 +1383,7 @@ function e2tool.build_results(resultv)
 
         res = result.results[resultname]
 
-        rc, re = res:build_process():build(res)
+        rc, re = res:build_process():build(res, "build")
         if not rc then
             return false, e:cat(re)
         end

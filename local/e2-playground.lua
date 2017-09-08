@@ -125,7 +125,7 @@ local function e2_playground(arg)
     end
 
     res:build_settings(settings)
-    rc, re = res:build_process():build(res)
+    rc, re = res:build_process():build(res, "playground")
     if not rc then
         error(e:cat(re))
     end
