@@ -1152,7 +1152,7 @@ end
 
 ---
 function e2build.build_settings_class:selected(value)
-    if value then
+    if value ~= nil then
         assertIsBoolean(value)
         self._selected = value
     end
@@ -1161,7 +1161,7 @@ end
 
 ---
 function e2build.build_settings_class:force_rebuild(value)
-    if value then
+    if value ~= nil then
         assertIsBoolean(value)
         self._force_rebuild = value
     end
@@ -1170,7 +1170,7 @@ end
 
 ---
 function e2build.build_settings_class:keep_chroot(value)
-    if value then
+    if value ~= nil then
         assertIsBoolean(value)
         self._keep_chroot = value
     end
@@ -1179,7 +1179,7 @@ end
 
 ---
 function e2build.build_settings_class:prep_playground(value)
-    if value then
+    if value ~= nil then
         assertIsBoolean(value)
         self._prep_playground = value
     end
@@ -1199,7 +1199,7 @@ end
 
 ---
 function e2build.playground_settings_class:profile(value)
-    if value then
+    if value ~= nil then
         assertIsString(value)
         self._profile = value
     end
@@ -1209,7 +1209,7 @@ end
 
 ---
 function e2build.playground_settings_class:command(value)
-    if value then
+    if value ~= nil then
         assertIsString(value)
         self._command = value
     end
