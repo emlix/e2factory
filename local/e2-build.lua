@@ -232,32 +232,43 @@ local function e2_build(arg)
 
     -- selected results
     e2lib.logf(4, "selected_results=%s", table.concat(selected_results, " "))
-    rc, re = e2tool.select_results(selected_results, force_rebuild,
-        keep_chroot, nil, playground)
-    if not rc then
-        error(re)
+    for _,resultname in ipairs(selected_results) do
+        local res = result.results[resultname]
+        res:build_settings():selected(true)
+        res:build_settings():force_rebuild(force_rebuild)
+        res:build_settings():keep_chroot(keep_chroot)
+        res:build_settings():prep_playground(playground)
     end
 
     -- specific build modi
     e2lib.logf(4, "tag_mode_results=%s", table.concat(tag_mode_results, " "))
-    rc, re = e2tool.select_results(tag_mode_results, force_rebuild, keep_chroot,
-        policy.default_build_mode("tag"), playground)
-    if not rc then
-        error(re)
+    for _,resultname in ipairs(tag_mode_results) do
+        local res = result.results[resultname]
+        res:build_settings():selected(true)
+        res:build_settings():force_rebuild(force_rebuild)
+        res:build_settings():keep_chroot(keep_chroot)
+        res:build_settings():prep_playground(playground)
+        res:build_mode(policy.default_build_mode("tag"))
     end
 
     e2lib.logf(4, "branch_mode_results=%s", table.concat(branch_mode_results, " "))
-    rc, re = e2tool.select_results(branch_mode_results, force_rebuild,
-        keep_chroot, policy.default_build_mode("branch"), playground)
-    if not rc then
-        error(re)
+    for _,resultname in ipairs(branch_mode_results) do
+        local res = result.results[resultname]
+        res:build_settings():selected(true)
+        res:build_settings():force_rebuild(force_rebuild)
+        res:build_settings():keep_chroot(keep_chroot)
+        res:build_settings():prep_playground(playground)
+        res:build_mode(policy.default_build_mode("branch"))
     end
 
     e2lib.logf(4, "wc_mode_results=%s", table.concat(wc_mode_results, " "))
-    rc, re = e2tool.select_results(wc_mode_results, force_rebuild, keep_chroot,
-        policy.default_build_mode("working-copy"), playground)
-    if not rc then
-        error(re)
+    for _,resultname in ipairs(wc_mode_results) do
+        local res = result.results[resultname]
+        res:build_settings():selected(true)
+        res:build_settings():force_rebuild(force_rebuild)
+        res:build_settings():keep_chroot(keep_chroot)
+        res:build_settings():prep_playground(playground)
+        res:build_mode(policy.default_build_mode("working-copy"))
     end
 
     rc, re = e2tool.print_selection(ordered_results)
