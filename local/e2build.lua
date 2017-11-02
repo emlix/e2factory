@@ -190,6 +190,52 @@ function e2build.build_process_class:add_step_after(process_mode, after, name, f
     table.insert(self._modes[process_mode], pos + 1, { name = name, func = func })
 end
 
+--- Create new build settings instance for the desired process mode.
+-- @param process_mode A process mode like "build" or "playground".
+-- @return Build settings instance
+-- @error Throws assertion/error on invalid process_mode.
+function e2build.build_process_class:build_settings_new(process_mode)
+    assertIsStringN(process_mode)
+
+    if process_mode == "build" then
+        return e2build.build_settings_class:new()
+    elseif process_mode == "playground" then
+        return e2build.playground_settings_class:new()
+    end
+
+    error("build_process_class:build_settings_new(): unknown process_mode")
+end
+
+--- Get/set the build process settings.
+-- @param bs Build settings instance to set (optional).
+-- @return Build settings instance.
+-- @error Throws assertion if unset and on invalid input.
+function e2build.build_process_class:build_settings(bs)
+    if bs then
+        assertIsTable(bs)
+        self._build_settings = bs
+    else
+        assertIsTable(self._build_settings)
+    end
+
+    return self._build_settings
+end
+
+-- Get/set the build mode.
+-- @param bm Build mode table to set (optional)
+-- @return Build mode table.
+-- @error Throws assertion if unset and on invalid input.
+function e2build.build_process_class:build_mode(bm)
+    if bm then
+        assertIsTable(bm)
+        self._build_mode = bm
+    else
+        assertIsTable(self._build_mode)
+    end
+
+    return self._build_mode
+end
+
 --- Iterator returns the next step in the chosen build process mode
 -- @param process_mode Build process mode
 -- @return Iterator function
@@ -228,7 +274,7 @@ function e2build.build_process_class:_enter_playground(res, return_flags)
     e = err.new("entering playground")
 
     rc, re = eio.file_write(e2lib.join(bc.c, bc.profile),
-        res:build_settings():profile())
+        self:build_settings():profile())
     if not rc then
         error(e:cat(re))
     end
@@ -247,7 +293,7 @@ function e2build.build_process_class:_enter_playground(res, return_flags)
 
     table.insert(cmd, "/bin/sh")
     table.insert(cmd, "-c")
-    table.insert(cmd, res:build_settings():command())
+    table.insert(cmd, self:build_settings():command())
 
     e2tool.set_umask()
     rc, re = e2lib.callcmd(cmd, {})
@@ -283,15 +329,15 @@ function e2build.build_process_class:_result_available(res, return_flags)
 
     sbid = string.format("%s...", string.sub(buildid, 1, 8))
 
-    if res:build_settings():prep_playground() then
+    if self:build_settings():prep_playground() then
         return_flags.message = e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
             columns, string.format("[%s] [playground]", sbid))
         return_flags.stop = false
         return true
     end
-    if res:build_mode().source_set() == "working-copy" or
-        res:build_settings():force_rebuild() then
+    if self:build_mode().source_set() == "working-copy" or
+        self:build_settings():force_rebuild() then
         return_flags.message = e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
             columns, string.format("[%s]", sbid))
@@ -300,7 +346,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
     end
 
     local server, location =
-        res:build_mode().storage(
+        self:build_mode().storage(
             e2project:project_location(), project.release_id())
     local result_location = e2lib.join(location, res:get_name(),
         buildid, "result.tar")
@@ -603,7 +649,7 @@ end
 function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
     local rc, re, e
     local buildid, server, location, resulttarpath, tmpdir
-    local path, resdir, dt, filesdir, e2project
+    local path, resdir, dt, filesdir, e2project, dep_bp
 
     e = err.new("unpacking result failed: %s", dep:get_name())
 
@@ -614,8 +660,9 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
         return false, e:cat(re)
     end
 
+    dep_bp = dep:build_process()
     server, location =
-        dep:build_mode().storage(e2project:project_location(), project.release_id())
+        dep_bp:build_mode().storage(e2project:project_location(), project.release_id())
 
     e2lib.logf(3, "searching for dependency %s in %s:%s",
         dep:get_name(), server, location)
@@ -702,7 +749,7 @@ function e2build.build_process_class:_install_sources(res, return_flags)
 
     bc = res:build_config()
     destdir = e2lib.join(bc.T, "build")
-    source_set = res:build_mode().source_set()
+    source_set = self:build_mode().source_set()
 
     for sourcename in res:sources_list():iter() do
         e = err.new("installing source failed: %s", sourcename)
@@ -742,7 +789,7 @@ end
 ---
 function e2build.build_process_class:_build_playground(res, return_flags)
 
-    if res:build_settings():prep_playground()  then
+    if self:build_settings():prep_playground()  then
         return_flags.message = string.format("playground done for: %-20s", res:get_name())
         return_flags.stop = true
         return true
@@ -838,7 +885,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
     --   -> releases:<project>/<archive>/<release_id>/<result>/files/*
     --]]
     local e2project = e2tool.e2project()
-    if not res:build_mode().deploy then
+    if not self:build_mode().deploy then
         e2lib.log(4, "deployment disabled for this build mode")
         return true
     end
@@ -860,7 +907,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
         table.insert(files, e2lib.join("files", f))
     end
     table.insert(files, "checksums")
-    local server, location = res:build_mode().deploy_storage(
+    local server, location = self:build_mode().deploy_storage(
         e2project:project_location(), project.release_id())
 
     -- do not re-deploy if this release was already done earlier
@@ -1013,7 +1060,7 @@ function e2build.build_process_class:_store_result(res, return_flags)
         return false, e:cat(re)
     end
 
-    local server, location = res:build_mode().storage(
+    local server, location = self:build_mode().storage(
         e2project:project_location(), project.release_id())
 
     local buildid, re = res:buildid()
@@ -1048,7 +1095,7 @@ function e2build.build_process_class:_linklast(res, return_flags)
     e = err.new("creating link to last results")
     e2project = e2tool.e2project()
     -- calculate the path to the result
-    server, location = res:build_mode().storage(
+    server, location = self:build_mode().storage(
         e2project:project_location(), project.release_id())
 
     -- compute the "last" link/directory
@@ -1111,7 +1158,7 @@ end
 function e2build.build_process_class:_chroot_cleanup(res, return_flags)
     local rc, re
     -- do not remove chroot if the user requests to keep it
-    if not res:build_settings():keep_chroot() then
+    if not self:build_settings():keep_chroot() then
         rc, re = self:helper_chroot_remove(res)
         if not rc then
             return false, re

@@ -70,12 +70,23 @@ local function e2_playground(arg)
         error(err.new("unknown result: %s", arguments[1]))
     end
 
-    -- apply the standard build mode to all results
-    for _,res in pairs(result.results) do
-        res:build_mode(build_mode)
+    local ordered_results, re = e2tool.dlist_recursive({arguments[1]})
+    if not ordered_results then
+        error(re)
     end
 
-    local bc
+    -- set up build process and mode for all involved results
+    for _,resultname in ipairs(ordered_results) do
+        local res2 = result.results[resultname]
+        res2:build_process(res2:build_process_new())
+        res2:build_process():build_mode(build_mode)
+    end
+
+    -- set up build setting for selected result
+    local bp, bs, bc
+    bp = res:build_process()
+    bs = bp:build_settings(bp:build_settings_new("playground"))
+
     bc, re = res:build_config()
     if not bc then
         error(re)
@@ -88,8 +99,6 @@ local function e2_playground(arg)
         console.infonl(bc.c)
         e2lib.finish(0)
     end
-
-    local settings = e2build.playground_settings_class:new()
 
     -- interactive mode, use bash profile
     local out = {}
@@ -107,15 +116,15 @@ local function e2_playground(arg)
         table.insert(out, string.format("source %s/script/%s\n",
             bc.Tc, bc.buildrc_noinit_file))
     end
-    settings:profile(table.concat(out))
+    bs:profile(table.concat(out))
 
     local command
     if opts.command then
-        settings:command(
+        bs:command(
             string.format("/bin/bash --rcfile '%s' -c '%s'", bc.profile,
             opts.command))
     else
-        settings:command(string.format("/bin/bash --rcfile '%s'", bc.profile))
+        bs:command(string.format("/bin/bash --rcfile '%s'", bc.profile))
     end
 
     e2lib.logf(2, "entering playground for %s", res:get_name())
@@ -124,8 +133,7 @@ local function e2_playground(arg)
         e2lib.log(2, "type `runinit' to run the init files")
     end
 
-    res:build_settings(settings)
-    rc, re = res:build_process():build(res, "playground")
+    rc, re = bp:build(res, "playground")
     if not rc then
         error(e:cat(re))
     end

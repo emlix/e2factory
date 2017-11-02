@@ -318,7 +318,8 @@ local function _build_collect_project(self, res, return_flags)
     for sourcename in cp_sources:iter() do
         e2lib.logf(3, "source: %s", sourcename)
         local destdir = e2lib.join(bc.T, "project", e2tool.sourcedir(sourcename))
-        local source_set = res:build_mode().source_set()
+        local bp = res:build_process()
+        local source_set = bp:build_mode().source_set()
         local src = source.sources[sourcename]
         local source_to_result_fn = _source_to_result_functions[src:get_type()]
 
@@ -497,21 +498,17 @@ function collect_project_class:build_config()
     return self._stdresult:build_config()
 end
 
-function collect_project_class:build_mode(bm)
-    return self._stdresult:build_mode(bm)
-end
-
-function collect_project_class:build_settings(bs)
-    return self._stdresult:build_settings(bs)
-end
-
-function collect_project_class:build_process()
-    local bp = self._stdresult:build_process()
+function collect_project_class:build_process_new()
+    local bp = self._stdresult:build_process_new()
 
     bp:add_step_before("build", "fix_permissions", "build_collect_project",
         _build_collect_project)
 
     return bp
+end
+
+function collect_project_class:build_process(bp)
+    return self._stdresult:build_process(bp)
 end
 
 function collect_project_class:chroot_list()

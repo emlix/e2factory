@@ -1361,7 +1361,8 @@ function e2tool.print_selection(resultvec)
             return false, e:append("no such result: %s", resultname)
         end
 
-        local settings = res:build_settings()
+        local bp = res:build_process()
+        local settings = bp:build_settings()
 
         local s = settings:selected() and "[ selected ]" or "[dependency]"
         local f = settings:force_rebuild() and "[force rebuild]" or ""

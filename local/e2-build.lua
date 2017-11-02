@@ -226,49 +226,54 @@ local function e2_build(arg)
     -- first, standard build mode and settings for all
     for _,resultname in ipairs(ordered_results) do
         local res = result.results[resultname]
-        res:build_mode(build_mode)
-        res:build_settings(e2build.build_settings_class:new())
+        local bp = res:build_process(res:build_process_new())
+        bp:build_mode(build_mode)
+        bp:build_settings(bp:build_settings_new("build"))
     end
 
     -- selected results
     e2lib.logf(4, "selected_results=%s", table.concat(selected_results, " "))
     for _,resultname in ipairs(selected_results) do
         local res = result.results[resultname]
-        res:build_settings():selected(true)
-        res:build_settings():force_rebuild(force_rebuild)
-        res:build_settings():keep_chroot(keep_chroot)
-        res:build_settings():prep_playground(playground)
+        local bp = res:build_process()
+        bp:build_settings():selected(true)
+        bp:build_settings():force_rebuild(force_rebuild)
+        bp:build_settings():keep_chroot(keep_chroot)
+        bp:build_settings():prep_playground(playground)
     end
 
     -- specific build modi
     e2lib.logf(4, "tag_mode_results=%s", table.concat(tag_mode_results, " "))
     for _,resultname in ipairs(tag_mode_results) do
         local res = result.results[resultname]
-        res:build_settings():selected(true)
-        res:build_settings():force_rebuild(force_rebuild)
-        res:build_settings():keep_chroot(keep_chroot)
-        res:build_settings():prep_playground(playground)
-        res:build_mode(policy.default_build_mode("tag"))
+        local bp = res:build_process()
+        bp:build_settings():selected(true)
+        bp:build_settings():force_rebuild(force_rebuild)
+        bp:build_settings():keep_chroot(keep_chroot)
+        bp:build_settings():prep_playground(playground)
+        bp:build_mode(policy.default_build_mode("tag"))
     end
 
     e2lib.logf(4, "branch_mode_results=%s", table.concat(branch_mode_results, " "))
     for _,resultname in ipairs(branch_mode_results) do
         local res = result.results[resultname]
-        res:build_settings():selected(true)
-        res:build_settings():force_rebuild(force_rebuild)
-        res:build_settings():keep_chroot(keep_chroot)
-        res:build_settings():prep_playground(playground)
-        res:build_mode(policy.default_build_mode("branch"))
+        local bp = res:build_process()
+        bp:build_settings():selected(true)
+        bp:build_settings():force_rebuild(force_rebuild)
+        bp:build_settings():keep_chroot(keep_chroot)
+        bp:build_settings():prep_playground(playground)
+        bp:build_mode(policy.default_build_mode("branch"))
     end
 
     e2lib.logf(4, "wc_mode_results=%s", table.concat(wc_mode_results, " "))
     for _,resultname in ipairs(wc_mode_results) do
         local res = result.results[resultname]
-        res:build_settings():selected(true)
-        res:build_settings():force_rebuild(force_rebuild)
-        res:build_settings():keep_chroot(keep_chroot)
-        res:build_settings():prep_playground(playground)
-        res:build_mode(policy.default_build_mode("working-copy"))
+        local bp = res:build_process()
+        bp:build_settings():selected(true)
+        bp:build_settings():force_rebuild(force_rebuild)
+        bp:build_settings():keep_chroot(keep_chroot)
+        bp:build_settings():prep_playground(playground)
+        bp:build_mode(policy.default_build_mode("working-copy"))
     end
 
     rc, re = e2tool.print_selection(ordered_results)

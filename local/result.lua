@@ -157,8 +157,15 @@ function result.basic_result:merged_env()
         self._type, self._name))
 end
 
---- Get the build process to be used for this class
-function result.basic_result:build_process()
+--- Return new build process for this result
+function result.basic_result:build_process_new()
+    error(err.new("called build_process_new() of result base class, type %s name %s",
+        self._type, self._name))
+end
+
+--- Get/set the build process to be used for this class
+-- @param bp Build process to set (optional).
+function result.basic_result:build_process(bp)
     error(err.new("called build_process() of result base class, type %s name %s",
         self._type, self._name))
 end
@@ -202,8 +209,7 @@ function result.result_class:initialize(rawres)
     self._sources_list = sl.sl:new()
     self._chroot_list = sl.sl:new()
     self._env = environment.new()
-    self._build_mode = false
-    self._build_settings = false
+    self._build_process = false
 
     local e = err.new("in result %s:", self._name)
     local rc, re
@@ -410,30 +416,6 @@ function result.result_class:build_config()
 end
 
 ---
-function result.result_class:build_mode(bm)
-    if bm then
-        assertIsTable(bm)
-        self._build_mode = bm
-    else
-        assertIsTable(self._build_mode)
-    end
-
-    return self._build_mode
-end
-
----
-function result.result_class:build_settings(bs)
-    if bs then
-        assertIsTable(bs)
-        self._build_settings = bs
-    else
-        assertIsTable(self._build_settings)
-    end
-
-    return self._build_settings
-end
-
----
 function result.result_class:merged_env()
     local e = environment.new()
 
@@ -459,8 +441,9 @@ end
 -- @return BuildID or false on error.
 -- @return Error object on failure.
 function result.result_class:buildid()
-    local e, rc, re, hc, id, build_mode
-    build_mode = self:build_mode()
+    local e, rc, re, hc, id, bp, build_mode
+    bp = self:build_process()
+    build_mode = bp:build_mode()
 
     if self._buildid then
         return build_mode.buildid(self._buildid)
@@ -537,10 +520,18 @@ function result.result_class:buildid()
 end
 
 ---
-function result.result_class:build_process()
-    assertIsTable(self._build_mode)
-    assertIsTable(self._build_settings)
+function result.result_class:build_process_new()
     return e2build.build_process_class:new()
+end
+
+---
+function result.result_class:build_process(bp)
+    if bp ~= nil then
+        self._build_process = bp
+    end
+
+    assertIsTable(self._build_process)
+    return self._build_process
 end
 
 ---
