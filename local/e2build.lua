@@ -1198,15 +1198,6 @@ function e2build.build_settings_class:initialize()
 end
 
 ---
-function e2build.build_settings_class:selected(value)
-    if value ~= nil then
-        assertIsBoolean(value)
-        self._selected = value
-    end
-    return self._selected
-end
-
----
 function e2build.build_settings_class:force_rebuild(value)
     if value ~= nil then
         assertIsBoolean(value)

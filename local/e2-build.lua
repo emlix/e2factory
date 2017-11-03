@@ -236,7 +236,6 @@ local function e2_build(arg)
     for _,resultname in ipairs(selected_results) do
         local res = result.results[resultname]
         local bp = res:build_process()
-        bp:build_settings():selected(true)
         bp:build_settings():force_rebuild(force_rebuild)
         bp:build_settings():keep_chroot(keep_chroot)
         bp:build_settings():prep_playground(playground)
@@ -247,7 +246,6 @@ local function e2_build(arg)
     for _,resultname in ipairs(tag_mode_results) do
         local res = result.results[resultname]
         local bp = res:build_process()
-        bp:build_settings():selected(true)
         bp:build_settings():force_rebuild(force_rebuild)
         bp:build_settings():keep_chroot(keep_chroot)
         bp:build_settings():prep_playground(playground)
@@ -258,7 +256,6 @@ local function e2_build(arg)
     for _,resultname in ipairs(branch_mode_results) do
         local res = result.results[resultname]
         local bp = res:build_process()
-        bp:build_settings():selected(true)
         bp:build_settings():force_rebuild(force_rebuild)
         bp:build_settings():keep_chroot(keep_chroot)
         bp:build_settings():prep_playground(playground)
@@ -269,16 +266,10 @@ local function e2_build(arg)
     for _,resultname in ipairs(wc_mode_results) do
         local res = result.results[resultname]
         local bp = res:build_process()
-        bp:build_settings():selected(true)
         bp:build_settings():force_rebuild(force_rebuild)
         bp:build_settings():keep_chroot(keep_chroot)
         bp:build_settings():prep_playground(playground)
         bp:build_mode(policy.default_build_mode("working-copy"))
-    end
-
-    rc, re = e2tool.print_selection(ordered_results)
-    if not rc then
-        error(re)
     end
 
     -- calculate buildids for selected results

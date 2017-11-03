@@ -1349,30 +1349,6 @@ function e2tool.build_results(resultv)
     return true
 end
 
---- Print selection status for a list of results
--- @param resultvec table: list of result names
--- @return bool
--- @return an error object on failure
-function e2tool.print_selection(resultvec)
-    for _,resultname in ipairs(resultvec) do
-        local e = err.new("error printing selected results")
-        local res = result.results[resultname]
-        if not res then
-            return false, e:append("no such result: %s", resultname)
-        end
-
-        local bp = res:build_process()
-        local settings = bp:build_settings()
-
-        local s = settings:selected() and "[ selected ]" or "[dependency]"
-        local f = settings:force_rebuild() and "[force rebuild]" or ""
-        local p = settings:prep_playground() and "[playground]" or ""
-
-        e2lib.logf(4, "Selected result: %-20s %s %s %s", resultname, s, f, p)
-    end
-    return true
-end
-
 return strict.lock(e2tool)
 
 -- vim:sw=4:sts=4:et:
