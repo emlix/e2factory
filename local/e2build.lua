@@ -193,7 +193,7 @@ end
 --- Create new build settings instance for the desired process mode.
 -- @param process_mode A process mode like "build" or "playground".
 -- @return Build settings instance
--- @error Throws assertion/error on invalid process_mode.
+-- @raise Assertion/error on invalid process_mode.
 function e2build.build_process_class:build_settings_new(process_mode)
     assertIsStringN(process_mode)
 
@@ -209,7 +209,7 @@ end
 --- Get/set the build process settings.
 -- @param bs Build settings instance to set (optional).
 -- @return Build settings instance.
--- @error Throws assertion if unset and on invalid input.
+-- @raise Throws assertion if unset and on invalid input.
 function e2build.build_process_class:build_settings(bs)
     if bs then
         assertIsTable(bs)
@@ -224,7 +224,7 @@ end
 -- Get/set the build mode.
 -- @param bm Build mode table to set (optional)
 -- @return Build mode table.
--- @error Throws assertion if unset and on invalid input.
+-- @raise Throws assertion if unset and on invalid input.
 function e2build.build_process_class:build_mode(bm)
     if bm then
         assertIsTable(bm)
