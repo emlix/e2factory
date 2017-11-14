@@ -117,7 +117,7 @@ local _errcodes = {}
 --- Register an errcode and optional data associated with it.
 -- @param errcode UPPERCASE string shorthand for the error. Eg. EPERM.
 -- @param data Optional miscellaneous data. Defaults to true. May not be false.
--- @error May throw assertion on incorrect use.
+-- @raise Assertion on incorrect use.
 function err.ecreg(errcode, data)
     assertIsStringN(errcode)
     assert(string.upper(errcode) == errcode)
@@ -135,7 +135,7 @@ end
 -- @param e Error object
 -- @param errcode Errorcode string.
 -- @return The err object.
--- @error May throw assertion on incorrect use.
+-- @raise Assertion on incorrect use.
 -- @see err.ecreg
 function err.ecset(e, errcode)
     assert_err(e)
@@ -150,7 +150,7 @@ end
 -- @param errcode Errcode to com
 -- @return Returns true if the errcodes are equal,
 --         false if they differ (or unset).
--- @error May throw assertion on incorrect use.
+-- @raise Assertion on incorrect use.
 function err.eccmp(e, errcode)
     assert_err(e)
     assertIsStringN(errcode)
@@ -167,7 +167,7 @@ end
 
 --- Return the errcode, or false when there is none.
 -- @param e Error object
--- @error May throw assertion on incorrect use.
+-- @raise Assertion on incorrect use.
 function err.eccode(e)
     assert_err(e)
 
@@ -181,7 +181,7 @@ end
 --- Get data associated with the errcode of this error, false otherwise.
 -- @param e Error object.
 -- @return Data associated with errcode. False when there's no errcode.
--- @error May throw assertion on incorrect use.
+-- @raise Assertion on incorrect use.
 function err.ecdata(e)
     assert_err(e)
 
