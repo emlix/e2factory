@@ -540,12 +540,12 @@ end
 
 ---
 function e2build.build_process_class:_install_env(res, return_flags)
-    local rc, re, e, bc
+    local rc, re, e, bc, builtin_env
     e = err.new("installing environment files failed")
     bc = res:build_config()
 
     -- install builtin environment variables
-    rc, re = bc.builtin_env:tofile(e2lib.join(bc.T, "env/builtin"))
+    rc, re = res:builtin_env():tofile(e2lib.join(bc.T, "env/builtin"))
     if not rc then
         return false, e:cat(re)
     end

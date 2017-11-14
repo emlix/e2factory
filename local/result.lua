@@ -141,6 +141,15 @@ function result.basic_result:build_config()
         self._type, self._name))
 end
 
+--- Get environment that's built into the result (E2_*, T, etc).
+-- Not part of the BuildID.
+-- @return Builtin environment
+-- @raise Error or assertion
+function result.basic_result:builtin_env()
+    error(err.new("called builtin_env() of result base class, type %s name %s",
+        self._type, self._name))
+end
+
 --- Get/set build_mode table for result. Needs to be set before certain
 -- operations, for example anything calculating the buildid.
 -- @param bm Optional build mode table to set a new one.
@@ -372,14 +381,7 @@ end
 
 ---
 function result.result_class:build_config()
-    local rc, re, e, buildid, bc, tmpdir, builddir
-
-    e = err.new("preparing build config for %s failed", self:get_name())
-
-    buildid, re = self:buildid()
-    if not buildid then
-        return false, e:cat(re)
-    end
+    local bc, tmpdir, builddir
 
     bc = {}
     tmpdir = string.format("%s/e2factory-%s.%s.%s-build/%s",
@@ -402,17 +404,31 @@ function result.result_class:build_config()
     bc.buildrc_noinit_file = "buildrc-noinit"
     bc.profile = "/tmp/bashrc"
 
-    bc.builtin_env = environment.new()
-    bc.builtin_env:set("E2_TMPDIR", bc.Tc)
-    bc.builtin_env:set("E2_RESULT", self:get_name())
-    bc.builtin_env:set("E2_RELEASE_ID", project.release_id())
-    bc.builtin_env:set("E2_PROJECT_NAME", project.name())
-    bc.builtin_env:set("E2_BUILDID", buildid)
-    bc.builtin_env:set("T", bc.Tc)
-    bc.builtin_env:set("r", self:get_name())
-    bc.builtin_env:set("R", self:get_name())
-
     return strict.readonly(bc)
+end
+
+---
+function result.result_class:builtin_env()
+    local builtin_env, buildid, re, bc
+
+    buildid, re = self:buildid()
+    if not buildid then
+        error(re)
+    end
+
+    bc = self:build_config()
+
+    builtin_env = environment.new()
+    builtin_env:set("E2_TMPDIR", bc.Tc)
+    builtin_env:set("E2_RESULT", self:get_name())
+    builtin_env:set("E2_RELEASE_ID", project.release_id())
+    builtin_env:set("E2_PROJECT_NAME", project.name())
+    builtin_env:set("E2_BUILDID", buildid)
+    builtin_env:set("T", bc.Tc)
+    builtin_env:set("r", self:get_name())
+    builtin_env:set("R", self:get_name())
+
+    return builtin_env
 end
 
 ---

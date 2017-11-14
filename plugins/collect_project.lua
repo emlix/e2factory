@@ -260,7 +260,7 @@ local function _build_collect_project(self, res, return_flags)
     for depname in cp_depends:iter() do
         e2lib.logf(3, "result: %s", depname)
         local dep = result.results[depname]
-        local depbc = dep:build_config()
+        local builtin_env = dep:builtin_env()
 
         local destdir =
             e2lib.join(bc.T, "project", e2tool.resultdir(depname))
@@ -291,7 +291,7 @@ local function _build_collect_project(self, res, return_flags)
         end
         -- generate builtin environment script
         local file = e2lib.join(destdir, "builtin")
-        rc, re = environment.tofile(depbc.builtin_env, file)
+        rc, re = builtin_env:tofile(file)
         if not rc then
             return false, e:cat(re)
         end
@@ -496,6 +496,10 @@ end
 
 function collect_project_class:build_config()
     return self._stdresult:build_config()
+end
+
+function collect_project_class:builtin_env()
+    return self._stdresult:builtin_env()
 end
 
 function collect_project_class:build_process_new()
