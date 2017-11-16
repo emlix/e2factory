@@ -65,32 +65,30 @@ local function e2_playground(arg)
         e2option.usage(1)
     end
 
-    local res = result.results[arguments[1]]
-    if not res then
-        error(err.new("unknown result: %s", arguments[1]))
-    end
+    local pgresultname = arguments[1]
+    local pgres = result.results[pgresultname]
 
-    local ordered_results, re = e2tool.dlist_recursive({arguments[1]})
+    local ordered_results, re = e2tool.dlist_recursive({pgresultname})
     if not ordered_results then
         error(re)
     end
 
     -- set up build process and mode for all involved results
+    local set = e2build.build_set:new()
     for _,resultname in ipairs(ordered_results) do
-        local res2 = result.results[resultname]
-        res2:build_process(res2:build_process_new())
-        res2:build_process():build_mode(build_mode)
+        if resultname == pgresultname then
+            set:add(pgresultname, "playground", build_mode)
+        else
+            set:add(resultname, "build", build_mode)
+            set:result_build_set(resultname):skip(true)
+        end
     end
 
     -- set up build setting for selected result
-    local bp, bs, bc
-    bp = res:build_process()
-    bs = bp:build_settings(bp:build_settings_new("playground"))
-
-    bc, re = res:build_config()
-    if not bc then
-        error(re)
-    end
+    local pgrbs, bs, bc
+    pgrbs = set:result_build_set(pgresultname)
+    bs = pgrbs:build_settings()
+    bc = pgres:build_config()
 
     if opts.showpath then
         if not e2lib.isfile(bc.chroot_marker) then
@@ -127,13 +125,13 @@ local function e2_playground(arg)
         bs:command(string.format("/bin/bash --rcfile '%s'", bc.profile))
     end
 
-    e2lib.logf(2, "entering playground for %s", res:get_name())
+    e2lib.logf(2, "entering playground for %s", pgres:get_name())
 
     if not opts.runinit then
         e2lib.log(2, "type `runinit' to run the init files")
     end
 
-    rc, re = bp:build(res, "playground")
+    rc, re = set:build()
     if not rc then
         error(e:cat(re))
     end

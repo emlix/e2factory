@@ -48,9 +48,10 @@ local _source_to_result_functions = {
 -- @param self A build_process_class instance
 -- @param res Result object to build
 -- @param return_flags
+-- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-local function _build_collect_project(self, res, return_flags)
+local function _build_collect_project(self, res, return_flags, rbs)
 
     local function write_build_driver(resultname, destdir)
         local rc, re, e, res, bd, buildrc_noinit_file, buildrc_file, bc
@@ -260,7 +261,8 @@ local function _build_collect_project(self, res, return_flags)
     for depname in cp_depends:iter() do
         e2lib.logf(3, "result: %s", depname)
         local dep = result.results[depname]
-        local builtin_env = dep:builtin_env()
+        local dep_rbs = rbs:build_set():result_build_set(dep:get_name())
+        local builtin_env = dep:builtin_env(dep_rbs)
 
         local destdir =
             e2lib.join(bc.T, "project", e2tool.resultdir(depname))
@@ -318,8 +320,7 @@ local function _build_collect_project(self, res, return_flags)
     for sourcename in cp_sources:iter() do
         e2lib.logf(3, "source: %s", sourcename)
         local destdir = e2lib.join(bc.T, "project", e2tool.sourcedir(sourcename))
-        local bp = res:build_process()
-        local source_set = bp:build_mode().source_set()
+        local source_set = rbs:build_mode().source_set()
         local src = source.sources[sourcename]
         local source_to_result_fn = _source_to_result_functions[src:get_type()]
 
@@ -467,10 +468,10 @@ function collect_project_class:depends_list()
     return deps
 end
 
-function collect_project_class:buildid()
-    local rc, re, bid, hc, res
+function collect_project_class:buildid(rbs)
+    local rc, re, bid, hc, res, res_rbs
 
-    bid, re = self._stdresult:buildid()
+    bid, re = self._stdresult:buildid(rbs)
     if not bid then
         return false, re
     end
@@ -479,7 +480,8 @@ function collect_project_class:buildid()
     hash.hash_append(hc, bid)
 
     res = result.results[self:cp_default_result()]
-    bid, re = res:buildid()
+    res_rbs = rbs:build_set():result_build_set(res:get_name())
+    bid, re = res:buildid(res_rbs)
     if not bid then
         return false, re
     end
@@ -498,8 +500,8 @@ function collect_project_class:build_config()
     return self._stdresult:build_config()
 end
 
-function collect_project_class:builtin_env()
-    return self._stdresult:builtin_env()
+function collect_project_class:builtin_env(rbs)
+    return self._stdresult:builtin_env(rbs)
 end
 
 function collect_project_class:build_process_new()
@@ -509,10 +511,6 @@ function collect_project_class:build_process_new()
         _build_collect_project)
 
     return bp
-end
-
-function collect_project_class:build_process(bp)
-    return self._stdresult:build_process(bp)
 end
 
 function collect_project_class:chroot_list()

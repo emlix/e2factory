@@ -77,15 +77,15 @@ end
 
 --- Build one result.
 -- @param res Result object
--- @param process_mode Build process mode.
+-- @param rbs Result build set.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function e2build.build_process_class:build(res, process_mode)
+function e2build.build_process_class:build(res, rbs)
     assert(res:isInstanceOf(result.basic_result))
     e2lib.logf(3, "building result: %s", res:get_name())
 
 
-    for step in self:_next_step(process_mode) do
+    for step in self:_next_step(rbs:process_mode()) do
         local rc, re
         local t1, t2, deltat
         local return_flags = strict.lock({
@@ -94,7 +94,7 @@ function e2build.build_process_class:build(res, process_mode)
         })
 
         t1 = os.time()
-        rc, re = step.func(self, res, return_flags)
+        rc, re = step.func(self, res, return_flags, rbs)
         t2 = os.time()
         deltat = os.difftime(t2, t1)
 
@@ -206,36 +206,6 @@ function e2build.build_process_class:build_settings_new(process_mode)
     error("build_process_class:build_settings_new(): unknown process_mode")
 end
 
---- Get/set the build process settings.
--- @param bs Build settings instance to set (optional).
--- @return Build settings instance.
--- @raise Throws assertion if unset and on invalid input.
-function e2build.build_process_class:build_settings(bs)
-    if bs then
-        assertIsTable(bs)
-        self._build_settings = bs
-    else
-        assertIsTable(self._build_settings)
-    end
-
-    return self._build_settings
-end
-
--- Get/set the build mode.
--- @param bm Build mode table to set (optional)
--- @return Build mode table.
--- @raise Throws assertion if unset and on invalid input.
-function e2build.build_process_class:build_mode(bm)
-    if bm then
-        assertIsTable(bm)
-        self._build_mode = bm
-    else
-        assertIsTable(self._build_mode)
-    end
-
-    return self._build_mode
-end
-
 --- Iterator returns the next step in the chosen build process mode
 -- @param process_mode Build process mode
 -- @return Iterator function
@@ -265,16 +235,17 @@ end
 --- Enter playground.
 -- @param res Result object
 -- @param return_flags return_flags
+-- @param rbs Result build set
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function e2build.build_process_class:_enter_playground(res, return_flags)
+function e2build.build_process_class:_enter_playground(res, return_flags, rbs)
     local rc, re, e, cmd, bc
 
     bc = res:build_config()
     e = err.new("entering playground")
 
     rc, re = eio.file_write(e2lib.join(bc.c, bc.profile),
-        self:build_settings():profile())
+        rbs:build_settings():profile())
     if not rc then
         error(e:cat(re))
     end
@@ -293,7 +264,7 @@ function e2build.build_process_class:_enter_playground(res, return_flags)
 
     table.insert(cmd, "/bin/sh")
     table.insert(cmd, "-c")
-    table.insert(cmd, self:build_settings():command())
+    table.insert(cmd, rbs:build_settings():command())
 
     e2tool.set_umask()
     rc, re = e2lib.callcmd(cmd, {})
@@ -313,31 +284,32 @@ end
 -- check if a result is already available
 -- @param res Result object
 -- @param return_flags return_flags
+-- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-function e2build.build_process_class:_result_available(res, return_flags)
+function e2build.build_process_class:_result_available(res, return_flags, rbs)
     local rc, re
     local buildid, sbid
     local e = err.new("error while checking if result is available: %s", res:get_name())
     local columns = tonumber(e2lib.globals.osenv["COLUMNS"])
     local e2project = e2tool.e2project()
 
-    buildid, re = res:buildid()
+    buildid, re = res:buildid(rbs)
     if not buildid then
         return false, e:cat(re)
     end
 
     sbid = string.format("%s...", string.sub(buildid, 1, 8))
 
-    if self:build_settings():prep_playground() then
+    if rbs:build_settings():prep_playground() then
         return_flags.message = e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
             columns, string.format("[%s] [playground]", sbid))
         return_flags.stop = false
         return true
     end
-    if self:build_mode().source_set() == "working-copy" or
-        self:build_settings():force_rebuild() then
+    if rbs:build_mode().source_set() == "working-copy" or
+        rbs:build_settings():force_rebuild() then
         return_flags.message = e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
             columns, string.format("[%s]", sbid))
@@ -346,7 +318,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
     end
 
     local server, location =
-        self:build_mode().storage(
+        rbs:build_mode().storage(
             e2project:project_location(), project.release_id())
     local result_location = e2lib.join(location, res:get_name(),
         buildid, "result.tar")
@@ -376,7 +348,7 @@ function e2build.build_process_class:_result_available(res, return_flags)
     -- exists on the server.
     ]]
 
-    rc, re = self:_linklast(res, return_flags)
+    rc, re = self:_linklast(res, return_flags, rbs)
     if not rc then
         return false, e:cat(re)
     end
@@ -390,7 +362,10 @@ function e2build.build_process_class:_result_available(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:_chroot_lock(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_chroot_lock(res, return_flags, rbs)
     local rc, re, bc
     local e = err.new("error locking chroot")
 
@@ -407,7 +382,9 @@ function e2build.build_process_class:_chroot_lock(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:helper_chroot_remove(res)
+-- @param res Result
+-- @param rbs Result Build Set
+function e2build.build_process_class:helper_chroot_remove(res, rbs)
     local e = err.new("removing chroot failed")
     local rc, re, bc
     bc = res:build_config()
@@ -433,10 +410,13 @@ function e2build.build_process_class:helper_chroot_remove(res)
 end
 
 ---
-function e2build.build_process_class:_chroot_cleanup_if_exists(res, return_flags)
+-- @param res Result
+-- @param return_flags Return flags
+-- @param rbs Result Build Set
+function e2build.build_process_class:_chroot_cleanup_if_exists(res, return_flags, rbs)
     local rc, re
 
-    rc, re = self:helper_chroot_remove(res)
+    rc, re = self:helper_chroot_remove(res, rbs)
     if not rc then
         return false, re
     end
@@ -444,7 +424,10 @@ function e2build.build_process_class:_chroot_cleanup_if_exists(res, return_flags
 end
 
 ---
-function e2build.build_process_class:_setup_chroot(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_setup_chroot(res, return_flags, rbs)
     local rc, re, bc
     local e = err.new("error setting up chroot")
     -- create the chroot path and create the chroot marker file without root
@@ -508,6 +491,8 @@ function e2build.build_process_class:_setup_chroot(res, return_flags)
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_install_directory_structure(res, return_flags)
     local rc, re, e, bc, dirs
     bc = res:build_config()
@@ -523,6 +508,8 @@ function e2build.build_process_class:_install_directory_structure(res, return_fl
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_install_build_script(res, return_flags)
     local rc, re, e, bc, location, destdir
     bc = res:build_config()
@@ -539,13 +526,16 @@ function e2build.build_process_class:_install_build_script(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:_install_env(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_install_env(res, return_flags, rbs)
     local rc, re, e, bc, builtin_env
     e = err.new("installing environment files failed")
     bc = res:build_config()
 
     -- install builtin environment variables
-    rc, re = res:builtin_env():tofile(e2lib.join(bc.T, "env/builtin"))
+    rc, re = res:builtin_env(rbs):tofile(e2lib.join(bc.T, "env/builtin"))
     if not rc then
         return false, e:cat(re)
     end
@@ -558,6 +548,8 @@ function e2build.build_process_class:_install_env(res, return_flags)
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_install_init_files(res, return_flags)
     local rc, re
     local bc = res:build_config()
@@ -589,6 +581,8 @@ function e2build.build_process_class:_install_init_files(res, return_flags)
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_install_build_driver(res, return_flags)
     local e, rc, re
     local bc, bd, destdir, buildrc_noinit_file, buildrc_file
@@ -646,23 +640,27 @@ function e2build.build_process_class:_install_build_driver(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
+-- @param res Result
+-- @param dep Result (dependency).
+-- @param destdir Destination directory
+-- @param rbs Result build set
+function e2build.build_process_class:helper_unpack_result(res, dep, destdir, rbs)
     local rc, re, e
     local buildid, server, location, resulttarpath, tmpdir
-    local path, resdir, dt, filesdir, e2project, dep_bp
+    local path, resdir, dt, filesdir, e2project, dep_rbs
 
     e = err.new("unpacking result failed: %s", dep:get_name())
 
     e2project = e2tool.e2project()
 
-    buildid, re = dep:buildid()
+    dep_rbs = rbs:build_set():result_build_set(dep:get_name())
+    buildid, re = dep:buildid(dep_rbs)
     if not buildid then
         return false, e:cat(re)
     end
 
-    dep_bp = dep:build_process()
     server, location =
-        dep_bp:build_mode().storage(e2project:project_location(), project.release_id())
+        dep_rbs:build_mode().storage(e2project:project_location(), project.release_id())
 
     e2lib.logf(3, "searching for dependency %s in %s:%s",
         dep:get_name(), server, location)
@@ -724,7 +722,10 @@ function e2build.build_process_class:helper_unpack_result(res, dep, destdir)
 end
 
 ---
-function e2build.build_process_class:_install_build_time_dependencies(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_install_build_time_dependencies(res, return_flags, rbs)
     local e, rc, re
     local dependslist, dep, destdir
 
@@ -734,7 +735,7 @@ function e2build.build_process_class:_install_build_time_dependencies(res, retur
         dep = result.results[dependsname]
         destdir = e2lib.join(res:build_config().T, "dep", dep:get_name())
 
-        rc, re = self:helper_unpack_result(res, dep, destdir)
+        rc, re = self:helper_unpack_result(res, dep, destdir, rbs)
         if not rc then
             return false, re
         end
@@ -744,12 +745,15 @@ function e2build.build_process_class:_install_build_time_dependencies(res, retur
 end
 
 ---
-function e2build.build_process_class:_install_sources(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_install_sources(res, return_flags, rbs)
     local rc, re, e, bc, destdir, source_set, src
 
     bc = res:build_config()
     destdir = e2lib.join(bc.T, "build")
-    source_set = self:build_mode().source_set()
+    source_set = rbs:build_mode().source_set()
 
     for sourcename in res:sources_list():iter() do
         e = err.new("installing source failed: %s", sourcename)
@@ -764,6 +768,8 @@ function e2build.build_process_class:_install_sources(res, return_flags)
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_fix_permissions(res, return_flags)
     local rc, re, bc
     local e = err.new("fixing permissions failed")
@@ -787,9 +793,12 @@ function e2build.build_process_class:_fix_permissions(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:_build_playground(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_build_playground(res, return_flags, rbs)
 
-    if self:build_settings():prep_playground()  then
+    if rbs:build_settings():prep_playground()  then
         return_flags.message = string.format("playground done for: %-20s", res:get_name())
         return_flags.stop = true
         return true
@@ -798,6 +807,8 @@ function e2build.build_process_class:_build_playground(res, return_flags)
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_runbuild(res, return_flags)
     local rc, re, out, bc, cmd
     local e = err.new("build failed")
@@ -865,11 +876,12 @@ function e2build.build_process_class:_runbuild(res, return_flags)
 end
 
 --- deploy a result to the archive
--- @param res
+-- @param res Result
 -- @param tmpdir Directory containing the result etc.
+-- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-function e2build.build_process_class:helper_deploy(res, tmpdir)
+function e2build.build_process_class:helper_deploy(res, tmpdir, rbs)
     --[[
     This function is given a temporary directory that contains
     the unpacked result structure and the result tarball itself as follows:
@@ -885,7 +897,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
     --   -> releases:<project>/<archive>/<release_id>/<result>/files/*
     --]]
     local e2project = e2tool.e2project()
-    if not self:build_mode().deploy then
+    if not rbs:build_mode().deploy then
         e2lib.log(4, "deployment disabled for this build mode")
         return true
     end
@@ -907,7 +919,7 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
         table.insert(files, e2lib.join("files", f))
     end
     table.insert(files, "checksums")
-    local server, location = self:build_mode().deploy_storage(
+    local server, location = rbs:build_mode().deploy_storage(
         e2project:project_location(), project.release_id())
 
     -- do not re-deploy if this release was already done earlier
@@ -947,11 +959,12 @@ function e2build.build_process_class:helper_deploy(res, tmpdir)
 end
 
 --- store the result
--- @param res
+-- @param res Result
 -- @param return_flags table
+-- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-function e2build.build_process_class:_store_result(res, return_flags)
+function e2build.build_process_class:_store_result(res, return_flags, rbs)
     local bc = res:build_config()
     local rc, re
     local e = err.new("fetching build results from chroot")
@@ -1060,10 +1073,10 @@ function e2build.build_process_class:_store_result(res, return_flags)
         return false, e:cat(re)
     end
 
-    local server, location = self:build_mode().storage(
+    local server, location = rbs:build_mode().storage(
         e2project:project_location(), project.release_id())
 
-    local buildid, re = res:buildid()
+    local buildid, re = res:buildid(rbs)
     if not buildid then
         return false, re
     end
@@ -1078,7 +1091,7 @@ function e2build.build_process_class:_store_result(res, return_flags)
     if not rc then
         return false, e:cat(re)
     end
-    rc, re = self:helper_deploy(res, tmpdir)
+    rc, re = self:helper_deploy(res, tmpdir, rbs)
     if not rc then
         return false, e:cat(re)
     end
@@ -1088,18 +1101,21 @@ function e2build.build_process_class:_store_result(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:_linklast(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_linklast(res, return_flags, rbs)
     local rc, re, e
     local server, location, buildid, dst, lnk, e2project
 
     e = err.new("creating link to last results")
     e2project = e2tool.e2project()
     -- calculate the path to the result
-    server, location = self:build_mode().storage(
+    server, location = rbs:build_mode().storage(
         e2project:project_location(), project.release_id())
 
     -- compute the "last" link/directory
-    buildid, re = res:buildid()
+    buildid, re = res:buildid(rbs)
     if not buildid then
         return false, e:cat(re)
     end
@@ -1155,11 +1171,14 @@ function e2build.build_process_class:_linklast(res, return_flags)
 end
 
 ---
-function e2build.build_process_class:_chroot_cleanup(res, return_flags)
+-- @param res Result
+-- @param return_flags return_flags
+-- @param rbs Result build set
+function e2build.build_process_class:_chroot_cleanup(res, return_flags, rbs)
     local rc, re
     -- do not remove chroot if the user requests to keep it
-    if not self:build_settings():keep_chroot() then
-        rc, re = self:helper_chroot_remove(res)
+    if not rbs:build_settings():keep_chroot() then
+        rc, re = self:helper_chroot_remove(res, rbs)
         if not rc then
             return false, re
         end
@@ -1168,6 +1187,8 @@ function e2build.build_process_class:_chroot_cleanup(res, return_flags)
 end
 
 ---
+-- @param res Result
+-- @param return_flags return_flags
 function e2build.build_process_class:_chroot_unlock(res, return_flags)
     local rc, re, bc
     local e = err.new("error unlocking chroot")
@@ -1253,6 +1274,192 @@ function e2build.playground_settings_class:command(value)
     end
     assertIsString(self._command)
     return self._command
+end
+
+--------------------------------------------------------------------------------
+
+--- Build result set.
+-- Contains build_settings, build_mode, build_process and the desired
+-- process_mode for a single result. It is always part of a 'build set'
+-- collecting a group of results.
+-- @type result_build_set
+e2build.result_build_set = class("result_build_set")
+
+---
+-- @param resultname Result name
+-- @param build_set The 'build set' this 'result build set' is a part of.
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:initialize(resultname, build_set)
+    assertIsStringN(resultname)
+    assertIsTable(result.results[resultname])
+    assertIsTable(build_set)
+
+    self._resultname = resultname
+    self._bs = false
+    self._bm = false
+    self._bp = false
+    self._pm = false
+    self._build_set = build_set
+    self._skip = false
+end
+
+--- Return this sets' resultname.
+-- @return Result name
+function e2build.result_build_set:resultname()
+    return self._resultname
+end
+
+--- Get/set the build settings
+-- @param bs New 'build settings'. Optional.
+-- @return Build settings
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:build_settings(bs)
+    if bs ~= nil then
+        assertIsTable(bs)
+        self._bs = bs
+    end
+    return self._bs
+end
+
+--- Get/set the build mode.
+-- @param bm New 'build mode'. Optional.
+-- @return Build mode
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:build_mode(bm)
+    if bm ~= nil then
+        assertIsTable(bm)
+        self._bm = bm
+    end
+    return self._bm
+end
+
+--- Get/set the build process.
+-- @param New 'build process'. Optional.
+-- @return Build process
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:build_process(bp)
+    if bp ~= nil then
+        assertIsTable(bp)
+        self._bp = bp
+    end
+    return self._bp
+end
+
+--- Get/set the process mode.
+-- Note: changing the process mode usually requires different build settings.
+-- @param pm New 'process mode'. Optional.
+-- @return Process mode
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:process_mode(pm)
+    if pm ~= nil then
+        assertIsStringN(pm)
+        self._pm = pm
+    end
+    return self._pm
+end
+
+--- Return the encapsulating build set.
+-- @return Build set
+function e2build.result_build_set:build_set()
+    return self._build_set
+end
+
+--- Skip building this result without error.
+-- @param skip Skip building result. Optional.
+-- @return Boolean
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:skip(skip)
+    if skip ~= nil then
+        assertIsBoolean(skip)
+        self._skip = skip
+    end
+    return self._skip
+end
+
+--------------------------------------------------------------------------------
+
+--- A Build Set contains configuration for all results we want to build().
+-- @type build_set
+e2build.build_set = class("build_set")
+
+--- 'Build set' constructor
+function e2build.build_set:initialize()
+    self._results = {}
+    self._t_results = {}
+end
+
+--- Construct a 'result build set' for the result and insert in build order.
+-- @param resultname Resultname
+-- @param process_mode Process mode string
+-- @param build_mode Build mode table.
+-- @return New result build set
+-- @raise Assertion on invalid argument
+function e2build.build_set:add(resultname, process_mode, build_mode)
+    assertIsStringN(resultname)
+    assertIsTable(result.results[resultname])
+    assertIsStringN(process_mode)
+    assertIsTable(build_mode)
+
+    local res, bp, bs, rbs
+
+    res = result.results[resultname]
+    bp = res:build_process_new()
+    bs = bp:build_settings_new(process_mode)
+    rbs = e2build.result_build_set:new(resultname, self)
+
+    rbs:build_process(bp)
+    rbs:build_mode(build_mode)
+    rbs:build_settings(bs)
+    rbs:process_mode(process_mode)
+
+    self._results[resultname] = rbs
+    table.insert(self._t_results, resultname)
+
+    return rbs
+end
+
+--- Return the 'result build set' for the result
+-- @param resultname Result name
+-- @raise Assertion if result does not exist
+function e2build.build_set:result_build_set(resultname)
+    assertIsStringN(resultname)
+    assertIsTable(self._results[resultname])
+
+    return self._results[resultname]
+end
+
+--- Build the set of results according to this configuration.
+-- @return True on success, false on error.
+-- @return Err object on failure.
+-- @raise
+function e2build.build_set:build()
+    e2lib.logf(3, "building results")
+
+    for _, resultname in ipairs(self._t_results) do
+        local rc, re, res, rbs
+        local t1, t2, deltat
+
+        rbs = self._results[resultname]
+        res = result.results[resultname]
+
+        t1 = os.time()
+
+        if rbs:skip() then
+            e2lib.logf(3, "skipping result build: %s", res:get_name())
+        else
+            rc, re = rbs:build_process():build(res, rbs)
+            if not rc then
+                local e = err.new("building result failed: %s", resultname)
+                return false, e:cat(re)
+            end
+        end
+
+        t2 = os.time()
+        deltat = os.difftime(t2, t1)
+        e2lib.logf(3, "timing: result [%s] %d", resultname, deltat)
+    end
+
+    return true
 end
 
 return strict.lock(e2build)

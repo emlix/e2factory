@@ -99,7 +99,8 @@ function result.basic_result:get_name_as_path()
 end
 
 --- Project-wide build id for this result and all of its depdencies.
-function result.basic_result:buildid()
+-- @param rbs Result build set
+function result.basic_result:buildid(rbs)
     error(err.new("called buildid() of result base class, type %s name %s",
         self._type, self._name))
 end
@@ -143,19 +144,11 @@ end
 
 --- Get environment that's built into the result (E2_*, T, etc).
 -- Not part of the BuildID.
+-- @param rbs Result build set
 -- @return Builtin environment
 -- @raise Error or assertion
-function result.basic_result:builtin_env()
+function result.basic_result:builtin_env(rbs)
     error(err.new("called builtin_env() of result base class, type %s name %s",
-        self._type, self._name))
-end
-
---- Get/set build_mode table for result. Needs to be set before certain
--- operations, for example anything calculating the buildid.
--- @param bm Optional build mode table to set a new one.
--- @see policy.build_mode
-function result.basic_result:build_mode(bm)
-    error(err.new("called build_mode() of result base class, type %s name %s",
         self._type, self._name))
 end
 
@@ -169,22 +162,6 @@ end
 --- Return new build process for this result
 function result.basic_result:build_process_new()
     error(err.new("called build_process_new() of result base class, type %s name %s",
-        self._type, self._name))
-end
-
---- Get/set the build process to be used for this class
--- @param bp Build process to set (optional).
-function result.basic_result:build_process(bp)
-    error(err.new("called build_process() of result base class, type %s name %s",
-        self._type, self._name))
-end
-
---- Get/set the settings class. Settings hold per-result information
--- for the build process. Each result that's passed to a build process needs
--- a valid settings_class
--- @param bs Optional settings_class
-function result.basic_result:build_settings(bs)
-    error(err.new("called build_settings() of result base class, type %s name %s",
         self._type, self._name))
 end
 
@@ -408,10 +385,10 @@ function result.result_class:build_config()
 end
 
 ---
-function result.result_class:builtin_env()
+function result.result_class:builtin_env(rbs)
     local builtin_env, buildid, re, bc
 
-    buildid, re = self:buildid()
+    buildid, re = self:buildid(rbs)
     if not buildid then
         error(re)
     end
@@ -456,13 +433,13 @@ end
 --- Get the project-wide buildid for a result, calculating it if required.
 -- @return BuildID or false on error.
 -- @return Error object on failure.
-function result.result_class:buildid()
-    local e, rc, re, hc, id, bp, build_mode
-    bp = self:build_process()
-    build_mode = bp:build_mode()
+function result.result_class:buildid(rbs)
+    assertIsTable(rbs)
+
+    local e, rc, re, hc, id
 
     if self._buildid then
-        return build_mode.buildid(self._buildid)
+        return rbs:build_mode().buildid(self._buildid)
     end
 
     e = err.new("error calculating BuildID for result: %s", self:get_name())
@@ -477,7 +454,7 @@ function result.result_class:buildid()
         local src, sourceset
 
         src = source.sources[sourcename]
-        sourceset = build_mode.source_set()
+        sourceset = rbs:build_mode().source_set()
         assertIsStringN(sourceset)
         id, re = src:sourceid(sourceset)
         if not id then
@@ -514,7 +491,8 @@ function result.result_class:buildid()
 
     -- depends
     for depname in self:depends_list():iter() do
-        id, re = result.results[depname]:buildid()
+        local dep_rbs = rbs:build_set():result_build_set(depname)
+        id, re = result.results[depname]:buildid(dep_rbs)
         if not id then
             return false, re
         end
@@ -532,22 +510,12 @@ function result.result_class:buildid()
 
     e2lib.logf(4, "BUILDID: result=%s buildid=%s", self._name, self._buildid)
 
-    return build_mode.buildid(self._buildid)
+    return rbs:build_mode().buildid(self._buildid)
 end
 
 ---
 function result.result_class:build_process_new()
     return e2build.build_process_class:new()
-end
-
----
-function result.result_class:build_process(bp)
-    if bp ~= nil then
-        self._build_process = bp
-    end
-
-    assertIsTable(self._build_process)
-    return self._build_process
 end
 
 ---

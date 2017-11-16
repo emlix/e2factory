@@ -1320,35 +1320,6 @@ function e2tool.dsort()
     return e2tool.dlist_recursive(dr)
 end
 
---- Build all results in resultv in-order.
--- @param resultv Result name vector.
--- @return True on success, false on error.
--- @return Error object on failure.
-function e2tool.build_results(resultv)
-    e2lib.logf(3, "building results")
-
-    for _, resultname in ipairs(resultv) do
-        local rc, re, res
-        local t1, t2, deltat
-        local e = err.new("building result failed: %s", resultname)
-
-        t1 = os.time()
-
-        res = result.results[resultname]
-
-        rc, re = res:build_process():build(res, "build")
-        if not rc then
-            return false, e:cat(re)
-        end
-
-        t2 = os.time()
-        deltat = os.difftime(t2, t1)
-        e2lib.logf(3, "timing: result [%s] %d", resultname, deltat)
-    end
-
-    return true
-end
-
 return strict.lock(e2tool)
 
 -- vim:sw=4:sts=4:et:

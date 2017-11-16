@@ -195,6 +195,8 @@ local function e2_build(arg)
         end
     end
 
+    local set = e2build.build_set:new()
+
     -- a list of results to build, topologically sorted
     ordered_results, re = e2tool.dlist_recursive(build_results)
     if not ordered_results then
@@ -225,56 +227,50 @@ local function e2_build(arg)
     -- apply build modes and settings
     -- first, standard build mode and settings for all
     for _,resultname in ipairs(ordered_results) do
-        local res = result.results[resultname]
-        local bp = res:build_process(res:build_process_new())
-        bp:build_mode(build_mode)
-        bp:build_settings(bp:build_settings_new("build"))
-    end
+        set:add(resultname, "build", build_mode)
+   end
 
     -- selected results
     e2lib.logf(4, "selected_results=%s", table.concat(selected_results, " "))
     for _,resultname in ipairs(selected_results) do
-        local res = result.results[resultname]
-        local bp = res:build_process()
-        bp:build_settings():force_rebuild(force_rebuild)
-        bp:build_settings():keep_chroot(keep_chroot)
-        bp:build_settings():prep_playground(playground)
+        local rbs = set:result_build_set(resultname)
+        rbs:build_settings():force_rebuild(force_rebuild)
+        rbs:build_settings():keep_chroot(keep_chroot)
+        rbs:build_settings():prep_playground(playground)
     end
 
     -- specific build modi
     e2lib.logf(4, "tag_mode_results=%s", table.concat(tag_mode_results, " "))
     for _,resultname in ipairs(tag_mode_results) do
-        local res = result.results[resultname]
-        local bp = res:build_process()
-        bp:build_settings():force_rebuild(force_rebuild)
-        bp:build_settings():keep_chroot(keep_chroot)
-        bp:build_settings():prep_playground(playground)
-        bp:build_mode(policy.default_build_mode("tag"))
+        local rbs = set:result_build_set(resultname)
+        rbs:build_settings():force_rebuild(force_rebuild)
+        rbs:build_settings():keep_chroot(keep_chroot)
+        rbs:build_settings():prep_playground(playground)
+        rbs:build_mode(policy.default_build_mode("tag"))
     end
 
     e2lib.logf(4, "branch_mode_results=%s", table.concat(branch_mode_results, " "))
     for _,resultname in ipairs(branch_mode_results) do
-        local res = result.results[resultname]
-        local bp = res:build_process()
-        bp:build_settings():force_rebuild(force_rebuild)
-        bp:build_settings():keep_chroot(keep_chroot)
-        bp:build_settings():prep_playground(playground)
-        bp:build_mode(policy.default_build_mode("branch"))
+        local rbs = set:result_build_set(resultname)
+        rbs:build_settings():force_rebuild(force_rebuild)
+        rbs:build_settings():keep_chroot(keep_chroot)
+        rbs:build_settings():prep_playground(playground)
+        rbs:build_mode(policy.default_build_mode("branch"))
     end
 
     e2lib.logf(4, "wc_mode_results=%s", table.concat(wc_mode_results, " "))
     for _,resultname in ipairs(wc_mode_results) do
-        local res = result.results[resultname]
-        local bp = res:build_process()
-        bp:build_settings():force_rebuild(force_rebuild)
-        bp:build_settings():keep_chroot(keep_chroot)
-        bp:build_settings():prep_playground(playground)
-        bp:build_mode(policy.default_build_mode("working-copy"))
+        local rbs = set:result_build_set(resultname)
+        rbs:build_settings():force_rebuild(force_rebuild)
+        rbs:build_settings():keep_chroot(keep_chroot)
+        rbs:build_settings():prep_playground(playground)
+        rbs:build_mode(policy.default_build_mode("working-copy"))
     end
 
     -- calculate buildids for selected results
     for _,resultname in ipairs(ordered_results) do
-        local bid, re = result.results[resultname]:buildid()
+        local rbs = set:result_build_set(resultname)
+        local bid, re = result.results[resultname]:buildid(rbs)
         if not bid then
             error(re)
         end
@@ -285,8 +281,7 @@ local function e2_build(arg)
     end
 
     if not opts.buildid then
-        -- build
-        local rc, re = e2tool.build_results(ordered_results)
+        local rc, re = set:build()
         if not rc then
             error(re)
         end
