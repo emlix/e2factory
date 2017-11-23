@@ -36,6 +36,7 @@ function console.open()
     rc, re = eio.fdopen(eio.STDERR, "w")
     if rc then
         stderr = rc
+        eio.setunbuffered(stderr)
     end
 
     rc, re = eio.fdopen(eio.STDOUT, "w")
