@@ -47,11 +47,10 @@ local _source_to_result_functions = {
 -- without e2factory
 -- @param self A build_process_class instance
 -- @param res Result object to build
--- @param return_flags
 -- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-local function _build_collect_project(self, res, return_flags, rbs)
+local function _build_collect_project(self, res, rbs)
 
     local function write_build_driver(resultname, destdir)
         local rc, re, e, res, bd, buildrc_noinit_file, buildrc_file, bc

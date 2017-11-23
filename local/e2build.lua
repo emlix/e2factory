@@ -36,11 +36,6 @@ local source = require("source")
 local strict = require("strict")
 local tools = require("tools")
 
---- Return_flags table. Provide build status info back to the caller.
--- @table return_flags
--- @field stop boolean: stop the build process
--- @field message false or string with a message
-
 --- Build process class. Every result is given to an instance of this class.
 -- @type build_process_class
 e2build.build_process_class = class("build_process_class")
@@ -82,33 +77,38 @@ end
 -- @return Error object on failure.
 function e2build.build_process_class:build(res, rbs)
     assert(res:isInstanceOf(result.basic_result))
-    e2lib.logf(3, "building result: %s", res:get_name())
 
+    if rbs:message() then
+        e2lib.log(2, rbs:message())
+    end
+    if rbs:skip() then
+        return true
+    end
+
+    e2lib.logf(3, "building result: %s", res:get_name())
 
     for step in self:_next_step(rbs:process_mode()) do
         local rc, re
         local t1, t2, deltat
-        local return_flags = strict.lock({
-            stop = false,
-            message = false
-        })
+
+        rbs:message(false) -- reset message before next step
 
         t1 = os.time()
-        rc, re = step.func(self, res, return_flags, rbs)
+        rc, re = step.func(self, res, rbs)
         t2 = os.time()
-        deltat = os.difftime(t2, t1)
 
+        deltat = os.difftime(t2, t1)
         e2lib.logf(3, "timing: step: %s [%s] %d", step.name, res:get_name(), deltat)
 
         if not rc then
             -- do not insert an error message from this layer.
             return false, re
         end
-        if return_flags.message then
-            e2lib.log(2, return_flags.message)
+
+        if rbs:message() then
+            e2lib.log(2, rbs:message())
         end
-        if return_flags.stop then
-            -- stop the build process for this result
+        if rbs:skip() then
             return true
         end
     end
@@ -222,9 +222,8 @@ end
 
 --- check if a chroot exists for this result
 -- @param res Result object
--- @param return_flags return_flags
 -- @return True if chroot for result could be found, false otherwise.
-function e2build.build_process_class:_chroot_exists(res, return_flags)
+function e2build.build_process_class:_chroot_exists(res)
     local bc = res:build_config()
     if not e2lib.isfile(bc.chroot_marker) then
         return false, err.new("playground does not exist")
@@ -234,11 +233,10 @@ end
 
 --- Enter playground.
 -- @param res Result object
--- @param return_flags return_flags
 -- @param rbs Result build set
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function e2build.build_process_class:_enter_playground(res, return_flags, rbs)
+function e2build.build_process_class:_enter_playground(res, rbs)
     local rc, re, e, cmd, bc
 
     bc = res:build_config()
@@ -283,11 +281,10 @@ end
 -- return the path to the result
 -- check if a result is already available
 -- @param res Result object
--- @param return_flags return_flags
 -- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-function e2build.build_process_class:_result_available(res, return_flags, rbs)
+function e2build.build_process_class:_result_available(res, rbs)
     local rc, re
     local buildid, sbid
     local e = err.new("error while checking if result is available: %s", res:get_name())
@@ -302,18 +299,16 @@ function e2build.build_process_class:_result_available(res, return_flags, rbs)
     sbid = string.format("%s...", string.sub(buildid, 1, 8))
 
     if rbs:build_settings():prep_playground() then
-        return_flags.message = e2lib.align(columns,
+        rbs:message(e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
-            columns, string.format("[%s] [playground]", sbid))
-        return_flags.stop = false
+            columns, string.format("[%s] [playground]", sbid)))
         return true
     end
     if rbs:build_mode().source_set() == "working-copy" or
         rbs:build_settings():force_rebuild() then
-        return_flags.message = e2lib.align(columns,
+        rbs:message(e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
-            columns, string.format("[%s]", sbid))
-        return_flags.stop = false
+            columns, string.format("[%s]", sbid)))
         return true
     end
 
@@ -330,11 +325,9 @@ function e2build.build_process_class:_result_available(res, return_flags, rbs)
 
     if not rc then
         -- result is not available. Build.
-        return_flags.message = e2lib.align(columns,
+        rbs:message(e2lib.align(columns,
             0, string.format("building %-20s", res:get_name()),
-            columns, string.format("[%s]", sbid))
-        return_flags.stop = false
-
+            columns, string.format("[%s]", sbid)))
         return true
     end
 
@@ -348,24 +341,23 @@ function e2build.build_process_class:_result_available(res, return_flags, rbs)
     -- exists on the server.
     ]]
 
-    rc, re = self:_linklast(res, return_flags, rbs)
+    rc, re = self:_linklast(res, rbs)
     if not rc then
         return false, e:cat(re)
     end
 
-    return_flags.message = e2lib.align(columns,
+    rbs:message(e2lib.align(columns,
         0, string.format("skipping %-20s", res:get_name()),
-        columns, string.format("[%s]", sbid))
-    return_flags.stop = true
+        columns, string.format("[%s]", sbid)))
+    rbs:skip(true)
 
     return true
 end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_chroot_lock(res, return_flags, rbs)
+function e2build.build_process_class:_chroot_lock(res, rbs)
     local rc, re, bc
     local e = err.new("error locking chroot")
 
@@ -411,9 +403,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags Return flags
 -- @param rbs Result Build Set
-function e2build.build_process_class:_chroot_cleanup_if_exists(res, return_flags, rbs)
+function e2build.build_process_class:_chroot_cleanup_if_exists(res, rbs)
     local rc, re
 
     rc, re = self:helper_chroot_remove(res, rbs)
@@ -425,9 +416,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_setup_chroot(res, return_flags, rbs)
+function e2build.build_process_class:_setup_chroot(res, rbs)
     local rc, re, bc
     local e = err.new("error setting up chroot")
     -- create the chroot path and create the chroot marker file without root
@@ -492,8 +482,7 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_install_directory_structure(res, return_flags)
+function e2build.build_process_class:_install_directory_structure(res)
     local rc, re, e, bc, dirs
     bc = res:build_config()
     dirs = {"out", "init", "script", "build", "root", "env", "dep"}
@@ -509,8 +498,7 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_install_build_script(res, return_flags)
+function e2build.build_process_class:_install_build_script(res)
     local rc, re, e, bc, location, destdir
     bc = res:build_config()
     location = e2tool.resultbuildscript(res:get_name_as_path())
@@ -527,9 +515,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_install_env(res, return_flags, rbs)
+function e2build.build_process_class:_install_env(res, rbs)
     local rc, re, e, bc, builtin_env
     e = err.new("installing environment files failed")
     bc = res:build_config()
@@ -549,8 +536,7 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_install_init_files(res, return_flags)
+function e2build.build_process_class:_install_init_files(res)
     local rc, re
     local bc = res:build_config()
     local e = err.new("installing init files")
@@ -582,8 +568,7 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_install_build_driver(res, return_flags)
+function e2build.build_process_class:_install_build_driver(res)
     local e, rc, re
     local bc, bd, destdir, buildrc_noinit_file, buildrc_file
     local build_driver_file
@@ -723,9 +708,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_install_build_time_dependencies(res, return_flags, rbs)
+function e2build.build_process_class:_install_build_time_dependencies(res, rbs)
     local e, rc, re
     local dependslist, dep, destdir
 
@@ -746,9 +730,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_install_sources(res, return_flags, rbs)
+function e2build.build_process_class:_install_sources(res, rbs)
     local rc, re, e, bc, destdir, source_set, src
 
     bc = res:build_config()
@@ -769,8 +752,7 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_fix_permissions(res, return_flags)
+function e2build.build_process_class:_fix_permissions(res)
     local rc, re, bc
     local e = err.new("fixing permissions failed")
 
@@ -794,22 +776,20 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_build_playground(res, return_flags, rbs)
+function e2build.build_process_class:_build_playground(res, rbs)
 
     if rbs:build_settings():prep_playground()  then
-        return_flags.message = string.format("playground done for: %-20s", res:get_name())
-        return_flags.stop = true
-        return true
+        rbs:message(string.format("playground done for: %-20s", res:get_name()))
+        rbs:skip(true)
     end
+
     return true
 end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_runbuild(res, return_flags)
+function e2build.build_process_class:_runbuild(res)
     local rc, re, out, bc, cmd
     local e = err.new("build failed")
 
@@ -960,11 +940,10 @@ end
 
 --- store the result
 -- @param res Result
--- @param return_flags table
 -- @param rbs Result build set
 -- @return bool
 -- @return an error object on failure
-function e2build.build_process_class:_store_result(res, return_flags, rbs)
+function e2build.build_process_class:_store_result(res, rbs)
     local bc = res:build_config()
     local rc, re
     local e = err.new("fetching build results from chroot")
@@ -1102,9 +1081,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_linklast(res, return_flags, rbs)
+function e2build.build_process_class:_linklast(res, rbs)
     local rc, re, e
     local server, location, buildid, dst, lnk, e2project
 
@@ -1172,9 +1150,8 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
 -- @param rbs Result build set
-function e2build.build_process_class:_chroot_cleanup(res, return_flags, rbs)
+function e2build.build_process_class:_chroot_cleanup(res, rbs)
     local rc, re
     -- do not remove chroot if the user requests to keep it
     if not rbs:build_settings():keep_chroot() then
@@ -1188,8 +1165,7 @@ end
 
 ---
 -- @param res Result
--- @param return_flags return_flags
-function e2build.build_process_class:_chroot_unlock(res, return_flags)
+function e2build.build_process_class:_chroot_unlock(res)
     local rc, re, bc
     local e = err.new("error unlocking chroot")
     bc = res:build_config()
@@ -1301,6 +1277,7 @@ function e2build.result_build_set:initialize(resultname, build_set)
     self._pm = false
     self._build_set = build_set
     self._skip = false
+    self._msg = false
 end
 
 --- Return this sets' resultname.
@@ -1364,8 +1341,8 @@ function e2build.result_build_set:build_set()
     return self._build_set
 end
 
---- Skip building this result without error.
--- @param skip Skip building result. Optional.
+--- Skip all further build steps in this result without error.
+-- @param skip Skip further build steps. Optional.
 -- @return Boolean
 -- @raise Assertion on invalid argument
 function e2build.result_build_set:skip(skip)
@@ -1374,6 +1351,22 @@ function e2build.result_build_set:skip(skip)
         self._skip = skip
     end
     return self._skip
+end
+
+--- Display this message after build step is complete.
+-- @param msg Message string or 'false' to reset.
+-- @return Message or false
+-- @raise Assertion on invalid argument
+function e2build.result_build_set:message(msg)
+    if msg ~= nil then
+        if msg == false then
+            self._msg = false
+        else
+            assertIsStringN(msg)
+            self._msg = msg
+        end
+    end
+    return self._msg
 end
 
 --------------------------------------------------------------------------------
@@ -1444,14 +1437,10 @@ function e2build.build_set:build()
 
         t1 = os.time()
 
-        if rbs:skip() then
-            e2lib.logf(3, "skipping result build: %s", res:get_name())
-        else
-            rc, re = rbs:build_process():build(res, rbs)
-            if not rc then
-                local e = err.new("building result failed: %s", resultname)
-                return false, e:cat(re)
-            end
+        rc, re = rbs:build_process():build(res, rbs)
+        if not rc then
+            local e = err.new("building result failed: %s", resultname)
+            return false, e:cat(re)
         end
 
         t2 = os.time()
