@@ -1946,7 +1946,6 @@ end
 -- This function does not support error checking and is intended to be
 -- called from the finish() function.
 function e2lib.rmtempdirs()
-    e2lib.chdir("/")  -- avoid being inside a temporary directory
     while #e2lib.globals.tmpdirs > 0 do
         e2lib.rmtempdir(e2lib.globals.tmpdirs[1])
     end
