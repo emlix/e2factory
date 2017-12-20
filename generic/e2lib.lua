@@ -321,17 +321,33 @@ function e2lib.setenv(var, val, overwrite)
 end
 
 --- Reset signal handlers back to their default.
--- @return True on success, false on error.
--- @return Error object on failure.
+-- @raise Error on failure.
 function e2lib.signal_reset()
     local rc, errstring
 
     rc, errstring = le2lib.signal_reset()
     if not rc then
-        return false, err.new("resetting signal handlers: %s", errstring)
+        error(err.new("resetting signal handlers: %s", errstring))
     end
+end
 
-    return true
+--- Install signal handlers that will call interrupt_hook()
+-- @raise Error on failure.
+function e2lib.signal_install()
+    local rc, errstring
+
+    rc, errstring = le2lib.signal_install()
+    if not rc then
+        error(err.new("installing signal handlers: %s", errstring))
+    end
+end
+
+--- Get the first signal triggering shutdown.
+-- Returns empty string if no signal has yet occured.
+-- @return Signal name (eg "Interrupt") or "".
+-- @return Signal number or 0.
+function e2lib.signal_received()
+    return le2lib.signal_received()
 end
 
 --- Get current process id.
@@ -339,20 +355,6 @@ end
 function e2lib.getpid()
     -- used only for tempfile generation
     return le2lib.getpid()
-end
-
---- Set process group ID.
--- @param pid process id
--- @param pgid process group id
--- @raise error on failure.
-function e2lib.setpgid(pid, pgid)
-    return le2lib.setpgid(pid, pgid)
-end
-
---- Ignore SIGINT
--- @raise error on failure
-function e2lib.ignore_sigint()
-    le2lib.ignore_sigint()
 end
 
 --- Send signal to process.
@@ -387,11 +389,13 @@ function e2lib.execvp(filenm, argv)
 end
 
 --- Interrupt handling.
---
--- le2lib sets up a SIGINT handler that calls back into this function.
+-- signal_install() sets up signal handlers that call back into this function.
 function e2lib.interrupt_hook()
+    local sigstr, signum = e2lib.signal_received()
     trace.install() -- reinstall the trace hook.
-    e2lib.abort("*interrupted by user*")
+    e2lib.logf(4, "interrupt_hook() pid=%d, signal=%d, sigstr=%s",
+        e2lib.getpid(), signum, sigstr)
+    e2lib.abort(string.format("*** interrupted by user (%s) ***", sigstr))
 end
 
 --- Make sure the environment variables inside the globals table are
@@ -406,10 +410,7 @@ function e2lib.init()
     trace.install()
     trace.default_filter()
 
-    local rc, re = e2lib.signal_reset()
-    if not rc then
-        e2lib.abort(re)
-    end
+    e2lib.signal_reset()
 
     e2lib.closefrom(3)
     -- ignore errors, no /proc should not prevent factory from working
@@ -1459,6 +1460,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
         -- disable debug logging to console in the child because it
         -- potentially mixes with the output of the command
         e2lib.setlog(4, false)
+
+        e2lib.signal_reset()
 
         fd_child_setup(fdctv)
 

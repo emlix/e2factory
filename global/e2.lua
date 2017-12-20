@@ -93,8 +93,7 @@ local function e2(arg)
         end
     end
 
-    e2lib.log(3, "calling " .. e2call.tool)
-    e2lib.ignore_sigint()
+    e2lib.logf(3, "calling %s", e2call.tool)
     rc, re = e2lib.callcmd(cmd, {}, nil, env, true)
     if not rc then
         error(re)

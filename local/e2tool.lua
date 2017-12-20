@@ -758,6 +758,8 @@ function e2tool.e2project_class:init_project(tool)
     e2tool.root(rc)
     self:rootdir(rc)
 
+    e2lib.signal_install()
+
     -- load local plugins
     local ctx = {  -- plugin context
         info = info,

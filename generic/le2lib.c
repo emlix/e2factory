@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+ * Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
  *
  * This file is part of e2factory, the emlix embedded build system.
  * For more information see http://www.e2factory.org
@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 #include <signal.h>
 #include <string.h>
 #include <poll.h>
@@ -513,19 +514,6 @@ do_getpid(lua_State *lua) {
 }
 
 static int
-do_setpgid(lua_State *L)
-{
-	int rc, pid, pgid;
-
-	pid = luaL_checkint(L, 1);
-	pgid = luaL_checkint(L, 2);
-	if (setpgid(pid, pgid) != 0)
-		return luaL_error(L, "setpgid: %s", strerror(errno));
-
-	return 0;
-}
-
-static int
 do_unlink(lua_State *lua)
 {
 	const char *pathname = luaL_checkstring(lua, 1);
@@ -540,44 +528,6 @@ do_unlink(lua_State *lua)
 	lua_pushboolean(lua, 1);
 	return 1;
 }
-
-/* Reset all (possible) signals back to their default settings */
-static int
-signal_reset(lua_State *L)
-{
-	int s;
-	struct sigaction act;
-
-	for (s = 1; s < NSIG; s++) {
-		if (sigaction(s, NULL, &act) < 0)
-			break; /* end of signals */
-
-		switch (s) {
-		case SIGINT:
-			/* used by e2factory */
-			continue;
-		case SIGFPE:
-			act.sa_handler = SIG_IGN;
-			break;
-		case SIGKILL:
-		case SIGSTOP:
-		case SIGCONT:
-			continue;
-		default:
-			act.sa_handler = SIG_DFL;
-		}
-
-		if (sigaction(s, &act, NULL) < 0) {
-			lua_pushboolean(L, 0);
-			lua_pushstring(L, strerror(errno));
-			return 2;
-		}
-	}
-
-	lua_pushboolean(L, 1);
-	return 1;
-}
-
 
 /* closes all file descriptors >= fd */
 static int
@@ -657,16 +607,6 @@ do_mkdir(lua_State *lua)
 
 	lua_pushboolean(lua, 1);
 	return 1;
-}
-
-static int
-ignore_sigint(lua_State *L)
-{
-	if (signal(SIGINT, SIG_IGN) == SIG_ERR) {
-		return luaL_error(L, "signal: %s", strerror(errno));
-	}
-
-	return 0;
 }
 
 static int
@@ -779,12 +719,53 @@ do_mkstemp(lua_State *L)
 	return 4;
 }
 
+/* Reset all (possible) signals to their default settings */
+static int
+signal_reset(lua_State *L)
+{
+	int s;
+	struct sigaction act;
+
+	if (prctl(PR_SET_PDEATHSIG, 0) < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+	}
+
+	for (s = 1; s < NSIG; s++) {
+		if (sigaction(s, NULL, &act) < 0)
+			break; /* end of signals */
+
+		switch (s) {
+		case SIGFPE:
+			act.sa_handler = SIG_IGN;
+			break;
+		case SIGKILL:
+		case SIGSTOP:
+		case SIGCONT:
+			continue;
+		default:
+			act.sa_handler = SIG_DFL;
+		}
+		/* No SA_RESTART */
+		act.sa_flags = 0;
+		if (sigaction(s, &act, NULL) < 0) {
+			lua_pushboolean(L, 0);
+			lua_pushstring(L, strerror(errno));
+			return 2;
+		}
+	}
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
 /*
  * Hook that gets called once an interrupt has been requested.
  * Calls e2lib.interrupt_hook() to deal with any cleanup that might be required.
  */
 static void
-lstop(lua_State *L, lua_Debug *ar) {
+lua_signal_handler(lua_State *L, lua_Debug *ar)
+{
 	lua_sethook(L, NULL, 0, 0);
 
 	/* require e2lib */
@@ -798,11 +779,16 @@ lstop(lua_State *L, lua_Debug *ar) {
 	lua_call(L, 0, 0);
 
 	/* not reached under normal circumstances */
-	fprintf(stderr, "e2: interrupt_hook failed, terminating\n");
+	fprintf(stderr, "e2: calling interrupt_hook failed, terminating\n");
 	exit(1);
 }
 
-static lua_State *globalL;
+/* Lua context for signal handler */
+static lua_State *globalL = NULL;
+/* Are we in shutdown? */
+static volatile sig_atomic_t signal_shutdown = 0;
+/* First signal that triggered shutdown */
+static volatile sig_atomic_t signal_received_first = 0;
 
 
 /*
@@ -810,13 +796,89 @@ static lua_State *globalL;
  * continuing normal execution at the next possible spot.
  */
 static void
-laction(int i) {
-	/* Ignore further signals because lstop() should
-	 * terminate the process in an orderly fashion */
-	signal(i, SIG_IGN);
-	lua_sethook(globalL, lstop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1);
+signal_handler(int sig)
+{
+	/*
+	 * It's normal for subsequent signals to occur (eg. SIGPIPE)
+	 * Ignore signals after they occurred once
+	 */
+	struct sigaction sa;
+	sigaction(sig, NULL, &sa);
+	sa.sa_handler = SIG_IGN;
+
+	if (sigaction(sig, &sa, NULL) < 0)
+		fprintf(stderr, "e2: signal_handler: sigaction failed!\n");
+
+	/* Make sure we don't install lua_signal_handler more than once */
+	if (signal_shutdown)
+		return;
+
+	signal_shutdown = 1;
+	signal_received_first = sig;
+	if (globalL) {
+		lua_sethook(globalL, lua_signal_handler,
+		    LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1);
+	} else {
+		fprintf(stderr, "e2: signal_handler: missing lua context\n");
+		exit(1);
+	}
 }
 
+/* Install signal handler for all signals of concern */
+static int
+signal_install(lua_State *L)
+{
+	int i;
+	struct sigaction sa;
+	int signals[] = {
+		SIGINT,
+		SIGTERM,
+		SIGPIPE,
+		SIGHUP,
+		0
+	};
+
+	/* Lua context for use in signal handler */
+	globalL = L;
+
+	sa.sa_handler = signal_handler;
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
+
+	for (i = 0; signals[i] != 0; i++) {
+		if (sigaction(signals[i], &sa, NULL) < 0) {
+			lua_pushboolean(L, 0);
+			lua_pushstring(L, strerror(errno));
+			return 2;
+		}
+	}
+
+	/* Notify us if the parent dies for whatever reason */
+	if (prctl(PR_SET_PDEATHSIG, SIGINT) < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+	}
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+/* Return the first received signal  triggering shutdown */
+static int
+signal_received(lua_State *L)
+{
+	char *s = NULL;
+
+	if (signal_received_first) {
+		s = strsignal(signal_received_first);
+	} else {
+		s = "";
+	}
+
+	lua_pushstring(L, s);
+	lua_pushinteger(L, signal_received_first);
+	return 2;
+}
 
 static luaL_Reg lib[] = {
 	{ "chdir", change_directory },
@@ -829,7 +891,6 @@ static luaL_Reg lib[] = {
 	{ "fork", lua_fork },
 	{ "getpid", do_getpid },
 	{ "hardlink", do_hardlink },
-	{ "ignore_sigint", ignore_sigint },
 	{ "kill", do_kill },
 	{ "mkdir", do_mkdir },
 	{ "mkdtemp", do_mkdtemp },
@@ -838,8 +899,9 @@ static luaL_Reg lib[] = {
 	{ "rename", do_rename },
 	{ "rmdir", do_rmdir },
 	{ "setenv", do_setenv },
-	{ "setpgid", do_setpgid },
 	{ "signal_reset", signal_reset },
+	{ "signal_install", signal_install },
+	{ "signal_received", signal_received },
 	{ "stat", get_file_statistics },
 	{ "symlink", create_symlink },
 	{ "umask", set_umask },
@@ -851,7 +913,8 @@ static luaL_Reg lib[] = {
 };
 
 
-int luaopen_le2lib(lua_State *lua)
+int
+luaopen_le2lib(lua_State *lua)
 {
 	luaL_Reg *next;
 
@@ -860,10 +923,6 @@ int luaopen_le2lib(lua_State *lua)
 		lua_pushcfunction(lua, next->func);
 		lua_setfield(lua, -2, next->name);
 	}
-
-	/* Establish signal handler catching SIGINT for orderly shutdown */
-	globalL = lua;
-	signal(SIGINT, laction);
 
 	return 1;
 }
