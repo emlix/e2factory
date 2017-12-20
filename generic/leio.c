@@ -425,7 +425,7 @@ eio_cloexec(lua_State *lua)
 		lua_pushstring(lua, "handle"); // key
 		lua_gettable(lua, 1);
 		if (!lua_islightuserdata(lua, -1))
-		    luaL_argerror(lua, 1, "not a eio table");
+		    return luaL_argerror(lua, 1, "not a eio table");
 		f = (FILE *)lua_topointer(lua, -1);
 	} else if (lua_isuserdata(lua, 1)) {
 		FILE **p;
@@ -443,13 +443,13 @@ eio_cloexec(lua_State *lua)
 	}
 
 	if (fd < 0) {
-		luaL_argerror(lua, 1, "fd/eio/io file required");
+		return luaL_argerror(lua, 1, "fd/eio/io file required");
 	}
 
 	if (lua_isboolean(lua, 2)) {
 		cloexec = lua_toboolean(lua, 2);
 	} else {
-		luaL_argerror(lua, 2, "boolean required");
+		return luaL_argerror(lua, 2, "boolean required");
 	}
 
 	rc = fcntl(fd, F_SETFD, cloexec ? FD_CLOEXEC : 0);
