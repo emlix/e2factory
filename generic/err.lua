@@ -68,10 +68,11 @@ function err.cat(e, re, ...)
     return e
 end
 
---- print error messages at log level 1
+--- Turn error objects into an error message string
 -- @param e table: the error object
 -- @param depth number: used internally to count and display nr. of sub errors
-function err.print(e, depth)
+-- @return Error message string.
+function err.tostring(e, depth)
     assert_err(e)
     assert(type(depth) == "number" or depth == nil)
     if not depth then
@@ -80,17 +81,26 @@ function err.print(e, depth)
         depth = depth + 1
     end
 
+    local msg = ""
     local prefix = string.format("Error [%d]: ", depth)
-
     for k,m in ipairs(e.msg) do
         if type(m) == "string" then
-            e2lib.logf(1, "%s%s", prefix, m)
+            msg = msg..string.format("%s%s\n", prefix, m)
             prefix = string.format("      [%d]: ", depth)
         else
             -- it's a sub error
-            m:print(depth)
+            msg = msg..m:tostring(depth)
         end
     end
+
+    return msg
+end
+
+--- print error messages at log level 1
+-- @param e table: the error object
+-- @param depth number: used internally to count and display nr. of sub errors
+function err.print(e, depth)
+    e2lib.log(1, e:tostring())
 end
 
 --- set the error counter
