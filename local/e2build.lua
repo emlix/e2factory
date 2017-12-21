@@ -401,17 +401,28 @@ function e2build.build_process_class:helper_chroot_remove(res, rbs)
     return true
 end
 
----
+--- Remove previous chroot if it exists.
 -- @param res Result
 -- @param rbs Result Build Set
+-- @return True on success, false on error.
+-- @return Err object on failure.
 function e2build.build_process_class:_chroot_cleanup_if_exists(res, rbs)
-    local rc, re
+    local bc = res:build_config()
 
-    rc, re = self:helper_chroot_remove(res, rbs)
-    if not rc then
-        return false, re
+    if not e2lib.isfile(bc.chroot_marker) then
+        if not e2lib.isdir(bc.c) then
+            -- no cleanup needed
+            return true
+        end
+
+        local e = err.new("removing chroot failed")
+        e:append("possible chroot directory without marker found: %s", bc.c)
+        e:append("run \"touch '%s'\" to mark this directory for cleanup",
+            bc.chroot_marker)
+        return false, e
     end
-    return true
+
+    return self:helper_chroot_remove(res, rbs)
 end
 
 ---
