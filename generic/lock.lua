@@ -45,7 +45,8 @@ end
 --- create a lock directory
 -- @param l table: lock object
 -- @param dir string: lock directory
--- @return boolean
+-- @return True on success, false on error.
+-- @return Err object on failure.
 function lock.lock(l, dir)
     local e = err.new("locking failed")
 
@@ -61,7 +62,8 @@ end
 --- remove a lock directory
 -- @param l table: lock object
 -- @param dir string: lock directory
--- @return boolean
+-- @return True on success, false on error.
+-- @return Err object on failure.
 function lock.unlock(l, dir)
     local e = err.new("unlocking failed")
     local rc, re
@@ -73,6 +75,8 @@ function lock.unlock(l, dir)
             if not rc then
                 return false, e:cat(re)
             end
+
+            break
         end
     end
 
@@ -82,9 +86,15 @@ end
 -- remove all remaining lock directories
 -- @param l table: lock object
 function lock.cleanup(l)
+    local rc, re
+
     while #l.locks > 0 do
-        lock.unlock(l, l.locks[1])
+        rc, re = lock.unlock(l, l.locks[1])
+        if not rc then
+            e2lib.logf(4, "unlocking lock failed: %s", re:tostring())
+        end
     end
+    e2lib.logf(4, "all locks released")
 end
 
 return strict.lock(lock)
