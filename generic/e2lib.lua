@@ -618,10 +618,12 @@ function e2lib.log(level, msg, nonewline)
 
     if e2lib.globals.debuglogfile then
         -- write out buffered messages first
-        for _,m in ipairs(e2lib.globals.debuglogfilebuffer) do
-            eio.fwrite(e2lib.globals.debuglogfile, m)
+        if #e2lib.globals.debuglogfilebuffer > 0 then
+            for _,m in ipairs(e2lib.globals.debuglogfilebuffer) do
+                eio.fwrite(e2lib.globals.debuglogfile, m)
+            end
+            e2lib.globals.debuglogfilebuffer = {}
         end
-        e2lib.globals.debuglogfilebuffer = {}
 
         eio.fwrite(e2lib.globals.debuglogfile, log_prefix .. msg)
     else
@@ -737,10 +739,6 @@ function e2lib.cleanup()
     if e2lib.globals.lock then
         e2lib.globals.lock:cleanup()
     end
-
-    if e2lib.globals.debuglogfile then
-        eio.fclose(e2lib.globals.debuglogfile)
-    end
 end
 
 --- exit from the tool, cleaning up temporary files and directories
@@ -751,8 +749,11 @@ function e2lib.finish(returncode)
         returncode = 0
     end
     e2lib.cleanup()
+
+    e2lib.logf(4, "exiting e2factory with returncode=%d", returncode)
     if e2lib.globals.debuglogfile then
         eio.fclose(e2lib.globals.debuglogfile)
+        e2lib.globals.debuglogfile = false
     end
     console.close()
     os.exit(returncode)
