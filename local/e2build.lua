@@ -384,7 +384,7 @@ function e2build.build_process_class:helper_chroot_remove(res, rbs)
     rc, re = e2lib.e2_su_2_2({"remove_chroot_2_3", bc.base})
     e2tool.reset_umask()
     if not rc then
-        return e:cat(re)
+        return false, e:cat(re)
     end
     rc, re = e2lib.unlink(bc.chroot_marker)
     if not rc then
