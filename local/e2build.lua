@@ -362,7 +362,7 @@ function e2build.build_process_class:_chroot_lock(res, rbs)
     local e = err.new("error locking chroot")
 
     bc = res:build_config()
-    rc, re = e2lib.mkdir_recursive(bc.c)
+    rc, re = e2lib.mkdir_recursive(bc.base)
     if not rc then
         return false, e:cat(re)
     end
@@ -420,10 +420,12 @@ end
 function e2build.build_process_class:_setup_chroot(res, rbs)
     local rc, re, bc
     local e = err.new("error setting up chroot")
+
     -- create the chroot path and create the chroot marker file without root
     -- permissions. That makes sure we have write permissions here.
     bc = res:build_config()
-    rc, re = e2lib.mkdir_recursive(bc.c)
+
+    rc, re = e2lib.mkdir_recursive(bc.base)
     if not rc then
         return false, e:cat(re)
     end
@@ -433,9 +435,12 @@ function e2build.build_process_class:_setup_chroot(res, rbs)
         return false, e:cat(re)
     end
 
-    local cm = rc
+    rc, re = eio.fclose(rc)
+    if not rc then
+        return false, e:cat(re)
+    end
 
-    rc, re = eio.fclose(cm)
+    rc, re = e2lib.mkdir(bc.c)
     if not rc then
         return false, e:cat(re)
     end
