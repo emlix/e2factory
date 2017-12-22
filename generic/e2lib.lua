@@ -1726,45 +1726,44 @@ end
 -- @return Error object on failure.
 function e2lib.locate_project_root(path)
     local rc, re
-    local e = err.new("checking for project directory failed")
-    local save_path, re = e2lib.cwd()
+    local e = err.new("locating project root failed")
+    local save_path
+
+    save_path, re = e2lib.cwd()
     if not save_path then
         return false, e:cat(re)
     end
+
     if path then
-        rc = e2lib.chdir(path)
+        rc, re = e2lib.chdir(path)
         if not rc then
-            e2lib.chdir(save_path)
+            return false, e:cat(re)
+        end
+        path, re = e2lib.cwd() -- make it absolute
+        if not path then
+            return false, e:cat(re)
+        end
+        rc, re = e2lib.chdir(save_path)
+        if not rc then
             return false, e:cat(re)
         end
     else
-        path, re = e2lib.cwd()
-        if not path then
-            e2lib.chdir(save_path)
-            return false, e:cat(re)
-        end
+        path = save_path
     end
+
     while true do
-        if e2lib.exists(".e2") then
-            e2lib.chdir(save_path)
+        if e2lib.isdir(e2lib.join(path, ".e2")) then
             return path
         end
-        if path == "/" then
+
+        if path == "/" or path == "." then
             break
         end
-        rc = e2lib.chdir("..")
-        if not rc then
-            e2lib.chdir(save_path)
-            return false, e:cat(re)
-        end
-        path, re = e2lib.cwd()
-        if not path then
-            e2lib.chdir(save_path)
-            return false, e:cat(re)
-        end
+
+        path = e2lib.dirname(path)
     end
-    e2lib.chdir(save_path)
-    return false, err.new("not in a project directory")
+
+    return false, e:cat("not in a project directory")
 end
 
 --- Checks whether the tool is an existing global e2factory tool. Note that
