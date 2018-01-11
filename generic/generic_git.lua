@@ -43,13 +43,13 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 local function git_clone_url(surl, destdir, skip_checkout)
+    assertIsStringN(surl)
+    assertIsStringN(destdir)
+    assertIsBoolean(skip_checkout)
+
     local rc, re, e, u, src, argv
 
     e = err.new("cloning git repository")
-
-    if not surl or not destdir then
-        return false, err.new("git_clone_url(): missing parameter")
-    end
 
     u, re = url.parse(surl)
     if not u then
@@ -90,10 +90,6 @@ end
 -- @return Argument vector table.
 function generic_git.git_new_argv(git_dir, work_tree, ...)
     local argv = {...}
-
-    if git_dir == nil and work_tree == nil then
-        e2lib.log(4, "generic_git.git_new_argv: git_dir and work_tree are nil")
-    end
 
     if git_dir == nil and work_tree then
         git_dir = e2lib.join(work_tree, ".git")
@@ -172,13 +168,12 @@ end
 -- @return Table containing tables of "id", "ref" pairs, or false on error.
 -- @return Error object on failure.
 local function get_refs(git_dir, remote)
+    assertIsStringN(git_dir)
+    assertIsBoolean(remote)
+
     local rc, re, e, argv, out, t, emsg
 
     emsg = "error in get_refs()"
-
-    if type(remote) ~= "boolean" then
-        return false, err.new("%s: remote is not of type boolean", emsg)
-    end
 
     argv = generic_git.git_new_argv(git_dir, false)
     if remote then
@@ -252,16 +247,13 @@ end
 -- @return Error object on failure.
 -- @return Pathspec ref string on successful lookup, false otherwise.
 function generic_git.lookup_ref(git_dir, remote, id, filter)
+    assertIsStringN(git_dir)
+    assertIsBoolean(remote)
+    assertIsStringN(id)
+    assert(#id == 40)
+    assert(filter == false or type(filter == "string"))
+
     local rc, re, t
-
-    if string.len(id) ~= 40 then
-        return false, err.new("error in lookup_ref(): malformed commit ID")
-    end
-
-    if not (filter == false or type(filter) == "string") then
-        return false,
-            err.new("error in lookup_ref(): filter argument of wrong type")
-    end
 
     rc, re, t = get_refs(git_dir, remote)
     if not rc then
@@ -337,11 +329,10 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function generic_git.git_init_db1(rurl, shared)
-    local rc, re, e, u, gitdir, gitargv, argv
+    assertIsStringN(rurl)
+    assertIsBoolean(shared)
 
-    if not rurl or type(shared) ~= "boolean" then
-        return false, err.new("git_init_db1(): missing parameter")
-    end
+    local rc, re, e, u, gitdir, gitargv, argv
 
     e = err.new("git_init_db failed")
 
@@ -395,11 +386,11 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function generic_git.git_push1(gitdir, rurl, refspec)
-    local rc, re, e, u, remote_git_url, argv
+    assertIsStringN(gitdir)
+    assertIsStringN(rurl)
+    assertIsStringN(refspec)
 
-    if not rurl or not gitdir or not refspec then
-        return false, err.new("git_push1(): missing parameter")
-    end
+    local rc, re, e, u, remote_git_url, argv
 
     e = err.new("git push failed")
     u, re = url.parse(rurl)
@@ -428,11 +419,11 @@ end
 -- @return True on success, false on error.
 -- @return Error object on failure.
 function generic_git.git_remote_add1(lurl, rurl, name)
-    local rc, re, e, lrepo, rrepo, giturl, gitdir, argv
+    assertIsStringN(lurl)
+    assertIsStringN(rurl)
+    assertIsStringN(name)
 
-    if not lurl or not rurl or not name then
-        return false, err.new("git_remote_add1: missing parameter")
-    end
+    local rc, re, e, lrepo, rrepo, giturl, gitdir, argv
 
     e = err.new("git remote-add failed")
     lrepo, re = url.parse(lurl)
