@@ -35,6 +35,9 @@ local strict = require("strict")
 local tools = require("tools")
 local url = require("url")
 
+local refs_tags = generic_git.refs_tags
+local refs_heads = generic_git.refs_heads
+
 git.git_source = class("git_source", source.basic_source)
 
 function git.git_source.static:is_scm_source_class()
@@ -178,14 +181,14 @@ function git.git_source:git_commit_id(sourceset, check_remote)
     gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
 
     if sourceset == "branch" then
-        ref = string.format("refs/heads/%s", self:get_branch())
+        ref = refs_heads(self:get_branch())
 
         rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
             return false, e:cat(re)
         end
     elseif sourceset == "tag" then
-        ref = string.format("refs/tags/%s", self:get_tag())
+        ref = refs_tags(self:get_tag())
 
         rc, re, id = generic_git.lookup_id(gitdir, false, ref)
         if not rc then
@@ -328,7 +331,7 @@ function git.git_source:check_workingcopy()
 
     -- check if branch exists
     local gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
-    local ref = string.format("refs/heads/%s", self._branch)
+    local ref = refs_heads(self._branch)
     local id
 
     rc = self:working_copy_available()
@@ -410,7 +413,7 @@ function git.git_source:fetch_source()
     end
 
     rc, re, id = generic_git.lookup_id(git_dir, false,
-        "refs/heads/" .. self:get_branch())
+        refs_heads(self:get_branch()))
     if not rc then
         return false, e:cat(re)
     elseif not id then
@@ -421,7 +424,7 @@ function git.git_source:fetch_source()
         end
 
         rc, re = generic_git.git_checkout1(work_tree,
-            "refs/heads/" .. self:get_branch())
+            refs_heads(self:get_branch()))
         if not rc then
             return false, e:cat(re)
         end
@@ -476,7 +479,7 @@ function git.git_source:update_source()
         return true
     end
 
-    if branch ~= "refs/heads/" .. self:get_branch() then
+    if branch ~= refs_heads(self:get_branch()) then
         e2lib.warnf("WOTHER", "not on configured branch. Skipping.")
         return true
     end
@@ -570,9 +573,9 @@ function git.git_source:prepare_source(sourceset, buildpath)
     table.insert(git_argv, "--format=tar")
 
     if sourceset == "branch" then
-        table.insert(git_argv, "refs/heads/" .. self:get_branch())
+        table.insert(git_argv, refs_heads(self:get_branch()))
     elseif sourceset == "tag" then
-        table.insert(git_argv, "refs/tags/" .. self:get_tag())
+        table.insert(git_argv, refs_tags(self:get_tag()))
     else
         error(err.new("invalid sourceset: %s", sourceset))
     end
@@ -706,9 +709,9 @@ local function git_to_result(src, sourceset, directory)
         local ref, tmpfn
 
         if sourceset == "tag" then
-            ref = string.format("refs/tags/%s", src:get_tag())
+            ref = refs_tags(src:get_tag())
         else
-            ref = string.format("refs/heads/%s", src:get_branch())
+            ref = refs_heads(src:get_branch())
         end
 
         tmpfn, re = e2lib.mktempfile()

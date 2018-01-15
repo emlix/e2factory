@@ -79,6 +79,26 @@ local function git_clone_url(surl, destdir, skip_checkout)
     return true
 end
 
+--- Helper to generate refs/tags string.
+-- @param tag Tag
+-- @return refs/tags/tag
+function generic_git.refs_tags(tag)
+    assertIsStringN(tag)
+    return "refs/tags/"..tag
+end
+
+local refs_tags = generic_git.refs_tags
+
+--- Helper to generate refs/heads string
+-- @param branch Branch
+-- @return refs/heads/branch
+function generic_git.refs_heads(branch)
+    assertIsStringN(branch)
+    return "refs/heads/"..branch
+end
+
+local refs_heads = generic_git.refs_heads
+
 --- Create argument vector for calling git.
 -- Defaults: If git_dir is given and the default for work_tree is requested,
 -- it's assumed to be one directory level up. If work_tree is given and the
@@ -625,7 +645,7 @@ function generic_git.verify_remote_tag(gitdir, tag)
     local e = err.new("verifying remote tag")
     local rc, re, rtag, argv, rid, lid
 
-    rc, re, rid = generic_git.lookup_id(gitdir, true, "refs/tags/" .. tag)
+    rc, re, rid = generic_git.lookup_id(gitdir, true, refs_tags(tag))
     if not rc then
         return false, e:cat(re)
     end
@@ -636,7 +656,7 @@ function generic_git.verify_remote_tag(gitdir, tag)
         return false, e:cat(re)
     end
 
-    rc, re, lid = generic_git.lookup_id(gitdir, false, "refs/tags/" .. tag)
+    rc, re, lid = generic_git.lookup_id(gitdir, false, refs_tags(tag))
     if not rc then
         return false, e:cat(re)
     end
@@ -789,7 +809,7 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation)
     end
 
     argv = { "--git-dir="..gitdir, "config", "branch.master.merge",
-        "refs/heads/master" }
+        refs_heads("master") }
     rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
