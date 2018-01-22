@@ -202,8 +202,15 @@ function policy.register_commandline_options()
     Enabled by default in 'release' mode.]])
 end
 
----
+--- Handle overall build modes.
+-- @param opts e2option table.
+-- @param use_default Use default build mode if none is specified.
+-- @return mode table or false on error.
+-- @return Error on failure.
 function policy.handle_commandline_options(opts, use_default)
+    assertIsTable(opts)
+    assertIsBoolean(use_default)
+
     local default_build_mode_name = "tag"
     local nmodes = 0
     local mode = false
