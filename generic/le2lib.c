@@ -287,20 +287,26 @@ process_wait(lua_State *lua)
 		return 2;
 	}
 
-	if (!(WIFEXITED(status) || WIFSIGNALED(status))) {
+	if (WIFEXITED(status)) {
+		/* Normal exit case */
+		lua_pushnumber(lua, WEXITSTATUS(status));
+		lua_pushnumber(lua, rc);
+
+		return 2;
+	} else if (WIFSIGNALED(status)) {
+		/* Signal exit case */
+		lua_pushnumber(lua, WTERMSIG(status) + 128); // what dash does
+		lua_pushnumber(lua, rc);
+		lua_pushnumber(lua, WTERMSIG(status));
+
+		return 3;
+	} else {
+		/* Job control status but option is unset */
 		lua_pushboolean(lua, 0);
-		lua_pushstring(lua, "process terminated(?) due to unknown cause");
+		lua_pushstring(lua, "internal error, please report (waitpid)");
+
 		return 2;
 	}
-
-	lua_pushnumber(lua, WEXITSTATUS(status));
-	lua_pushnumber(lua, rc);
-	if (WIFSIGNALED(status)) {
-		lua_pushnumber(lua, WTERMSIG(status));
-		return 3;
-	}
-
-	return 2;
 }
 
 static int

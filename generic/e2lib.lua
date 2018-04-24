@@ -224,7 +224,7 @@ end
 
 --- Wait for process to terminate.
 -- @param pid Process ID, -1 to wait for any child.
--- @return Exit status of process (WEXITSTATUS), or false on error.
+-- @return Exit status of process, signal + 128, or false on error.
 -- @return Process ID of the terminated child or error object on failure.
 -- @return Number of signal that killed the process, if any.
 function e2lib.wait(pid)
@@ -1421,7 +1421,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
 
     -- start of callcmd() proper
 
-    local rc, re, pid
+    local rc, re, pid, sig
     local sync_pipes = {}
 
     e2lib.logf(4, "calling %q in %q", table.concat(argv, " "),
@@ -1496,14 +1496,14 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
         return pid
     end
 
-    e2lib.logf(4, "waiting for %q", table.concat(argv, " "))
-    rc, re = e2lib.wait(pid)
+    e2lib.logf(4, "waiting for command %s pid %d", table.concat(argv, " "), pid)
+    rc, re, sig = e2lib.wait(pid)
     if not rc then
         return false, re
     end
 
-    e2lib.logf(4, "command %q exit with return code %d",
-        table.concat(argv, " "), rc)
+    e2lib.logf(4, "command %q pid %d exit %d signal %d",
+        table.concat(argv, " "), re, rc, sig or 0)
 
     return rc
 end

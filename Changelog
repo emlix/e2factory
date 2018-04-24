@@ -1,4 +1,5 @@
 NEXT:
+ * fix detection of exit status of a signaled process
 
 e2factory-2.3.17
  * fixed sub-licences handling for file sources
