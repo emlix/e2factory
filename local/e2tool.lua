@@ -333,7 +333,7 @@ end
 -- @return FileID string: hash value, or false on error.
 -- @return an error object on failure
 function e2tool.file_class:fileid()
-    local rc, re, e, hc, cs
+    local rc, re, e, hc, cs, fid
     local cs_done = false
 
     e = err.new("error calculating file id for file: %s", self:servloc())
@@ -397,7 +397,9 @@ function e2tool.file_class:fileid()
         hash.hash_append(hc, self._copy)
     end
 
-    return hash.hash_finish(hc)
+    fid = hash.hash_finish(hc)
+    e2lib.logf(4, "BUILDID: %s fileid=%s", self:servloc(), fid)
+    return fid
 end
 
 --- Verify file addressed by server name and location matches configured

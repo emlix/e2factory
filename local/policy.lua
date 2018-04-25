@@ -138,6 +138,8 @@ local function buildid_scratch(buildid)
     newbuildid = "scratch-" .. newbuildid
     buildid_scratch_cache[buildid] = newbuildid
 
+    e2lib.logf(4, "BUILDID: buildid=%s buildid_scratch=%s", buildid, newbuildid)
+
     return buildid_scratch_cache[buildid]
 end
 

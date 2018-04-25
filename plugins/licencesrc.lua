@@ -175,6 +175,8 @@ function licence_source:sourceid(sourceset)
 
     self._sourceid = hash.hash_finish(hc)
 
+    e2lib.logf(4, "BUILDID: source=%s sourceid=%s", self._name, self._sourceid)
+
     return self._sourceid
 end
 

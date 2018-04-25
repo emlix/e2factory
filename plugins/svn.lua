@@ -306,6 +306,9 @@ function svn.svn_source:sourceid(sourceset)
 
     self._sourceids[sourceset] = hash.hash_finish(hc)
 
+    e2lib.logf(4, "BUILDID: source=%s sourceset=%s sourceid=%s",
+        self._name, sourceset, self._sourceids[sourceset])
+
     return self._sourceids[sourceset]
 end
 

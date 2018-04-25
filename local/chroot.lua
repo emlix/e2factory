@@ -135,6 +135,8 @@ function chroot.chroot:chrootgroupid()
     end
 
     self._chrootgroupid = hash.hash_finish(hc)
+    e2lib.logf(4, "BUILDID: name=%q chrootgroupid=%s",
+        self._name, self._chrootgroupid)
     return self._chrootgroupid
 end
 --- @section end

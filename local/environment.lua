@@ -25,12 +25,18 @@ local err = require("err")
 local hash = require("hash")
 local strict = require("strict")
 
+-- Sequential ID for debugging.
+-- Keeps track of various env tables between runs.
+local environment_seqid = 1
+
 --- create new environment
 -- @return environment
 function environment.new()
     local env = {}
     local meta = { __index = environment }
     setmetatable(env, meta)
+    env.seqid = environment_seqid
+    environment_seqid = environment_seqid + 1
     env.dict = {}
     env.sorted = {}
     return env
@@ -57,11 +63,14 @@ end
 function environment.envid(env)
     assertIsTable(env)
     assertIsTable(env.sorted)
+    local eid
     local hc = hash.hash_start()
     for var, val in env:iter() do
         hash.hash_append(hc, var..val)
     end
-    return hash.hash_finish(hc)
+    eid = hash.hash_finish(hc)
+    e2lib.logf(4, "BUILDID: seqid=%d envid=%s", env.seqid, eid)
+    return eid
 end
 
 --- merge environment from merge into env.

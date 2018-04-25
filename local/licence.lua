@@ -110,6 +110,8 @@ function licence.licence:licenceid()
         return false, e:cat(re)
     end
 
+    e2lib.logf(4, "BUILDID: name=%s licenceid=%s", self._name, self._licenceid)
+
     return self._licenceid
 end
 --- @section end

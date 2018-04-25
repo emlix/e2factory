@@ -531,6 +531,8 @@ function result.result_class:buildid()
 
     self._buildid = hash.hash_finish(hc)
 
+    e2lib.logf(4, "BUILDID: result=%s buildid=%s", self._name, self._buildid)
+
     return build_mode.buildid(self._buildid)
 end
 

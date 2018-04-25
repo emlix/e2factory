@@ -96,6 +96,12 @@ function cs_cache_class:lookup(filename, digest_type)
 
     hce.use = os.time()
 
+    if not hce.logged then
+        e2lib.logf(4, "BUILDID: file %q cached SHA1=%s SHA256=%s", filename,
+            tostring(hce.sha1), tostring(hce.sha256))
+        hce.logged = true
+    end
+
     return cs
 end
 
@@ -131,6 +137,9 @@ function cs_cache_class:insert(filename, checksum, digest_type)
         sha256 = checksum
     end
 
+    e2lib.logf(4, "BUILDID: file %q SHA1=%s SHA256=%s", filename,
+        tostring(sha1), tostring(sha256))
+
     if not e2lib.exists(filename, false) then
         return
     end
@@ -153,6 +162,7 @@ function cs_cache_class:insert(filename, checksum, digest_type)
         dev = sb.dev,
         ino = sb.ino,
         use = 0,
+        logged = true, -- limit buildid logging to once per file
     }
 end
 

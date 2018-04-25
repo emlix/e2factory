@@ -355,6 +355,7 @@ function project.projid()
     end
 
     _projid_cache = hash.hash_finish(hc)
+    e2lib.logf(4, "BUILDID: projid=%s", _projid_cache)
 
     return _projid_cache
 end

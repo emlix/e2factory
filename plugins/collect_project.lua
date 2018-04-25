@@ -488,6 +488,8 @@ function collect_project_class:buildid()
 
     assertIsStringN(bid)
 
+    e2lib.logf(4, "BUILDID: cp result=%s buildid=%s", self._name, bid)
+
     return bid
 end
 
