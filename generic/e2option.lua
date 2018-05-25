@@ -51,7 +51,7 @@ function e2option.flag(name, doc, func, category)
         type = "flag",
         documentation = doc or "",
         name = name,
-        proc=func,
+        proc = func,
         default = true,
         category = category
     }

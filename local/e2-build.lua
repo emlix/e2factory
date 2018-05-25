@@ -47,12 +47,17 @@ local function e2_build(arg)
     local specific_result_count = 0
 
     -- insert results into their respective tables above.
-    local function option_insert_results(the_result_table)
+    local function option_insert_results(the_result_table, table_name)
 
-        return function(resultname)
-            if type(resultname) == "string" then
-                table.insert(the_result_table --[[closure]], resultname)
-                specific_result_count = specific_result_count + 1
+        return function(resultnames)
+            -- closure: the_result_table table_name
+            e2lib.logf(4, "option_insert_results func(%s) on %s",
+                tostring(resultnames), table_name)
+            if type(resultnames) == "string" then
+                for resultname in string.gmatch(resultnames, "[^,%s]+") do
+                    table.insert(the_result_table, resultname)
+                    specific_result_count = specific_result_count + 1
+                end
             end
             return true
         end
@@ -71,11 +76,11 @@ local function e2_build(arg)
     e2option.flag("all", "build all results (default unless for working copy)")
     policy.register_commandline_options()
     e2option.option("tag-mode", "build selected results in tag mode",
-        true, option_insert_results(tag_mode_results))
+        true, option_insert_results(tag_mode_results, "tag_mode_results"))
     e2option.option("branch-mode", "build selected results in branch mode",
-        true, option_insert_results(branch_mode_results))
+        true, option_insert_results(branch_mode_results, "branch_mode_results"))
     e2option.option("wc-mode", "build selected results in working-copy mode",
-        true, option_insert_results(wc_mode_results))
+        true, option_insert_results(wc_mode_results, "wc_mode_results"))
     e2option.flag("force-rebuild", "force rebuilding even if a result exists")
     e2option.flag("playground", "prepare environment but do not build")
     e2option.flag("keep", "do not remove chroot environment after build")
@@ -115,6 +120,11 @@ local function e2_build(arg)
         if opts[option_name] then
             build_mode_count = build_mode_count + 1
         end
+    end
+
+    if build_mode_count > 1 and #selected_results > 0 then
+        e2lib.warnf("WOTHER", "building package %s in default mode",
+            table.concat(selected_results, ", "))
     end
 
     local function check_mode(option_name, cnt, opts, results, selected_results)
@@ -222,6 +232,7 @@ local function e2_build(arg)
     end
 
     -- selected results
+    e2lib.logf(4, "selected_results=%s", table.concat(selected_results, " "))
     rc, re = e2tool.select_results(selected_results, force_rebuild,
         keep_chroot, nil, playground)
     if not rc then
@@ -229,18 +240,21 @@ local function e2_build(arg)
     end
 
     -- specific build modi
+    e2lib.logf(4, "tag_mode_results=%s", table.concat(tag_mode_results, " "))
     rc, re = e2tool.select_results(tag_mode_results, force_rebuild, keep_chroot,
         policy.default_build_mode("tag"), playground)
     if not rc then
         error(re)
     end
 
+    e2lib.logf(4, "branch_mode_results=%s", table.concat(branch_mode_results, " "))
     rc, re = e2tool.select_results(branch_mode_results, force_rebuild,
         keep_chroot, policy.default_build_mode("branch"), playground)
     if not rc then
         error(re)
     end
 
+    e2lib.logf(4, "wc_mode_results=%s", table.concat(wc_mode_results, " "))
     rc, re = e2tool.select_results(wc_mode_results, force_rebuild, keep_chroot,
         policy.default_build_mode("working-copy"), playground)
     if not rc then
