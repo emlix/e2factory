@@ -454,6 +454,8 @@ function e2lib.init()
 
     e2lib.globals.lock = lock.new()
 
+    tools.add_default_tools()
+
     return true
 end
 
@@ -464,7 +466,7 @@ end
 function e2lib.init2()
     local rc, re, e, config, ssh
 
-    e = err.new("initializing globals (step2)")
+    e = err.new("Initialize global configuration and tools ")
 
     -- get the global configuration
     config, re = e2lib.get_global_config()
@@ -475,7 +477,7 @@ function e2lib.init2()
     -- honour tool customizations from the config file
     if config.tools then
         for k,v in pairs(config.tools) do
-            rc, re = tools.set_tool(k, v.name, v.flags)
+            rc, re = tools.set_tool(k, v.name, v.flags, v.enable)
             if not rc then
                 return false, e:cat(re)
             end

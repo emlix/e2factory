@@ -27,33 +27,40 @@ local buildconfig = require("buildconfig")
 local initialized = false
 
 local toollist = {
-    curl = { name = "curl", flags = "", optional = false },
-    ssh = { name = "ssh", flags = "", optional = false },
-    scp = { name = "scp", flags = "", optional = false },
-    rsync = { name = "rsync", flags = "", optional = false },
-    git = { name = "git", flags = "", optional = false },
-    cvs = { name = "cvs", flags = "", optional = true },
-    svn = { name = "svn", flags = "", optional = true },
-    man = { name = "man", flags = "-l", optional = true },
-    cp = { name = "cp", flags = "", optional = false },
-    mv = { name = "mv", flags = "", optional = false },
-    tar = { name = "tar", flags = "", optional = false },
-    patch = { name = "patch", flags = "", optional = false },
-    gzip = { name = "gzip", flags = "", optional = false },
-    unzip = { name = "unzip", flags = "", optional = false },
-    ["e2-su-2.2"] = { name = buildconfig.BINDIR .. "/e2-su-2.2",
-    flags = "", optional = false },
+    -- default tool list in tools.add_default_tools()
 }
 
---- Get a absolute tool command.
+--- Get absolute path to tool command.
+-- @param name Tool name (string).
+-- @return Tool path or false on error.
+-- @return Error object on failure.
+function tools.get_tool_path(name)
+    local rc, re
+
+    if not toollist[name] then
+        return false, err.new("tool '%s' is not registered in tool list", name)
+    end
+
+    if not toollist[name].path then
+        rc, re = tools.check_tool(name)
+        if not rc and re then
+            return rc, re
+        end
+
+        if not toollist[name].path then
+            return false, err.new("tool '%s' could not be found in path")
+        end
+    end
+
+    return toollist[name].path
+end
+
+--- Get a absolute tool command. Deprecated.
 -- @param name Tool name (string).
 -- @return Tool command or false on error.
 -- @return Error object on failure.
 function tools.get_tool(name)
-    if not toollist[name] then
-        return false, err.new("tool '%s' is not registered in tool list", name)
-    end
-    return toollist[name].path
+    return tools.get_tool_path(name)
 end
 
 --- Split tool flags into a vector of arguments.
@@ -138,12 +145,16 @@ function tools.get_tool_flags(name)
         return false, err.new("tool '%s' is not registered in tool list", name)
     end
 
-    flags, re = parse_tool_flags(toollist[name].flags or "")
-    if not flags then
-        return false, re
+    if not toollist[name].flagstbl then
+        flags, re = parse_tool_flags(toollist[name].flags)
+        if not flags then
+            return false, re
+        end
+        toollist[name].flagstbl = flags
     end
 
-    return flags
+
+    return toollist[name].flagstbl
 end
 
 --- Get tool and flags in one vector
@@ -154,7 +165,7 @@ end
 function tools.get_tool_flags_argv(name)
     local rc, re, new
 
-    rc, re = tools.get_tool(name)
+    rc, re = tools.get_tool_path(name)
     if not rc then
         return false, re
     end
@@ -184,24 +195,40 @@ function tools.get_tool_name(name)
     return toollist[name].name
 end
 
---- Set a tool command and flags.
+--- Set a tool command and flags. Value, flags and enable are optional.
 -- @param name Tool name (string).
 -- @param value Tool command (string). May also be an absolute command.
 -- @param flags Tool flags (string). Optional.
+-- @param enable Should the tool be used? Optional.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function tools.set_tool(name, value, flags)
+function tools.set_tool(name, value, flags, enable)
     if not toollist[name] then
         return false, err.new("tool '%s' is not registered in tool list", name)
     end
+
     if type(value) == "string" then
         toollist[name].name = value
+        toollist[name].path = nil -- reset
+    elseif value ~= nil then
+        return false, err.new("tool '%s' value invalid", name)
     end
+
     if type(flags) == "string" then
         toollist[name].flags = flags
+        toollist[name].flagstbl = nil -- reset
+    elseif flags ~= nil then
+        return false, err.new("tool '%s' flags invalid", name)
     end
+
+    if type(enable) == "boolean" then
+        toollist[name].enable = enable
+    elseif enable ~= nil then
+        return false, err.new("tool '%s' enable invalid", name)
+    end
+
     e2lib.logf(4, "setting tool: %s=%s flags=%s", name, toollist[name].name,
-        toollist[name].flags)
+        toollist[name].flags, toollist[name].enable)
     return true
 end
 
@@ -210,67 +237,145 @@ end
 -- @param value Tool command, may contain absolute path (string).
 -- @param flags Tool flags (string). May be empty.
 -- @param optional Whether the tool is required (true) or optional (false).
+-- @param enable Whether the tool should be used or not.
+--               Only makes sense if optional. Defaults to true if not optional.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function tools.add_tool(name, value, flags, optional)
-    if toollist[name] then
-        return false, err.new("tool '%s' already registered in tool list", name)
-    end
-
-    if type(name) ~= "string" or type(value) ~= "string" or
-        type(flags) ~= "string" or type(optional) ~= "boolean" then
+function tools.add_tool(name, value, flags, optional, enable)
+    if type(name) ~= "string" or
+        (value ~= nil and type(value) ~= "string") or
+        (flags ~= nil and type(flags) ~= "string") or
+        (optional ~= nil and type(optional) ~= "boolean") or
+        (enable ~= nil and type(enable) ~= "boolean") then
         return false,
             err.new("one or more parameters wrong while adding tool %s",
                 tostring(name))
     end
 
+    if toollist[name] then
+        return false, err.new("tool '%s' already registered in tool list", name)
+    end
+
+    if value == nil then
+        value = name
+    end
+
+    if flags == nil then
+        flags = ""
+    end
+
+    if optional == nil then
+        optional = false
+    end
+
+    if enable == nil then
+        if optional then
+            enable = false
+        else
+            enable = true
+        end
+    end
+
     toollist[name] = {
         name = value,
+        -- path,
         flags = flags,
+        -- flagstbl,
         optional = optional,
+        enable = enable,
     }
 
     local t = toollist[name]
-    e2lib.logf(4, "adding tool: %s=%s flags=%s optional=%s", name, t.name,
-        t.flags, tostring(t.optional))
+    e2lib.logf(4, "adding tool: %s=%s flags=%s optional=%s enable=%s", name,
+        t.name, t.flags, tostring(t.optional), tostring(t.enable))
 
     return true
 end
 
---- Check if a tool is available.
+--- Populate the tools module with the default tools.
+function tools.add_default_tools()
+    local rc, re
+    local defaults = {
+        curl = { name = "curl", flags = "", optional = false },
+        ssh = { name = "ssh", flags = "", optional = false },
+        scp = { name = "scp", flags = "", optional = false },
+        rsync = { name = "rsync", flags = "", optional = false },
+        git = { name = "git", flags = "", optional = false },
+        cvs = { name = "cvs", flags = "", optional = true },
+        svn = { name = "svn", flags = "", optional = true },
+        man = { name = "man", flags = "-l", optional = true },
+        cp = { name = "cp", flags = "", optional = false },
+        mv = { name = "mv", flags = "", optional = false },
+        tar = { name = "tar", flags = "", optional = false },
+        patch = { name = "patch", flags = "", optional = false },
+        gzip = { name = "gzip", flags = "", optional = false },
+        unzip = { name = "unzip", flags = "", optional = false },
+        ["e2-su-2.2"] = { name = buildconfig.BINDIR .. "/e2-su-2.2",
+        flags = "", optional = false },
+    }
+
+    for name, t in pairs(defaults) do
+        rc, re = tools.add_tool(name, t.name, t.flags, t.optional, t.enable)
+        if not rc then
+            e2lib.abort(re)
+        end
+    end
+end
+
+
+--- Check if a tool is available and resolve its absolute path.
 -- @param name string a valid tool name
 -- @return True if tool exists, otherwise false. False may also indicate an
 --         error, if the second return value is not nil.
 -- @return Error object on failure.
 function tools.check_tool(name)
-    local rc, re, tool, which, p, out
+    local rc, re, which, p, out
     if not toollist[name] then
         return false, err.new("tool '%s' is not registered in tool list", name)
     end
 
-    tool = toollist[name]
-    if not tool.path then
-        out = {}
-        local function capture(msg)
-            table.insert(out, msg)
+    if not toollist[name].path then
+        if string.sub(toollist[name].name, 1, 1) == "/" then
+            p = toollist[name].name
+        else
+            -- relative path
+            out = {}
+            local function capture(msg)
+                table.insert(out, msg)
+            end
+
+            which = { "which", toollist[name].name }
+            rc, re = e2lib.callcmd_capture(which, capture)
+            if not rc then
+                return false, re
+            elseif rc ~= 0 then
+                return false
+            end
+
+            p = string.sub(table.concat(out), 1, -2)
         end
 
-        which = { "which", tool.name }
-        rc, re = e2lib.callcmd_capture(which, capture)
-        if not rc then
-            return false, re
-        elseif rc ~= 0 then
-            return false
-        end
-
-        tool.path = string.sub(table.concat(out), 1, -2)
-        if not e2lib.exists(tool.path, true) then
+        if not e2lib.exists(p, true) then
             return false,
-                err.new("tool %q not found at %q", tool.name, tool.path)
+                err.new("tool %q not found at %q", tool.name, p)
         end
+
+        toollist[name].path = p
     end
 
     return true
+end
+
+--- Query whether an optional tool is enabled or not.
+-- @param name Tool name.
+-- @return True if enabled, false on error or if not enabled.
+-- @return Error object on failure, nil if tool is disabled.
+function tools.enabled(name)
+    if not toollist[name] then
+        return false, err.new("tool '%s' is not registered in tool list", name)
+    end
+    assertIsBoolean(toollist[name].enable)
+    return toollist[name].enable
 end
 
 --- Initialize the tools library. Must be called before the tools library can
