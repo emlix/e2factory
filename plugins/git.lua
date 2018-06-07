@@ -555,8 +555,9 @@ function git.git_source:prepare_source(sourceset, buildpath)
     end
 
     local gitdir, git_argv, git_tool, tar_argv
-    local git_pid, tar_pid, fdctv
+    local pid, status, fdctv
     local writeend, readend, devnull
+    local children = {}
 
     gitdir = e2lib.join(srcdir, ".git")
 
@@ -611,38 +612,54 @@ function git.git_source:prepare_source(sourceset, buildpath)
         { istype = "readfo", dup = eio.STDOUT, file = writeend }
     }
 
-    git_pid, re = e2lib.callcmd(git_argv, fdctv, nil, nil, true)
-    if not git_pid then
+    pid, re = e2lib.callcmd(git_argv, fdctv, nil, nil, true)
+    if not pid then
         return false, e:cat(re)
     end
+    table.insert(children, { pid=pid, name="git" })
 
     fdctv = {
         { istype = "readfo", dup = eio.STDIN, file = readend },
         { istype = "readfo", dup = eio.STDOUT, file = devnull }
     }
 
-    tar_pid, re = e2lib.callcmd(tar_argv, fdctv, nil, nil, true)
-    if not tar_pid then
+    pid, re = e2lib.callcmd(tar_argv, fdctv, nil, nil, true)
+    if not pid then
         return false, e:cat(re)
     end
+    table.insert(children, { pid=pid, name="tar" })
 
-    rc, re = e2lib.wait(git_pid)
-    if not rc then
-        return false, e:cat(re)
-    elseif rc ~= 0 then
-        return false, e:cat("git archive failed with return code %d", rc)
+    local errors = false
+    while (#children > 0) do
+        local found = false
+        status, pid = e2lib.wait(-1)
+        if not status then
+            return false, e:cat(pid)
+        end
+
+        for pos, child in ipairs(children) do
+            if pid == child.pid then
+                found = true
+                if status ~= 0 then
+                    return false, e:cat("%s failed with return code %d",
+                        child.name, status)
+                end
+
+                table.remove(children, pos)
+                break
+            end
+        end
+
+        if not found then
+            -- can this happen? avoid potential infinite loop anyway
+            return false,
+                e:cat("unexpected child with pid=%d status=%d", pid, status)
+        end
     end
 
     rc, re = eio.close(writeend)
     if not rc then
         return false, e:cat(re)
-    end
-
-    rc, re = e2lib.wait(tar_pid)
-    if not rc then
-        return false, e:cat(re)
-    elseif rc ~= 0 then
-        return false, e:cat("git archive - tar failed with return code %d", rc)
     end
 
     rc, re = eio.close(readend)
