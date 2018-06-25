@@ -73,7 +73,7 @@ config {
     }
   },
   tools = {
-    ["<tool-name>"] = { name="<string>", flags="<string>" },
+    ["<tool-name>"] = { name="<string>", flags="<string>", enable=<bool> },
     ...
   },
   cache = {
@@ -186,6 +186,12 @@ Command to call the tool.
 Type: String
 .br
 Flags/arguments to be passed to the tool.
+
+.TP
+.BR enable
+Type: Boolean
+.br
+Enables or disables the use of an optional tool.
 
 .TP
 .BR cache

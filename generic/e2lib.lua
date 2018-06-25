@@ -2466,8 +2466,32 @@ end
 -- @return bool
 function e2lib.e2_su_2_2(argv)
     assert(type(argv) == "table")
+    local rc, re
 
-    return e2lib.call_tool_argv("e2-su-2.2", argv)
+    rc, re = e2lib.get_global_config()
+    if not rc then
+        return false, re
+    end
+
+    rc, re = tools.enabled("sudo")
+    if rc then
+        local cmd
+
+        cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
+        if not cmd then
+            return false, re
+        end
+
+        for _,arg in ipairs(argv) do
+            table.insert(cmd, arg)
+        end
+
+        table.insert(cmd, 1, "--")
+
+        return e2lib.call_tool_argv("sudo", cmd)
+    else
+        return e2lib.call_tool_argv("e2-su-2.2", argv)
+    end
 end
 
 --- call the tar command

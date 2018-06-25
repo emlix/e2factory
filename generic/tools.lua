@@ -312,6 +312,7 @@ function tools.add_default_tools()
         unzip = { name = "unzip", flags = "", optional = false },
         ["e2-su-2.2"] = { name = buildconfig.BINDIR .. "/e2-su-2.2",
         flags = "", optional = false },
+        sudo = { name = "sudo", optional = true, enable = false },
     }
 
     for name, t in pairs(defaults) do

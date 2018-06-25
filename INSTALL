@@ -13,8 +13,13 @@ First make sure that the following packages are installed in your system
 
 More packages are required but usually installed by default.
 
-e2factory uses a unix group named ebs by default. All users of e2factory
-must belong to that group. Create the group.
+e2factory requires root permissions to build in a chroot environment.
+It uses the suid helper e2-su-2.2 belonging to the unix group "ebs".
+
+Alernatively users can configure the use of sudo without password and
+set e2-su-2.2 permissions to 755. Check the manual for further details.
+
+All users of e2factory must belong to the ebs group. Create the group.
 
   groupadd ebs
 
