@@ -228,9 +228,6 @@ local function e2_new_source(arg)
         error(re)
     end
 
-    e2project = e2tool.e2project()
-    e2project:init_project("new-source")
-
     e2option.flag("git", "create a git repository")
     e2option.flag("files", "create a new file on a files server")
     e2option.option("server", "specify server")
@@ -239,6 +236,9 @@ local function e2_new_source(arg)
     if not opts then
         error(arguments)
     end
+
+    e2project = e2tool.e2project()
+    e2project:init_project("new-source")
 
     rc, re = e2project:load_project()
     if not rc then
