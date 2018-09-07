@@ -487,8 +487,7 @@ function collect_project_class:buildid(rbs)
     hash.hash_append(hc, bid)
 
     bid = hash.hash_finish(hc)
-
-    assertIsStringN(bid)
+    bid = rbs:build_mode().buildid(bid)
 
     e2lib.logf(4, "BUILDID: cp result=%s buildid=%s", self._name, bid)
 
