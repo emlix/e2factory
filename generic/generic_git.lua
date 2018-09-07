@@ -258,7 +258,7 @@ end
 -- The first matching ref is returned. Use filter to check for specific refs.
 
 -- @param git_dir Path to GIT_DIR.
--- @param remote True for remote repository, false for local repository.
+-- @param remote True for default remote repository, false for local repository.
 -- @param id Full commit ID string, must be 40 chars long.
 -- @param filter Filter string to select specific refs. Filter is passed to
 --               string.match(), and is always anchored (^) to the start of
@@ -520,7 +520,7 @@ function generic_git.git_url1(u)
 end
 
 --- clone a git repository by server and location
--- @param c
+-- @param c Cache
 -- @param server
 -- @param location
 -- @param destdir string: destination directory
@@ -543,7 +543,7 @@ function generic_git.git_clone_from_server(c, server, location, destdir,
 end
 
 --- initialize a git repository
--- @param c a cache
+-- @param c Cache
 -- @param server string: server name
 -- @param location string: location
 -- @return bool
@@ -563,7 +563,7 @@ function generic_git.git_init_db(c, server, location)
 end
 
 --- do a git push
--- @param c a cache
+-- @param c Cache
 -- @param gitdir string: gitdir
 -- @param server string: server name
 -- @param location string: location
