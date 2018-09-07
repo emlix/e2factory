@@ -296,7 +296,14 @@ function e2build.build_process_class:_result_available(res, rbs)
         return false, e:cat(re)
     end
 
-    sbid = string.format("%s...", string.sub(buildid, 1, 8))
+    if rbs:build_mode().source_set() == "working-copy" then
+        assert(#buildid == digest.SHA1_LEN + 8 and
+            string.sub(buildid, 1, 8) == "scratch-")
+        sbid = string.format("%s...", string.sub(buildid, 1, 16))
+    else
+        assert(#buildid == digest.SHA1_LEN)
+        sbid = string.format("%s...", string.sub(buildid, 1, 8))
+    end
 
     if rbs:build_settings():prep_playground() then
         rbs:message(e2lib.align(columns,
