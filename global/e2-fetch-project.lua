@@ -169,8 +169,9 @@ local function e2_fetch_project(arg)
                 error(e:cat(re))
             end
 
-            rc, re = generic_git.git_checkout1(p.destdir,
-                "refs/heads/" .. p.branch)
+            -- checkout prefixes branch with "refs/heads/" on its own,
+            -- creates detached branch for full ref(!!)
+            rc, re = generic_git.git_checkout1(p.destdir, p.branch)
             if not rc then
                 error(e:cat(re))
             end
