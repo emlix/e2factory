@@ -76,6 +76,10 @@ local function e2_fetch_project(arg)
         error(err.new("too many arguments"))
     end
 
+    if opts["tag"] and opts["branch"] then
+        error(err.new("--tag and --branch are mutually exclusive"))
+    end
+
     local sl, re = e2lib.parse_server_location(arguments[1],
         e2lib.globals.default_projects_server)
     if not sl then
@@ -104,13 +108,8 @@ local function e2_fetch_project(arg)
 
     if opts["branch"] then
         p.branch = opts["branch"]
-    else
-        p.branch = nil
-    end
-    if opts["tag"] then
+    elseif opts["tag"] then
         p.tag = opts["tag"]
-    else
-        p.tag = nil
     end
 
     -- fetch project descriptor file
