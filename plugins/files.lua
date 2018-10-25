@@ -58,7 +58,7 @@ local function gen_unpack_command(physpath, virtpath, destdir)
             atype = "TAR"
         elseif name:match("%.tgz") or name:match("%.tar%.gz$") then
             atype = "TAR_GZ"
-        elseif name:match("%.tar%.bz2$") then
+        elseif name:match('%.tar%.bz2$') or name:match('%.tbz2$') then
             atype = "TAR_BZIP2"
         elseif name:match("%.tar%.xz$") then
             atype = "TAR_XZ"
