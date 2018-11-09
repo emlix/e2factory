@@ -99,6 +99,36 @@ end
 
 local refs_heads = generic_git.refs_heads
 
+-- Helper to get the default remote string.
+-- Trivial function to keep information in one place.
+-- @param remote, defaults to "origin".
+-- @return remote string.
+function generic_git.refs_remote(remote)
+    return remote or "origin"
+end
+
+--- Helper to generate refs/remotes/<remote>/<branch>
+-- @param branch Branch
+-- @param remote Remote, defaults to refs_remote().
+-- @return refs/remotes/remote/branch
+function generic_git.refs_remotes(branch, remote)
+    remote = generic_git.refs_remote(remote)
+    assertIsStringN(branch)
+    assertIsStringN(remote)
+    return "refs/remotes/"..remote.."/"..branch
+end
+
+--- Helper to generate <remote>/<branch>
+--@param branch Branch
+--@param remote Remote, defaults to refs_remote().
+--@return remote/branch string
+function generic_git.refs_remote_heads(branch, remote)
+    remote = generic_git.refs_remote(remote)
+    assertIsStringN(branch)
+    assertIsStringN(remote)
+    return remote.."/"..branch
+end
+
 --- Create argument vector for calling git.
 -- Defaults: If git_dir is given and the default for work_tree is requested,
 -- it's assumed to be one directory level up. If work_tree is given and the
