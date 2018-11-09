@@ -503,22 +503,28 @@ function generic_git.git_remote_add1(lurl, rurl, name)
 end
 
 --- Add git remote.
+-- @param c Cache
+-- @param lserver Local server name, likely "."
+-- @param llocation Local location of git repository.
+-- @param remote Git remote name.
+-- @param rserver Remote server (cache).
+-- @param rlocation Remote location.
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function generic_git.git_remote_add(c, lserver, llocation, name, rserver, rlocation)
+function generic_git.git_remote_add(c, lserver, llocation, remote, rserver, rlocation)
     local rc, re, rurl, lurl
-
-    rurl, re = cache.remote_url(c, rserver, rlocation)
-    if not rurl then
-        return false, re
-    end
 
     lurl, re = cache.remote_url(c, lserver, llocation)
     if not lurl then
         return false, re
     end
 
-    rc, re = generic_git.git_remote_add1(lurl, rurl, name)
+    rurl, re = cache.remote_url(c, rserver, rlocation)
+    if not rurl then
+        return false, re
+    end
+
+    rc, re = generic_git.git_remote_add1(lurl, rurl, remote)
     if not rc then
         return false, re
     end
