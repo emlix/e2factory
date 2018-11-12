@@ -48,10 +48,13 @@ end
 -- @return True on success, false on error.
 -- @return Err object on failure.
 function lock.lock(l, dir)
-    local e = err.new("locking failed")
-
     local rc, re = e2lib.mkdir(dir)
-    if not rc then
+    if not rc and err.eccmp(re, 'EEXIST') then
+        local e = err.new('chroot already in use!')
+        e:append('if this is an error, try rmdir %q', dir)
+        return false, e
+    elseif not rc then
+        local e = err.new("locking failed")
         return false, e:cat(re)
     end
 
