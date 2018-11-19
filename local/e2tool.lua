@@ -797,14 +797,16 @@ function e2tool.e2project_class:load_project(skip_load_config)
         e2lib.abort(re)
     end
 
+    -- load e2.conf and do basic initialization
+    rc, re = e2lib.init2()
+    if not rc then
+        return false, re
+    end
+
+    -- open debug.log after config.log.logrotate has come into effect
     rc, re = opendebuglogfile()
     if not rc then
         return false, e:cat(re)
-    end
-
-    rc, re = e2lib.init2() -- configuration must be available
-    if not rc then
-        return false, re
     end
 
     if skip_load_config == true then
