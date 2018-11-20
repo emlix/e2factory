@@ -551,6 +551,7 @@ local function files_to_result(src, sourceset, directory)
     local rc, re, out
     local e = err.new("converting result failed")
     local source = "source"     -- directory to store source files in
+    local BUILDq = e2lib.shquote("$(BUILD)")  -- pre-quoted _make_ variable
     local makefile = e2lib.join(directory, "Makefile")
 
     out = { ".PHONY: place\n\nplace:\n" }
@@ -594,7 +595,7 @@ local function files_to_result(src, sourceset, directory)
         if file:unpack() then
             local physpath = e2lib.join(destdir, e2lib.basename(file:location()))
             local virtpath = e2lib.join(source, e2lib.basename(file:location()))
-            local rc, re = gen_unpack_command(physpath, virtpath, "$(BUILD)")
+            local rc, re = gen_unpack_command(physpath, virtpath, "$(BUILD)") -- BUILD quoting ok
             if not rc then
                 e:cat("unable to generate unpack command")
                 return false, e:cat(re)
@@ -613,8 +614,9 @@ local function files_to_result(src, sourceset, directory)
             table.insert(out, "\n")
 
             if file:unpack() ~= src:get_name() then
-                table.insert(out, string.format("\tln -s %s $(BUILD)/%s\n",
-                    file:unpack(), src:get_name()))
+                table.insert(out, string.format("\tln -s %s %s/%s\n",
+                    e2lib.shquote(file:unpack()), BUILDq,
+                    e2lib.shquote(src:get_name())))
             end
         end
         if file:copy() then
@@ -627,10 +629,10 @@ local function files_to_result(src, sourceset, directory)
             --
             -- is a directory?
             --
-            to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
-            table.insert(out, string.format('\tif [ test -d %s ]; then \\\n', to))
+            to = string.format("%s%s", BUILDq, e2lib.shquote(destdir))
+            table.insert(out, string.format('\tif [ -d %s ]; then \\\n', to))
 
-            to = string.format('"$(BUILD)"%s',
+            to = string.format('%s%s', BUILDq,
                 e2lib.shquote(e2lib.join(destdir, destname)))
             table.insert(out, string.format('\t\tcp %s %s; \\\n', from, to))
             table.insert(out, string.format('\telse \\\n'))
@@ -640,18 +642,20 @@ local function files_to_result(src, sourceset, directory)
             destdir, destname = gen_dest_dir_name("/", src:get_name(), file:copy(),
                 file:location(), "no")
 
-            to = string.format('"$(BUILD)"%s', e2lib.shquote(destdir))
+            to = string.format('%s%s', BUILDq, e2lib.shquote(destdir))
             table.insert(out, string.format('\t\tmkdir -p %s; \\\n', to))
 
-            to = string.format('"$(BUILD)"%s',
+            to = string.format('%s%s', BUILDq,
                 e2lib.shquote(e2lib.join(destdir, destname)))
             table.insert(out, string.format('\t\tcp %s %s; \\\n', from, to))
             table.insert(out, '\tfi\n')
         end
         if file:patch() then
+            local to = e2lib.shquote(e2lib.join(source, e2lib.basename(file:location())))
             table.insert(out, string.format(
-                "\tpatch -p%s -d \"$(BUILD)/%s\" -i \"$(shell pwd)/%s/%s\"\n",
-                file:patch(), src:get_name(), source, e2lib.basename(file:location())))
+                "\tpatch -p%s -d %s/%s -i %s/%s\n",
+                file:patch(), BUILDq, e2lib.shquote(src:get_name()),
+                e2lib.shquote("$(shell pwd)"), to))
         end
         -- write licences
         local destdir = string.format("%s/licences", directory)
