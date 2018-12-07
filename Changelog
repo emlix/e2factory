@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.17p0
  * add support for --wc-mode res1,res2 style option parsing
  * warn in likely unintended case when mixing multiple build modes
  * fix wait()ing for children
