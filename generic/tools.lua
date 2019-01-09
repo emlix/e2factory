@@ -358,7 +358,7 @@ function tools.check_tool(name)
 
         if not e2lib.exists(p, true) then
             return false,
-                err.new("tool %q not found at %q", tool.name, p)
+                err.new("tool %q not found at %q", name, p)
         end
 
         toollist[name].path = p
