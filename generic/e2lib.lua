@@ -588,10 +588,16 @@ end
 -- @param ... additional parameters to pass to string.format
 -- @return nil
 function e2lib.logf(level, format, ...)
-    if not format then
-        e2lib.log(1, "Internal error: calling logf() without format string")
+    if type(format) ~= "string" then
+        e2lib.log(1, "Internal error: calling logf() without valid format string")
     end
-    local msg = string.format(format, ...)
+    local status, msg = pcall(string.format, format, ...)
+    if not status then
+        e2lib.abort("failed to format log message\n",
+            "  error message: ", msg, "\n",
+            "  format string: ", format, "\n",
+            "  ", debug.traceback())
+    end
     return e2lib.log(level, msg)
 end
 
