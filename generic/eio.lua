@@ -430,12 +430,11 @@ end
 -- @return File descriptor in read mode, or false on error.
 -- @return File descriptor in write mode, or error object on failure.
 function eio.pipe()
-    local fd1, fd2
-
-    fd1, fd2 = leio.pipe()
+    local fd1, fd2 = leio.pipe()
     if not fd1 then
         return false, err.new("failed creating pipe: %s", fd2)
     end
+    e2lib.logf(4, "eio.pipe() -> %d, %d", fd1, fd2)
     return fd1, fd2
 end
 
