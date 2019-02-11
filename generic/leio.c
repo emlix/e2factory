@@ -47,9 +47,8 @@ eio_fopen(lua_State *lua)
 
 	fd = fileno(f);
 	if (fcntl(fd, F_SETFD, FD_CLOEXEC) != 0) {
-		lua_pushfstring(lua, "%s: fcntl(%d): %s: %s", __func__,
+		luaL_error(lua, "%s: fcntl(%d): %s: %s", __func__,
 		    fd, file, strerror(errno));
-		lua_error(lua);
 	}
 
 	lua_pushlightuserdata(lua, f);
