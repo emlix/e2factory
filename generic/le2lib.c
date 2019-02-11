@@ -330,10 +330,12 @@ poll_fd(lua_State *lua)
 	}
 	f = poll(fds, nfds, tmo);
 	if (f < 0) {
+		int e = errno;
 		lua_pushboolean(lua, 0);
-		lua_pushstring(lua, strerror(errno));
+		lua_pushstring(lua, strerror(e));
+		lua_pushinteger(lua, e);
 		free(fds);
-		return 2;
+		return 3;
 	}
 
 	/* We want to return a table containing all selected fds looking like
