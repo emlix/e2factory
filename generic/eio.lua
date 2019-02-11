@@ -129,6 +129,35 @@ function eio.fclose(file)
     return true
 end
 
+--- Flush file object user space buffers.
+-- @param file File object (or nil).
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function eio.fflush(file)
+    local rc, re, errstring, handle
+
+    if file then
+        rc, re = is_eio_object(file)
+        if not rc then
+            return false, re
+        end
+    end
+
+    if file then
+        rc, errstring = leio.fflush(file.handle)
+        if not rc then
+            return false, err.new("error flushing file %s: %s", file.finfo, errstring)
+        end
+    else
+        rc, errstring = leio.fflush(nil)
+        if not rc then
+            return false, err.new("error flushing files: %s", errstring)
+        end
+    end
+
+    return true
+end
+
 --- Close a file descriptor.
 -- @param fd File descriptor.
 -- @return True on success, false on error.

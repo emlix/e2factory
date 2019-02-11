@@ -80,6 +80,22 @@ eio_fclose(lua_State *lua)
 }
 
 static int
+eio_fflush(lua_State *lua)
+{
+	FILE *f;
+	f = lua_touserdata(lua, 0); /* May be NULL */
+
+	if (fflush(f) == EOF) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		return 2;
+	}
+
+	lua_pushboolean(lua, 1);
+	return 1;
+}
+
+static int
 eio_close(lua_State *L)
 {
 	int fd, rc;
@@ -464,6 +480,7 @@ static luaL_Reg lib[] = {
   { "fclose", eio_fclose },
   { "fdopen", eio_fdopen },
   { "feof", eio_feof },
+  { "fflush", eio_fflush },
   { "fgetc", eio_fgetc },
   { "fileno", eio_fileno },
   { "fopen", eio_fopen },
