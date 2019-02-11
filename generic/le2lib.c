@@ -369,6 +369,18 @@ poll_fd(lua_State *lua)
 			lua_pushboolean(lua, fds[nfds].revents & POLLOUT);
 			lua_rawset(lua, -3);
 
+			lua_pushliteral(lua, "POLLERR");
+			lua_pushboolean(lua, fds[nfds].revents & POLLERR);
+			lua_rawset(lua, -3);
+
+			lua_pushliteral(lua, "POLLHUP");
+			lua_pushboolean(lua, fds[nfds].revents & POLLHUP);
+			lua_rawset(lua, -3);
+
+			lua_pushliteral(lua, "POLLNVAL");
+			lua_pushboolean(lua, fds[nfds].revents & POLLNVAL);
+			lua_rawset(lua, -3);
+
 			/* commit table to newtable at index */
 			lua_rawseti(lua, -2, ++index);
 		}
