@@ -282,31 +282,28 @@ process_wait(lua_State *lua)
 	int rc, status;
 	rc = waitpid(pid, &status, 0);
 	if (rc < 0) {
+		int e = errno;
 		lua_pushboolean(lua, 0);
-		lua_pushstring(lua, strerror(errno));
-		return 2;
+		lua_pushstring(lua, strerror(e));
+		lua_pushinteger(lua, e);
+		return 3;
 	}
 
 	if (WIFEXITED(status)) {
 		/* Normal exit case */
 		lua_pushnumber(lua, WEXITSTATUS(status));
 		lua_pushnumber(lua, rc);
-
 		return 2;
 	} else if (WIFSIGNALED(status)) {
 		/* Signal exit case */
 		lua_pushnumber(lua, WTERMSIG(status) + 128); // what dash does
 		lua_pushnumber(lua, rc);
 		lua_pushnumber(lua, WTERMSIG(status));
-
 		return 3;
-	} else {
-		/* Job control status but option is unset */
-		lua_pushboolean(lua, 0);
-		lua_pushstring(lua, "internal error, please report (waitpid)");
-
-		return 2;
 	}
+
+	/* Job control status but option is unset */
+	return luaL_error(lua, "process_wait: unhandled case, please report");
 }
 
 static int
