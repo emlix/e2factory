@@ -806,17 +806,6 @@ static volatile sig_atomic_t signal_received_first = 0;
 static void
 signal_handler(int sig)
 {
-	/*
-	 * It's normal for subsequent signals to occur (eg. SIGPIPE)
-	 * Ignore signals after they occurred once
-	 */
-	struct sigaction sa;
-	sigaction(sig, NULL, &sa);
-	sa.sa_handler = SIG_IGN;
-
-	if (sigaction(sig, &sa, NULL) < 0)
-		fprintf(stderr, "e2: signal_handler: sigaction failed!\n");
-
 	/* Make sure we don't install lua_signal_handler more than once */
 	if (signal_shutdown)
 		return;
@@ -856,8 +845,14 @@ signal_install(lua_State *L)
 		sigaddset(&block_set, signals[i]);
 
 	sa.sa_handler = signal_handler;
+	/* No SA_RESTART:
+	 * In order for e2lib.interrupt_hook() to run on the Lua side, we need
+	 * to have some "movement" in the Lua code on interrupt. Thus any
+	 * waiting syscalls need to return not only to the C side, but we need
+	 * to return EINTR to the Lua side and loop there. */
 	sa.sa_flags = 0;
-	sigemptyset(&sa.sa_mask);
+	/* Do not allow other signals during exection of signal_handler */
+	sa.sa_mask = block_set;
 
 	for (i = 0; signals[i] != 0; i++) {
 		if (sigaction(signals[i], &sa, NULL) < 0) {
@@ -877,7 +872,7 @@ signal_install(lua_State *L)
 	return 1;
 }
 
-/* Return the first received signal  triggering shutdown */
+/* Return the first received signal triggering shutdown */
 static int
 signal_received(lua_State *L)
 {
