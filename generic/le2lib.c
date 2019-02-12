@@ -33,6 +33,7 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <pty.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -884,6 +885,29 @@ signal_received(lua_State *L)
 	return 2;
 }
 
+static int
+do_forkpty(lua_State *L)
+{
+	int cpid, fdm;
+	char ptyname[PATH_MAX];
+
+	cpid = forkpty(&fdm, ptyname, NULL, NULL);
+	if (cpid < 0) {
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, strerror(errno));
+		return 2;
+	}
+
+	lua_pushnumber(L, cpid);
+	if (cpid == 0)
+		return 1;
+
+	lua_pushnumber(L, fdm);
+	lua_pushstring(L, ptyname);
+
+	return 3;
+}
+
 static luaL_Reg lib[] = {
 	{ "chdir", change_directory },
 	{ "chmod", do_chmod },
@@ -893,6 +917,7 @@ static luaL_Reg lib[] = {
 	{ "execvp", do_execvp },
 	{ "exists", file_exists },
 	{ "fork", lua_fork },
+	{ "forkpty", do_forkpty },
 	{ "getpid", do_getpid },
 	{ "hardlink", do_hardlink },
 	{ "kill", do_kill },

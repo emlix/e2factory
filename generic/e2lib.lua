@@ -294,6 +294,30 @@ function e2lib.fork()
     return pid
 end
 
+--- Forkpty. Like fork but open a PTY.
+-- @return PID of child or false on error. PID of 0 means child process.
+-- @return File Descriptor for pseudo terminal (parent only).
+--         Error object on failure.
+-- @return Path to PTY device node.
+function e2lib.forkpty()
+    local rc, re
+    local pid, fdm, ptyname
+
+    pid, fdm, ptyname = le2lib.forkpty()
+    if not pid then
+        return false, err.new("failed to fork new pty: %s", fdm)
+    end
+    if pid == 0 then
+        -- child, return early
+        return pid
+    end
+
+    assert(type(fdm) == "number")
+    assert(type(ptyname) == "string")
+
+    return pid, fdm, ptyname
+end
+
 --- Set umask value.
 -- @param mask New umask value.
 -- @return Previous umask value.
