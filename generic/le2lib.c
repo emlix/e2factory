@@ -41,6 +41,8 @@
 
 static char buffer[PATH_MAX + 1];
 
+static sigset_t block_set;
+
 static int
 lua_fork(lua_State *lua)
 {
@@ -846,6 +848,12 @@ signal_install(lua_State *L)
 	/* Lua context for use in signal handler */
 	globalL = L;
 
+	/* Default signal blocking set while running a handler or
+	 * critical section */
+	sigemptyset(&block_set);
+	for (i = 0; signals[i] != 0; i++)
+		sigaddset(&block_set, signals[i]);
+
 	sa.sa_handler = signal_handler;
 	sa.sa_flags = 0;
 	sigemptyset(&sa.sa_mask);
@@ -883,6 +891,24 @@ signal_received(lua_State *L)
 	lua_pushstring(L, s);
 	lua_pushinteger(L, signal_received_first);
 	return 2;
+}
+
+static int
+signal_block(lua_State *lua)
+{
+	if (sigprocmask(SIG_BLOCK, &block_set, NULL) < 0)
+		return luaL_error(lua, "sigprocmask(SIG_BLOCK) failed: %s",
+		    strerror(errno));
+	return 0;
+}
+
+static int
+signal_unblock(lua_State *lua)
+{
+	if (sigprocmask(SIG_UNBLOCK, &block_set, NULL) < 0)
+		return luaL_error(lua, "sigprocmask(SIG_UNBLOCK) failed: %s",
+		    strerror(errno));
+	return 0;
 }
 
 static int
@@ -928,9 +954,11 @@ static luaL_Reg lib[] = {
 	{ "rename", do_rename },
 	{ "rmdir", do_rmdir },
 	{ "setenv", do_setenv },
-	{ "signal_reset", signal_reset },
+	{ "signal_block", signal_block },
 	{ "signal_install", signal_install },
 	{ "signal_received", signal_received },
+	{ "signal_reset", signal_reset },
+	{ "signal_unblock", signal_unblock },
 	{ "stat", get_file_statistics },
 	{ "symlink", create_symlink },
 	{ "umask", set_umask },
