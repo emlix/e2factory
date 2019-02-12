@@ -18,6 +18,7 @@
  */
 
 #include <sys/utsname.h>
+#include <sys/ioctl.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -912,6 +913,18 @@ signal_unblock(lua_State *lua)
 }
 
 static int
+ioctl_tiocsig_sigint(lua_State *L)
+{
+	/* master fd of the pseudo terminal */
+	int fd = luaL_checkinteger(L, 1);
+
+	if (ioctl(fd, TIOCSIG, SIGINT) < 0)
+		return luaL_error(L, "ioctl(TIOCSIG, SIGINT) failed: %s",
+		    strerror(errno));
+	return 0;
+}
+
+static int
 do_forkpty(lua_State *L)
 {
 	int cpid, fdm;
@@ -946,6 +959,7 @@ static luaL_Reg lib[] = {
 	{ "forkpty", do_forkpty },
 	{ "getpid", do_getpid },
 	{ "hardlink", do_hardlink },
+	{ "ioctl_tiocsig_sigint", ioctl_tiocsig_sigint },
 	{ "kill", do_kill },
 	{ "mkdir", do_mkdir },
 	{ "mkdtemp", do_mkdtemp },
