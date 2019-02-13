@@ -151,58 +151,58 @@ function assrt.assertErrorMsgMatches()
 end
 
 ---
-function assrt.assertFalse(v)
-    assert(not v)
+function assrt.assertFalse(v, message)
+    assert(not v, message)
 end
 
 ---
-function assrt.assertIs(a, b)
-    assert(a == b)
+function assrt.assertIs(a, b, message)
+    assert(a == b, message)
 end
 
 ---
-function assrt.assertIsBoolean(v)
-    assert(type(v) == "boolean")
+function assrt.assertIsBoolean(v, message)
+    assert(type(v) == "boolean", message)
 end
 
 ---
-function assrt.assertIsFunction(v)
-    assert(type(v) == "function")
+function assrt.assertIsFunction(v, message)
+    assert(type(v) == "function", message)
 end
 
 ---
-function assrt.assertIsNil(v)
-    assert(type(v) == "nil")
+function assrt.assertIsNil(v, message)
+    assert(type(v) == "nil", message)
 end
 
 ---
-function assrt.assertIsNumber(v)
-    assert(type(v) == "number")
+function assrt.assertIsNumber(v, message)
+    assert(type(v) == "number", message)
 end
 
 ---
-function assrt.assertIsString(v)
-    assert(type(v) == "string")
+function assrt.assertIsString(v, message)
+    assert(type(v) == "string", message)
 end
 
 ---
-function assrt.assertIsStringN(v)
-    assert(type(v) == "string" and v ~= "")
+function assrt.assertIsStringN(v, message)
+    assert(type(v) == "string" and v ~= "", message)
 end
 
 ---
-function assrt.assertIsTable(v)
-    assert(type(v) == "table")
+function assrt.assertIsTable(v, message)
+    assert(type(v) == "table", message)
 end
 
 ---
-function assrt.assertItemsEquals(a, b)
-    assert(_is_table_equals(a, b) == true)
+function assrt.assertItemsEquals(a, b, message)
+    assert(_is_table_equals(a, b) == true, message)
 end
 
 ---
-function assrt.assertNil(v)
-    assert(v == nil)
+function assrt.assertNil(v, message)
+    assert(v == nil, message)
 end
 
 ---
@@ -211,22 +211,22 @@ function assrt.assertNotAlmostEquals()
 end
 
 ---
-function assrt.assertNotEquals(a, b)
+function assrt.assertNotEquals(a, b, message)
     if type(a) == "table" and type(b) == "table" then
-        assert(_is_table_equals(a, b) == false)
+        assert(_is_table_equals(a, b) == false, message)
     else
-        assert(a ~= b)
+        assert(a ~= b, message)
     end
 end
 
 ---
-function assrt.assertNotIs(a, b)
-    assert(a ~= b)
+function assrt.assertNotIs(a, b, message)
+    assert(a ~= b, message)
 end
 
 ---
-function assrt.assertNotNil(v)
-    assert(v ~= nil)
+function assrt.assertNotNil(v, message)
+    assert(v ~= nil, message)
 end
 
 ---
@@ -265,8 +265,8 @@ function assrt.assertStrMatches(s, pattern, start, final)
 end
 
 ---
-function assrt.assertTrue(v)
-    assert(v == true)
+function assrt.assertTrue(v, message)
+    assert(v == true, message)
 end
 
 -- Add the above functions to the global environment _G
