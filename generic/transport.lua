@@ -247,7 +247,7 @@ function transport.fetch_file(surl, location, destdir, destname)
     end
     -- Move the file into place atomically. This may fail when the copy
     -- operation above failed silently (looking at rsync here).
-    rc, re = e2lib.mv(tmpfile_path, e2lib.join(destdir, destname))
+    rc, re = e2lib.rename(tmpfile_path, e2lib.join(destdir, destname))
     if not rc then
         return false, e:cat(re)
     end
