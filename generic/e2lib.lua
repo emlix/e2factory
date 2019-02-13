@@ -228,7 +228,19 @@ end
 -- @return Process ID of the terminated child or error object on failure.
 -- @return Number of signal that killed the process, if any.
 function e2lib.wait(pid)
-    local rc, childpid, sig = le2lib.wait(pid)
+    while true do
+        local rc, childpid, sig = le2lib.wait(pid)
+        if not rc then
+            if sig ~= errno.def2errnum("EINTR") then
+                return false,
+                    err.new("waiting for child %d failed: %s", pid, childpid)
+            end
+            e2lib.log(4, "wait(%d) returned EINTR", childpid)
+        else
+            return rc, childpid, sig
+        end
+    end
+end
 
     if not rc then
         return false, err.new("waiting for child %d failed: %s", pid, childpid)
@@ -250,14 +262,16 @@ end
 --         fd in the fdvec table.
 -- @return Error object on failure.
 function e2lib.poll(timeout, fdvec)
-    local pollvec, errstring
-
-    pollvec, errstring = le2lib.poll(timeout, fdvec)
-    if not pollvec then
-        return false, err.new("poll() failed: %s", errstring)
+    while true do
+        local pollvec, errstring, e = le2lib.poll(timeout, fdvec)
+        if not pollvec then
+            if e ~= errno.def2errnum("EINTR") then
+                return false, err.new("poll() failed: %s", errstring)
+            end
+        else
+            return pollvec
+        end
     end
-
-    return pollvec
 end
 
 --- Rename file or directory using the rename syscall.
