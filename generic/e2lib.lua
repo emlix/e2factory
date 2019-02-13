@@ -235,7 +235,7 @@ function e2lib.wait(pid)
                 return false,
                     err.new("waiting for child %d failed: %s", pid, childpid)
             end
-            e2lib.log(4, "wait(%d) returned EINTR", childpid)
+            e2lib.logf(4, "wait(%d) returned EINTR", childpid)
         else
             return rc, childpid, sig
         end
