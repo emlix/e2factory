@@ -1427,6 +1427,14 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
     local function sync_child(sync_pipes)
         local rc, re
 
+        -- close unused ends early
+        for _,fd in ipairs({2, 3}) do
+            rc, re = eio.close(sync_pipes[fd])
+            if not rc then
+                return false, re
+            end
+        end
+
         -- ping parent
         rc, re = eio.write(sync_pipes[4], "c")
         if not rc then
@@ -1444,8 +1452,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
         end
 
         -- cleanup
-        for _,fd in ipairs(sync_pipes) do
-            rc, re = eio.close(fd)
+        for _,fd in ipairs({4, 1}) do
+            rc, re = eio.close(sync_pipes[fd])
             if not rc then
                 return false, re
             end
@@ -1456,6 +1464,18 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
 
     local function sync_parent(sync_pipes)
         local rc, re
+
+        -- close unused ends
+        -- note: don't start reading/writing before all unused ends
+        -- are closed. If anything goes wrong with the child, we will
+        -- otherwise block forever trying to read from ourselves.
+        -- comment also applies to sync_child()
+        for _,fd in ipairs({1, 4}) do
+            rc, re = eio.close(sync_pipes[fd])
+            if not rc then
+                return false, re
+            end
+        end
 
         -- ping child
         rc, re = eio.write(sync_pipes[2], "p")
@@ -1474,8 +1494,8 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
         end
 
         -- cleanup
-        for _,fd in ipairs(sync_pipes) do
-            rc, re = eio.close(fd)
+        for _,fd in ipairs({2, 3}) do
+            rc, re = eio.close(sync_pipes[fd])
             if not rc then
                 return false, re
             end
