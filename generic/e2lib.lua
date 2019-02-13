@@ -1357,11 +1357,15 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
                 if ptab.POLLIN then
                     fdct = fd_find_writefunc_by_readfd(fdctv, ptab.fd)
                     if fdct then
-                        local data
+                        local data, eno
 
-                        data, re = eio.read(fdct._p.rfd, 4096)
+                        data, re, eno = eio.read(fdct._p.rfd, 4096)
                         if not data then
-                            return false, re
+                            if eno ~= errno.def2errnum("EINTR") then
+                                return false, re
+                            end
+                            e2lib.logf(4, "poll loop read: fd=%d -> EINTR",
+                                fdct._p.rfd)
                         elseif data ~= "" then
                             if fdct.linebuffer then
                                 fd_linebuffer(fdct, data)
