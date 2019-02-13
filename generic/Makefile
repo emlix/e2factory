@@ -45,6 +45,7 @@ lsha.o: lsha.c sha1.h sha2.h
 leio.so: leio.o
 
 le2lib.so: le2lib.o
+	$(CC) -shared -o $@ $^ $(LDFLAGS) -lutil
 
 install: all
 	install -d $(DESTDIR)$(LIBDIR)
