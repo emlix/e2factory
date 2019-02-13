@@ -281,11 +281,11 @@ end
 -- @return Error object on failure.
 -- @return Errno number on failure.
 function e2lib.rename(src, dst)
-    local rc, re, errno = le2lib.rename(src, dst)
+    local rc, re, eno = le2lib.rename(src, dst)
     if rc then
         return rc
     end
-    return false, err.new("renaming %q to %q failed: %s", src, dst, re), errno
+    return false, err.new("renaming %q to %q failed: %s", src, dst, re), eno
 end
 
 --- Set file descriptor in non-blocking mode.
