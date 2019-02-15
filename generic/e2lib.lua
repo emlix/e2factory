@@ -243,10 +243,101 @@ function e2lib.wait(pid, wnohang)
     end
 end
 
-    if not rc then
-        return false, err.new("waiting for child %d failed: %s", pid, childpid)
+local _children = {}
+
+--- Add child PID into a table to keep track of all active children of the
+-- process. Also tracks the associated pty fd if there is one.
+-- @param cpid Unique child PID
+-- @param fd Pty file descriptor if one is associated with the child.
+-- @param fd File descriptor of the PTY, optional.
+-- @return nil
+local function children_insert(cpid, fd)
+    fd = fd or -1
+    assertIsNumber(cpid)
+    assertIsNumber(fd)
+    assertIsNil(_children[cpid])
+    _children[cpid] = fd
+end
+
+--- Remove active child PID from table. Returns pty file descriptor or -1.
+-- @param cpid Active child PID.
+-- @return Pty file descriptor or -1.
+local function children_remove(cpid)
+    assertIsNumber(cpid)
+    assert(_children[cpid])
+    local fd = _children[cpid]
+    _children[cpid] = nil
+    return fd
+end
+
+--- Send SIGINT to all children, either via kill() or if they have an
+-- associated pty descriptor, via TIOCSIG ioctl.
+-- @param pid Optional PID to select specific child.
+local function children_send_sigint(pid)
+    local rc, re
+    local SIGINT = 2
+    local t = _children
+
+    if pid then
+        t = {}
+        assert(_children[pid])
+        t[pid] = _children[pid]
     end
 
+    for cpid, fd in pairs(t) do
+        if fd < 0 then
+            e2lib.logf(4, "(%d) sending SIGINT to child %d",
+                e2lib.getpid(), cpid)
+
+            rc, re = e2lib.kill(cpid, SIGINT)
+            if not rc then
+                e2lib.logf(4, "(%d) sending SIGINT to child %d failed",
+                    e2lib.getpid(), cpid)
+            end
+        else
+            e2lib.logf(4, "(%d) ioctl(TIOCSIG, SIGINT) to %d",
+                e2lib.getpid(), fd)
+            le2lib.ioctl_tiocsig_sigint(fd)
+        end
+    end
+end
+
+--- Assert no children are left behind (on exit).
+-- If this is successful, all registered children have been terminated and
+-- wait()'ed on.
+local function children_assert_empty()
+    for cpid, fd in pairs(_children) do
+        e2lib.logf(4, "children_assert_empty: child remaining cpid=%d fd=%d",
+            cpid, fd)
+    end
+    -- assert(next(_children) == nil, "exiting with children remaining!")
+    if next(_children) then
+        e2lib.logf(4, "children_assert_empty: exiting with children remaining!")
+    end
+end
+
+--- Wait for process to terminate.
+-- Also deletes the PID from the table of children and closes the pty descriptor
+-- if the child had any.
+-- @param pid Process ID, -1 to wait for any child.
+-- @param wnohang True to set WNOHANG flag, pid == 0 indicates running process.
+-- @return Exit status of process, signal + 128, or false on error.
+-- @return Process ID of the terminated child or error object on failure.
+-- @return Number of signal that killed the process, if any.
+function e2lib.wait_pid_delete(pid, wnohang)
+    local rc, childpid, sig = e2lib.wait(pid, wnohang)
+    if rc then
+        local fdm, rc, re
+        fdm = children_remove(childpid)
+        if fdm >= 0 then
+            rc, re = eio.close(fdm)
+            if not rc then
+                e2lib.logf(4,
+                    "wait_pid_delete: closing pty fd=%d of cpid=%d failed:\n%s",
+                    fdm, childpid, re:tostring())
+            end
+        end
+    end
     return rc, childpid, sig
 end
 
