@@ -1314,13 +1314,14 @@ end
 --                overwritten.
 -- @param nowait Optional - if true, return the PID instead of calling wait() to
 --               get the return code.
+-- @param pty Allocate a pseudo tty
 -- @return Return code of the child is returned. It's the callers responsibility
 --         to make sense of the value. If the return code is false, an error
 --         within the function occurred and an error object is returned
 -- @return Error object on failure.
 -- @see fdctv
 -- @see fdct
-function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
+function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait, pty)
 
     -- To keep this large mess somewhat grokable, split into multiple functions.
 
@@ -1605,78 +1606,146 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
         return true
     end
 
-    -- start of callcmd() proper
+    -- Main forking action goes into its own function to make it easier
+    -- to block signals around this critical portion of the code.
+    -- @return True on success, false on error.
+    -- @return Error object on failure.
+    -- @return Child PID if fork was successful, allowing for cleanup.
+    local function do_fork(argv, fdctv, workdir, envdict, nowait, pty)
+        local rc, re, pid
+        local fdm, ptyname
+        local sync_pipes
 
-    local rc, re, pid, sig
-    local sync_pipes = {}
-
-    e2lib.logf(4, "calling %q in %q", table.concat(argv, " "),
-        workdir or "$PWD")
-
-    rc, re = fd_parent_setup(fdctv)
-    if not rc then
-        return false, re
-    end
-
-    sync_pipes, re = sync_pipe_setup()
-    if not sync_pipes then
-        return false, re
-    end
-
-    pid, re = e2lib.fork()
-    if not pid then
-        return false, re
-    elseif pid == 0 then
-        -- disable debug logging to console in the child because it
-        -- potentially mixes with the output of the command
-        e2lib.setlog(4, false)
-
-        e2lib.signal_reset()
-
-        fd_child_setup(fdctv)
-
-        if workdir then
-            rc, re = e2lib.chdir(workdir)
-            if not rc then
-                e2lib.abort(re)
-            end
+        if e2lib.signal_received() ~= "" then
+            return false, err.new("signal received, shutting down e2factory")
         end
 
-        if envdict then
-            for var,val in pairs(envdict) do
-                rc, re = e2lib.setenv(var, val, true)
+        rc, re = fd_parent_setup(fdctv)
+        if not rc then
+            return false, re
+        end
+
+        sync_pipes, re = sync_pipe_setup()
+        if not sync_pipes then
+            return false, re
+        end
+
+        -- flush all buffers before we fork
+        rc, re = eio.fflush(nil)
+        if not rc then
+            return false, re
+        end
+
+        if pty then
+            pid, fdm, ptyname = e2lib.forkpty()
+            re = fdm
+        else
+            pid, re = e2lib.fork()
+        end
+        if not pid then
+            return false, re
+        elseif pid == 0 then
+            -- disable debug logging to console in the child because it mixes
+            -- with the output of the command
+            e2lib.setlog(3, false)
+            e2lib.setlog(4, false)
+
+            e2lib.signal_reset()
+
+            fd_child_setup(fdctv)
+
+            if workdir then
+                rc, re = e2lib.chdir(workdir)
                 if not rc then
                     e2lib.abort(re)
                 end
             end
-        end
 
-        rc, re = sync_child(sync_pipes)
-        if not rc then
+            if envdict then
+                for var,val in pairs(envdict) do
+                    rc, re = e2lib.setenv(var, val, true)
+                    if not rc then
+                        e2lib.abort(re)
+                    end
+                end
+            end
+
+            rc, re = sync_child(sync_pipes)
+            if not rc then
+                e2lib.abort(re)
+            end
+
+            le2lib.signal_unblock()
+
+            rc, re = e2lib.execvp(argv[1], argv)
             e2lib.abort(re)
         end
 
-        rc, re = e2lib.execvp(argv[1], argv)
-        e2lib.abort(re)
+        -- child is now known by pid. To allow for robust error handling, pid
+        -- needs to be returned to the caller from here on out.
+
+        children_insert(pid, fdm)
+        rc, re = fd_parent_after_fork(fdctv)
+        if not rc then
+            return false, re, pid
+        end
+
+        rc, re = sync_parent(sync_pipes)
+        if not rc then
+            return false, re, pid
+        end
+
+        return true, nil, pid
     end
 
-    rc, re = fd_parent_after_fork(fdctv)
+    -- If an error occurs and we have a valid PID, retrieve the exit
+    -- status of the child and add it to error message.
+    local function extract_err_status(pid, e)
+        if pid then
+            e2lib.logf(4, "waiting for exit status of pid %d", pid)
+
+            local rc, re, sig = e2lib.wait_pid_delete(pid, true)
+            if not rc then
+                re:cat(e)
+                return
+            end
+
+            if re == 0 then
+                e2lib.logf(4, "pid %d still running, sending SIGINT", pid)
+                children_send_sigint(pid)
+                rc, re, sig = e2lib.wait_pid_delete(pid, false)
+                if not rc then
+                    re:cat(e)
+                    return
+                end
+            end
+
+            err.new("process %d returned code %d, signal %d",
+                re, rc, sig or 0):cat(e) -- tricky!
+        end
+    end
+
+    local rc, re, pid, sig
+
+    -- fork dance, enter critical section, block all signals
+    le2lib.signal_block()
+    rc, re, pid = do_fork(argv, fdctv, workdir, envdict, nowait, pty)
+    le2lib.signal_unblock()
     if not rc then
+        extract_err_status(pid, re)
         return false, re
     end
 
-    rc, re = sync_parent(sync_pipes)
-    if not rc then
-        return false, re
-    end
-
+    -- poll loop
     rc, re = fd_parent_poll(fdctv)
     if not rc then
+        extract_err_status(pid, re)
         return false, re
     end
 
     rc, re = fd_parent_cleanup(fdctv)
     if not rc then
+        extract_err_status(pid, re)
         return false, re
     end
 
@@ -1685,7 +1754,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
     end
 
     e2lib.logf(4, "waiting for command %s pid %d", table.concat(argv, " "), pid)
-    rc, re, sig = e2lib.wait(pid)
+    rc, re, sig = e2lib.wait_pid_delete(pid)
     if not rc then
         return false, re
     end
@@ -1693,6 +1762,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait)
     e2lib.logf(4, "command %q pid %d exit %d signal %d",
         table.concat(argv, " "), re, rc, sig or 0)
 
+    assert(type(rc) == "number")
     return rc
 end
 
@@ -1703,10 +1773,11 @@ end
 --                stdout and stderr output captured from the program.
 -- @param workdir Workdir of the command. Optional.
 -- @param envdict Dictionary to add to the environment of the command. Optional.
+-- @param pty Allocate a PTY (optional).
 -- @return Return status code of the command (number) or false on error.
 -- @return Error object on failure.
 -- @see callcmd
-function e2lib.callcmd_capture(cmd, capture, workdir, envdict)
+function e2lib.callcmd_capture(cmd, capture, workdir, envdict, pty)
     local rc, re, devnull
 
     local function autocapture(msg)
@@ -1726,7 +1797,7 @@ function e2lib.callcmd_capture(cmd, capture, workdir, envdict)
             linebuffer = true, callfn = capture },
     }
 
-    rc, re = e2lib.callcmd(cmd, fdctv, workdir, envdict)
+    rc, re = e2lib.callcmd(cmd, fdctv, workdir, envdict, nil, pty)
     if not rc then
         eio.fclose(devnull)
         return false, re
@@ -1782,13 +1853,14 @@ end
 -- @param cmd Argument vector holding the command.
 -- @param workdir Workdir of the command. Optional.
 -- @param envdict Dictionary to add to the environment of the command. Optional.
+-- @param pty Allocate a PTY (optional).
 -- @return Return code of the command (number), or false on error.
 -- @return Error object containing command line and last lines of output. It's
 --         the callers responsibility to determine whether an error occured
 --         based on the return code. If the return code is false, an error
 --         within the function occured and a normal error object is returned.
 -- @see callcmd
-function e2lib.callcmd_log(cmd, workdir, envdict)
+function e2lib.callcmd_log(cmd, workdir, envdict, pty)
     local e = err.new("command %q failed", table.concat(cmd, " "))
     local fifo = {}
 
@@ -1803,7 +1875,7 @@ function e2lib.callcmd_log(cmd, workdir, envdict)
         end
     end
 
-    local rc, re = e2lib.callcmd_capture(cmd, logto, workdir, envdict)
+    local rc, re = e2lib.callcmd_capture(cmd, logto, workdir, envdict, pty)
     if not rc then
         return false, e:cat(re)
     end
@@ -2404,10 +2476,11 @@ end
 --             (table of strings).
 -- @param workdir Working directory of tool (optional).
 -- @param envdict Environment dictionary of tool (optional).
+-- @param pty Allocate a PTY (optional).
 -- @return True when the tool returned 0, false on error.
 -- @return Error object on failure.
 -- @see callcmd_log
-function e2lib.call_tool_argv(tool, argv, workdir, envdict)
+function e2lib.call_tool_argv(tool, argv, workdir, envdict, pty)
     local rc, re, cmd, flags, call
 
     cmd, re = tools.get_tool_flags_argv(tool)
@@ -2419,7 +2492,7 @@ function e2lib.call_tool_argv(tool, argv, workdir, envdict)
         table.insert(cmd, arg)
     end
 
-    rc, re = e2lib.callcmd_log(cmd, workdir, envdict)
+    rc, re = e2lib.callcmd_log(cmd, workdir, envdict, pty)
     if not rc or rc ~= 0 then
         return false, re
     end
