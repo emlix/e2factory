@@ -635,7 +635,7 @@ function git.git_source:prepare_source(sourceset, buildpath)
     local errors = false
     while (#children > 0) do
         local found = false
-        status, pid = e2lib.wait(-1)
+        status, pid = e2lib.wait_pid_delete(-1)
         if not status then
             return false, e:cat(pid)
         end
