@@ -94,12 +94,13 @@ local function e2(arg)
     end
 
     e2lib.logf(3, "calling %s", e2call.tool)
+    e2lib.signal_install()
     rc, re = e2lib.callcmd(cmd, {}, nil, env, true)
     if not rc then
         error(re)
     end
     local sig
-    rc, re, sig = e2lib.wait(rc)
+    rc, re, sig = e2lib.wait_pid_delete(rc)
     if not rc then
         error(re)
     end
