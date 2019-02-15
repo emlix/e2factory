@@ -878,18 +878,30 @@ end
 -- @param rc number: return code (optional, defaults to 0)
 -- @return This function does not return.
 function e2lib.finish(returncode)
+    local sigstr, signum
+    local finalreturn
     if not returncode then
         returncode = 0
     end
     e2lib.cleanup()
 
-    e2lib.logf(4, "exiting e2factory with returncode=%d", returncode)
+    finalreturn = returncode
+    sigstr, signum = e2lib.signal_received()
+    if sigstr ~= "" then
+        e2lib.logf(1,"Error: *** received signal %d \"%s\" ***", signum, sigstr)
+        finalreturn = 128 + signum
+    end
+
+    children_assert_empty()
+
+    e2lib.logf(4, "exiting e2factory with pid=%d returncode=%d finalreturn=%d",
+        e2lib.getpid(), returncode, finalreturn)
     if e2lib.globals.debuglogfile then
         eio.fclose(e2lib.globals.debuglogfile)
         e2lib.globals.debuglogfile = false
     end
     console.close()
-    os.exit(returncode)
+    os.exit(finalreturn)
 end
 
 --- Returns the "directory" part of a path
