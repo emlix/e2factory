@@ -224,12 +224,13 @@ end
 
 --- Wait for process to terminate.
 -- @param pid Process ID, -1 to wait for any child.
+-- @param wnohang True to set WNOHANG flag, pid == 0 indicates running process.
 -- @return Exit status of process, signal + 128, or false on error.
 -- @return Process ID of the terminated child or error object on failure.
 -- @return Number of signal that killed the process, if any.
-function e2lib.wait(pid)
+function e2lib.wait(pid, wnohang)
     while true do
-        local rc, childpid, sig = le2lib.wait(pid)
+        local rc, childpid, sig = le2lib.wait(pid, wnohang)
         if not rc then
             if sig ~= errno.def2errnum("EINTR") then
                 return false,

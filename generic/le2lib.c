@@ -284,13 +284,23 @@ process_wait(lua_State *lua)
 {
 	pid_t pid = luaL_checkinteger(lua, 1);
 	int rc, status;
-	rc = waitpid(pid, &status, 0);
+	int wnohang = lua_gettop(lua) > 1 && lua_toboolean(lua, 2);
+	int options = 0;
+
+	if (wnohang)
+		options = WNOHANG;
+
+	rc = waitpid(pid, &status, options);
 	if (rc < 0) {
 		int e = errno;
 		lua_pushboolean(lua, 0);
 		lua_pushstring(lua, strerror(e));
 		lua_pushinteger(lua, e);
 		return 3;
+	} else if (rc == 0) {
+		lua_pushnumber(lua, 255); /* not relevant */
+		lua_pushnumber(lua, rc); /* pid == 0 -> process still running */
+		return 2;
 	}
 
 	if (WIFEXITED(status)) {
@@ -494,7 +504,8 @@ do_execvp(lua_State *L)
 	argv = malloc((argc+1) * sizeof(char *));
 	if (argv == NULL) {
 		lua_pushboolean(L, 0);
-		lua_pushstring(L, "do_execvp: 1+ argv arguments required");
+		lua_pushfstring(L, "do_execvp: malloc failed: %s",
+		    strerror(errno));
 		return 2;
 	}
 
