@@ -519,13 +519,10 @@ function e2lib.execvp(filenm, argv)
 end
 
 --- Interrupt handling.
--- signal_install() sets up signal handlers that call back into this function.
+-- le2lib.signal_install() installs a handler calling back into this function.
 function e2lib.interrupt_hook()
-    local sigstr, signum = e2lib.signal_received()
     trace.install() -- reinstall the trace hook.
-    e2lib.logf(4, "interrupt_hook() pid=%d, signal=%d, sigstr=%s",
-        e2lib.getpid(), signum, sigstr)
-    e2lib.abort(string.format("*** interrupted by user (%s) ***", sigstr))
+    children_send_sigint()
 end
 
 --- Make sure the environment variables inside the globals table are

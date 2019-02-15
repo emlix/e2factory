@@ -796,10 +796,6 @@ lua_signal_handler(lua_State *L, lua_Debug *ar)
 	lua_getfield(L, -1, "interrupt_hook");
 	lua_remove(L, -2); /* remove e2lib, balance stack */
 	lua_call(L, 0, 0);
-
-	/* not reached under normal circumstances */
-	fprintf(stderr, "e2: calling interrupt_hook failed, terminating\n");
-	exit(1);
 }
 
 /* Lua context for signal handler */
