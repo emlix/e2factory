@@ -2729,9 +2729,9 @@ function e2lib.e2_su_2_2(argv)
 
         table.insert(cmd, 1, "--")
 
-        return e2lib.call_tool_argv("sudo", cmd)
+        return e2lib.call_tool_argv("sudo", cmd, nil, nil, true)
     else
-        return e2lib.call_tool_argv("e2-su-2.2", argv)
+        return e2lib.call_tool_argv("e2-su-2.2", argv, nil, nil, true)
     end
 end
 

@@ -857,7 +857,7 @@ function e2build.build_process_class:_runbuild(res)
         table.insert(cmd, 1, bc.chroot_call_prefix)
     end
 
-    rc, re = e2lib.callcmd_capture(cmd, logto)
+    rc, re = e2lib.callcmd_capture(cmd, logto, nil, nil, true) -- pty=true
     if not rc then
         eio.fclose(out)
         return false, e:cat(re)
