@@ -708,6 +708,10 @@ local function opendebuglogfile()
         return false, e:cat(re)
     end
 
+    -- Important if one wants to see log messages from a child before exec as
+    -- it does not flush the internal buffer
+    eio.setunbuffered(debuglogfile)
+
     e2lib.globals.debuglogfile = debuglogfile
 
     return true
