@@ -248,7 +248,7 @@ function e2build.build_process_class:_enter_playground(res, rbs)
         error(e:cat(re))
     end
 
-    cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
+    cmd, re = e2lib.get_tool_flags_argv_e2_su_2_2()
     if not cmd then
         return false, e:cat(re)
     end
@@ -265,7 +265,7 @@ function e2build.build_process_class:_enter_playground(res, rbs)
     table.insert(cmd, rbs:build_settings():command())
 
     e2tool.set_umask()
-    rc, re = e2lib.callcmd(cmd, {})
+    rc, re = e2lib.callcmd(cmd, nil, nil, nil, nil, true)
     if not rc then
         e2tool.reset_umask()
         return false, e:cat(re)
@@ -841,7 +841,7 @@ function e2build.build_process_class:_runbuild(res)
 
     e2tool.set_umask()
 
-    cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
+    cmd, re = e2lib.get_tool_flags_argv_e2_su_2_2()
     if not cmd then
         return false, e:cat(re)
     end
