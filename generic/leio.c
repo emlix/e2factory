@@ -410,6 +410,24 @@ eio_setunbuffered(lua_State *lua)
 }
 
 static int
+eio_dup(lua_State *lua)
+{
+	int oldfd, rc;
+
+	oldfd = luaL_checkinteger(lua, 1);
+
+	rc = dup(oldfd);
+	if (rc < 0) {
+		lua_pushboolean(lua, 0);
+		lua_pushstring(lua, strerror(errno));
+		return 2;
+	}
+
+	lua_pushnumber(lua, rc);
+	return 1;
+}
+
+static int
 eio_dup2(lua_State *lua)
 {
 	int oldfd, newfd, rc;
@@ -475,6 +493,7 @@ eio_cloexec(lua_State *lua)
 static luaL_Reg lib[] = {
   { "cloexec", eio_cloexec },
   { "close", eio_close },
+  { "dup", eio_dup },
   { "dup2", eio_dup2 },
   { "fclose", eio_fclose },
   { "fdopen", eio_fdopen },

@@ -409,6 +409,22 @@ end
 
 --- Duplicate a file descriptor. See dup(2) for details.
 -- @param oldfd File descriptor to duplicate.
+-- @return New file descriptor or false on error.
+-- @return Error object on failure.
+function eio.dup(oldfd)
+    local rc, errstring
+
+    rc, errstring = leio.dup(oldfd)
+    if not rc then
+        return false,
+            err.new("duplicating file descriptor failed: %s", errstring)
+    end
+    return rc
+end
+
+
+--- Duplicate a file descriptor. See dup(2) for details.
+-- @param oldfd File descriptor to duplicate.
 -- @param newfd Duplicated file descritor. If the file descriptor was open
 -- before the call, it's closed automatically.
 -- @return True on success, false on error.
