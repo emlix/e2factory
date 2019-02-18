@@ -2704,37 +2704,66 @@ function e2lib.isfile(path)
     return false
 end
 
---- call the e2-su-2.2 command
--- @param argv table: argument vector
--- @return bool
-function e2lib.e2_su_2_2(argv)
-    assert(type(argv) == "table")
+--- Prepare  e2-su-2.2 command with optional sudo.
+-- @return Vector containing path to tool binary and its flags if any.
+--         False on error.
+-- @return Error object on failure.
+function e2lib.get_tool_flags_argv_e2_su_2_2()
     local rc, re
+    local cmd
 
-    rc, re = e2lib.get_global_config()
-    if not rc then
+    cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
+    if not cmd then
         return false, re
     end
 
     rc, re = tools.enabled("sudo")
-    if rc then
-        local cmd
+    if re then
+        return false, re
+    end
 
-        cmd, re = tools.get_tool_flags_argv("e2-su-2.2")
-        if not cmd then
+    if rc then
+        local s
+        s, re = tools.get_tool_flags_argv("sudo")
+        if not s then
             return false, re
         end
 
-        for _,arg in ipairs(argv) do
-            table.insert(cmd, arg)
+        table.insert(s, "--")
+
+        for _,arg in ipairs(cmd) do
+            table.insert(s, arg)
         end
-
-        table.insert(cmd, 1, "--")
-
-        return e2lib.call_tool_argv("sudo", cmd, nil, nil, true)
-    else
-        return e2lib.call_tool_argv("e2-su-2.2", argv, nil, nil, true)
+        cmd = s
     end
+    return cmd
+end
+
+--- call the e2-su-2.2 command
+-- @param argv table: argument vector
+-- @return bool True if command returned with exit status 0, false on failure.
+-- @return Error object on failure
+-- @return Exit status of command (if any)
+function e2lib.e2_su_2_2(argv)
+    assert(type(argv) == "table")
+    local rc, re, cmd
+
+    cmd, re = e2lib.get_tool_flags_argv_e2_su_2_2()
+    if not cmd then
+        return false, re
+    end
+
+    for _, arg in ipairs(argv) do
+        table.insert(cmd, arg)
+    end
+
+    rc, re = e2lib.callcmd_log(cmd, nil, nil, true)
+    if not rc then
+        return false, re
+    elseif rc ~= 0 then
+        return false, re, rc
+    end
+    return true, nil, rc
 end
 
 --- call the tar command
