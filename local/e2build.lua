@@ -264,8 +264,21 @@ function e2build.build_process_class:_enter_playground(res, rbs)
     table.insert(cmd, "-c")
     table.insert(cmd, rbs:build_settings():command())
 
+    -- The shell is for interactive use, but we still want a pty for terminating
+    -- e2-su via signal.
+    -- This means we have to save the standard file descriptors and re-dup2 them
+    -- in place after forkpty.
+    local fdctv = {}
+    for _,fd in ipairs({eio.STDIN, eio.STDOUT, eio.STDERR}) do
+        local fdnew, re = eio.dup(fd)
+        if not fdnew then
+            return false, e:cat(re)
+        end
+        table.insert(fdctv, { dup = fd, istype = "readfo", file = fdnew })
+    end
+
     e2tool.set_umask()
-    rc, re = e2lib.callcmd(cmd, nil, nil, nil, nil, true)
+    rc, re = e2lib.callcmd(cmd, fdctv, nil, nil, nil, true)
     if not rc then
         e2tool.reset_umask()
         return false, e:cat(re)
