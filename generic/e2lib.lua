@@ -2477,8 +2477,9 @@ end
 -- @param workdir Working directory of tool (optional).
 -- @param envdict Environment dictionary of tool (optional).
 -- @param pty Allocate a PTY (optional).
--- @return True when the tool returned 0, false on error.
+-- @return True when the tool returned 0, false on error or ~= 0.
 -- @return Error object on failure.
+-- @return Exit status of the command (if any).
 -- @see callcmd_log
 function e2lib.call_tool_argv(tool, argv, workdir, envdict, pty)
     local rc, re, cmd, flags, call
@@ -2493,11 +2494,12 @@ function e2lib.call_tool_argv(tool, argv, workdir, envdict, pty)
     end
 
     rc, re = e2lib.callcmd_log(cmd, workdir, envdict, pty)
-    if not rc or rc ~= 0 then
+    if not rc then
         return false, re
+    elseif rc ~= 0 then
+        return false, re, rc
     end
-
-    return true
+    return true, nil, rc
 end
 
 --- Change permission mode of file.
