@@ -610,9 +610,14 @@ function git.git_source:prepare_source(sourceset, buildpath)
         return false, re
     end
 
+    local function log_git(msg)
+        e2lib.log(3, "[git archive]: "..msg)
+    end
+
     fdctv = {
         { istype = "readfo", dup = eio.STDIN, file = devnull },
-        { istype = "readfo", dup = eio.STDOUT, file = writeend }
+        { istype = "readfo", dup = eio.STDOUT, file = writeend },
+        { istype = "writefunc", dup = eio.STDERR, linebuffer = true, callfn = log_git },
     }
 
     pid, re = e2lib.callcmd(git_argv, fdctv, nil, nil, true)
