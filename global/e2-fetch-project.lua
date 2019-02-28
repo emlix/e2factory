@@ -157,13 +157,13 @@ local function e2_fetch_project(arg)
         -- Because the repository is freshly cloned, we can assume that when a
         -- ref for the requested branch exists, HEAD is at that branch.
         rc, re, id = generic_git.lookup_id(e2lib.join(p.destdir, ".git"),
-            false, "refs/heads/" .. p.branch)
+            false, generic_git.refs_heads(p.branch))
         if not rc then
             error(e:cat(re))
         end
         if not id then
             rc, re = generic_git.git_branch_new1(p.destdir, true, p.branch,
-                "origin/" .. p.branch)
+                generic_git.refs_remote_heads(p.branch))
             if not rc then
                 error(e:cat(re))
             end
@@ -188,7 +188,7 @@ local function e2_fetch_project(arg)
             p.tag, p.branch)
         end
 
-        rc, re = generic_git.git_checkout1(p.destdir, "refs/tags/" .. p.tag)
+        rc, re = generic_git.git_checkout1(p.destdir, generic_git.refs_tags(p.tag))
         if not rc then
             error(e:cat(re))
         end

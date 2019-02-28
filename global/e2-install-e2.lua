@@ -121,10 +121,10 @@ local function e2_install_e2(arg)
         if e2version.branch:match("/") then
             ref = e2version.branch
         else
-            ref = string.format("remotes/origin/%s", e2version.branch)
+            ref = generic_git.refs_remotes(e2version.branch)
         end
     else
-        ref = string.format("refs/tags/%s", e2version.tag)
+        ref = generic_git.refs_tags(e2version.tag)
     end
 
     -- checkout e2factory itself
@@ -146,7 +146,7 @@ local function e2_install_e2(arg)
 
     for _,ex in ipairs(extensions) do
         if not ex.ref:match("/") then
-            ex.ref = string.format("refs/tags/%s", ex.ref)
+            ex.ref = generic_git.refs_tags(ex.ref)
         end
         e2lib.logf(2, "fetching extension: %s (%s)", ex.name, ex.ref)
         local server = config.site.e2_server

@@ -396,7 +396,7 @@ function generic_git.git_init_db1(rurl, shared)
     end
 
     gitdir = e2lib.join("/", u.path);
-    gitargv = { "--git-dir="..gitdir, "init-db" }
+    gitargv = generic_git.git_new_argv(gitdir, false, "init-db")
     if shared then
         table.insert(gitargv, "--shared")
     end
@@ -457,7 +457,7 @@ function generic_git.git_push1(gitdir, rurl, refspec)
         return false, e:cat(re)
     end
 
-    argv = { "--git-dir=" .. gitdir, "push", remote_git_url, refspec }
+    argv = generic_git.git_new_argv(gitdir, nil, "push", remote_git_url, refspec)
     rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
@@ -496,8 +496,7 @@ function generic_git.git_remote_add1(lurl, rurl, name)
     end
 
     gitdir = e2lib.join("/", lrepo.path)
-    argv = { "--git-dir="..gitdir, "remote", "add", name, giturl }
-
+    argv = generic_git.git_new_argv(gitdir, nil, "remote", "add", name, giturl)
     rc, re = generic_git.git(argv)
     if not rc then
         return false, re
@@ -837,19 +836,21 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation)
         return false, e:cat(re)
     end
 
-    rc, re = generic_git.git_remote_add(c, lserver, llocation, "origin", rserver, rlocation)
+    rc, re = generic_git.git_remote_add(
+        c, lserver, llocation, generic_git.refs_remote(), rserver, rlocation)
     if not rc then
         return false, e:cat(re)
     end
 
-    argv = { "--git-dir="..gitdir, "config", "branch.master.remote", "origin" }
+    argv = generic_git.git_new_argv(
+        gitdir, nil, "config", "branch.master.remote", generic_git.refs_remote())
     rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
     end
 
-    argv = { "--git-dir="..gitdir, "config", "branch.master.merge",
-        refs_heads("master") }
+    argv = generic_git.git_new_argv(
+        gitdir, nil, "config", "branch.master.merge", refs_heads("master"))
     rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
