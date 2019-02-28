@@ -210,25 +210,29 @@ function generic_git.git(argv, workdir)
     return true, nil, table.concat(out)
 end
 
+
 --- Return a table containing pairs of commit id and refs of the local
 -- or remote repository.
 -- @param git_dir Path to GIT_DIR.
--- @param remote True for the remote default repository (usually "origin"),
---               false for the local repository.
+-- @param remote True for the default remote repository,
+--               string to specify a remote, and false for the local repository.
+-- @return Error object on failure, otherwise nil
 -- @return Table containing tables of "id", "ref" pairs, or false on error.
--- @return Error object on failure.
-local function get_refs(git_dir, remote)
+function generic_git.list_refs(git_dir, remote)
     assertIsStringN(git_dir)
-    assertIsBoolean(remote)
+    assert(type(remote) == "string" or type(remote) == "boolean")
 
     local rc, re, e, argv, out, t, emsg
 
-    emsg = "error in get_refs()"
+    emsg = "error listing git refs"
 
     argv = generic_git.git_new_argv(git_dir, false)
     if remote then
+        if type(remote) == "boolean" then
+            remote = generic_git.refs_remote()
+        end
         table.insert(argv, "ls-remote")
-        table.insert(argv, "origin")
+        table.insert(argv, remote)
     else
         table.insert(argv, "show-ref")
         table.insert(argv, "--head") -- ls-remote does this by default
@@ -270,7 +274,7 @@ end
 function generic_git.lookup_id(git_dir, remote, ref)
     local rc, re, t
 
-    rc, re, t = get_refs(git_dir, remote)
+    rc, re, t = generic_git.list_refs(git_dir, remote)
     if not rc then
         return false, re
     end
@@ -305,7 +309,7 @@ function generic_git.lookup_ref(git_dir, remote, id, filter)
 
     local rc, re, t
 
-    rc, re, t = get_refs(git_dir, remote)
+    rc, re, t = generic_git.list_refs(git_dir, remote)
     if not rc then
         return false, re
     end
