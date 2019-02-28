@@ -202,7 +202,7 @@ function git.git_source:git_commit_id(sourceset, check_remote)
             end
         end
     else
-        return false, err.new("not an scm sourceset: %s", sourceset)
+        return false, e:cat("not an scm sourceset: %s", sourceset)
     end
 
     if not id then
