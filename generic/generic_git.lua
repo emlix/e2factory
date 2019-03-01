@@ -140,8 +140,6 @@ end
 -- @param ... Further arguments are added to the end of the argument vector.
 -- @return Argument vector table.
 function generic_git.git_new_argv(git_dir, work_tree, ...)
-    local argv = {...}
-
     if git_dir == nil and work_tree then
         git_dir = e2lib.join(work_tree, ".git")
     end
@@ -150,13 +148,13 @@ function generic_git.git_new_argv(git_dir, work_tree, ...)
     end
 
     if work_tree then
-        table.insert(argv, 1, "--work-tree="..work_tree)
+        table.insert(arg, 1, "--work-tree="..work_tree)
     end
     if git_dir then
-        table.insert(argv, 1, "--git-dir="..git_dir)
+        table.insert(arg, 1, "--git-dir="..git_dir)
     end
 
-    return argv
+    return arg
 end
 
 --- Call out to git.
