@@ -104,6 +104,7 @@ local refs_heads = generic_git.refs_heads
 -- @param remote, defaults to "origin".
 -- @return remote string.
 function generic_git.refs_remote(remote)
+    assert(remote == nil or assertIsStringN(remote))
     return remote or "origin"
 end
 
@@ -272,6 +273,9 @@ end
 -- @return Error object on failure.
 -- @return Commit ID string on successful lookup, false otherwise.
 function generic_git.lookup_id(git_dir, remote, ref)
+    assertIsStringN(git_dir)
+    assertIsBoolean(remote)
+    assertIsStringN(ref)
     local rc, re, t
 
     rc, re, t = generic_git.list_refs(git_dir, remote)
