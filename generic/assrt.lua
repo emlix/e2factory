@@ -121,13 +121,14 @@ function assrt.assertAlmostEquals()
 end
 
 ---
-function assrt.assertEquals(a, b)
-    assert(type(a) == type(b))
+function assrt.assertEquals(a, b, message)
+    assert(type(a) == type(b), message)
     if type(a) == "table" then
-        assert(_is_table_equals(a, b) == true)
+        assert(_is_table_equals(a, b) == true, message)
     else
-        assert(a == b)
+        assert(a == b, message)
     end
+    return a, b
 end
 
 ---
@@ -153,56 +154,67 @@ end
 ---
 function assrt.assertFalse(v, message)
     assert(not v, message)
+    return v
 end
 
 ---
 function assrt.assertIs(a, b, message)
     assert(a == b, message)
+    return a, b
 end
 
 ---
 function assrt.assertIsBoolean(v, message)
     assert(type(v) == "boolean", message)
+    return v
 end
 
 ---
 function assrt.assertIsFunction(v, message)
     assert(type(v) == "function", message)
+    return v
 end
 
 ---
 function assrt.assertIsNil(v, message)
     assert(type(v) == "nil", message)
+    return v
 end
 
 ---
 function assrt.assertIsNumber(v, message)
     assert(type(v) == "number", message)
+    return v
 end
 
 ---
 function assrt.assertIsString(v, message)
     assert(type(v) == "string", message)
+    return v
 end
 
 ---
 function assrt.assertIsStringN(v, message)
     assert(type(v) == "string" and v ~= "", message)
+    return v
 end
 
 ---
 function assrt.assertIsTable(v, message)
     assert(type(v) == "table", message)
+    return v
 end
 
 ---
 function assrt.assertItemsEquals(a, b, message)
     assert(_is_table_equals(a, b) == true, message)
+    return a, b
 end
 
 ---
 function assrt.assertNil(v, message)
     assert(v == nil, message)
+    return v
 end
 
 ---
@@ -217,16 +229,19 @@ function assrt.assertNotEquals(a, b, message)
     else
         assert(a ~= b, message)
     end
+    return a, b
 end
 
 ---
 function assrt.assertNotIs(a, b, message)
     assert(a ~= b, message)
+    return a, b
 end
 
 ---
 function assrt.assertNotNil(v, message)
     assert(v ~= nil, message)
+    return v
 end
 
 ---
@@ -234,6 +249,7 @@ function assrt.assertNotStrContains(str, sub, regexp)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str, sub, 1, not regexp --[[plain=true]]) == nil)
+    return str
 end
 
 ---
@@ -241,6 +257,7 @@ function assrt.assertNotStrIContains(str, sub)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str:lower(), sub:lower(), 1, true) == nil)
+    return str
 end
 
 ---
@@ -248,6 +265,7 @@ function assrt.assertStrContains(str, sub, regexp)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str, sub, 1, not regexp --[[plain=true]]) ~= nil)
+    return str
 end
 
 ---
@@ -255,6 +273,7 @@ function assrt.assertStrIContains(str, sub)
     assrt.assertIsString(str)
     assrt.assertIsString(sub)
     assert(string.find(str:lower(), sub:lower(), 1, true) ~= nil)
+    return str
 end
 
 ---
@@ -262,11 +281,13 @@ function assrt.assertStrMatches(s, pattern, start, final)
     assrt.assertIsString(s)
     assrt.assertIsString(pattern)
     assert(_str_match(s, pattern, start, final) == true)
+    return s
 end
 
 ---
 function assrt.assertTrue(v, message)
     assert(v == true, message)
+    return v
 end
 
 -- Add the above functions to the global environment _G
