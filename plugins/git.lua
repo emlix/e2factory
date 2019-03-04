@@ -156,6 +156,61 @@ function git.git_source:get_tag()
     return self._tag
 end
 
+--- Returns the local branch (if exists, prefered) or remotes/origin branch ref
+-- of the source. Requires a working copy. No network connection.
+-- Note: git specific helper
+-- @return Fully formed ref string, or false on error.
+-- @return Commit ID of the branch head, error object on failure
+function git.git_source:_refs_prefered_local_remote_branch()
+    local rc, re
+    local ref_local, ref_remote, id_local, id_remote
+    local gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
+
+    rc, re = self:working_copy_available()
+    if not rc then
+        return false, re
+    end
+
+    -- 1. local branch
+    ref_local = refs_heads(self:get_branch())
+    rc, re, id_local = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE,
+        ref_local)
+    if not rc then
+        return false, re
+    end
+
+    -- 2. remotes/origin branch
+    if not id_local then
+        -- Currently defaults to remotes/origin, no network connection
+        ref_remote = generic_git.refs_remotes(self:get_branch())
+        rc, re, id_remote = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE,
+            ref_remote)
+        if not rc then
+            return false, re
+        end
+    end
+
+    local ref, id
+    if id_remote then
+        id = id_remote
+        ref = ref_remote
+    else
+        id = id_local
+        ref = ref_local
+    end
+
+    -- no branch of that name exists.
+    if not id then
+        return false, err.new('no branch named %q or %q found in repository %q',
+            ref_local, ref_remote, self:get_name())
+    end
+
+    e2lib.logf(3, "%s: selecting branch %s with commit id %s", self:get_name(),
+        ref, id)
+
+    return ref, id
+end
+
 --- Return the git commit ID of the specified source configuration. Specific to
 -- sources of type git, useful for writing plugins.
 -- @param sourceset string: the sourceset
@@ -164,7 +219,8 @@ end
 -- @return Error object on failure.
 -- @return Commit ID (string) on success.
 function git.git_source:git_commit_id(sourceset, check_remote)
-    local rc, re, e, id, fr, gitdir, ref
+    local rc, re, e, id, gitdir, ref
+    assertIsBoolean(check_remote)
 
     e = err.new("getting commit ID failed for source: %s", self._name)
 
@@ -181,21 +237,20 @@ function git.git_source:git_commit_id(sourceset, check_remote)
     gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
 
     if sourceset == "branch" then
-        ref = refs_heads(self:get_branch())
-
-        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
-        if not rc then
-            return false, e:cat(re)
+        ref, id = self:_refs_prefered_local_remote_branch()
+        if not ref then
+            return false, e:cat(id)
         end
     elseif sourceset == "tag" then
         ref = refs_tags(self:get_tag())
 
-        rc, re, id = generic_git.lookup_id(gitdir, false, ref)
+        rc, re, id = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE, ref)
         if not rc then
             return false, e:cat(re)
         end
 
         if id and check_remote then
+            -- XXX: defaults to "origin"
             rc, re = generic_git.verify_remote_tag(gitdir, self:get_tag())
             if not rc then
                 return false, e:cat(re)
@@ -219,12 +274,14 @@ function git.git_source:sourceid(sourceset)
         "sourceset arg invalid")
 
     local rc, re, id, hc
+    local check_remote = e2option.opts["check-remote"] or false
+    assertIsBoolean(check_remote)
 
     if self._sourceids[sourceset] then
         return self._sourceids[sourceset]
     end
 
-    rc, re, id = self:git_commit_id(sourceset, e2option.opts["check-remote"])
+    rc, re, id = self:git_commit_id(sourceset, check_remote)
     if not rc then
         return false, re
     end
@@ -301,75 +358,28 @@ function git.git_source:working_copy_available()
     return true
 end
 
-function git.git_source:check_workingcopy()
-
-    --- turn server:location into a git-style url
-    -- @param c table: a cache
-    -- @param server string: server name
-    -- @param location string: location
-    -- @return string: the git url, or nil
-    -- @return an error object on failure
-    local function git_url(c, server, location)
-        local e = err.new("translating server:location to git url")
-        local rurl, re = cache.remote_url(c, server, location)
-        if not rurl then
-            return nil, e:cat(re)
-        end
-        local u, re = url.parse(rurl)
-        if not u then
-            return nil, e:cat(re)
-        end
-        local g, re = generic_git.git_url1(u)
-        if not g then
-            return nil, e:cat(re)
-        end
-        return g, nil
-    end
-
-    local rc, re
-    local e = err.new("checking working copy of source %s failed", self._name)
-
-    -- check if branch exists
-    local gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
-    local ref = refs_heads(self._branch)
-    local id
-
-    rc = self:working_copy_available()
-    if not rc then
-        e2lib.warnf("WOTHER", "in source %s: ", self._name)
-        e2lib.warnf("WOTHER", " working copy is not available")
-        return true, nil
-    end
-
-
-    rc, re, id = generic_git.lookup_id(gitdir, false, ref)
-    if not rc then
-        return false, e:cat(re)
-    elseif not id then
-        return false, e:cat(err.new("branch %q does not exist", self._branch))
-    end
-
-    -- git config branch.<branch>.remote == "origin"
-    local query, expect, res
-    query = string.format("branch.%s.remote", self._branch)
-    res, re = generic_git.git_config(gitdir, query)
-    if not res then
-        e:append("remote is not configured for branch \"%s\"", self._branch)
-        return false, e
-    elseif res ~= "origin" then
-        e:append("%s is not \"origin\"", query)
-        return false, e
-    end
+--- Check that git remote "origin" points to the configured remote
+-- server/location of the source. No network connection.
+-- @return True on success, false on error
+-- @return Error object on failure.
+function git.git_source:_check_git_remote()
+    local rc, re, e
+    local expect, remote, query, gitdir
 
     -- git config remote.origin.url == server:location
-    query = string.format("remote.origin.url")
-    expect, re = git_url(cache.cache(), self._server, self._location)
+    expect, re = generic_git.git_url_cache(
+        cache.cache(), self:get_server(), self:get_location())
     if not expect then
-        return false, e:cat(re)
+        return false, re
     end
-    res, re = generic_git.git_config(gitdir, query)
-    if not res then
-        return false, e:cat(re)
+
+    -- XXX: "origin"
+    remote = generic_git.the_remote()
+    query = string.format("remote.%s.url", remote)
+    gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
+    url, re = generic_git.git_config(gitdir, query)
+    if not url then
+        return false, re
     end
 
     local function remove_trailing_slashes(s)
@@ -379,14 +389,65 @@ function git.git_source:check_workingcopy()
         return s
     end
 
-    res = remove_trailing_slashes(res)
+    url = remove_trailing_slashes(url)
     expect = remove_trailing_slashes(expect)
-    if res ~= expect then
-        e:append('git variable "%s" does not match e2 source configuration.',
-            query)
-        e:append('expected "%s" but got "%s" instead.', expect, res)
+    if url ~= expect then
+        e = err.new('git remote %q does not match location %s:%s',
+            remote, self:get_server(),
+            remove_trailing_slashes(self:get_location()))
+        e:append('expected "%s", got "%s"', expect, url)
         return false, e
     end
+    return true
+end
+
+function git.git_source:check_workingcopy()
+
+    local rc, re
+    local e = err.new("checking working copy of source %s failed", self._name)
+
+    rc = self:working_copy_available()
+    if not rc then
+        e2lib.warnf("WOTHER", "in source %s: ", self._name)
+        e2lib.warnf("WOTHER", " working copy is not available")
+        return true, nil
+    end
+
+    local ref, id
+    ref, id = self:_refs_prefered_local_remote_branch()
+    if not ref then
+        return false, e:cat(id)
+    end
+
+    -- git config branch.<branch>.remote == "origin"
+    local query, remote, gitdir, remote
+    gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
+
+    if refs_heads(self:get_branch()) == ref then
+        -- If branch is local...
+        query = string.format("branch.%s.remote", self:get_branch())
+        remote, re = generic_git.git_config(gitdir, query)
+        if not remote then
+            e:append("no remote configured for branch \"%s\"", self:get_branch())
+            return false, e
+        elseif remote ~= "origin" then
+            e:append("remote of local branch \"%s\" must be named \"origin\"",
+                query)
+            return false, e
+        end
+    else
+        -- No local branch checked out, but refs/remotes/origin/branch exists
+        assert(ref ==
+            generic_git.refs_remotes(self:get_branch(), generic_git.the_remote()))
+    end
+
+    -- check that origin points to the server
+    rc, re = self:_check_git_remote()
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    -- No need to check tag, done by git_commit_id
 
     return true
 end
@@ -412,7 +473,7 @@ function git.git_source:fetch_source()
         return false, e:cat(re)
     end
 
-    rc, re, id = generic_git.lookup_id(git_dir, false,
+    rc, re, id = generic_git.lookup_id(git_dir, generic_git.NO_REMOTE,
         refs_heads(self:get_branch()))
     if not rc then
         return false, e:cat(re)
@@ -463,15 +524,32 @@ function git.git_source:update_source()
         return false, e:cat(re)
     end
 
+    e2lib.logf(3, "%s: fetching objects and refs success.",
+        self:get_name())
+
+    -- Find the prefered branch and...
+    local ref, re = self:_refs_prefered_local_remote_branch()
+    if not ref then
+        return false, e:cat(re)
+    end
+
+    -- ... if it is the local remotes branch, skip any merge attempts
+    if ref == generic_git.refs_remotes(self:get_branch()) then
+        e2lib.logf(3, "%s: using '%s', no merge required.",
+            self:get_name(), ref)
+        return true
+    end
+
     -- Use HEAD commit ID to find the branch we're on
-    rc, re, id = generic_git.lookup_id(gitdir, false, "HEAD")
+    rc, re, id = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE, "HEAD")
     if not rc then
         return false, e:cat(re)
     elseif not id then
         return false, e:cat(err.new("can not find commit ID for HEAD"))
     end
 
-    rc, re, branch = generic_git.lookup_ref(gitdir, false, id, "refs/heads/")
+    rc, re, branch = generic_git.lookup_ref(gitdir, generic_git.NO_REMOTE, id,
+        "refs/heads/")
     if not rc then
         return false, e:cat(re)
     elseif not branch then
@@ -492,7 +570,7 @@ function git.git_source:update_source()
         return true
     end
 
-    branch = remote .. "/" .. self:get_branch()
+    branch = generic_git.refs_remotes(self:get_branch(), remote)
     argv = generic_git.git_new_argv(gitdir, gitwc, "merge", "--ff-only", branch)
     rc, re = generic_git.git(argv)
     if not rc then
@@ -564,7 +642,8 @@ function git.git_source:prepare_source(sourceset, buildpath)
 
     gitdir = e2lib.join(srcdir, ".git")
 
-    rc, re = self:git_commit_id(sourceset)
+    local check_remote = false
+    rc, re = self:git_commit_id(sourceset, check_remote)
     if not rc then
         return false, e:cat(re)
     end
@@ -573,7 +652,11 @@ function git.git_source:prepare_source(sourceset, buildpath)
     table.insert(git_argv, "--format=tar")
 
     if sourceset == "branch" then
-        table.insert(git_argv, refs_heads(self:get_branch()))
+        rc, re = self:_refs_prefered_local_remote_branch()
+        if not rc then
+            return false, e:cat(re)
+        end
+        table.insert(git_argv, rc)
     elseif sourceset == "tag" then
         table.insert(git_argv, refs_tags(self:get_tag()))
     else
