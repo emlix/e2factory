@@ -93,6 +93,7 @@ function e2build.build_process_class:build(res, rbs)
 
         rbs:message(false) -- reset message before next step
 
+        e2lib.logf(4, "e2build step=%s res=%s", step.name, res:get_name())
         t1 = os.time()
         rc, re = step.func(self, res, rbs)
         t2 = os.time()
