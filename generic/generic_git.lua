@@ -560,6 +560,30 @@ function generic_git.git_url1(u)
     return giturl
 end
 
+-- Generate git URL string from cache/server/location.
+-- @param c table: a cache
+-- @param server string: server name
+-- @param location string: location
+-- @return string: the git url, or nil
+-- @return an error object on failure
+function generic_git.git_url_cache(c, server, location)
+    local rc, re, rurl, u, giturl
+
+    rurl, re = cache.remote_url(c, server, location) -- takes care of asserts
+    if not rurl then
+        return false, re
+    end
+    u, re = url.parse(rurl)
+    if not u then
+        return false, re
+    end
+    giturl, re = generic_git.git_url1(u)
+    if not giturl then
+        return false, re
+    end
+    return giturl
+end
+
 --- clone a git repository by server and location
 -- @param c Cache
 -- @param server
