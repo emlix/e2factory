@@ -277,7 +277,7 @@ function gitrepo_source:check_workingcopy()
         return true, nil
     end
 
-    rc, re, id = generic_git.lookup_id(gitdir, false, ref)
+    rc, re, id = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE, ref)
     if not rc then
         return false, e:cat(re)
     elseif not id then
@@ -347,19 +347,19 @@ function gitrepo_source:fetch_source()
         return false, e:cat(re)
     end
 
-    rc, re, id = generic_git.lookup_id(git_dir, false,
-        "refs/heads/" .. self:get_branch())
+    rc, re, id = generic_git.lookup_id(git_dir, generic_git.NO_REMOTE,
+        generic_git.refs_heads(self:get_branch()))
     if not rc then
         return false, e:cat(re)
     elseif not id then
         rc, re = generic_git.git_branch_new1(work_tree, true, self:get_branch(),
-            "origin/" .. self:get_branch())
+            generic_git.refs_remote_heads(self:get_branch()))
         if not rc then
             return false, e:cat(re)
         end
 
         rc, re = generic_git.git_checkout1(work_tree,
-            "refs/heads/" .. self:get_branch())
+            generic_git.refs_heads(self:get_branch()))
         if not rc then
             return false, e:cat(re)
         end
@@ -404,7 +404,7 @@ function gitrepo_source:update_source()
     end
 
     -- Use HEAD commit ID to find the branch we're on
-    rc, re, id = generic_git.lookup_id(gitdir, false, "HEAD")
+    rc, re, id = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE, "HEAD")
     if not rc then
         return false, e:cat(re)
     elseif not id then
