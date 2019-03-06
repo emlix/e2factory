@@ -79,6 +79,11 @@ local function git_clone_url(surl, destdir, skip_checkout)
     return true
 end
 
+--- Named constants.
+
+-- When remote should not be used.
+generic_git.NO_REMOTE = 1
+
 --- Helper to generate refs/tags string.
 -- @param tag Tag
 -- @return refs/tags/tag
@@ -103,17 +108,17 @@ local refs_heads = generic_git.refs_heads
 -- Trivial function to keep information in one place.
 -- @param remote, defaults to "origin".
 -- @return remote string.
-function generic_git.refs_remote(remote)
+function generic_git.the_remote(remote)
     assert(remote == nil or assertIsStringN(remote))
     return remote or "origin"
 end
 
 --- Helper to generate refs/remotes/<remote>/<branch>
 -- @param branch Branch
--- @param remote Remote, defaults to refs_remote().
+-- @param remote Remote, defaults to the_remote().
 -- @return refs/remotes/remote/branch
 function generic_git.refs_remotes(branch, remote)
-    remote = generic_git.refs_remote(remote)
+    remote = generic_git.the_remote(remote)
     assertIsStringN(branch)
     assertIsStringN(remote)
     return "refs/remotes/"..remote.."/"..branch
@@ -121,10 +126,10 @@ end
 
 --- Helper to generate <remote>/<branch>
 --@param branch Branch
---@param remote Remote, defaults to refs_remote().
+--@param remote Remote, defaults to the_remote().
 --@return remote/branch string
 function generic_git.refs_remote_heads(branch, remote)
-    remote = generic_git.refs_remote(remote)
+    remote = generic_git.the_remote(remote)
     assertIsStringN(branch)
     assertIsStringN(remote)
     return remote.."/"..branch
@@ -213,23 +218,21 @@ end
 --- Return a table containing pairs of commit id and refs of the local
 -- or remote repository.
 -- @param git_dir Path to GIT_DIR.
--- @param remote True for the default remote repository,
---               string to specify a remote, and false for the local repository.
+-- @param remote Name of the "remote" repository for listing refs.
+--                      Network connection! Use generic_git.NO_REMOTE for
+--                      local refs (including remotes/...)
 -- @return Error object on failure, otherwise nil
 -- @return Table containing tables of "id", "ref" pairs, or false on error.
 function generic_git.list_refs(git_dir, remote)
     assertIsStringN(git_dir)
-    assert(type(remote) == "string" or type(remote) == "boolean")
+    assert(remote == generic_git.NO_REMOTE or assertIsStringN(remote))
 
     local rc, re, e, argv, out, t, emsg
 
     emsg = "error listing git refs"
 
     argv = generic_git.git_new_argv(git_dir, false)
-    if remote then
-        if type(remote) == "boolean" then
-            remote = generic_git.refs_remote()
-        end
+    if remote ~= generic_git.NO_REMOTE then
         table.insert(argv, "ls-remote")
         table.insert(argv, remote)
     else
@@ -265,14 +268,14 @@ end
 --- Search id for a given ref (tags, branches) in either local or remote
 -- repository.
 -- @param git_dir Path to GIT_DIR.
--- @param remote True for remote repository, false for local repository.
+-- @param remote @see generic_git.list_refs
 -- @param ref Full ref string.
 -- @return True on success, false on error.
 -- @return Error object on failure.
 -- @return Commit ID string on successful lookup, false otherwise.
 function generic_git.lookup_id(git_dir, remote, ref)
     assertIsStringN(git_dir)
-    assertIsBoolean(remote)
+    -- remote: assert in list_refs
     assertIsStringN(ref)
     local rc, re, t
 
@@ -294,7 +297,7 @@ end
 -- The first matching ref is returned. Use filter to check for specific refs.
 
 -- @param git_dir Path to GIT_DIR.
--- @param remote True for default remote repository, false for local repository.
+-- @param remote @see generic_git.list_refs
 -- @param id Full commit ID string, must be 40 chars long.
 -- @param filter Filter string to select specific refs. Filter is passed to
 --               string.match(), and is always anchored (^) to the start of
@@ -304,7 +307,7 @@ end
 -- @return Pathspec ref string on successful lookup, false otherwise.
 function generic_git.lookup_ref(git_dir, remote, id, filter)
     assertIsStringN(git_dir)
-    assertIsBoolean(remote)
+    -- remote: assert in list_refs
     assertIsStringN(id)
     assert(#id == 40)
     assert(filter == false or type(filter == "string"))
@@ -702,6 +705,7 @@ function generic_git.git_commit(gitdir, argv)
 end
 
 --- Check local tag and the remote tag point to the same commit.
+-- Network connection!
 -- @param gitdir Path to GIT_DIR.
 -- @param tag Git tag name.
 -- @return True on success, false on error or mismatch.
@@ -710,7 +714,8 @@ function generic_git.verify_remote_tag(gitdir, tag)
     local e = err.new("verifying remote tag")
     local rc, re, rtag, argv, rid, lid
 
-    rc, re, rid = generic_git.lookup_id(gitdir, true, refs_tags(tag))
+    rc, re, rid = generic_git.lookup_id(gitdir, generic_git.the_remote(),
+        refs_tags(tag))
     if not rc then
         return false, e:cat(re)
     end
@@ -721,7 +726,8 @@ function generic_git.verify_remote_tag(gitdir, tag)
         return false, e:cat(re)
     end
 
-    rc, re, lid = generic_git.lookup_id(gitdir, false, refs_tags(tag))
+    rc, re, lid = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE,
+        refs_tags(tag))
     if not rc then
         return false, e:cat(re)
     end
@@ -863,13 +869,13 @@ function generic_git.new_repository(c, lserver, llocation, rserver, rlocation)
     end
 
     rc, re = generic_git.git_remote_add(
-        c, lserver, llocation, generic_git.refs_remote(), rserver, rlocation)
+        c, lserver, llocation, generic_git.the_remote(), rserver, rlocation)
     if not rc then
         return false, e:cat(re)
     end
 
     argv = generic_git.git_new_argv(
-        gitdir, nil, "config", "branch.master.remote", generic_git.refs_remote())
+        gitdir, nil, "config", "branch.master.remote", generic_git.the_remote())
     rc, re = generic_git.git(argv)
     if not rc then
         return false, e:cat(re)
