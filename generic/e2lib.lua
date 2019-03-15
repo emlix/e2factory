@@ -1085,6 +1085,17 @@ local function verify_global_config(config)
         return false, re
     end
 
+    rc, re = assert_type(config.cache, "config.cache", "table")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = e2lib.vrfy_dict_exp_keys(config, "e2 config",
+        { "cache", "log", "servers", "site", "tools", })
+    if not rc then
+        return false, re
+    end
+
     return true
 end
 
