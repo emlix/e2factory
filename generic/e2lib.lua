@@ -1049,7 +1049,14 @@ local function verify_global_config(config)
             end
             e2lib.globals.logrotate = config.log.logrotate
         end
+
+        rc, re = e2lib.vrfy_dict_exp_keys(config.log, "e2 config.log",
+            { "logrotate", })
+        if not rc then
+            return false, re
+        end
     end
+
     rc, re = assert_type(config.site, "config.site", "table")
     if not rc then
         return false, re
@@ -1075,7 +1082,19 @@ local function verify_global_config(config)
         return false, re
     end
 
+    rc, re = assert_type(config.site.e2_location, "config.site.e2_location", "string")
+    if not rc then
+        return false, re
+    end
+
     rc, re = assert_type(config.site.default_extensions, "config.site.default_extensions", "table")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = e2lib.vrfy_dict_exp_keys(config.site, "e2 config.site",
+        { "e2_branch", "e2_tag", "e2_server", "e2_base", "e2_location",
+          "default_extensions" })
     if not rc then
         return false, re
     end
@@ -1086,6 +1105,11 @@ local function verify_global_config(config)
     end
 
     rc, re = assert_type(config.cache, "config.cache", "table")
+    if not rc then
+        return false, re
+    end
+
+    rc, re = e2lib.vrfy_dict_exp_keys(config.cache, "e2 config.cache", { "path", })
     if not rc then
         return false, re
     end
