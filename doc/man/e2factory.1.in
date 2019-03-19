@@ -193,6 +193,9 @@ Name of the user.
 .BR E2TMPDIR
 Temporary directory to be used. Overwrites \fBTMPDIR\fR.
 .TP
+.BR E2_TMPDIR
+Alias for \fBE2TMPDIR.
+.TP
 .BR E2_CONFIG
 Path to the config file.
 .TP

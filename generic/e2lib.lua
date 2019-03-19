@@ -525,6 +525,37 @@ function e2lib.interrupt_hook()
     children_send_sigint()
 end
 
+--- Return highest priority tmpdir.
+-- @param config Config table, optional
+-- @return tmpdir path, may not exist
+local function select_tmpdir(config)
+    assert(config == nil or assertIsTable(config))
+    local t
+
+    -- In order of decreasing priority
+    if not t then
+        t = e2lib.globals.osenv["E2TMPDIR"]
+    end
+    if not t then
+        t = e2lib.globals.osenv["E2_TMPDIR"]
+    end
+    if not t then
+        if config and config.site.tmpdir then
+            t = config.site.tmpdir
+        end
+    end
+    if not t then
+        t = e2lib.globals.osenv["TMPDIR"]
+    end
+    if not t then
+        t = "/tmp"
+    end
+
+    assertIsString(t)
+    e2lib.logf(3, "selecting %q as temporary directory", t)
+    return t
+end
+
 --- Make sure the environment variables inside the globals table are
 -- initialized properly, set up output channels etc. Must be called before
 -- anything else.
@@ -559,6 +590,7 @@ function e2lib.init()
         { name = "E2_CONFIG", required = false },
         { name = "TMPDIR", required = false, default = "/tmp" },
         { name = "E2TMPDIR", required = false },
+        { name = "E2_TMPDIR", required = false },
         { name = "COLUMNS", required = false, default = "72" },
         { name = "E2_SSH", required = false },
     }
@@ -574,10 +606,11 @@ function e2lib.init()
         e2lib.globals.osenv[var.name] = var.val
     end
 
-    if e2lib.globals.osenv["E2TMPDIR"] then
-        e2lib.globals.tmpdir = e2lib.globals.osenv["E2TMPDIR"]
-    else
-        e2lib.globals.tmpdir = e2lib.globals.osenv["TMPDIR"]
+    -- init tmpdir early so it can be used during option parsing
+    e2lib.globals.tmpdir = select_tmpdir(nil)
+    if not e2lib.isdir(e2lib.globals.tmpdir) then
+        return false, err.new("temporary directory %q does not exists, "..
+            "please create it", e2lib.globals.tmpdir)
     end
 
     e2lib.globals.lock = lock.new()
@@ -600,6 +633,13 @@ function e2lib.init2()
     config, re = e2lib.get_global_config()
     if not config then
         return false, re
+    end
+
+    -- tmpdir might have changed after loading config
+    e2lib.globals.tmpdir = select_tmpdir(config)
+    if not e2lib.isdir(e2lib.globals.tmpdir) then
+        return false, e:cat("temporary directory %q does not exists, "..
+            "please create it", e2lib.globals.tmpdir)
     end
 
     -- honour tool customizations from the config file
@@ -1092,9 +1132,18 @@ local function verify_global_config(config)
         return false, re
     end
 
+    if config.site.tmpdir ~= nil then
+        rc, re = assert_type(config.site.tmpdir, "config.site.tmpdir", "string")
+        if not rc then
+            return false, re
+        end
+        config.site.tmpdir = e2lib.format_replace(config.site.tmpdir,
+            { u = e2lib.globals.osenv["USER"] })
+    end
+
     rc, re = e2lib.vrfy_dict_exp_keys(config.site, "e2 config.site",
         { "e2_branch", "e2_tag", "e2_server", "e2_base", "e2_location",
-          "default_extensions" })
+          "default_extensions", "tmpdir" })
     if not rc then
         return false, re
     end

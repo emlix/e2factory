@@ -64,6 +64,7 @@ config {
     e2_base = "<string>",
     e2_branch = "<string>",
     e2_tag = "<string>",
+    tmpdir = "<string>",
     default_extensions = {
 	{
 		name = "<string>",
@@ -142,6 +143,12 @@ Name of the git branch of the e2factory version to use, when using \fBe2-create-
 Type: String
 .br
 Name of the git tag of the e2factory version to use, when using \fBe2-create-project\fR(1).
+
+.TP
+.BR tmpdir
+Type: String
+.br
+Temporary directory to use when no environment variable is set. Optional.
 
 .TP
 .BR default_extensions
