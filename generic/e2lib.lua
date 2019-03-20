@@ -1172,6 +1172,68 @@ local function verify_global_config(config)
     return true
 end
 
+-- Merge content of table mdata into table data, overwriting set values.
+-- @param data Config data table.
+-- @param mdata Local config data table to merge.
+-- @param name Internal use, do not set. For log message generation.
+local function config_table_merge(data, mdata, name)
+    name = name or "config"
+    assertIsTable(data)
+    assertIsTable(mdata)
+    assertIsStringN(name)
+
+    for k,_ in pairs(mdata) do
+        assertIsStringN(k)
+
+        if type(mdata[k]) == "table" then
+            if type(data[k]) ~= "table" then
+                e2lib.logf(4, "e2.conf.local: set %s[%q] = {}",
+                    name, k)
+                data[k] = {}
+            end
+            config_table_merge(data[k], mdata[k], name.."."..k)
+        else
+            e2lib.logf(4, "e2.conf.local: set %s[%q] = %q",
+                name, k, tostring(mdata[k]))
+            data[k] = mdata[k]
+        end
+    end
+end
+
+--- Delete all entries in data that have a matching key in rmdata.
+-- Keys in rmdata are strings, values must be either true or a table.
+-- The table is recursed through.
+-- @param data Config table to modify.
+-- @param rmdata Table of keys to remove from data.
+-- @param name Internal use, do not set. For log message generation.
+local function config_table_remove(data, rmdata, name)
+    name = name or "config"
+    assertIsTable(data)
+    assertIsTable(rmdata)
+    assertIsStringN(name)
+
+    for k,_ in pairs(rmdata) do
+        assertIsStringN(k)
+        if rmdata[k] == true then
+            e2lib.logf(4, "e2.conf.local: remove %s[%q]", name, k)
+            data[k] = nil
+        elseif type(rmdata[k]) == "table" then
+            if type(data[k]) == "table" then
+                config_table_remove(data[k], rmdata[k], name.."."..k)
+            elseif rmdata[k] == nil then
+                e2lib.logf(4, "e2.conf.local: %s[%q] table does not exist, "..
+                    "skipping further removal", name, k)
+            else
+                e2lib.logf(4, "e2.conf.local: %s[%q] not a table, "..
+                    "can't recurse for removal", name, k)
+            end
+        else
+            e2lib.logf(4, "e2.conf.local: rmconfig key matching %s[%q] "..
+                "not a true boolean or table, skipping", name, k)
+        end
+    end
+end
+
 --- Cache for global config table.
 local get_global_config_cache = false
 
@@ -1182,53 +1244,71 @@ local get_global_config_cache = false
 -- @return Global config table on success, false on error.
 -- @return Error object on failure.
 function e2lib.get_global_config()
-    local rc, re, cf, cf2, cf_path, home, root
+    local rc, re, cf_path, home, root, cf_local
 
     if get_global_config_cache then
         return get_global_config_cache
     end
 
     if type(e2lib.globals.e2config) == "string" then
-        cf = e2lib.globals.e2config
+        cf_path = { e2lib.globals.e2config }
     elseif type(e2lib.globals.osenv["E2_CONFIG"]) == "string" then
-        cf = e2lib.globals.osenv["E2_CONFIG"]
+        cf_path = { e2lib.globals.osenv["E2_CONFIG"] }
     end
 
     -- e2config contains path to e2.conf. Optional, errors are ignored.
     root, re = e2lib.locate_project_root()
     if root then
         local e2_e2config = e2lib.join(root, ".e2/e2config")
-        cf2, re = eio.file_read_line(e2_e2config)
+        rc, re = eio.file_read_line(e2_e2config)
+        if rc then
+            cf_path = { rc }
+        end
     end
 
-    if cf then
-        cf_path = { cf }
-    elseif cf2 then
-        cf_path = { cf2 }
-    else
+    -- e2.conf.local, errors are ignored
+    -- XXX: Experimental feature.
+    -- Gather some experience first.
+    -- Write documentation if it appears to be useful.
+    if root then
+        cf_local = e2lib.join(root, ".e2/e2.conf.local")
+        if not e2lib.exists(cf_local) then
+            cf_local = nil
+        end
+    end
+
+    -- if the user sets --e2config, do not apply e2.conf.local
+    if cf_local and type(e2lib.globals.e2config) == "string" then
+        cf_local = nil
+        e2lib.logf(3,
+            "skip e2.conf.local because of explicit --e2config argument")
+    end
+
+
+    if not cf_path then
         home = e2lib.globals.osenv["HOME"]
         cf_path = {
             -- this is ordered by priority
             string.format("%s/.e2/e2.conf-%s.%s.%s", home,
-            buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
+                buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
             string.format("%s/.e2/e2.conf-%s.%s", home, buildconfig.MAJOR,
-            buildconfig.MINOR),
+                buildconfig.MINOR),
             string.format("%s/.e2/e2.conf", home),
             string.format("%s/e2.conf-%s.%s.%s", buildconfig.SYSCONFDIR,
-            buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
+                buildconfig.MAJOR, buildconfig.MINOR, buildconfig.PATCHLEVEL),
             string.format("%s/e2.conf-%s.%s", buildconfig.SYSCONFDIR,
-            buildconfig.MAJOR, buildconfig.MINOR),
+                buildconfig.MAJOR, buildconfig.MINOR),
             string.format("%s/e2.conf", buildconfig.SYSCONFDIR),
         }
     end
-    -- use ipairs to keep the list entries ordered
+
     for _,path in ipairs(cf_path) do
         local data = nil
 
-        e2lib.logf(4, "reading global config file: %s", path)
+        -- e2lib.logf(4, "trying global config file: %s", path)
         local rc = e2lib.exists(path)
         if rc then
-            e2lib.logf(4, "using global config file: %s", path)
+            e2lib.logf(3, "loading global config file: %s", path)
             rc, re = e2lib.dofile2(path,
                 { config = function(x) data = x end })
             if not rc then
@@ -1237,6 +1317,26 @@ function e2lib.get_global_config()
             if not data then
                 return false, err.new("invalid configuration")
             end
+
+            if cf_local then
+                local mdata = nil
+                local rmdata = nil
+                e2lib.logf(3, "loading local config file: %s", cf_local)
+                rc, re = e2lib.dofile2(cf_local,
+                    { config = function(x) mdata = x end,
+                      rmconfig = function(x) rmdata = x end})
+                if not rc then
+                    return false, re
+                end
+
+                if mdata then
+                    config_table_merge(data, mdata)
+                end
+                if rmdata then
+                    config_table_remove(data, rmdata)
+                end
+            end
+
             rc, re = verify_global_config(data)
             if not rc then
                 return false, re
