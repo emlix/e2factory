@@ -688,6 +688,40 @@ function generic_git.git_config(gitdir, ...)
     return trim(out)
 end
 
+--- Git config --list as a table, split into key=value pairs
+-- @param gitdir string: gitdir
+-- @return dictionary with all key-value entries, or false on error.
+-- @return Error object on failure.
+function generic_git.git_config_table(gitdir)
+    local e, rc, re, argv, out
+
+    argv = generic_git.git_new_argv(gitdir, false, "config", "-l")
+    rc, re, out = generic_git.git(argv)
+    if not rc then
+        e = err.new("git config failed")
+        return false, e:cat(re)
+    end
+
+    local t = {}
+    local key, value
+
+    out = trim(out)..'\n' -- end with newline, simplify splitting
+
+    for line in string.gmatch(out, '(.-)\r?\n') do
+        if #line > 0 then
+            key, value = string.match(line, '([^=]-)=(.*)')
+            if key and value then
+                t[key] = value
+            else
+                e2lib.logf(4,
+                    "git_config_table problem: out=%q, line=%q key=%q value=%q",
+                    out, line, tostring(key), tostring(value))
+            end
+        end
+    end
+    return t
+end
+
 --- Git add.
 -- @param gitdir Path to GIT_DIR.
 -- @param argv Argument vector to pass to git add, usually the files to add.
