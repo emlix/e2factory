@@ -293,6 +293,28 @@ function generic_git.lookup_id(git_dir, remote, ref)
     return true, nil, false
 end
 
+--- Get the current branch of gitrepo.
+-- Special cases: Returns an empty string when the repo has no HEAD (fresh init)
+-- Returns "HEAD" when the repo is in detached head state.
+-- @param git_dir Path to GIT_DIR.
+-- @return Short current branch name, "", "HEAD", or false on error.
+-- @return Error object on failure.
+function generic_git.current_branch(git_dir)
+    local rc, re, argv, out
+
+    argv = generic_git.git_new_argv(git_dir, false, "rev-parse",
+        "--abbrev-ref=strict", "HEAD", "--")
+    rc, re, out = generic_git.git(argv)
+    if not rc then
+        if out:find("bad revision 'HEAD'") then
+            return ""
+        end
+
+        return false, err.new("getting current git branch failed"):append(re)
+    end
+    return trim(out)
+end
+
 --- Search ref for a given commit id in either local or remote repository.
 -- The first matching ref is returned. Use filter to check for specific refs.
 
