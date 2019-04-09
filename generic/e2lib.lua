@@ -686,13 +686,11 @@ end
 -- @param ... arguments required for the format string
 -- @return nil
 function e2lib.warnf(category, format, ...)
-    if (format:len() == 0) or (not format) then
-        e2lib.log(1, "Internal error: calling warnf() with zero length format")
-    end
-    if type(e2lib.globals.warn_category[category]) ~= "boolean" then
-        e2lib.log(1,
-            "Internal error: calling warnf() with invalid warning category")
-    end
+    assertIsStringN(format,
+        "Internal error: called warnf() with invalid format")
+    assertIsBoolean(e2lib.globals.warn_category[category],
+        "Internal error: called warnf() with invalid warning category")
+
     if e2lib.globals.warn_category[category] == true then
         local prefix = "Warning: "
         if e2lib.globals.log_debug then
