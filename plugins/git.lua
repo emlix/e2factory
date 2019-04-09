@@ -377,9 +377,15 @@ function git.git_source:_check_git_remote()
     remote = generic_git.the_remote()
     query = string.format("remote.%s.url", remote)
     gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
-    url, re = generic_git.git_config(gitdir, query)
-    if not url then
+
+    result, re = generic_git.git_config_table(gitdir)
+    if not result then
         return false, re
+    end
+
+    url = result[query]
+    if not url then
+        return false, err.new("no git remote %q configured", remote)
     end
 
     local function remove_trailing_slashes(s)
