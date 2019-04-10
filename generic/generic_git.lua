@@ -303,7 +303,7 @@ function generic_git.current_branch(git_dir)
     local rc, re, argv, out
 
     argv = generic_git.git_new_argv(git_dir, false, "rev-parse",
-        "--abbrev-ref=strict", "HEAD", "--")
+        "--abbrev-ref=strict", "HEAD")
     rc, re, out = generic_git.git(argv)
     if not rc then
         if out:find("bad revision 'HEAD'") then
