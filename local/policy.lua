@@ -304,6 +304,30 @@ function policy.default_build_mode(mode)
     return strict.lock(build_mode)
 end
 
+-- Accessing the e2option.opts table directly is quite error prone,
+-- thus this set of trivial wrapper functions.
+policy.opts = {}
+
+--- Query the 'check' flag
+-- @return true or false
+function policy.opts.check()
+    return e2option.opts['check'] or false
+end
+
+--- Query the 'check-remote' flag
+-- @return true or false
+function policy.opts.check_remote()
+    return e2option.opts['check-remote'] or false
+end
+
+--- Query build-mode option
+-- @return one of "tag", "release", "branch", "working-copy"
+function policy.opts.build_mode()
+    assertIsStringN(e2option.opts["build-mode"])
+    return e2option.opts['build-mode']
+end
+
+strict.lock(policy.opts)
 return strict.lock(policy)
 
 -- vim:sw=4:sts=4:et:
