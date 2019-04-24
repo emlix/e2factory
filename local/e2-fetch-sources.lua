@@ -117,7 +117,7 @@ local function e2_fetch_source(arg)
         -- fetch
         for sourcename, src in pairs(source.sources) do
             if opts.fetch and sel[sourcename] then
-                e2lib.logf(1, "fetching working copy for source %s", sourcename)
+                e2lib.logf(1, "%s: fetching working copy", sourcename)
                 rc, re = src:fetch_source()
                 if not rc then
                     e:cat(re)
@@ -128,7 +128,7 @@ local function e2_fetch_source(arg)
         -- update
         for sourcename, src in pairs(source.sources) do
             if opts.update and sel[sourcename] then
-                e2lib.logf(1, "updating working copy for %s", sourcename)
+                e2lib.logf(1, "%s: updating working copy", sourcename)
                 rc, re = src:update_source()
                 if not rc then
                     e:cat(re)
@@ -200,7 +200,7 @@ local function e2_fetch_source(arg)
     end
 
     if next(sel) ~= nil then
-        e2lib.log(2, "fetching sources...")
+        -- e2lib.log(2, "fetching sources...")
         local rc, re = fetch_sources(e2project:info(), opts, sel)
         if not rc then
             e:cat(re)
