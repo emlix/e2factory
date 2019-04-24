@@ -23,9 +23,9 @@ local cscache
 local class = require("class")
 local digest -- initialized later
 local e2lib = require("e2lib")
-local e2option = require("e2option")
 local e2tool = require("e2tool")
 local eio = require("eio")
+local policy = require("policy")
 
 
 --- Checksum cache class.
@@ -175,7 +175,7 @@ function cs_cache_class:load_cache()
 
     self._csdict = {}
 
-    if e2option.opts["build-mode"] == "release" then
+    if policy.opts.build_mode() == "release" then
         return
     end
 

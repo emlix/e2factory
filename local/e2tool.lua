@@ -28,7 +28,6 @@ local class = require("class")
 local digest = require("digest")
 local e2build = require("e2build")
 local e2lib = require("e2lib")
-local e2option = require("e2option")
 local eio = require("eio")
 local environment = require("environment")
 local err = require("err")
@@ -370,7 +369,7 @@ function e2tool.file_class:fileid()
 
     assert(cs_done, "no checksum algorithm enabled for fileid()")
 
-    if e2option.opts["check-remote"] then
+    if policy.opts.check_remote() then
         rc, re = self:checksum_verify()
         if not rc then
             return false, e:cat(re)
@@ -431,14 +430,14 @@ function e2tool.file_class:checksum_verify()
         end
 
         -- Server-side checksum computation for ssh-like transports
-        if e2option.opts["check-remote"] then
+        if policy.opts.check_remote() then
             cs_remote, re = self:_compute_remote_checksum(digest_type)
             if re then
                 return false, e:cat(re)
             end
         end
 
-        if not cs_cache or (e2option.opts["check-remote"] and not cs_remote) then
+        if not cs_cache or (policy.opts.check_remote() and not cs_remote) then
             cs_fetch, re = self:_compute_checksum(digest_type, { cache = false })
             if not cs_fetch then
                 return false, e:cat(re)
@@ -940,14 +939,14 @@ function e2tool.e2project_class:load_project(skip_load_config)
         return false, e:cat(re)
     end
 
-    if e2option.opts["check"] then
+    if policy.opts.check() then
         rc, re = self:check_local()
         if not rc then
             return false, e:cat(re)
         end
     end
 
-    if e2option.opts["check-remote"] then
+    if policy.opts.check_remote() then
         rc, re = self:check_remote()
         if not rc then
             return false, e:cat(re)
