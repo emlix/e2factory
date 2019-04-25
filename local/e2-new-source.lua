@@ -19,14 +19,15 @@
 -- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 -- more details.
 
-local e2lib = require("e2lib")
-local e2tool = require("e2tool")
-local generic_git = require("generic_git")
-local err = require("err")
-local e2option = require("e2option")
-local transport = require("transport")
 local cache = require("cache")
 local digest = require("digest")
+local e2lib = require("e2lib")
+local e2option = require("e2option")
+local e2tool = require("e2tool")
+local err = require("err")
+local generic_git = require("generic_git")
+local policy = require("policy")
+local transport = require("transport")
 local url = require("url")
 
 --- Download a file.
@@ -235,6 +236,12 @@ local function e2_new_source(arg)
     local opts, arguments = e2option.parse(arg)
     if not opts then
         error(arguments)
+    end
+
+    -- setup default build mode
+    rc, re = policy.handle_commandline_options(opts, true)
+    if not rc then
+        error(re)
     end
 
     e2project = e2tool.e2project()
