@@ -460,7 +460,7 @@ function git.git_source:check_workingcopy()
         query = string.format("branch.%s.remote", self:get_branch())
         remote, re = generic_git.git_config(gitdir, query)
         if not remote then
-            e:append("no remote configured for branch \"%s\"", self:get_branch())
+            e:append("no remote configured for branch %q", self:get_branch())
             return false, e
         elseif remote ~= "origin" then
             e:append("remote of local branch \"%s\" must be named \"origin\"",
@@ -510,17 +510,20 @@ function git.git_source:fetch_source()
         return true
     end
 
+    -- If commit id for requested branch ref exists, it's already checked out.
     rc, re, id = generic_git.lookup_id(git_dir, generic_git.NO_REMOTE,
         refs_heads(self:get_branch()))
     if not rc then
         return false, e:cat(re)
     elseif not id then
+        -- set up tracking branch (XXX: default remote)
         rc, re = generic_git.git_branch_new1(work_tree, true, self:get_branch(),
             "origin/" .. self:get_branch())
         if not rc then
             return false, e:cat(re)
         end
 
+        -- switch to new tracking branch
         rc, re = generic_git.git_checkout1(work_tree,
             refs_heads(self:get_branch()))
         if not rc then
@@ -544,15 +547,18 @@ function git.git_source:update_source()
         return false, e:cat(re)
     end
 
-    e2lib.logf(2, "updating %s [%s]", self:get_working(), self:get_branch())
+    e2lib.logf(2, "%s: updating %s [%s]", self:get_name(), self:get_working(), self:get_branch())
 
     gitwc  = e2lib.join(e2tool.root(), self:get_working())
     gitdir = e2lib.join(gitwc, ".git")
 
-    argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
-    rc, re = generic_git.git(argv)
+    -- check that remote "origin" exists. No need to continue if not.
+    rc, re = self:_check_git_remote()
     if not rc then
-        return false, e:cat(re)
+        e2lib.warnf("WOTHER",
+            "%s: skipping update due to git remote problem: %s",
+            self:get_name(), re:tostring())
+        return true
     end
 
     argv = generic_git.git_new_argv(gitdir, gitwc, "fetch", "--tags")
@@ -561,8 +567,13 @@ function git.git_source:update_source()
         return false, e:cat(re)
     end
 
-    e2lib.logf(3, "%s: fetching objects and refs success.",
-        self:get_name())
+    argv = generic_git.git_new_argv(gitdir, gitwc, "fetch")
+    rc, re = generic_git.git(argv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    e2lib.logf(2, "%s: git fetch complete", self:get_name())
 
     -- Find the prefered branch and...
     local ref, re = self:_refs_prefered_local_remote_branch()
@@ -570,40 +581,55 @@ function git.git_source:update_source()
         return false, e:cat(re)
     end
 
+    local skipping = "skipping fast forward merge"
+
     -- ... if it is the local remotes branch, skip any merge attempts
     if ref == generic_git.refs_remotes(self:get_branch()) then
-        e2lib.logf(3, "%s: using '%s', no merge required.",
-            self:get_name(), ref)
+        e2lib.logf(2, "%s: no local branch %q, using %q and %s",
+            self:get_name(), self:get_branch(), ref, skipping)
         return true
     end
 
-    -- Use HEAD commit ID to find the branch we're on
-    rc, re, id = generic_git.lookup_id(gitdir, generic_git.NO_REMOTE, "HEAD")
+    -- still here? find the current branch name ...
+    rc, re = generic_git.current_branch(gitdir)
     if not rc then
         return false, e:cat(re)
-    elseif not id then
-        return false, e:cat(err.new("can not find commit ID for HEAD"))
     end
 
-    rc, re, branch = generic_git.lookup_ref(gitdir, generic_git.NO_REMOTE, id,
-        "refs/heads/")
-    if not rc then
-        return false, e:cat(re)
-    elseif not branch then
-        e2lib.warnf("WOTHER", "HEAD is not on a branch (detached?). Skipping")
+    branch = rc
+    -- we're on a detached HEAD, no branch or mismatched branch...
+    if branch == "HEAD" then
+        e2lib.warnf("WOTHER", "%s: on detached HEAD branch, %s",
+            self:get_name(), skipping)
+        return true
+    elseif branch == "" then
+        e2lib.warnf(
+            "WOTHER", "%s: not on any branch, %s", self:get_name(), skipping)
+        return true
+    elseif branch ~= self:get_branch() then
+        e2lib.warnf(
+            "WOTHER", "%s: working copy on branch %q, %s",
+            self:get_name(), branch, skipping)
         return true
     end
 
-    if branch ~= refs_heads(self:get_branch()) then
-        e2lib.warnf("WOTHER", "not on configured branch. Skipping.")
-        return true
-    end
-
-    remote, re = generic_git.git_config(
-        gitdir, "branch."..self:get_branch()..".remote")
+    -- Find the remote name for the branch
+    remote, re = generic_git.git_config(gitdir,
+        "branch."..self:get_branch()..".remote")
     if not remote or string.len(remote) == 0  then
-        e2lib.warnf("WOTHER", "no remote configured for branch %q. Skipping.",
-            self:get_branch())
+        e2lib.warnf("WOTHER",
+            "%s: no remote configured for branch %q, %s",
+            self:get_name(), self:get_branch(), skipping)
+        return true
+    end
+
+    -- XXX: origin
+    -- currently we don't support any other remote than "origin"
+    if remote ~= "origin" then
+        e2lib.warnf("WOTHER",
+            "%s: branch %q is configured to merge from remote %q, "..
+            "skipping due to unclear configuration",
+            self:get_name(), self:get_branch(), remote)
         return true
     end
 
@@ -611,7 +637,11 @@ function git.git_source:update_source()
     argv = generic_git.git_new_argv(gitdir, gitwc, "merge", "--ff-only", branch)
     rc, re = generic_git.git(argv)
     if not rc then
-        return false, e:cat(re)
+        e2lib.warnf("WOTHER",
+            "%s: fast forward merge failed, "..
+            "please resolve the sitution manually. Error message was:\n%s",
+            self:get_name(), re:tostring())
+        return true
     end
 
     return true
