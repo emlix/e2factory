@@ -29,6 +29,7 @@ local err = require("err")
 local generic_git = require("generic_git")
 local hash = require("hash")
 local licence = require("licence")
+local policy = require("policy")
 local result = require("result")
 local source = require("source")
 local strict = require("strict")
@@ -284,7 +285,7 @@ function git.git_source:sourceid(sourceset)
         "sourceset arg invalid")
 
     local rc, re, id, hc
-    local check_remote = e2option.opts["check-remote"] or false
+    local check_remote = policy.opts.check_remote()
     assertIsBoolean(check_remote)
 
     if self._sourceids[sourceset] then
