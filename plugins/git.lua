@@ -382,7 +382,7 @@ end
 -- @return Error object on failure.
 function git.git_source:_check_git_remote()
     local rc, re, e
-    local expect, remote, query, gitdir
+    local expect, remote, query, gitdir, result
 
     -- git config remote.origin.url == server:location
     expect, re = generic_git.git_url_cache(
