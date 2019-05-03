@@ -72,6 +72,7 @@ function git.git_source:initialize(rawsrc)
         ["working-copy"] = "working-copy",
     }
     self._commitids = {}
+    self._checkout = true
     self._xxxcommitid = false -- XXX: Not yet
 
     rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source", {
@@ -84,6 +85,7 @@ function git.git_source:initialize(rawsrc)
         "tag",
         "type",
         "working",
+        "checkout", -- XXX: undocumented on purpose
     })
     if not rc then
         error(re)
@@ -124,6 +126,13 @@ function git.git_source:initialize(rawsrc)
     self._branch = rawsrc.branch or ""
     self._location = rawsrc.location
     self._tag = rawsrc.tag
+
+    if rawsrc.checkout then
+        if type(rawsrc.checkout) ~= boolean then
+            error(err.new("checkout' must be a boolean"))
+        end
+        self._checkout = rawsrc.checkout
+    end
 end
 
 function git.git_source:get_server()
@@ -337,6 +346,9 @@ function git.git_source:display()
     if self._xxxcommitid then
         table.insert(d, string.format("commitid   = %s", self._xxxcommitid))
     end
+    if self._checkout ~= true then
+        table.insert(d, string.format("checkout   = %s", tostring(self._checkout)))
+    end
     table.insert(d, string.format("server     = %s", self._server))
     table.insert(d, string.format("location   = %s", self._location))
     table.insert(d, string.format("working    = %s", self:get_working()))
@@ -479,10 +491,15 @@ function git.git_source:fetch_source()
     e2lib.logf(2, "cloning %s:%s [%s]", self:get_server(), self:get_location(),
         self:get_branch())
 
+    local skip_checkout = not self._checkout
     rc, re = generic_git.git_clone_from_server(cache.cache(), self:get_server(),
-        self:get_location(), work_tree, false --[[always checkout]])
+        self:get_location(), work_tree, skip_checkout)
     if not rc then
         return false, e:cat(re)
+    end
+
+    if not self._checkout then
+        return true
     end
 
     rc, re, id = generic_git.lookup_id(git_dir, generic_git.NO_REMOTE,
