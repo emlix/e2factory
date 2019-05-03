@@ -242,7 +242,14 @@ function git.git_source:git_commit_id(sourceset, check_remote)
 
     rc, re = self:check_workingcopy()
     if not rc then
-        return false, e:cat(re)
+        if check_remote or policy.opts.check() or policy.opts.check_remote() then
+            return false, e:cat(re)
+        else
+            -- allow building with an improper git workingcopy setup to ease
+            -- development, but complain about it loudly.
+            e2lib.warnf("WOTHER", "please fix: %s",
+                e:cat(re):tostring():gsub('\n', ''))
+        end
     end
 
     gitdir = e2lib.join(e2tool.root(), self:get_working(), ".git")
@@ -623,7 +630,13 @@ function git.git_source:prepare_source(sourceset, buildpath)
 
     rc, re = self:check_workingcopy()
     if not rc then
-        return false, e:cat(re)
+        if policy.opts.check() or policy.opts.check_remote() then
+            return false, e:cat(re)
+        else
+            -- see git.git_source:git_commit_id()
+            e2lib.warnf("WOTHER", "please fix: %s",
+                e:cat(re):tostring():gsub('\n', ''))
+        end
     end
 
     srcdir = e2lib.join(e2tool.root(), self:get_working())
