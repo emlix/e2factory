@@ -72,6 +72,7 @@ function git.git_source:initialize(rawsrc)
         ["working-copy"] = "working-copy",
     }
     self._commitids = {}
+    self._xxxcommitid = false -- XXX: Not yet
 
     rc, re = e2lib.vrfy_dict_exp_keys(rawsrc, "e2source", {
         "branch",
@@ -111,7 +112,7 @@ function git.git_source:initialize(rawsrc)
     self._working = rawsrc.working
 
     for _,attr in ipairs({ "branch", "location", "tag" }) do
-        if rawsrc[attr] == nil then
+        if --[[attr ~= "branch" and]] rawsrc[attr] == nil then
             error(err.new("source has no `%s' attribute", attr))
         elseif type(rawsrc[attr]) ~= "string" then
             error(err.new("'%s' must be a string", attr))
@@ -120,7 +121,7 @@ function git.git_source:initialize(rawsrc)
         end
     end
 
-    self._branch = rawsrc.branch
+    self._branch = rawsrc.branch or ""
     self._location = rawsrc.location
     self._tag = rawsrc.tag
 end
@@ -329,8 +330,13 @@ function git.git_source:display()
     end
     local d = {}
     table.insert(d, string.format("type       = %s", self:get_type()))
-    table.insert(d, string.format("branch     = %-15s %s", self._branch, rev_branch))
+    if self._branch ~= "" then
+        table.insert(d, string.format("branch     = %-15s %s", self._branch, rev_branch))
+    end
     table.insert(d, string.format("tag        = %-15s %s", self._tag, rev_tag))
+    if self._xxxcommitid then
+        table.insert(d, string.format("commitid   = %s", self._xxxcommitid))
+    end
     table.insert(d, string.format("server     = %s", self._server))
     table.insert(d, string.format("location   = %s", self._location))
     table.insert(d, string.format("working    = %s", self:get_working()))
