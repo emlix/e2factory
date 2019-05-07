@@ -1159,6 +1159,8 @@ function e2build.build_process_class:_linklast(res, rbs)
 
         return true
     else -- otherwise create a symlink
+        local createsymlink = true
+
         dst, re = cache.fetch_file_path(cache.cache(), server, location)
         if not dst then
             return false, e:cat(re)
@@ -1166,19 +1168,49 @@ function e2build.build_process_class:_linklast(res, rbs)
 
         dst = e2lib.dirname(dst) -- we only care about the directory
 
-        -- create the last link
+        -- create directory to 'last' if it doesn't already exist
         rc, re = e2lib.mkdir_recursive(e2lib.dirname(lnk))
         if not rc then
             return false, e:cat(re)
         end
 
-        if e2lib.lstat(lnk) then
-            e2lib.unlink_recursive(lnk) -- ignore errors, symlink will catch it
+        -- last symlink or directory (or file) exists?
+        rc, re = e2lib.lstat(lnk)
+        if rc then
+            if rc.type == 'directory' then
+                rc, re = e2lib.unlink_recursive(lnk)
+                if not rc then
+                    return false, e:cat(re)
+                end
+            else
+                local st_tgt, st_dst
+
+                st_dst, re = e2lib.lstat(dst)
+                if not st_dst then
+                    return false, e:cat(re)
+                end
+
+                -- Follow link to target.
+                st_tgt, re = e2lib.stat(lnk)
+                if st_tgt and
+                    st_tgt.dev == st_dst.dev and st_tgt.ino == st_dst.ino then
+                    createsymlink = false
+                else
+                    -- If target of the link doesn't exists, delete the link.
+                    -- If target and dst are not identical, delete the link.
+                    rc, re = e2lib.unlink(lnk)
+                    if not rc then
+                        return false, e:cat(re)
+                    end
+                end
+            end
         end
 
-        rc, re = e2lib.symlink(dst, lnk)
-        if not rc then
-            return false, e:cat(re)
+        if createsymlink then
+            rc, re = e2lib.symlink(dst, lnk)
+            if not rc then
+                return false, e:cat(re)
+            end
         end
     end
 
