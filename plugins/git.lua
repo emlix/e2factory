@@ -248,7 +248,7 @@ function git.git_source:git_commit_id(sourceset, check_remote)
             -- allow building with an improper git workingcopy setup to ease
             -- development, but complain about it loudly.
             e2lib.warnf("WOTHER", "please fix: %s",
-                e:cat(re):tostring():gsub('\n', ''))
+                e:cat(re):tostring():gsub('\n', ' '))
         end
     end
 
