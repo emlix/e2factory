@@ -1303,7 +1303,6 @@ function e2lib.get_global_config()
     for _,path in ipairs(cf_path) do
         local data = nil
 
-        -- e2lib.logf(4, "trying global config file: %s", path)
         local rc = e2lib.exists(path)
         if rc then
             e2lib.logf(3, "loading global config file: %s", path)
@@ -1342,8 +1341,6 @@ function e2lib.get_global_config()
 
             get_global_config_cache = strict.lock(data)
             return get_global_config_cache
-        else
-            e2lib.logf(4, "global config file does not exist: %s", path)
         end
     end
     return false, err.new("no config file available")

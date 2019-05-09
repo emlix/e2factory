@@ -625,6 +625,8 @@ function digest.assertSha256(dgst)
     assert(s == 1 and e == digest.SHA256_LEN)
 end
 
+trace.filter_function('digest', 'ishex')
+
 return strict.lock(digest)
 
 -- vim:sw=4:sts=4:et:
