@@ -1978,7 +1978,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait, pty)
     assert(nowait == nil or nowait == false
         or nowait == true or nowait == 'nopoll')
 
-    e2lib.logf(4, 'e2lib.callcmd argv=%q', table.concat(argv, '", "'))
+    e2lib.logf(4, 'e2lib.callcmd argv="%s"', table.concat(argv, '", "'))
 
     -- fork dance, enter critical section, block all signals
     le2lib.signal_block()
