@@ -709,7 +709,7 @@ function git.git_source:prepare_source(sourceset, buildpath)
     end
 
     local gitdir, git_argv, git_tool, tar_argv
-    local pid, status, fdctv
+    local pid, status, git_fdctv, tar_fdctv
     local writeend, readend, devnull
     local children = {}
 
@@ -770,28 +770,43 @@ function git.git_source:prepare_source(sourceset, buildpath)
         e2lib.log(3, "[git archive]: "..msg)
     end
 
-    fdctv = {
+    git_fdctv = {
         { istype = "readfo", dup = eio.STDIN, file = devnull },
         { istype = "readfo", dup = eio.STDOUT, file = writeend },
         { istype = "writefunc", dup = eio.STDERR, linebuffer = true, callfn = log_git },
     }
 
-    pid, re = e2lib.callcmd(git_argv, fdctv, nil, nil, true)
+    pid, re = e2lib.callcmd(git_argv, git_fdctv, nil, nil, 'nopoll')
     if not pid then
         return false, e:cat(re)
     end
     table.insert(children, { pid=pid, name="git" })
 
-    fdctv = {
+    tar_fdctv = {
         { istype = "readfo", dup = eio.STDIN, file = readend },
         { istype = "readfo", dup = eio.STDOUT, file = devnull }
     }
 
-    pid, re = e2lib.callcmd(tar_argv, fdctv, nil, nil, true)
+    pid, re = e2lib.callcmd(tar_argv, tar_fdctv, nil, nil, 'nopoll')
     if not pid then
         return false, e:cat(re)
     end
     table.insert(children, { pid=pid, name="tar" })
+
+    rc, re = e2lib.callcmd_poll(git_fdctv, tar_fdctv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = e2lib.callcmd_cleanup(git_fdctv)
+    if not rc then
+        return false, e:cat(re)
+    end
+
+    rc, re = e2lib.callcmd_cleanup(tar_fdctv)
+    if not rc then
+        return false, e:cat(re)
+    end
 
     local errors = false
     while (#children > 0) do
