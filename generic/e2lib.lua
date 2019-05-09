@@ -1499,7 +1499,9 @@ function e2lib.callcmd_poll(...)
         repeat
             linepos = string.find(fdct._p.buffer, "\n")
             if linepos then
+                trace.off()
                 fdct.callfn(string.sub(fdct._p.buffer, 1, linepos))
+                trace.on()
                 fdct._p.buffer = string.sub(fdct._p.buffer, linepos + 1)
             end
         until not linepos
@@ -1508,7 +1510,9 @@ function e2lib.callcmd_poll(...)
     -- trace filtered
     local function fd_linebuffer_final(fdct, data)
         if fdct.linebuffer and fdct._p.buffer ~= "" then
+            trace.off()
             fdct.callfn(fdct._p.buffer)
+            trace.on()
             fdct._p.buffer = ""
         end
     end
@@ -1524,7 +1528,7 @@ function e2lib.callcmd_poll(...)
         return false
     end
 
-    local rc, re, fdvec, pollvec, fdvec, fdct, fdctv
+    local rc, re, fdvec, pollvec, fdvec, fdct, fdctv, prevtime, now
 
     fdctv = {}
     for _, t in ipairs({...}) do
@@ -1544,8 +1548,22 @@ function e2lib.callcmd_poll(...)
         end
     end
 
+    prevtime = os.time()
+
     while #fdvec > 0 do
+        trace.off()
         pollvec, re = e2lib.poll(-1, fdvec)
+
+        -- log ever 10 seconds so we know e2 is still alive
+        now = os.time()
+        if now - prevtime >= 10 then
+            prevtime = now
+            e2lib.logf(4, "e2lib.poll: 10s ping", now)
+        end
+
+        trace.on()
+
+
         if not pollvec then
             return false, re
         elseif #pollvec == 0 then
@@ -1558,7 +1576,9 @@ function e2lib.callcmd_poll(...)
                 if fdct then
                     local data, eno
 
+                    trace.off()
                     data, re, eno = eio.read(fdct._p.rfd, 4096)
+                    trace.on()
                     if not data then
                         if eno ~= errno.def2errnum("EINTR") then
                             return false, _retrieve_status_kill(fdct._p.pid, re)
@@ -1569,7 +1589,9 @@ function e2lib.callcmd_poll(...)
                         if fdct.linebuffer then
                             fd_linebuffer(fdct, data)
                         else
+                            trace.off()
                             fdct.callfn(data)
+                            trace.on()
                         end
                     end
                 end
@@ -1645,6 +1667,8 @@ end
 -- @field linebuffer True to request line buffering, false otherwise.
 -- @field callfn Function that is called when data is available.
 --               Declared as "function (data)", no return value.
+--               Tracing is disabled during execution. Call trace.on() if
+--               this is not desired.
 -- @field _p Private field, do not use.
 -- @see fdct
 
