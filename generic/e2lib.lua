@@ -1554,7 +1554,7 @@ function e2lib.callcmd_poll(...)
         trace.off()
         pollvec, re = e2lib.poll(-1, fdvec)
 
-        -- log ever 10 seconds so we know e2 is still alive
+        -- log every 10 seconds so we know e2 is still alive
         now = os.time()
         if now - prevtime >= 10 then
             prevtime = now
