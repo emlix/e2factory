@@ -678,11 +678,9 @@ function git.git_source:prepare_source(sourceset, buildpath)
     end
 
     if sourceset == "working-copy" then
-        local empty
+        local empty = true
 
         srcdir = e2lib.join(e2tool.root(), self:get_working())
-
-        empty = true
         for f, re in e2lib.directory(srcdir, true) do
             if not f then
                 return false, e:cat(re)
@@ -776,7 +774,11 @@ function git.git_source:prepare_source(sourceset, buildpath)
         { istype = "writefunc", dup = eio.STDERR, linebuffer = true, callfn = log_git },
     }
 
-    pid, re = e2lib.callcmd(git_argv, git_fdctv, nil, nil, 'nopoll')
+    -- Unfortunately git archive seems to pick up information from the CWD git
+    -- repository despite --git-dir etc.
+    -- Always force workdir to the project root. If this causes an issue it
+    -- will at least not depend on the location of the CWD of e2-build
+    pid, re = e2lib.callcmd(git_argv, git_fdctv, e2tool.root(), nil, 'nopoll')
     if not pid then
         return false, e:cat(re)
     end
