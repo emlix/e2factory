@@ -96,7 +96,8 @@ local function new_files_source(c, server, location, source_file, checksum_file,
     source.url = source_file
     source.basename = e2lib.basename(source.url)
     source.rlocation = e2lib.join(location, source.basename)
-    source.rlocation_digest = source.rlocation .. ".sha1"
+    source.rlocation_sha1 = source.rlocation .. ".sha1"
+    -- source.rlocation_sha256 = source.rlocation .. ".sha256"
     source.localfn = nil
     source.localfn_digest = nil
     source.dt = nil
@@ -122,11 +123,28 @@ local function new_files_source(c, server, location, source_file, checksum_file,
     tmpfile.base = e2lib.basename(tmpfile.file)
     tmpfile.dir = e2lib.dirname(tmpfile.file)
 
-    rc, re = cache.fetch_file(c, server, source.rlocation,
-        tmpfile.dir, tmpfile.base, {})
-    if rc then
-        return false, e:append("file already exists on %s:%s", server,
-            source.rlocation)
+    -- check that file and digest(s) are neither in cache nor on server
+    local tocheck = {
+        source.rlocation_sha1,
+        -- source.rlocation_sha256,
+        source.rlocation
+    }
+    for _, fileloc in ipairs(tocheck) do
+        local cf = nil
+        local msg = "if necessary, move file out of the way manually"
+        rc, re, cf = cache.file_in_cache(c, server, fileloc, nil)
+        if rc then
+            return false, e:append(
+                "file or digest already in cache (%s): %s", msg, cf)
+        end
+
+        rc, re = cache.fetch_file(c, server, fileloc, tmpfile.dir, tmpfile.base,
+            { cache=false })
+        if rc then
+            return false, e:append(
+                "file or digest already on server (%s): %s:%s",
+                msg, server, fileloc)
+        end
     end
 
     -- download the source from a external server
@@ -207,7 +225,7 @@ local function new_files_source(c, server, location, source_file, checksum_file,
 
     -- upload checksum to cache (maybe) and server (always)
     local rc, re = cache.push_file(c, source.localfn_digest, server,
-        source.rlocation_digest)
+        source.rlocation_sha1)
     if not rc then
         return false, e:cat(re)
     end
