@@ -128,9 +128,9 @@ function git.git_source:initialize(rawsrc)
     self._location = rawsrc.location
     self._tag = rawsrc.tag
 
-    if rawsrc.checkout then
+    if rawsrc.checkout ~= nil then
         if type(rawsrc.checkout) ~= boolean then
-            error(err.new("checkout' must be a boolean"))
+            error(err.new("'checkout' must be a boolean"))
         end
         self._checkout = rawsrc.checkout
     end
