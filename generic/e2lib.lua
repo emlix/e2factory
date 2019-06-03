@@ -1892,7 +1892,7 @@ function e2lib.callcmd(argv, fdctv, workdir, envdict, nowait, pty)
         local sync_pipes
 
         if e2lib.signal_received() ~= "" then
-            return false, err.new("signal received, shutting down e2factory")
+            return false, err.new("shutting down e2factory [fork]")
         end
 
         rc, re = fd_parent_setup(fdctv, argv)

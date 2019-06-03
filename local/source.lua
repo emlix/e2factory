@@ -246,6 +246,11 @@ function source.load_source_configs()
     end
 
     for _,cfg in ipairs(configs) do
+
+        if e2lib.signal_received() ~= "" then
+            return false, err.new("shutting down e2factory [src]")
+        end
+
         rc, re = e2tool.verify_src_res_pathname_valid_chars(cfg)
         if not rc then
             e:append("invalid source file name: %s", cfg)

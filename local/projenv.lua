@@ -75,6 +75,10 @@ local function _load_env_config(file)
     local rc, re
     local merge_error = false
 
+    if e2lib.signal_received() ~= "" then
+        return false, err.new("shutting down e2factory [penv]")
+    end
+
     local function mergeenv(data)
         -- upvalues: file, _load_env_config(), merge_error
         local rc, re

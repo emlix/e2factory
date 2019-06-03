@@ -158,6 +158,10 @@ function licence.load_licence_config()
     for name,l in pairs(ltable) do
         local lerr = err.new("error in licence %q", name)
 
+        if e2lib.signal_received() ~= "" then
+            return false, err.new("shutting down e2factory [lic]")
+        end
+
         rc, re = e2lib.vrfy_dict_exp_keys(l, "licence",
             { "server", "files" })
         if not rc then

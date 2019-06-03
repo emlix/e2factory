@@ -692,6 +692,10 @@ function result.load_result_configs()
     for _,cfg in ipairs(configs) do
         local rawres, obj
 
+        if e2lib.signal_received() ~= "" then
+            return false, err.new("shutting down e2factory [res]")
+        end
+
         rawres, re = load_rawres(cfg)
         if not rawres then
             return false, re
