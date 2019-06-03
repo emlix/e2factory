@@ -1559,6 +1559,11 @@ function e2lib.callcmd_poll(...)
         if now - prevtime >= 10 then
             prevtime = now
             e2lib.logf(4, "e2lib.poll: 10s ping", now)
+
+            if e2lib.signal_received() ~= "" then
+                -- try to shut down all children
+                children_send_sigint()
+            end
         end
 
         trace.on()
