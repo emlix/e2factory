@@ -202,6 +202,11 @@ function err.ecdata(e)
     return _errcodes[e.code]
 end
 
+local err_mt = {
+    __index = err,
+    __tostring = err.tostring
+}
+
 --- create an error object
 -- @param format string: format string
 -- @param ... list of arguments required for the format string
@@ -212,8 +217,7 @@ function err.new(format, ...)
     e.count = 0
     e.msg = {}
     e.code = false
-    local meta = { __index = err }
-    setmetatable(e, meta)
+    setmetatable(e, err_mt)
     if format then
         e:append(format, ...)
     end
