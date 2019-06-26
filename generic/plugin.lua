@@ -241,13 +241,15 @@ end
 -- @return an error object on failure
 function plugin.exit_plugins()
     local e = err.new("deinitializing plugins failed")
-    for _, pd in ipairs(plugins) do
+    while #plugins > 0 do
+        local pd = table.remove(plugins) -- deinitialize in reverse order
+        e2lib.logf(4, "de-init plugin %s", pd.file)
         local rc, re = pd.exit(pd.ctx)
         if not rc then
             return false, e:cat(re)
         end
     end
-    return true, nil
+    return true
 end
 
 --- print a description for each plugin. This is for use with the --version
