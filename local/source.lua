@@ -338,10 +338,28 @@ function source.register_source_class(typ, source_class)
     assert(type(source_class) == "table")
 
     if source_types[typ] then
-        return false, err.new("source %q already registered", typ)
+        return false, err.new("source class %q already registered", typ)
     end
 
     source_types[typ] = source_class
+
+    return true
+end
+
+--- Deregister a source class.
+-- @param typ Source type name.
+-- @param source_class Class derived from basic_source.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function source.deregister_source_class(typ, source_class)
+    assert(type(typ) == "string" and typ ~= "")
+    assert(type(source_class) == "table")
+
+    if source_types[typ] == nil then
+        return false, err.new("source class %q not registered", typ)
+    end
+
+    source_types[typ] = nil
 
     return true
 end
