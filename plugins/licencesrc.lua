@@ -429,7 +429,24 @@ plugin_descriptor = {
 
         return true
     end,
-    exit = function (ctx) return true end,
+    exit = function (ctx)
+        local rc, re
+
+        for typ, theclass in result.iterate_result_classes() do
+            if typ == "collect_project" then
+                theclass:remove_source_to_result_fn("licence",
+                    licences_to_result)
+                break
+            end
+        end
+
+        rc, re = source.deregister_source_class("licence", licence_source)
+        if not rc then
+            return false, re
+        end
+
+        return true
+    end,
     depends = {
         "collect_project.lua"
     }

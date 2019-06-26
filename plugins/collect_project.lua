@@ -568,6 +568,19 @@ local function collect_project_init(ctx)
 end
 
 local function collect_project_exit(ctx)
+    local rc, re
+
+    rc, re = result.deregister_result_class("collect_project",
+        collect_project_class)
+    if not rc then
+        return false, re
+    end
+
+    rc, re = result.deregister_type_detection(detect_cp_result)
+    if not rc then
+        return false, re
+    end
+
     return true
 end
 
