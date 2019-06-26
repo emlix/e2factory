@@ -778,11 +778,24 @@ end
 function result.register_type_detection(func)
     assertIsFunction(func)
     for _,fn in ipairs(type_detection_fns) do
-        assert(fn ~= func, err.new("result type detection already registered"))
+        assert(fn ~= func, "result type detection already registered")
     end
     table.insert(type_detection_fns, 1, func)
 
     return true
+end
+
+--- Deregister a type detection function.
+-- @param func Function in the form function(rawres)...end
+function result.deregister_type_detection(func)
+    assertIsFunction(func)
+    for idx=1,#type_detection_fns do
+        if type_detection_fns[idx] == func then
+            table.remove(type_detection_fns, idx)
+            return true
+        end
+    end
+    assert(false, "deregister_type_detection: func wasn't registered")
 end
 
 --- Register a result class. A type can only be registered once.
@@ -794,12 +807,29 @@ function result.register_result_class(typ, result_class)
     assertIsStringN(typ)
     assertIsTable(result_class)
     assert(result_types[typ] == nil,
-        err.new("result %q already registered", typ))
+        string.format("result class %q already registered", typ))
 
     result_types[typ] = result_class
 
     return true
 end
+
+--- Deregister a result class.
+-- @param typ Source type name.
+-- @param result_class Class derived from basic_result.
+-- @return True on success, false on error.
+-- @return Error object on failure.
+function result.deregister_result_class(typ, result_class)
+    assertIsStringN(typ)
+    assertIsTable(result_class)
+    assert(result_types[typ] ~= nil,
+        string.format("result class %q not registered", typ))
+
+    result_types[typ] = nil
+
+    return true
+end
+
 
 --- Iterate over registered result classes.
 -- @return Iterator function that returns a sorted type, result class pair.
