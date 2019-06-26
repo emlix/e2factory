@@ -38,7 +38,6 @@ function environment.new()
     env.seqid = environment_seqid
     environment_seqid = environment_seqid + 1
     env.dict = {}
-    env.sorted = {}
     return env
 end
 
@@ -49,12 +48,9 @@ end
 -- @return env as passed in the first parameter
 function environment.set(env, var, val)
     assertIsTable(env)
-    assertIsTable(env.sorted)
     assertIsStringN(var)
     assertIsString(val)
     env.dict[var] = val
-    table.insert(env.sorted, var)
-    table.sort(env.sorted)
     return env
 end
 
@@ -62,7 +58,6 @@ end
 -- @param env environment
 function environment.envid(env)
     assertIsTable(env)
-    assertIsTable(env.sorted)
     local eid
     local hc = hash.hash_start()
     for var, val in env:iter() do
@@ -80,16 +75,12 @@ end
 -- @return environment as merged from env and merge
 function environment.merge(env, merge, override)
     assertIsTable(env)
-    assertIsTable(env.sorted)
     assertIsTable(merge)
-    assertIsTable(merge.sorted)
     assertIsBoolean(override)
-    for i, var in ipairs(merge.sorted) do
-        if not env.dict[var] then
-            table.insert(env.sorted, var)
-        end
+
+    for var, val in pairs(merge.dict) do
         if not env.dict[var] or override then
-            env.dict[var] = merge.dict[var]
+            env.dict[var] = val
         end
     end
     return env
@@ -99,14 +90,20 @@ end
 -- @param env environment
 function environment.iter(env)
     assertIsTable(env)
-    assertIsTable(env.sorted)
-    local index = nil
-    local function _iter(t)
-        local var
-        index, var = next(t, index)
-        return var, env.dict[var]
+
+    local sorted = {}
+    local index = 0
+
+    for var, _ in pairs(env.dict) do
+        table.insert(sorted, var)
     end
-    return _iter, env.sorted
+    table.sort(sorted)
+
+    local function _iter()
+        index = index + 1
+        return sorted[index], env.dict[sorted[index]]
+    end
+    return _iter
 end
 
 --- return a (copy of the) dictionary
@@ -114,7 +111,6 @@ end
 -- @return a copy of the dictionary representing the environment
 function environment.get_dict(env)
     assertIsTable(env)
-    assertIsTable(env.sorted)
     local dict = {}
     for k,v in env:iter() do
         dict[k] = v
@@ -130,7 +126,6 @@ end
 -- @return Error object on failure.
 function environment.tofile(env, file)
     assertIsTable(env)
-    assertIsTable(env.sorted)
     assertIsString(file)
     local rc, re, e, out
 
