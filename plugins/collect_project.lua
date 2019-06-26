@@ -396,6 +396,12 @@ function collect_project_class.static:add_source_to_result_fn(typ, func)
     _source_to_result_functions[typ] = func
 end
 
+function collect_project_class.static:remove_source_to_result_fn(typ, func)
+    assertIsStringN(typ)
+    assertIsFunction(func)
+    _source_to_result_functions[typ] = nil
+end
+
 function collect_project_class:initialize(rawres)
     assertIsTable(rawres)
     assertNotNil(rawres.collect_project)
