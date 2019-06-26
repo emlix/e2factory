@@ -780,6 +780,11 @@ function e2tool.e2project_class:init_project(tool)
     strict.lock(info)
 end
 
+--- Undo the effect of init_project()
+function e2tool.e2project_class:finalize_project()
+    e2lib.cleanup()
+end
+
 function e2tool.e2project_class:_init_umask()
     self._host_umask = e2lib.umask(self._chroot_umask)
     e2tool.reset_umask()
