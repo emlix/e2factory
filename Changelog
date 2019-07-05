@@ -1,6 +1,27 @@
 NEXT:
-
-e2factory-2.3.18rc4
+ * fix env var alphabetical sorting order, may require small changes
+ * many smaller bugfixes
+ * misconfigured git source produces warning instead of error if not fatal
+ * fetch-sources --update improvements for git source
+ * experimental support for e2.conf.local (selectively overwriting the default)
+ * allow specifying temp dir in e2.conf (config.site.tmpdir)
+ * detect more typos and invalid settings in e2.conf
+ * git source automatically uses remote branch when no local branch exists
+ * many signal handling related improvements
+ * fix signaling e2-su without a controlling terminal (in CI settings)
+ * fix shell quoting source filename in collect project
+ * respect config.log.logrotate in e2.conf
+ * support tbz2 archives.
+ * repair fetch-project in --branch mode
+ * repair BuildID calculation in collect project when using wc-mode
+ * improve various error messages related to chroot failures.
+ * make signal handling and propagation with e2 more robust.
+ * reduce confusion between build settings, build and process mode
+ * improve error object information and handling
+ * refactor global info table into an e2project class
+ * optional use of sudo instead of e2-su-2.2 for chroot operations
+ * refactoring of e2factory core (e2project class)
+ * refactoring of build machinery towards parallelism (build sets, config, etc)
 
 e2factory-2.3.18rc3
 
