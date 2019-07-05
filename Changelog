@@ -1,4 +1,4 @@
-NEXT:
+e2factory-2.3.18
  * fix env var alphabetical sorting order, may require small changes
  * many smaller bugfixes
  * misconfigured git source produces warning instead of error if not fatal
