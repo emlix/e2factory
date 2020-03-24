@@ -42,11 +42,11 @@ $HOME/.e2/e2.conf-<MAJOR>.<MINOR>
 .IP 6.
 $HOME/.e2/e2.conf
 .IP 7.
-/etc/.e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
+/etc/e2/e2.conf-<MAJOR>.<MINOR>.<PATCHLEVEL>
 .IP 8.
-/etc/.e2/e2.conf-<MAJOR>.<MINOR>
+/etc/e2/e2.conf-<MAJOR>.<MINOR>
 .IP 9.
-/etc/.e2/e2.conf
+/etc/e2/e2.conf
 
 
 
