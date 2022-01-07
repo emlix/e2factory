@@ -550,7 +550,7 @@ do_unlink(lua_State *lua)
 
 /* closes all file descriptors >= fd */
 static int
-closefrom(lua_State *L)
+do_closefrom(lua_State *L)
 {
 	DIR *d = NULL;
 	int myself, from, eno = 0;
@@ -952,7 +952,7 @@ do_forkpty(lua_State *L)
 static luaL_Reg lib[] = {
 	{ "chdir", change_directory },
 	{ "chmod", do_chmod },
-	{ "closefrom", closefrom },
+	{ "closefrom", do_closefrom },
 	{ "cwd", get_working_directory },
 	{ "directory", get_directory },
 	{ "execvp", do_execvp },
