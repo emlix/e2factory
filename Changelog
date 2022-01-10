@@ -1,4 +1,5 @@
-NEXT:
+e2factory-2.3.18p0
+ * fix collision created by glibc-2.34 adding closefrom()
 
 e2factory-2.3.18
  * fix env var alphabetical sorting order, may require small changes
