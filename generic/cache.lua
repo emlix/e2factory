@@ -219,7 +219,20 @@ function cache.servers(c)
     return l
 end
 
-local function assertFlags(flags)
+--- verify common cache flags table
+-- @param flags flags table or nil
+-- @return valid flags table
+-- @raise error on unknown fields/types
+local function verify_optional_flags(flags)
+    if flags == nil then
+        return {}
+    end
+
+    assertIsTable(flags)
+    if #flags == 0 then
+        return flags
+    end
+
     local known = {
         cachable = "boolean",
         cache = "boolean",
@@ -229,7 +242,6 @@ local function assertFlags(flags)
         writeback = "boolean",
     }
 
-    assertIsTable(flags)
     for key in pairs(flags) do
         if known[key] == "string" then
             assertIsString(flags[key])
@@ -240,6 +252,7 @@ local function assertFlags(flags)
                 key, tostring(flags[key]), type(flags[key])))
         end
     end
+    return flags
 end
 
 --- create a new cache entry
@@ -289,7 +302,7 @@ function cache.new_cache_entry(c, server, remote_url, flags, alias_server,
     ce.server = server
     ce.remote_url = ru.url
 
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     ce.flags = {}
     ce.flags.cachable = flags.cachable
@@ -394,8 +407,7 @@ end
 function cache.cache_enabled(c, server, flags)
     assertIsTable(c)
     assertIsStringN(server)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -423,8 +435,7 @@ function cache.file_in_cache(c, server, location, flags)
     assertIsTable(c)
     assertIsStringN(server)
     assertIsStringN(location)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     if not cache.cache_enabled(c, server, flags) then
         return false
@@ -455,8 +466,7 @@ end
 function cache.islocal_enabled(c, server, flags)
     assertIsTable(c)
     assertIsStringN(server)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local rc, re, ce
 
@@ -479,8 +489,7 @@ local function file_is_local(c, server, location, flags)
     assertIsTable(c)
     assertIsStringN(server)
     assertIsStringN(location)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local rc, re
     local ce, u, filepath
@@ -516,7 +525,7 @@ end
 -- @param c the cache data structure
 -- @param server the server to fetch the file from
 -- @param location the location on the server
--- @param flags
+-- @param flags table of flags, optional
 -- @return bool
 -- @return an error object on failure
 local function cache_file(c, server, location, flags)
@@ -526,7 +535,6 @@ local function cache_file(c, server, location, flags)
     if not ce then
         return false, e:cat(re)
     end
-    assertFlags(flags)
 
     if not cache.cache_enabled(c, server, flags) then
         return false, e:append("caching is disabled")
@@ -569,8 +577,7 @@ function cache.fetch_file(c, server, location, destdir, destname, flags)
     assertIsStringN(destdir)
     destname = destname or e2lib.basename(location)
     assertIsStringN(destname)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local rc, re
     local e = err.new("cache: fetching file failed")
@@ -617,8 +624,7 @@ function cache.fetch_file_path(c, server, location, flags)
     assertIsTable(c)
     assertIsStringN(server)
     assertIsStringN(location)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local rc, re, e
     local ce, filepath
@@ -687,8 +693,7 @@ function cache.file_exists(c, server, location, flags)
     assertIsTable(c)
     assertIsStringN(server)
     assertIsStringN(location)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local rc, re, e
     local ce
@@ -727,7 +732,6 @@ end
 -- @return an error object on failure
 local function cache_writeback(c, server, location, flags)
     local rc, re
-    assertFlags(flags)
 
     local ce, re = cache.ce_by_server(c, server)
     if not ce then
@@ -763,8 +767,7 @@ local _pp_warn = true
 -- @return bool
 -- @return an error object on failure
 function cache.push_file(c, sourcefile, server, location, flags)
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local rc, re
     local e = err.new("error pushing file to %s:%s", server, location)
@@ -818,8 +821,7 @@ end
 function cache.writeback_enabled(c, server, flags)
     assert(type(c) == "table", "invalid cache")
     assert(type(server) == "string" and server ~= "", "invalid server")
-    flags = flags or {}
-    assertFlags(flags)
+    flags = verify_optional_flags(flags)
 
     local ce, re
 
