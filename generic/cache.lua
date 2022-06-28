@@ -1,7 +1,7 @@
 --- Cache
 -- @module generic.cache
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2022 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -482,6 +482,44 @@ function cache.islocal_enabled(c, server, flags)
     end
 
     return false
+end
+
+--- Remove file from cache, thus invalidating the entry
+-- @param c cache table
+-- @param server server name
+-- @param location location relative to server
+-- @param flags optional cache flags
+-- @return True if entry doesn't exists or invalidation was successful, false on error
+-- @return Error object on error
+function cache.invalidate(c, server, location, flags)
+    assertIsTable(c)
+    assertIsStringN(server)
+    assertIsStringN(location)
+    flags = verify_optional_flags(flags)
+
+    if not cache.cache_enabled(c, server, flags) then
+        return true
+    end
+
+    local ce, re = cache.ce_by_server(c, server)
+    if not ce then
+        return false, re
+    end
+
+    local ceurl, re = url.parse(ce.cache_url)
+    if not ceurl then
+        return false, re
+    end
+
+    local cf = e2lib.join("/", ceurl.path, location)
+    local rc, re = e2lib.lstat(cf)
+    if rc then
+        rc, re = e2lib.unlink(cf)
+        if not rc then
+            return false, re
+        end
+    end
+    return true
 end
 
 
