@@ -1,7 +1,7 @@
 --- Chroot config module.
 -- @module local.chroot
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2022 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -48,6 +48,7 @@ local strict = require("strict")
 -- @field location File location.
 -- @field sha1 SHA1 sum, optional
 -- @field sha256 SHA256 sum, optional
+-- @field hashupdate Boolean flag, optional
 
 --- Default chroot group names applied to all results. Locked.
 chroot.groups_default = {}
@@ -259,6 +260,7 @@ function chroot.load_chroot_config()
                     "location",
                     "sha1",
                     "sha256",
+                    "hashupdate",
                 })
             if not rc then
                 return false, e:cat(re)
@@ -270,7 +272,7 @@ function chroot.load_chroot_config()
                 return false, e:cat(re)
             end
 
-            rc, re = file:validate_set_checksums(f.sha1, f.sha256)
+            rc, re = file:validate_set_checksums(f.sha1, f.sha256, f.hashupdate)
             if not rc then
                 e:cat(ferr)
                 return false, e:cat(re)
