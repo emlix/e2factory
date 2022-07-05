@@ -1,7 +1,7 @@
 --- Core e2factory data structure and functions around the build process.
 -- @module local.e2tool
 
--- Copyright (C) 2007-2016 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2022 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -64,6 +64,7 @@ function e2tool.file_class:initialize(server, location)
     self._unpack = nil
     self._copy = nil
     self._patch = nil
+    self._hashupdate = nil
 
     self:server(server)
     self:location(location)
@@ -81,6 +82,7 @@ function e2tool.file_class:instance_copy()
     c:unpack(self._unpack)
     c:copy(self._copy)
     c:patch(self._patch)
+    c:hashupdate(self._hashupdate)
     return c
 end
 
@@ -108,6 +110,9 @@ function e2tool.file_class:to_config_table()
         t.copy = self._copy
     elseif self._patch then
         t.patch = self._patch
+    end
+    if self._hashupdate then
+        t.hashupdate = self._hashupdate
     end
 
     return t
@@ -164,9 +169,10 @@ end
 -- It enforces only format and checksum policy.
 -- @param sha1 Optional SHA1 checksum.
 -- @param sha256 Optional SHA256 checksum.
+-- @param hashupdate Optional flag whether we should update the file hash
 -- @return True on success, false on error
 -- @return Error object on failure.
-function e2tool.file_class:validate_set_checksums(sha1, sha256)
+function e2tool.file_class:validate_set_checksums(sha1, sha256, hashupdate)
     local s
 
     if sha1 ~= nil then
@@ -201,7 +207,14 @@ function e2tool.file_class:validate_set_checksums(sha1, sha256)
         end
     end
 
-    if self._server ~= cache.server_names().dot then
+    if hashupdate ~= nil then
+        if type(hashupdate) ~= "boolean" then
+            return false, err.new("hashupdate must be a boolean value")
+        end
+        self:hashupdate(hashupdate)
+    end
+
+    if self._server ~= cache.server_names().dot and not self:hashupdate() then
         if not sha1 and not sha256 then
             return false,
                 err.new("checksum is required for the %s file entry", self:servloc())
@@ -327,6 +340,69 @@ function e2tool.file_class:_compute_remote_checksum(digest_type)
     return false
 end
 
+--- If required, compare local and remote checksums and refetch the file
+-- @param digest_type Digest type
+-- @return New checksum or false on error
+-- @return Error object
+function e2tool.file_class:_checksum_check_refetch(digest_type)
+    local cs, rc, re
+    local c = cache.cache()
+    local cs_remote, tries
+
+    if not self:hashupdate() then
+        if digest_type == digest.SHA1 and self._sha1 then
+            return self._sha1
+        elseif digest_type == digest.SHA256 and self._sha256 then
+            return self._sha256
+        end
+    end
+
+    cs, re = self:_compute_checksum(digest_type)
+    if not cs then
+        return false, re
+    end
+
+    if not self:hashupdate()
+        or not cache.file_in_cache(c, self._server, self._location) then
+        -- if the file is not in cache we don't need to recheck it.
+        return cs
+    end
+
+    cs_remote, re = self:_compute_remote_checksum(digest_type)
+    if re then
+        return false, re
+    end
+
+    -- transport doesn't support remote checksumming
+    tries = 0
+    while cs_remote == false or cs_remote ~= cs do
+
+        if tries >= 2 then
+            return false, err.new(
+            "refetching %s but local (%s) and remote (%s) checksum still differ",
+            self:servloc(), cs, cs_remote)
+        end
+
+        rc, re = cache.invalidate(c, self._server, self._location)
+        if not rc then
+            return false, re
+        end
+
+        cs, re = self:_compute_checksum(digest_type)
+        if not cs then
+            return false, re
+        end
+
+        if cs_remote == false then
+            cs_remote = cs
+        end
+
+        tries = tries + 1
+    end
+
+    return cs
+end
+
 --- Calculate the FileID for a file.
 -- This includes the checksum of the file as well as all set attributes.
 -- @return FileID string: hash value, or false on error.
@@ -342,28 +418,20 @@ function e2tool.file_class:fileid()
     hash.hash_append(hc, self._location)
 
     if self:sha1() or project.checksums_sha1() then
-        if self:sha1() then
-            hash.hash_append(hc, self:sha1())
-        else
-            cs, re = self:_compute_checksum(digest.SHA1)
-            if not cs then
-                return false, e:cat(re)
-            end
-            hash.hash_append(hc, cs)
+        cs, re = self:_checksum_check_refetch(digest.SHA1)
+        if not cs then
+            return false, e:cat(re)
         end
+        hash.hash_append(hc, cs)
         cs_done = true
     end
 
     if self:sha256() or project.checksums_sha256() then
-        if self:sha256() then
-            hash.hash_append(hc, self:sha256())
-        else
-            cs, re = self:_compute_checksum(digest.SHA256)
-            if not cs then
-                return false, e:cat(re)
-            end
-            hash.hash_append(hc, cs)
+        cs, re = self:_checksum_check_refetch(digest.SHA256)
+        if not cs then
+            return false, e:cat(re)
         end
+        hash.hash_append(hc, cs)
         cs_done = true
     end
 
@@ -548,6 +616,19 @@ function e2tool.file_class:sha256(sha256)
     end
 
     return self._sha256 or false
+end
+
+--- Get or set wether we should update the file hash on the fly.
+-- @param val Boolean true or false
+-- @return true or false
+-- @raise Assert on bad input
+function e2tool.file_class:hashupdate(val)
+    if val ~= nil then
+        assertIsBoolean(val)
+        self._hashupdate = val
+    end
+
+    return self._hashupdate or false
 end
 
 --- Get or set per-file licence list.
