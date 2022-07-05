@@ -1,7 +1,7 @@
 --- Licence config module.
 -- @module local.licence
 
--- Copyright (C) 2007-2014 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2022 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -191,6 +191,7 @@ function licence.load_licence_config()
                     "location",
                     "sha1",
                     "sha256",
+                    "hashupdate",
                 })
             if not rc then
                 e:cat(lerr)
@@ -209,7 +210,7 @@ function licence.load_licence_config()
                 return false, e:cat(re)
             end
 
-            rc, re = file:validate_set_checksums(f.sha1, f.sha256)
+            rc, re = file:validate_set_checksums(f.sha1, f.sha256, f.hashupdate)
             if not rc then
                 e:cat(lerr)
                 return false, e:cat(re)
