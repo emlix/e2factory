@@ -1,7 +1,7 @@
 --- Files Plugin
 -- @module plugins.files
 
--- Copyright (C) 2007-2017 emlix GmbH, see file AUTHORS
+-- Copyright (C) 2007-2022 emlix GmbH, see file AUTHORS
 --
 -- This file is part of e2factory, the emlix embedded build system.
 -- For more information see http://www.e2factory.org
@@ -247,6 +247,7 @@ function files.files_source:initialize(rawsrc)
         rc, re = e2lib.vrfy_dict_exp_keys(f, "e2source config",
         {
             "copy",
+            "hashupdate",
             "licences",
             "location",
             "patch",
@@ -271,7 +272,7 @@ function files.files_source:initialize(rawsrc)
             error(e:cat(re))
         end
 
-        rc, re = file:validate_set_checksums(f.sha1, f.sha256)
+        rc, re = file:validate_set_checksums(f.sha1, f.sha256, f.hashupdate)
         if not rc then
             error(e:cat(re))
         end
