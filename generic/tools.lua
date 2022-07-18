@@ -239,9 +239,10 @@ end
 -- @param optional Whether the tool is required (true) or optional (false).
 -- @param enable Whether the tool should be used or not.
 --               Only makes sense if optional. Defaults to true if not optional.
+-- @param detection Special function for feature/variant detection (optional).
 -- @return True on success, false on error.
 -- @return Error object on failure.
-function tools.add_tool(name, value, flags, optional, enable)
+function tools.add_tool(name, value, flags, optional, enable, detection)
     if type(name) ~= "string" or
         (value ~= nil and type(value) ~= "string") or
         (flags ~= nil and type(flags) ~= "string") or
@@ -283,12 +284,89 @@ function tools.add_tool(name, value, flags, optional, enable)
         -- flagstbl,
         optional = optional,
         enable = enable,
+        variant = nil,
+        detection = detection,
     }
 
     local t = toollist[name]
     e2lib.logf(4, "adding tool: %s=%s flags=%s optional=%s enable=%s", name,
         t.name, t.flags, tostring(t.optional), tostring(t.enable))
 
+    return true
+end
+
+local function rsync_version_detect(name)
+    local rc, re
+    local out, cmd, m
+    out = {}
+
+    local function capture(msg)
+        if #out < 1 then
+            -- we care only about the first line
+            table.insert(out, msg)
+        end
+    end
+
+    assert(type(toollist[name].path) == "string")
+    cmd = { toollist[name].path, "--version" }
+
+
+    rc, re = e2lib.callcmd_capture(cmd, capture)
+    if not rc then
+        return false, re
+    elseif rc ~= 0 then
+        return false, err.new("rsync --version returned error code")
+    end
+
+    out = table.concat(out)
+    e2lib.logf(4, "rsync --version returned: %q", out)
+
+    local major, minor, patch =
+        out:match("rsync%s+version%s+v?(%d+)%.(%d+)%.?(%d*)")
+    local proto = out:match("protocol%s+version%s+(%d+)")
+
+    if major == nil then
+        major = 3
+        minor = 2
+        patch = 4
+        e2lib.logf(3, "could not match rsync version, defaulting to 3.2.4")
+    else
+        major = tonumber(major)
+        minor = tonumber(minor)
+        -- not sure patch has ever been optional,
+        -- but fake something just in case.
+        if patch ~= "" then
+            patch = tonumber(patch)
+        else
+            patch = 0
+        end
+    end
+
+    if proto == nil then
+        e2lib.logf(3, "could not detect rsync protocol version, " ..
+            "defaulting to version 3.2.4")
+        proto = 31
+    else
+        proto = tonumber(proto)
+    end
+
+    -- argument parser change in 3.2.4
+    -- https://download.samba.org/pub/rsync/NEWS#3.2.4
+
+    local newargs = true
+    if (major < 3) or (major == 3 and minor < 2)
+        or (major == 3 and minor == 2 and patch < 4) then
+        newargs = false
+    end
+    e2lib.logf(4, "rsync: newstyle args detected: %s", tostring(newargs))
+
+    toollist[name].variant = {
+        newargs = newargs,
+        major = major,
+        minor = minor,
+        patch = patch,
+        proto = proto,
+    }
     return true
 end
 
@@ -299,7 +377,9 @@ function tools.add_default_tools()
         curl = { name = "curl", flags = "", optional = false },
         ssh = { name = "ssh", flags = "", optional = false },
         scp = { name = "scp", flags = "", optional = false },
-        rsync = { name = "rsync", flags = "", optional = false },
+        rsync = { name = "rsync", flags = "", optional = false,
+                  detection = rsync_version_detect,
+        },
         git = { name = "git", flags = "", optional = false },
         cvs = { name = "cvs", flags = "", optional = true },
         svn = { name = "svn", flags = "", optional = true },
@@ -316,7 +396,8 @@ function tools.add_default_tools()
     }
 
     for name, t in pairs(defaults) do
-        rc, re = tools.add_tool(name, t.name, t.flags, t.optional, t.enable)
+        rc, re = tools.add_tool(name, t.name, t.flags, t.optional, t.enable,
+            t.detection)
         if not rc then
             e2lib.abort(re)
         end
@@ -362,9 +443,31 @@ function tools.check_tool(name)
         end
 
         toollist[name].path = p
+
+        if toollist[name].detection then
+            rc, re = toollist[name].detection(name)
+            if not rc then
+                return false,
+                    err.new("tool '%s': special detection failed", name):cat(re)
+            end
+        end
     end
 
     return true
+end
+
+--- Special per tool information e.g. the installed version
+-- @param name Tool name
+-- @return False on error, defaults to empty table.
+-- @return Error object on failure.
+function tools.variant(name)
+    local rc, re
+
+    if not toollist[name] then
+        return false, err.new("tool '%s' is not registered in tool list", name)
+    end
+
+    return toollist[name].variant or {}
 end
 
 --- Query whether an optional tool is enabled or not.

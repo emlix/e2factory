@@ -83,6 +83,8 @@ local function rsync_quote_remote(user, server, dir)
     assert(user == nil or type(user) == "string")
     assert(type(server) == "string")
     assert(type(dir) == "string")
+    local v = tools.variant("rsync")
+    assert(v, "tools.variant(rsync) failed")
 
     if user then
         user = string.format("%s@", user)
@@ -90,7 +92,11 @@ local function rsync_quote_remote(user, server, dir)
         user = ""
     end
 
-    return string.format("%s%s:%s", user, server, e2lib.shquote(dir))
+    if v.newargs then
+        return string.format("%s%s:%s", user, server, dir)
+    else
+        return string.format("%s%s:%s", user, server, e2lib.shquote(dir))
+    end
 end
 
 --- create a remote directory by copying an empty directory using rsync
