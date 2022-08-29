@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.18p1
  * add support for rsync 3.2.4 style path arguments
  * add hashupdate feature for all file sources
