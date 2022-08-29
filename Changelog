@@ -1,4 +1,5 @@
 NEXT:
+ * add hashupdate feature for all file sources
 
 e2factory-2.3.18p0
  * fix collision created by glibc-2.34 adding closefrom()
