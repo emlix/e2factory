@@ -788,7 +788,7 @@ function generic_git.verify_remote_tag(gitdir, tag)
         return false, e:cat(re)
     end
 
-    if rid ~= lid then
+    if not lid then
         re = err.new("can not find commit ID for local tag %q in %q",
             tag, gitdir)
         return false, e:cat(re)
