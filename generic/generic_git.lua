@@ -221,9 +221,10 @@ end
 -- @param remote Name of the "remote" repository for listing refs.
 --                      Network connection! Use generic_git.NO_REMOTE for
 --                      local refs (including remotes/...)
+-- @param ref if given request only the matching ref
 -- @return Error object on failure, otherwise nil
 -- @return Table containing tables of "id", "ref" pairs, or false on error.
-function generic_git.list_refs(git_dir, remote)
+function generic_git.list_refs(git_dir, remote, ref)
     assertIsStringN(git_dir)
     assert(remote == generic_git.NO_REMOTE or assertIsStringN(remote))
 
@@ -238,6 +239,9 @@ function generic_git.list_refs(git_dir, remote)
     else
         table.insert(argv, "show-ref")
         table.insert(argv, "--head") -- ls-remote does this by default
+    end
+    if ref then
+        table.insert(argv, ref)
     end
 
     rc, re, out = generic_git.git(argv)
@@ -279,7 +283,7 @@ function generic_git.lookup_id(git_dir, remote, ref)
     assertIsStringN(ref)
     local rc, re, t
 
-    rc, re, t = generic_git.list_refs(git_dir, remote)
+    rc, re, t = generic_git.list_refs(git_dir, remote, ref)
     if not rc then
         return false, re
     end
@@ -336,7 +340,7 @@ function generic_git.lookup_ref(git_dir, remote, id, filter)
 
     local rc, re, t
 
-    rc, re, t = generic_git.list_refs(git_dir, remote)
+    rc, re, t = generic_git.list_refs(git_dir, remote, nil)
     if not rc then
         return false, re
     end
