@@ -27,11 +27,7 @@ if [ "$OK" != "yes" ] ; then
 fi
 git commit -s -m "release $TAG" Changelog make.vars
 git tag "$TAG"
-cat - Changelog >Changelog.new <<EOF
-NEXT:
-
-EOF
-mv Changelog.new Changelog
+sed "1 i\NEXT:\n" -i Changelog
 git commit -s -m "create next changelog entry" Changelog
 
 git archive --format=tar --prefix=$TAG/ refs/tags/$TAG |gzip >$TAG.tar.gz
