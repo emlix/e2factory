@@ -1,3 +1,5 @@
+NEXT:
+
 e2factory-2.3.18p2
  * fix message when local and remote tags differ
  * request much less data from git when inspecting a tag
